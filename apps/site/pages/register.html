@@ -177,7 +177,7 @@ footer{border-top:1px solid var(--line);padding:22px 0 34px;color:var(--mute);fo
   </div>
 </main>
 
-<footer><div class="wrap">Gotham Consult · Accra, Ghana · In strategic partnership with Carlson Capital Ltd, registered in Ghana · WhatsApp +233 55 041 6627 · info@gothamconsult.com · <a href="https://gotham-consult-gh.netlify.app/privacy.html" style="color:var(--mute)">Privacy</a> · <a href="https://gotham-consult-gh.netlify.app/terms.html" style="color:var(--mute)">Terms</a><br>Investor, mining &amp; international desk: Uffe Carlson, Carlson Capital Ltd · WhatsApp and direct line <a href="tel:+233552395548" style="color:var(--mute)">+233 55 239 5548</a> · <a href="https://gotham.84-12-73-59.sslip.io" target="_blank" rel="noopener" style="color:var(--mute)">Team login</a></div></footer>
+<footer><div class="wrap">Gotham Consult · Accra, Ghana · In strategic partnership with Carlson Capital Ltd, registered in Ghana · WhatsApp +233 55 041 6627 · info@gothamconsult.com · <a href="https://gotham-consult-gh.netlify.app/privacy.html" style="color:var(--mute)">Privacy</a> · <a href="https://gotham-consult-gh.netlify.app/terms.html" style="color:var(--mute)">Terms</a><br>Investor, mining &amp; international desk: Uffe Carlson, Carlson Capital Ltd · WhatsApp and direct line <a href="tel:+233552395548" style="color:var(--mute)">+233 55 239 5548</a> · <a href="/admin" style="color:var(--mute)">Team login</a></div></footer>
 
 <script>
 /* ===== Settings Joy/Uffe can change ===== */
@@ -345,7 +345,7 @@ $('#goWa').onclick=()=>{if(!valid())return;window.open(`https://wa.me/${WA_NUMBE
 $('#goMail').onclick=()=>{if(!valid())return;location.href=`mailto:${EMAIL}?subject=${encodeURIComponent('Registration '+ref+': '+sel.t)}&body=${encodeURIComponent(msg())}`;done()};
 $('#again').onclick=()=>{$('#ok').classList.remove('on');$('#sumBody').hidden=false;['#nm','#role','#em','#ph','#gs'].forEach(s=>$(s).value='');newRef();render()};
 const NAV=[['Start here','#start'],['Invest in Ghana','#ghana'],['Mining','#mining'],['Free tools','#tools'],['Forums','#forums'],['Membership','#join'],['Contact','#contact']];
-$('#nav').innerHTML=NAV.map(([t,h])=>`<a href="${SITE_URL}${h}">${t}</a>`).join('')+'<a href="https://gotham.84-12-73-59.sslip.io" target="_blank" rel="noopener" style="border:1px solid var(--line);border-radius:999px;padding:5px 12px">Login</a>'+'<a class="here" href="#form" aria-current="page">Register</a>';
+$('#nav').innerHTML=NAV.map(([t,h])=>`<a href="${SITE_URL}${h}">${t}</a>`).join('')+'<a href="/admin" style="border:1px solid var(--line);border-radius:999px;padding:5px 12px">Login</a>'+'<a class="here" href="#form" aria-current="page">Register</a>';
 
 /* live items and payment settings from the CRM */
 fetch(API+'/api/items',{mode:'cors'}).then(r=>r.json()).then(d=>{

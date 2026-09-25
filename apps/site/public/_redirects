@@ -1,0 +1,14 @@
+# The back office lives on its own machine, but visitors should never see that.
+# Netlify proxies these paths through, so the whole platform is one domain:
+# no new tab on sign-in, no cross-site cookies, and no CORS.
+/admin            https://gotham.84-12-73-59.sslip.io/               200
+/admin/*          https://gotham.84-12-73-59.sslip.io/:splat         200
+/api/*            https://gotham.84-12-73-59.sslip.io/api/:splat     200
+/media/*          https://gotham.84-12-73-59.sslip.io/media/:splat   200
+/s/*              https://gotham.84-12-73-59.sslip.io/s/:splat       200
+/c/*              https://gotham.84-12-73-59.sslip.io/c/:splat       200
+/u/*              https://gotham.84-12-73-59.sslip.io/u/:splat       200
+/confirm/*        https://gotham.84-12-73-59.sslip.io/confirm/:splat 200
+/unsubscribe/*    https://gotham.84-12-73-59.sslip.io/unsubscribe/:splat 200
+/ticket/*         https://gotham.84-12-73-59.sslip.io/ticket/:splat  200
+/poster/*         https://gotham.84-12-73-59.sslip.io/poster/:splat  200
