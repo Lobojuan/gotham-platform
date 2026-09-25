@@ -1,0 +1,1378 @@
+<title>Gotham Consult</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">
+<style>
+:root{color-scheme:light;
+  --paper:#FAFAF8; --surface:#FFFFFF; --sunk:#F2F2EE; --ink:#0F1B2D; --mute:#5A6472; --line:#E2E4E7;
+  --navy:#0F1B2D; --on-navy:#F4F5F2; --navy-mute:#AEB6C2;
+  --gold:#A9761F; --gold-soft:#F4EAD7; --green:#1F6B4E; --green-soft:#E1EFE8; --amber:#9A6200; --amber-soft:#F6ECD9; --grey-soft:#ECEEF1;
+  --wa:#1FA855; --shadow:0 18px 50px rgba(15,27,45,.10);
+}
+
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{background:var(--paper);color:var(--ink);font:17px/1.6 "Hanken Grotesk",system-ui,-apple-system,sans-serif;margin:0;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-weight:600;letter-spacing:-.02em;margin:0;text-wrap:balance;line-height:1.1}
+em.serif{font-family:Newsreader,Georgia,serif;font-style:italic;font-weight:400;letter-spacing:-.01em}
+p{margin:0}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:24px}
+.eyebrow{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.mute{color:var(--mute)}
+.num{font-variant-numeric:tabular-nums}
+.btn{display:inline-flex;align-items:center;gap:10px;border-radius:999px;padding:13px 22px;font-weight:600;font-size:16px;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:transform .2s,background .2s,border-color .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn-dark{background:var(--ink);color:var(--paper)}
+.btn-line{border-color:var(--line);background:var(--surface)}
+.btn-line:hover{border-color:var(--ink)}
+.btn-wa{background:var(--wa);color:#fff}
+.arrow{transition:transform .2s}.btn:hover .arrow{transform:translateX(3px)}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
+/* header */
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:color-mix(in srgb,var(--paper) 88%,transparent);backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid transparent;transition:border-color .3s}
+header.scrolled{border-bottom-color:var(--line)}
+.bar{display:flex;align-items:center;gap:24px;min-height:72px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:19px;letter-spacing:-.01em}
+.mark{width:32px;height:32px;border-radius:50%;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:15px;font-weight:700;position:relative}
+.mark::after{content:"";position:absolute;right:-1px;top:-1px;width:10px;height:10px;border-radius:50%;background:var(--gold);border:2px solid var(--paper)}
+nav.main{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap}
+nav.main a{text-decoration:none;color:var(--mute);font-size:15px;font-weight:500;padding:8px 12px;border-radius:999px;transition:color .2s,background .2s}
+nav.main a:hover{color:var(--ink)}
+nav.main a.on{color:var(--ink);background:var(--grey-soft)}
+.demo{font-size:12.5px;text-align:center;padding:6px 16px;background:var(--gold-soft);color:var(--ink)}
+/* hero */
+.hero{padding-block:72px 56px;display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:center}
+.hero h1{font-size:clamp(40px,6vw,76px);letter-spacing:-.035em;line-height:1.02}
+.hero .lede{font-size:20px;color:var(--mute);max-width:54ch;margin-top:22px}
+.hero .ctas{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
+.rise{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+.d1{animation-delay:.08s}.d2{animation-delay:.16s}.d3{animation-delay:.24s}.d4{animation-delay:.32s}
+@keyframes rise{from{transform:translateY(18px);opacity:.001}to{transform:none;opacity:1}}
+.glance{background:var(--navy);color:var(--on-navy);border-radius:24px;padding:28px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.glance::before{content:"";position:absolute;inset:auto -40% -60% auto;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(221,176,102,.28),transparent 65%)}
+.glance h2{font-size:15px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--navy-mute)}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px 18px;margin-top:22px;position:relative}
+.k b{display:block;font-size:40px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.k span{display:block;font-size:14px;color:var(--navy-mute);margin-top:6px}
+.glance .src{font-size:12px;color:var(--navy-mute);margin-top:22px;position:relative}
+.ticker{border-block:1px solid var(--line);overflow:hidden;white-space:nowrap;padding-block:14px;font-size:15px}
+.ticker .track{display:inline-flex;gap:48px;animation:tick 40s linear infinite;padding-left:24px}
+.ticker b{font-weight:600}
+.up{color:var(--green)} .dn{color:#C0392B}
+@keyframes tick{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.ticker .track,.rise{animation:none}html{scroll-behavior:auto}}
+/* sections */
+section{padding-block:96px}
+.shead{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:48px}
+.shead h2{font-size:clamp(32px,4vw,52px);letter-spacing:-.03em;margin-top:12px}
+.shead p{color:var(--mute);font-size:18px;max-width:52ch}
+/* services */
+.svc{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
+.s{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:30px 26px 26px;display:flex;flex-direction:column;gap:12px;background:var(--surface);position:relative;transition:background .25s}
+.s:hover{background:var(--sunk)}
+.s .ix{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.s h3{font-size:21px;letter-spacing:-.015em}
+.s p{color:var(--mute);font-size:15.5px}
+.s ul{margin:0;padding:0;list-style:none;font-size:14.5px;display:grid;gap:5px}
+.s li::before{content:"— ";color:var(--gold)}
+.s .ask{margin-top:auto;padding-top:10px;font-size:14.5px;font-weight:600;text-decoration:none;display:inline-flex;gap:8px;align-items:center}
+.s .ask:hover{color:var(--gold)}
+.flag{position:absolute;top:18px;right:18px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--gold-soft);color:var(--ink);padding:3px 9px;border-radius:999px}
+/* process */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:56px;counter-reset:st}
+.st{padding:22px 24px 0 0;border-top:2px solid var(--line);position:relative}
+.st::before{content:"";position:absolute;top:-2px;left:0;height:2px;width:0;background:var(--gold);transition:width 1.2s cubic-bezier(.2,.7,.2,1)}
+.steps.seen .st::before{width:100%}
+.steps.seen .st:nth-child(2)::before{transition-delay:.25s}.steps.seen .st:nth-child(3)::before{transition-delay:.5s}.steps.seen .st:nth-child(4)::before{transition-delay:.75s}
+.st b{display:block;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.st h3{font-size:22px;margin-bottom:6px}
+.st p{color:var(--mute);font-size:15.5px}
+/* economy */
+.econ{background:var(--sunk);border-block:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.stat{background:var(--surface);padding:26px}
+.stat b{display:block;font-size:44px;font-weight:600;letter-spacing:-.035em;line-height:1}
+.stat span{display:block;margin-top:10px;font-size:15px}
+.stat small{display:block;color:var(--mute);font-size:13px;margin-top:4px}
+.charts{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;margin-top:24px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px}
+.panel h3{font-size:20px}
+.panel .sub{color:var(--mute);font-size:14.5px;margin-top:4px}
+.bars{margin-top:22px;display:grid;gap:12px}
+.brow{display:grid;grid-template-columns:150px 1fr 64px;gap:14px;align-items:center;font-size:15px}
+.btrack{height:12px;background:var(--grey-soft);border-radius:99px;overflow:hidden}
+.bfill{height:100%;background:var(--ink);border-radius:99px;transform-origin:left}
+.bfill.hi{background:var(--gold)}
+.grow .bfill{animation:grow 1.2s cubic-bezier(.2,.7,.2,1) both}
+.grow .brow:nth-child(2) .bfill{animation-delay:.08s}.grow .brow:nth-child(3) .bfill{animation-delay:.16s}.grow .brow:nth-child(4) .bfill{animation-delay:.24s}.grow .brow:nth-child(5) .bfill{animation-delay:.32s}.grow .brow:nth-child(6) .bfill{animation-delay:.4s}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.brow .v{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.stack{display:flex;height:44px;border-radius:10px;overflow:hidden;margin-top:24px;gap:2px}
+.stack div{display:grid;place-items:center;font-size:13px;font-weight:600;color:#fff;min-width:0}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:18px;font-size:14.5px}
+.legend span{display:flex;gap:8px;align-items:center}
+.legend i{width:12px;height:12px;border-radius:3px;flex:none}
+.fdi{display:flex;align-items:end;gap:28px;margin-top:26px;height:150px;padding-left:4px}
+.fcol{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;max-width:110px;height:100%;justify-content:end}
+.fcol div{width:100%;background:var(--ink);border-radius:8px 8px 3px 3px;transform-origin:bottom}
+.fcol div.hi{background:var(--gold)}
+.grow .fcol div{animation:growy 1.2s cubic-bezier(.2,.7,.2,1) both}
+@keyframes growy{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.fcol b{font-variant-numeric:tabular-nums}
+.fcol small{color:var(--mute)}
+.srcs{font-size:13px;color:var(--mute);margin-top:28px;max-width:90ch}
+/* sectors */
+.lens{display:flex;gap:6px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px;width:max-content;max-width:100%}
+.lens button{border:0;background:none;padding:9px 16px;border-radius:999px;cursor:pointer;font-weight:600;font-size:15px;color:var(--mute);transition:background .25s,color .25s}
+.lens button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.lensnote{margin-top:20px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 26px;transition:opacity .3s}
+.lensnote h3{font-size:22px}
+.lensnote p{color:var(--mute);margin-top:8px;max-width:70ch}
+.inst{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.inst span{font-size:13.5px;border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+.sectors{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:22px}
+.sec{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:10px;transition:transform .25s,box-shadow .25s,border-color .25s}
+.sec:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.sec.fit{border-color:var(--gold)}
+.sec .top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.pill{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;white-space:nowrap}
+.pill.strong{background:var(--green-soft);color:var(--green)}
+.pill.sel{background:var(--amber-soft);color:var(--amber)}
+.pill.watch{background:var(--grey-soft);color:var(--mute)}
+.sec h3{font-size:20px}
+.sec .metric{font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.sec .metric small{display:block;font-size:13px;font-weight:500;color:var(--mute);letter-spacing:0;margin-top:6px}
+.sec p{color:var(--mute);font-size:15px}
+.sec .risk{font-size:14px;border-top:1px solid var(--line);padding-top:10px;color:var(--mute)}
+.sec .risk b{color:var(--ink);font-weight:600}
+.fitmark{font-size:12.5px;font-weight:700;color:var(--gold);letter-spacing:.04em}
+.disclaim{font-size:13px;color:var(--mute);margin-top:22px}
+/* forums */
+.forums{display:grid;gap:14px}
+.ev{display:grid;grid-template-columns:110px 1fr auto;gap:28px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px 26px;transition:border-color .25s,box-shadow .25s}
+.ev:hover{border-color:var(--ink);box-shadow:var(--shadow)}
+.date{border-right:1px solid var(--line);padding-right:22px}
+.date b{display:block;font-size:44px;font-weight:600;letter-spacing:-.04em;line-height:1}
+.date span{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.ev h3{font-size:22px}
+.ev .meta{color:var(--mute);font-size:15px;margin-top:6px}
+.seats{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13.5px;color:var(--mute)}
+.seats .t{width:140px;height:5px;background:var(--grey-soft);border-radius:99px;overflow:hidden}
+.seats .t i{display:block;height:100%;background:var(--gold)}
+.ev .price{text-align:right}
+.ev .price b{display:block;font-size:24px;font-weight:600;margin-bottom:10px}
+.evwrap{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;transition:border-color .25s,box-shadow .25s}
+.evwrap:hover{border-color:var(--ink);box-shadow:var(--shadow)}
+.evwrap .ev{border:0;border-radius:0;background:transparent;box-shadow:none}
+.evwrap:hover .ev{box-shadow:none}
+.evpic{background:var(--sunk);border-bottom:1px solid var(--line)}
+.evpic picture,.evpic img{display:block;width:100%;height:clamp(150px,22vw,260px);object-fit:cover}
+.evdl{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.evdl a{display:inline-flex;align-items:baseline;gap:7px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13.5px;font-weight:600;color:var(--ink);background:var(--surface)}
+.evdl a:hover{border-color:var(--ink)}
+.evdl a span{font-weight:400;color:var(--mute);font-size:12px}
+.past{margin-top:28px;font-size:15px;color:var(--mute)}
+/* about */
+.about{display:grid;grid-template-columns:.9fr 1.1fr;gap:64px;align-items:start}
+.portrait{aspect-ratio:4/5;max-width:100%;border-radius:22px;background:linear-gradient(160deg,var(--grey-soft),var(--sunk));border:1px solid var(--line);display:grid;place-items:center;color:var(--mute);font-size:14px;text-align:center;padding:20px}
+.about h2{font-size:clamp(30px,3.6vw,46px);letter-spacing:-.03em;margin-top:12px}
+.about p{color:var(--mute);margin-top:18px;font-size:17.5px;max-width:60ch}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px;border-top:1px solid var(--line);padding-top:24px}
+.facts b{display:block;font-size:30px;font-weight:600;letter-spacing:-.03em}
+.facts span{font-size:14px;color:var(--mute)}
+.values{margin-top:28px;display:grid;gap:12px}
+.values div{display:flex;gap:12px;font-size:16px}
+.values i{width:22px;height:22px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;font-style:normal;font-size:13px;flex:none;margin-top:2px}
+/* contact */
+.contact{background:var(--navy);color:var(--on-navy);border-radius:28px;padding:56px;display:grid;grid-template-columns:1fr 1fr;gap:48px}
+.contact h2{font-size:clamp(32px,4vw,50px);letter-spacing:-.03em}
+.contact p{color:var(--navy-mute);margin-top:14px}
+.clist{margin-top:28px;display:grid;gap:14px;font-size:16px}
+.clist a{text-decoration:none}
+.clist small{display:block;color:var(--navy-mute);font-size:13px}
+.cform{display:grid;gap:12px}
+.cform label{font-size:14px;color:var(--navy-mute)}
+.cform input,.cform select,.cform textarea{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 14px;color:var(--on-navy)}
+.cform select option{color:#0F1B2D}
+.cform textarea{min-height:100px;resize:vertical}
+.cform .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.priv{font-size:12.5px;color:var(--navy-mute)}
+footer{padding-block:40px;color:var(--mute);font-size:14px}
+.fgrid{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:28px}
+/* dialog */
+dialog{border:0;padding:0;border-radius:22px;width:min(560px,calc(100% - 32px));max-height:calc(100% - 32px);background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+dialog[open]{animation:pop .35s cubic-bezier(.2,.7,.2,1)}
+@keyframes pop{from{transform:translateY(14px) scale(.98);opacity:.001}}
+dialog::backdrop{background:rgba(8,14,24,.55);backdrop-filter:blur(3px)}
+.dh{padding:24px 26px 0;display:flex;justify-content:space-between;gap:16px}
+.dh h3{font-size:22px;margin-top:6px}
+.x{border:0;background:var(--grey-soft);width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:18px;flex:none}
+.db{padding:20px 26px 26px}
+.prog{display:flex;gap:6px;margin-bottom:18px}
+.prog i{flex:1;height:3px;border-radius:9px;background:var(--grey-soft);transition:background .3s}
+.prog i.on{background:var(--gold)}
+.f label{display:block;font-size:14px;font-weight:600;margin:14px 0 6px}
+.f input,.f select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--paper)}
+.qty{display:flex;align-items:center;gap:10px}
+.qty button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--paper);cursor:pointer;font-size:18px}
+.qty output{min-width:28px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.order{background:var(--sunk);border-radius:14px;padding:16px 18px;display:grid;gap:6px;font-size:15px}
+.order div{display:flex;justify-content:space-between;gap:12px}
+.order .tot{border-top:1px solid var(--line);padding-top:8px;margin-top:4px;font-weight:700;font-size:18px}
+.ref{font-family:ui-monospace,Menlo,monospace;font-weight:700;letter-spacing:.06em;background:var(--gold-soft);padding:2px 8px;border-radius:6px}
+.nets{display:flex;gap:6px;margin:18px 0 10px;flex-wrap:wrap}
+.nets button{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:600;font-size:14px}
+.nets button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+ol.how{margin:0;padding-left:20px;display:grid;gap:6px;font-size:15px}
+ol.how code{font-family:ui-monospace,Menlo,monospace;font-weight:700;background:var(--grey-soft);padding:1px 6px;border-radius:5px}
+.wabub{background:#DCF8C6;color:#10281a;border-radius:14px 14px 14px 3px;padding:12px 14px;font-size:14.5px;white-space:pre-line;margin-top:6px}
+:root[data-theme="dark"] .wabub{background:#1D3A29;color:#E2F4E8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .wabub{background:#1D3A29;color:#E2F4E8}}
+.acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.note{font-size:13.5px;color:var(--mute);margin-top:12px}
+.warn{font-size:13.5px;background:var(--amber-soft);color:var(--ink);border-radius:10px;padding:10px 12px;margin-top:12px}
+
+
+/* assistant */
+.fab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;flex-direction:column;align-items:end;gap:10px}
+.chat{width:min(370px,calc(100vw - 36px));background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.chat-h{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+.msgs{height:280px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.m{max-width:86%;padding:9px 12px;border-radius:14px;font-size:14.5px}
+.m.bot{background:var(--sunk)}
+.m.me{background:var(--ink);color:var(--paper);align-self:end}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+.chips button{font-size:12.5px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 11px;cursor:pointer}
+.chat form{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line)}
+.chat input{flex:1;min-width:0;padding:10px 12px;border-radius:999px;border:1px solid var(--line);background:var(--paper)}
+.fabbtn{border:0;border-radius:999px;padding:14px 20px;background:var(--ink);color:var(--paper);font-weight:600;cursor:pointer;box-shadow:var(--shadow);display:flex;gap:8px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%;background:#35C46A;box-shadow:0 0 0 0 rgba(53,196,106,.6);animation:pulse 2s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 8px rgba(53,196,106,0)}100%{box-shadow:0 0 0 0 rgba(53,196,106,0)}}
+@media (max-width:980px){
+  .hero,.shead,.charts,.about,.contact{grid-template-columns:1fr}
+  .svc{grid-template-columns:repeat(2,1fr)}
+  .sectors{grid-template-columns:repeat(2,1fr)}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .steps{grid-template-columns:repeat(2,1fr);row-gap:28px}
+  .lensnote{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  body{font-size:16px}
+  section{padding-block:64px}
+  .svc,.sectors,.steps{grid-template-columns:1fr}
+  .ev{grid-template-columns:1fr;gap:14px}
+  .date{border-right:0;padding-right:0;display:flex;gap:10px;align-items:baseline}
+  .ev .price{text-align:left;display:flex;justify-content:space-between;align-items:center}
+  .ev .price b{margin:0}
+  .brow{grid-template-columns:110px 1fr 54px}
+  .contact{padding:32px 22px}
+  .facts{grid-template-columns:1fr 1fr}
+  .kgrid .k b{font-size:32px}
+  nav.main{width:100%;margin-left:0;overflow-x:auto;flex-wrap:nowrap}
+}
+
+/* ===== alive layer ===== */
+.herox{position:relative;isolation:isolate;overflow:hidden;background:#0B1422;color:#F4F5F2}
+.herox .bg{position:absolute;inset:-4%;z-index:-2;background:url(img/accra.webp) center/cover no-repeat, radial-gradient(1200px 600px at 78% 30%, #6b4a1c 0%, transparent 60%), linear-gradient(160deg,#0B1422 0%,#132741 55%,#2a2413 100%);animation:kb 28s ease-in-out infinite alternate}
+.herox::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(8,14,24,.88) 0%,rgba(8,14,24,.62) 48%,rgba(8,14,24,.25) 100%),linear-gradient(0deg,rgba(8,14,24,.7),transparent 40%)}
+@keyframes kb{from{transform:scale(1) translate(0,0)}to{transform:scale(1.08) translate(-1.5%,-1%)}}
+.herox .sun{position:absolute;right:8%;top:14%;width:340px;height:340px;border-radius:50%;z-index:-1;background:radial-gradient(circle,rgba(233,178,90,.55),rgba(233,178,90,0) 68%);filter:blur(4px);animation:breathe 9s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.12);opacity:.75}}
+.herox .hero{padding-block:110px 90px}
+.herox .eyebrow{color:#E6B866}
+.herox .lede{color:#C9D1DB}
+.herox .btn-dark{background:#E6B866;color:#0F1B2D}
+.herox .btn-line{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.28);color:#fff}
+.herox .glance{background:rgba(15,27,45,.55);backdrop-filter:blur(14px) saturate(1.3);border:1px solid rgba(255,255,255,.14)}
+.herox .hv{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+@media (prefers-reduced-motion:reduce){.herox .hv{display:none}}
+.imgcredit{position:absolute;right:16px;bottom:10px;font-size:11px;color:rgba(255,255,255,.55);z-index:1}
+.kente{height:14px;background:repeating-linear-gradient(90deg,#A9761F 0 34px,#0F1B2D 34px 40px,#1F6B4E 40px 70px,#0F1B2D 70px 76px,#B5412E 76px 92px,#0F1B2D 92px 98px,#E3C07A 98px 128px,#0F1B2D 128px 134px);background-size:268px 100%;animation:weave 18s linear infinite;opacity:.9}
+.kente.thin{height:6px;opacity:.75}
+@keyframes weave{to{background-position:268px 0}}
+.why{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-top:28px}
+.why div{background:var(--surface);padding:22px 22px 24px}
+.why b{display:block;font-size:22px;letter-spacing:-.02em}
+.why span{display:block;color:var(--mute);font-size:14.5px;margin-top:6px}
+.map{position:relative;margin-top:24px;background:#0B1422;border-radius:22px;overflow:hidden;border:1px solid var(--line)}
+.map canvas{display:block;width:100%;height:auto}
+.map .cap{position:absolute;left:24px;bottom:22px;color:#F4F5F2;max-width:420px}
+.map .cap h3{font-size:22px}
+.map .cap p{color:#AEB6C2;font-size:14.5px;margin-top:6px}
+.sec .pic{margin:-24px -24px 6px;height:150px;border-radius:17px 17px 0 0;background-size:cover;background-position:center;position:relative;overflow:hidden}
+.sec .pic::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.25),transparent 60%)}
+.sec:hover .pic{animation:zoomin 6s ease-out forwards}
+@keyframes zoomin{to{background-size:112%}}
+.band{position:relative;border-radius:24px;overflow:hidden;min-height:300px;display:flex;align-items:end;padding:36px;color:#fff;margin-bottom:28px;isolation:isolate}
+.band .bgi{position:absolute;inset:-10% 0;z-index:-2;background:url(img/forum.webp) center/cover, linear-gradient(135deg,#1F6B4E,#0F1B2D 60%,#A9761F)}
+.band::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,rgba(8,14,24,.85),rgba(8,14,24,.15) 70%)}
+.band h3{font-size:clamp(24px,3vw,34px);max-width:22ch}
+.band p{color:#D9DEE5;margin-top:8px;max-width:56ch}
+@supports (animation-timeline: view()){
+  .reveal{animation:revealUp linear both;animation-timeline:view();animation-range:entry 0% cover 22%}
+  @keyframes revealUp{from{opacity:.001;transform:translateY(34px)}to{opacity:1;transform:none}}
+  .band .bgi{animation:par linear both;animation-timeline:view()}
+  @keyframes par{from{transform:translateY(-6%)}to{transform:translateY(6%)}}
+}
+@media (prefers-reduced-motion:reduce){.herox .bg,.herox .sun,.kente,.reveal,.band .bgi{animation:none!important}}
+@media (max-width:980px){.why{grid-template-columns:repeat(2,1fr)}.herox .hero{padding-block:72px 56px}}
+@media (max-width:620px){.why{grid-template-columns:1fr}.map .cap{position:static;padding:18px 18px 0}.band{padding:24px}}
+
+.pres{position:relative;border-radius:22px;overflow:hidden;background:#0B1422;box-shadow:var(--shadow);aspect-ratio:16/9;max-width:100%}
+.pres video{width:100%;height:100%;object-fit:cover;display:block}
+.pres .play{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(0deg,rgba(8,14,24,.55),rgba(8,14,24,.05));border:0;cursor:pointer;color:#fff}
+.pres .play span{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.92);color:#0F1B2D;font-weight:600;padding:12px 20px;border-radius:999px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.pres .play i{width:0;height:0;border-left:12px solid #0F1B2D;border-top:8px solid transparent;border-bottom:8px solid transparent}
+.pres .tag{position:absolute;left:14px;top:14px;font-size:11.5px;font-weight:600;letter-spacing:.06em;background:rgba(8,14,24,.6);color:#E9EEF3;padding:4px 10px;border-radius:999px;backdrop-filter:blur(6px)}
+.intro{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center}
+.intro h2{font-size:clamp(28px,3.4vw,42px);letter-spacing:-.03em;margin-top:10px}
+.intro p{color:var(--mute);margin-top:14px;font-size:17.5px;max-width:52ch}
+@media (max-width:980px){.intro{grid-template-columns:1fr}}
+
+.mosaic{display:grid;grid-template-columns:1.4fr 1fr 1fr;grid-template-rows:220px 220px;gap:14px;margin-bottom:28px}
+.mosaic figure{margin:0;position:relative;border-radius:18px;overflow:hidden;background:var(--grey-soft)}
+.mosaic figure:first-child{grid-row:span 2}
+.mosaic figure:last-child{grid-column:span 2}
+.mosaic img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.mosaic figure:hover img{transform:scale(1.05)}
+.mosaic figcaption{position:absolute;left:0;right:0;bottom:0;padding:34px 16px 12px;background:linear-gradient(0deg,rgba(8,14,24,.82),transparent);color:#fff;font-size:14.5px;font-weight:600}
+.mosaic figcaption small{display:block;font-weight:400;color:#C9D1DB;font-size:12.5px}
+.credits{font-size:12px;color:var(--mute);margin-top:14px;line-height:1.6}
+.credits a{color:var(--mute)}
+@media (max-width:820px){.mosaic{grid-template-columns:1fr 1fr;grid-template-rows:200px 160px 160px}.mosaic figure:first-child{grid-column:span 2;grid-row:auto}.mosaic figure:last-child{grid-column:span 2}}
+
+.herox .hv{inset:0 0 auto auto;width:min(66%,1000px);height:auto;aspect-ratio:872/478;object-position:50% 30%;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 25%),linear-gradient(180deg,#000 72%,transparent 100%);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent 0,#000 25%),linear-gradient(180deg,#000 72%,transparent 100%);mask-composite:intersect}
+.herox::after{background:linear-gradient(90deg,rgba(8,14,24,.9) 0%,rgba(8,14,24,.72) 40%,rgba(8,14,24,.05) 62%,rgba(8,14,24,0) 100%),linear-gradient(0deg,rgba(8,14,24,.65),transparent 35%)!important}
+.herox .hero{grid-template-columns:1.1fr .9fr;min-height:min(78vh,720px)}
+.herox .sun{display:none}
+.hctl{align-self:end;justify-self:end;display:flex;gap:10px;align-items:center}
+.aitag{font-size:12px;font-weight:600;letter-spacing:.06em;background:rgba(8,14,24,.55);color:#E9EEF3;padding:6px 12px;border-radius:999px;backdrop-filter:blur(6px)}
+.sndbtn{background:rgba(255,255,255,.92);color:#0F1B2D}
+.hkpi{margin-top:26px;max-width:560px}
+.kgrid.hk{grid-template-columns:repeat(4,1fr);gap:14px;margin-top:0;padding-top:18px;border-top:1px solid rgba(255,255,255,.18)}
+.kgrid.hk .k b{font-size:28px}
+.kgrid.hk .k span{font-size:12.5px;color:#AEB6C2}
+@media (prefers-reduced-motion:reduce){.herox .hv{display:block}}
+nav.main a{white-space:nowrap}
+@media (max-width:980px){.herox .hv{inset:0 0 auto 0;width:100%;aspect-ratio:auto;height:min(58vw,420px);object-position:50% 25%;-webkit-mask-image:linear-gradient(0deg,transparent 0,#000 30%);mask-image:linear-gradient(0deg,transparent 0,#000 30%)}.herox::after{background:linear-gradient(0deg,rgba(8,14,24,1) 0%,rgba(8,14,24,.85) 50%,rgba(8,14,24,0) 75%)!important}.herox .hero{grid-template-columns:1fr;padding-top:min(52vw,380px);min-height:0}.hctl{justify-self:start}.kgrid.hk{grid-template-columns:1fr 1fr}}
+
+.vbar{position:absolute;right:24px;top:24px;z-index:3;display:flex;gap:8px;align-items:center;background:rgba(8,14,24,.55);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.18);padding:6px;border-radius:999px}
+.vbar button{border:0;cursor:pointer;height:40px;min-width:40px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:600;font-size:15px;padding:0 12px;display:inline-flex;align-items:center;gap:8px}
+.vbar button:hover{background:rgba(255,255,255,.26)}
+.vbar .snd{background:#fff;color:#0F1B2D;animation:nudge 2.4s ease-in-out 1.5s 3}
+.vbar .snd[aria-pressed="true"]{background:#E6B866;animation:none}
+@keyframes nudge{0%,100%{transform:none}50%{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.vbar .snd{animation:none}}
+@media (max-width:620px){.vbar .aitag{display:none}.vbar button{height:36px;min-width:36px;font-size:14px}}
+
+/* ===== light Scandinavian overrides ===== */
+.herox{background:linear-gradient(180deg,#FAFAF8 0%,#F1F0EA 100%);color:var(--ink)}
+.herox .bg{display:none}
+.herox::after{background:linear-gradient(90deg,#FAFAF8 0%,rgba(250,250,248,.96) 36%,rgba(250,250,248,0) 60%)!important}
+.herox .eyebrow{color:var(--gold)}
+.herox .lede{color:var(--mute)}
+.herox .btn-dark{background:var(--ink);color:#FAFAF8}
+.herox .btn-line{background:#fff;border-color:var(--line);color:var(--ink)}
+.kgrid.hk{border-top:1px solid var(--line)}
+.kgrid.hk .k b{color:var(--ink)}
+.kgrid.hk .k span{color:var(--mute)}
+.herox .hv{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30%),linear-gradient(180deg,#000 70%,transparent 100%)!important;mask-image:linear-gradient(90deg,transparent 0,#000 30%),linear-gradient(180deg,#000 70%,transparent 100%)!important}
+.vbar{background:rgba(255,255,255,.78);border-color:var(--line);box-shadow:0 8px 24px rgba(15,27,45,.12)}
+.vbar button{background:var(--grey-soft);color:var(--ink)}
+.vbar button:hover{background:#E1E4E8}
+.vbar .snd{background:var(--ink);color:#fff}
+.vbar .snd[aria-pressed="true"]{background:var(--gold);color:#fff}
+.aitag{background:#fff;color:var(--mute);border:1px solid var(--line);backdrop-filter:none}
+.map{background:#F4F3EE}
+.map .cap{color:var(--ink)}
+.map .cap p{color:var(--mute)}
+.contact{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.contact p,.clist small,.cform label,.priv{color:var(--mute)!important}
+.cform input,.cform select,.cform textarea{background:var(--paper);border:1px solid var(--line);color:var(--ink)}
+.band::after{background:linear-gradient(0deg,rgba(15,27,45,.72),rgba(15,27,45,.05) 70%)}
+.demo{background:#F4EAD7}
+@media (max-width:980px){.herox::after{background:linear-gradient(0deg,#FAFAF8 0%,rgba(250,250,248,.97) 52%,rgba(250,250,248,0) 76%)!important}.herox .hv{-webkit-mask-image:linear-gradient(180deg,#000 60%,transparent 100%)!important;mask-image:linear-gradient(180deg,#000 60%,transparent 100%)!important}}
+
+
+
+/* ===== pathways ===== */
+.paths{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.pbtn{all:unset;box-sizing:border-box;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px 24px 22px;display:flex;flex-direction:column;gap:8px;transition:border-color .25s,box-shadow .25s,transform .25s;position:relative}
+.pbtn:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.pbtn[aria-selected="true"]{border-color:var(--ink);box-shadow:var(--shadow)}
+.pbtn[aria-selected="true"]::after{content:"";position:absolute;left:24px;right:24px;bottom:-1px;height:3px;background:var(--gold);border-radius:3px}
+.pbtn:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.pbtn small{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.pbtn b{font-size:24px;letter-spacing:-.02em}
+.pbtn span{color:var(--mute);font-size:15.5px}
+.ppanel{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:30px;animation:fadeup .45s cubic-bezier(.2,.7,.2,1)}
+@keyframes fadeup{from{opacity:.001;transform:translateY(10px)}}
+.ptop{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start}
+.ptop h3{font-size:26px;letter-spacing:-.02em}
+.ptop p{color:var(--mute);margin-top:8px;max-width:62ch}
+.pains{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.pains span{font-size:13.5px;background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:4px 12px}
+.pkgs{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px}
+.pkg{border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:8px;background:var(--paper)}
+.pkg.hot{border-color:var(--gold);background:#FFFDF8}
+.pkg .lbl{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--gold)}
+.pkg h4{margin:0;font-size:18px;letter-spacing:-.01em}
+.pkg p{color:var(--mute);font-size:14.5px;margin:0}
+.pkg .pr{font-weight:700;font-size:18px;margin-top:auto;padding-top:6px;font-variant-numeric:tabular-nums}
+.pkg .pr small{display:block;font-weight:500;font-size:12.5px;color:var(--mute)}
+.pkg a{font-size:14.5px;font-weight:600;text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.pkg a:hover{color:var(--gold)}
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:26px;border-top:1px solid var(--line);padding-top:18px}
+.flow div{padding-right:18px;font-size:14.5px;color:var(--mute)}
+.flow b{display:block;color:var(--ink);font-size:15px;margin-bottom:2px}
+/* tools */
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.tool{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:28px}
+.tool h3{font-size:22px}
+.tool>p{color:var(--mute);margin-top:6px}
+.q{margin-top:16px;display:grid;gap:12px}
+.q fieldset{border:0;padding:0;margin:0}
+.q legend{font-size:15px;font-weight:600;margin-bottom:6px}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opts label{cursor:pointer}
+.opts input{position:absolute;opacity:0;pointer-events:none}
+.opts span{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-size:14px;background:var(--paper);transition:background .2s,border-color .2s}
+.opts input:checked+span{background:var(--ink);color:#fff;border-color:var(--ink)}
+.opts input:focus-visible+span{outline:3px solid var(--gold);outline-offset:2px}
+.result{margin-top:16px;border-radius:14px;padding:16px 18px;background:var(--sunk);border:1px solid var(--line)}
+.result h4{margin:0 0 6px;font-size:17px}
+.result .st{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:3px 10px;margin-bottom:8px}
+.st.g{background:var(--green-soft);color:var(--green)}.st.a{background:var(--amber-soft);color:var(--amber)}.st.r{background:#F7E1DD;color:#A8321F}
+.glist{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.glist li{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--paper);font-size:14.5px}
+.glist b{display:block;font-size:15px}
+.glist small{color:var(--mute)}
+/* membership */
+.tiers{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.tier{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.tier.hot{border:2px solid var(--gold)}
+.tier h3{font-size:20px}
+.tier .price{font-size:30px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tier .price small{display:block;margin-top:4px;font-size:14px;font-weight:500;color:var(--mute);letter-spacing:0}
+.tier ul{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:14.5px;color:var(--mute)}
+.tier li::before{content:"✓ ";color:var(--green);font-weight:700}
+.tier .btn{margin-top:auto;justify-content:center}
+.entity{font-size:13px;color:var(--mute);margin-top:6px}
+@media (max-width:980px){.paths,.tiers{grid-template-columns:1fr 1fr}.pkgs{grid-template-columns:1fr 1fr}.tools{grid-template-columns:1fr}.flow{grid-template-columns:1fr 1fr;row-gap:12px}.ptop{grid-template-columns:1fr}}
+@media (max-width:620px){.paths,.tiers,.pkgs{grid-template-columns:1fr}}
+
+.joyfig{margin:0;border-radius:22px;overflow:hidden;border:1px solid var(--line);background:var(--sunk);position:relative}
+.joyfig img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;object-position:50% 20%}
+.joyfig figcaption{position:absolute;left:0;right:0;bottom:0;padding:30px 16px 12px;font-size:13.5px;color:#fff;background:linear-gradient(0deg,rgba(15,27,45,.75),transparent)}
+.joycard{display:flex;gap:16px;align-items:center;margin-bottom:26px}
+.joycard img{width:92px;height:92px;border-radius:50%;object-fit:cover;object-position:40% 18%;border:3px solid #fff;box-shadow:0 8px 24px rgba(15,27,45,.15)}
+.joycard b{display:block;font-size:18px;color:var(--ink)}
+.joycard span{font-size:14px;color:var(--mute)}
+
+.ttabs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.ttabs button{all:unset;box-sizing:border-box;cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:2px;transition:border-color .2s,box-shadow .2s}
+.ttabs button b{font-size:17px}
+.ttabs button span{font-size:13.5px;color:var(--mute)}
+.ttabs button[aria-selected="true"]{border-color:var(--ink);box-shadow:var(--shadow)}
+.ttabs button:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.q .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px 24px}
+.score{display:flex;align-items:center;gap:16px;margin-bottom:10px}
+.ring{--p:0;width:74px;height:74px;border-radius:50%;background:conic-gradient(var(--c,var(--green)) calc(var(--p)*1%),var(--grey-soft) 0);display:grid;place-items:center;flex:none}
+.ring b{width:58px;height:58px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-size:18px;font-variant-numeric:tabular-nums}
+.todo{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.todo li{display:grid;grid-template-columns:28px 1fr;gap:10px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--paper);font-size:14.5px}
+.todo li i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700}
+.todo li.ok i{background:var(--green-soft);color:var(--green)}
+.todo li.do i{background:#F7E1DD;color:#A8321F}
+.todo li.chk i{background:var(--amber-soft);color:var(--amber)}
+.todo b{display:block;font-size:15px}
+.todo small{color:var(--mute);display:block;margin-top:2px}
+.todo em{font-style:normal;font-size:13px;color:var(--gold);font-weight:600;display:block;margin-top:4px}
+.tag2{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;background:var(--amber-soft);color:var(--amber);border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:1px}
+@media (max-width:820px){.ttabs{grid-template-columns:1fr}.q .row2{grid-template-columns:1fr}}
+
+.watch{margin-top:22px;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:14px;padding:18px 20px;background:#FFFDF8}
+.watch h4{margin:0 0 8px;font-size:17px}
+.watch ul{margin:0;padding-left:18px;display:grid;gap:5px;font-size:14.5px;color:var(--mute)}
+.watch ul b{color:var(--ink)}
+.chan{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.chan span{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:3px 11px;background:var(--surface)}
+
+#mining{background:linear-gradient(180deg,#FBF7EE,#fff);position:relative;overflow:hidden}
+#mining:before{content:"";position:absolute;inset:0;opacity:.35;pointer-events:none;background:repeating-radial-gradient(circle at 85% 20%,transparent 0 22px,rgba(169,118,31,.18) 23px 24px)}
+#mining .wrap{position:relative}
+.mstats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:0 0 28px}
+.mstats div{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.mstats b{display:block;font-size:26px;color:var(--ink)}.mstats span{font-size:13.5px;color:var(--mute)}
+.mtools{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.mtool{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.mtool .tg{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mtool h3{margin:0;font-size:24px;letter-spacing:-.01em}.mtool h3 small{display:block;font-size:13px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:4px}
+.mtool .st{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--mute);white-space:nowrap}
+.mtool ul{margin:0;padding-left:18px;color:var(--mute);font-size:14.5px;display:grid;gap:4px}
+.mtool p{margin:0;color:var(--mute)}
+.mcta{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px;align-items:center}
+.mcta .entity{font-size:13px;color:var(--mute);max-width:520px}
+.partner{margin-top:18px;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:14px;padding:14px 18px;background:#FFFDF8;font-size:14.5px;color:var(--mute)}
+.partner b{color:var(--ink)}
+.navreg{background:var(--ink);color:#fff!important;border-radius:999px;padding:6px 16px!important}
+.navlog{border:1px solid var(--line);border-radius:999px;padding:5px 14px!important;font-size:14px}
+.navlog:hover{border-color:var(--ink)}
+.brand small{display:block;font-size:10.5px;font-weight:500;color:var(--mute);letter-spacing:.04em;margin-top:-2px}
+@media(max-width:860px){.mtools{grid-template-columns:1fr}.mstats{grid-template-columns:1fr}}
+
+.proof{margin:0 0 40px}
+.proof .pg{display:block}
+.shots{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.shots i{display:block;aspect-ratio:16/9;background-size:cover;background-position:center;border-radius:18px;background-color:var(--sunk)}
+@media(max-width:620px){.shots{grid-template-columns:1fr}}
+.proof video{width:100%;display:block;border-radius:18px;background:#000;aspect-ratio:16/9;object-fit:cover}
+.proof .stack{display:flex;flex-direction:column;gap:16px}
+.proof .stack img{width:100%;height:auto;display:block;border-radius:18px;background:var(--sunk)}
+.proof .cap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--mute);font-size:14px;margin-top:12px}
+.proof .cap b{color:var(--ink)}
+.vwrap{position:relative;border-radius:18px;overflow:hidden}
+
+.vwrap .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.92);border:0;border-radius:999px;padding:9px 16px;font-weight:600;font-size:14px;cursor:pointer}
+@media(max-width:820px){.proof .pg{grid-template-columns:1fr}.proof .stack{grid-template-rows:auto auto}}
+
+#platform{background:linear-gradient(180deg,#fff,var(--paper))}
+.loop{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px;counter-reset:l}
+.loop article{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;position:relative}
+.loop article b{display:block;font-size:17px;margin:8px 0 6px}
+.loop article p{color:var(--mute);font-size:14.5px}
+.loop article i{font-style:normal;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--gold-soft);color:var(--gold);font-weight:700;font-size:13px}
+.loop article a{display:inline-block;margin-top:12px;font-size:14px;font-weight:600;color:var(--ink);text-decoration:none;border-bottom:2px solid var(--gold-soft);padding-bottom:2px}
+.brief{margin-top:30px;background:var(--ink);color:#F4F5F2;border-radius:22px;padding:28px;display:grid;grid-template-columns:1.1fr 1fr;gap:26px;align-items:center}
+.brief h3{font-size:24px}.brief p{color:#AEB6C2;font-size:15px;margin-top:8px}
+.brief form{display:grid;gap:10px}
+.brief input,.brief select{width:100%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;border-radius:12px;padding:11px 13px;outline:none}
+.brief input::placeholder{color:#93A0B2}
+.brief select option{color:#0F1B2D}
+.brief .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.brief button{border:0;border-radius:999px;padding:13px 20px;font-weight:600;background:var(--gold);color:#fff;cursor:pointer;font-size:15.5px}
+.brief small{color:#93A0B2;font-size:12.5px}
+.brief .ok{background:rgba(31,107,78,.25);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px 14px;font-size:14.5px}
+@media(max-width:900px){.loop{grid-template-columns:1fr 1fr}.brief{grid-template-columns:1fr;padding:22px}}
+@media(max-width:560px){.loop{grid-template-columns:1fr}.brief .row{grid-template-columns:1fr}}
+
+/* partners and sponsorship */
+.phead{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:end;margin-bottom:34px}
+.phead h2{font-size:clamp(28px,3.4vw,44px);letter-spacing:-.03em}
+.phead p{color:var(--mute);font-size:17px;max-width:52ch}
+.sptier{margin:26px 0 8px}
+.sptier h4{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;font-weight:600}
+.splogos{display:flex;flex-wrap:wrap;gap:14px;align-items:stretch}
+.splogo{display:flex;flex-direction:column;gap:8px;align-items:center;justify-content:center;text-align:center;
+ background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;text-decoration:none;color:inherit;
+ transition:border-color .2s,box-shadow .2s;min-width:0}
+.splogo:hover{border-color:var(--ink);box-shadow:var(--shadow)}
+.splogo img{display:block;object-fit:contain}
+.splogo.t-headline{flex:1 1 300px;max-width:440px;padding:26px 28px}.splogo.t-headline img{max-height:76px;max-width:240px}
+.splogo.t-partner{flex:1 1 200px;max-width:300px}.splogo.t-partner img{max-height:52px;max-width:170px}
+.splogo.t-supporting,.splogo.t-listing{flex:0 1 150px}
+.splogo.t-supporting img,.splogo.t-listing img{max-height:40px;max-width:130px}
+.splogo b{font-size:15px;font-weight:600}
+.splogo span{font-size:12.5px;color:var(--mute);line-height:1.45}
+.sponsorcta{display:grid;grid-template-columns:1.15fr .85fr;gap:0;margin-top:46px;border-radius:24px;overflow:hidden;background:var(--ink);color:#fff}
+.sc-copy{padding:44px 44px 40px}
+.sc-copy h3{font-size:clamp(24px,2.8vw,34px);letter-spacing:-.025em;margin:6px 0 14px}
+.sc-copy>p{color:rgba(255,255,255,.72);font-size:16.5px;max-width:48ch}
+.sctiers{display:grid;gap:10px;margin-top:26px}
+.sctiers>div{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:baseline;padding:12px 0;border-top:1px solid rgba(255,255,255,.14)}
+.sctiers b{font-size:14.5px}
+.sctiers span{color:rgba(255,255,255,.66);font-size:14.5px;line-height:1.55}
+@media(max-width:560px){.sctiers>div{grid-template-columns:1fr;gap:3px}}
+.sc-form{background:var(--surface);color:var(--ink);padding:36px 34px;display:flex;flex-direction:column;gap:11px;min-width:0}
+.sc-form h4{font-size:19px;margin-bottom:4px}
+.sc-form label{display:block;font-size:13px;font-weight:600;color:var(--mute);min-width:0}
+.sc-form input,.sc-form select,.sc-form textarea{width:100%;margin-top:5px;border:1px solid var(--line);border-radius:10px;
+ padding:10px 12px;font:inherit;font-weight:400;color:var(--ink);background:#fff;outline:none;min-width:0}
+.sc-form input:focus,.sc-form select:focus,.sc-form textarea:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(15,27,45,.07)}
+.sc-form textarea{resize:vertical}
+.sc-form button{margin-top:6px;justify-content:center}
+.scnote{font-size:12.5px;color:var(--mute);margin:0}
+@media(max-width:900px){.phead,.sponsorcta{grid-template-columns:1fr;gap:24px}.sc-copy{padding:32px 26px 28px}.sc-form{padding:28px 26px}}
+</style>
+
+<div class="demo">Design demo · payments are handled by mobile money transfer and confirmed on WhatsApp</div>
+<header id="hdr"><div class="wrap bar">
+  <a class="brand" href="#top"><span class="mark">G</span><span>Gotham Consult<small>in partnership with Carlson Capital Ltd</small></span></a>
+  <nav class="main" aria-label="Main">
+    <a href="#platform">How it works</a><a href="#start">Start here</a><a href="#ghana">Invest in Ghana</a><a href="#mining">Mining</a><a href="#tools">Free tools</a><a href="#forums">Forums</a><a href="#join">Membership</a><a href="#partners">Partners</a><a href="#contact">Contact</a><a class="navlog" href="https://gotham.84-12-73-59.sslip.io" target="_blank" rel="noopener" title="Staff and admin sign-in">Login</a><a class="navreg" href="register.html">Register</a>
+  </nav>
+</div></header>
+
+<main id="top">
+<div class="herox"><div class="bg" role="img" aria-label="Accra skyline at golden hour"></div><video class="hv" id="hv" playsinline preload="none" poster="img/presenter.webp"><source src="img/presenter.mp4" type="video/mp4"><source src="img/presenter.webm" type="video/webm"></video><div class="vbar" id="vbar" role="group" aria-label="Presenter video controls">
+  <span class="aitag">AI presenter</span>
+  <button type="button" id="vPlay" aria-label="Pause video">❚❚</button>
+  <button type="button" id="vRe" aria-label="Restart from the beginning">↺</button>
+  <button type="button" id="vSnd" class="snd" aria-pressed="false"><span id="vIco" aria-hidden="true">🔇</span><span id="vLbl">Tap for sound</span></button>
+</div><div class="sun" aria-hidden="true"></div>
+<div class="wrap hero">
+  <div>
+    <p class="eyebrow rise">Business development · International projects · Accra</p>
+    <h1 class="rise d1">Where local potential meets <em class="serif">global capital.</em></h1>
+    <p class="lede rise d2">We take businesses from idea to investment-ready to globally visible. Advisory, technology and the right introductions for companies in Ghana and the investors who want to back them.</p>
+    <div class="hkpi rise d3"><div class="kgrid hk">
+      <div class="k"><b class="num" data-count="6.2" data-dec="1" data-suf="%">6.2%</b><span>GDP growth, first half 2026</span></div>
+      <div class="k"><b class="num" data-count="5.0" data-dec="1" data-suf="%">5.0%</b><span>Inflation, August 2026</span></div>
+      <div class="k"><b class="num" data-count="31.1" data-dec="1" data-pre="$" data-suf="bn">$31.1bn</b><span>Exports, 2025 (record)</span></div>
+      <div class="k"><b class="num" data-count="30.9" data-dec="1" data-suf="%">30.9%</b><span>ICT sector growth, Q2 2026</span></div>
+    </div>
+    </div>
+    <div class="ctas rise d3">
+      <a class="btn btn-dark" href="#services">Explore our services <span class="arrow">→</span></a>
+      <a class="btn btn-line" href="#ghana">Ghana in numbers</a>
+    </div>
+  </div>
+  
+</div></div>
+<div class="kente" aria-hidden="true"></div>
+
+<div class="ticker" aria-label="Sector growth, Q2 2026"><div class="track" id="ticker"></div></div>
+
+
+<!-- START HERE -->
+<section id="platform"><div class="wrap">
+  <div class="shead">
+    <div><p class="eyebrow">How it works</p><h2>Not a consultancy you phone once. <em class="serif">A place you keep coming back to.</em></h2></div>
+    <p>Free tools tell you where you stand. The brief keeps you current. The forums put you in the room. We only charge when you want us to do the work.</p>
+  </div>
+  <div class="loop reveal">
+    <article><i>1</i><b>Check where you stand</b><p>Three free tools: a business health check, a funding finder and a VAT check. Nothing to sign up for, and your answers stay on your phone.</p><a href="#tools">Open the free tools →</a></article>
+    <article><i>2</i><b>Stay current</b><p>The Ghana Business Brief: what changed in the rules, what money is available, and which rooms are worth being in. Free, weekly.</p><a href="#brief">Get the brief →</a></article>
+    <article><i>3</i><b>Get in the room</b><p>Forums and roundtables where SMEs, investors and institutions sit together. Some open, some by invitation.</p><a href="#forums">See the forums →</a></article>
+    <article><i>4</i><b>Have it done</b><p>When you are ready: registration, due diligence, market entry, mining, compliance, education and family support. Fixed scope, fixed fee.</p><a href="#start">See what we do →</a></article>
+  </div>
+
+  <div class="brief reveal" id="brief">
+    <div>
+      <p class="eyebrow" style="color:#E6B866">Ghana Business Brief</p>
+      <h3>Free, weekly, and written for people who run things.</h3>
+      <p>One short email: the rule that changed this week, the grant or facility now open, and the next room worth being in. No sales pitch, unsubscribe any time.</p>
+    </div>
+    <form id="briefF" novalidate>
+      <div class="row"><input id="b-name" placeholder="Your name" autocomplete="name" required><input id="b-co" placeholder="Company" autocomplete="organization" required></div>
+      <div class="row"><input id="b-em" type="email" placeholder="Email" autocomplete="email" required><input id="b-ph" placeholder="WhatsApp number" inputmode="tel" autocomplete="tel" required></div>
+      <select id="b-sec"></select>
+      <button type="submit">Send me the brief</button>
+      <small id="b-note">By subscribing you agree to our <a href="https://gotham-consult-gh.netlify.app/privacy.html" target="_blank" rel="noopener" style="color:#C6CEDA">privacy notice</a>. We never sell your details.</small>
+    </form>
+  </div>
+</div></section>
+
+<section id="start" style="padding-bottom:40px"><div class="wrap">
+  <div class="shead">
+    <div><p class="eyebrow">Start here</p><h2>Who are you, <em class="serif">and what do you need?</em></h2></div>
+    <p>Pick your path. You'll see what we solve, fixed prices you can pay with mobile money, and the first step, which is always free.</p>
+  </div>
+  <div class="paths" role="tablist" aria-label="Choose your path">
+    <button class="pbtn" role="tab" id="t-biz" aria-selected="true" aria-controls="ppanel" data-path="biz"><small>For business owners</small><b>Grow &amp; get funded</b><span>Grants, tax &amp; E-VAT, exports, tenders, digital</span></button>
+    <button class="pbtn" role="tab" id="t-inv" aria-selected="false" aria-controls="ppanel" data-path="inv"><small>For investors</small><b>Invest in Ghana safely</b><span>Briefings, company setup, due diligence, local desk</span></button>
+    <button class="pbtn" role="tab" id="t-min" aria-selected="false" aria-controls="ppanel" data-path="min"><small>For mining investors</small><b>Mining &amp; minerals</b><span>Concession checks, licensing, JVs, mine power</span></button>
+    <button class="pbtn" role="tab" id="t-ind" aria-selected="false" aria-controls="ppanel" data-path="ind"><small>For individuals &amp; diaspora</small><b>Start or invest from abroad</b><span>Register a business, verify deals, monitor projects</span></button>
+  </div>
+  <div class="ppanel" id="ppanel" role="tabpanel" aria-live="polite"></div>
+</div></section>
+
+<!-- TOOLS -->
+<section id="tools" style="padding-top:40px"><div class="wrap">
+  <div class="shead">
+    <div><p class="eyebrow">Free tools · for every business in Ghana</p><h2>From chop bar to factory, <em class="serif">know where you stand.</em></h2></div>
+    <p>No sign-up, no cost. Traders, farmers, salons, churches, start-ups and companies: answer a few taps and get your own to-do list. Send it to us on WhatsApp if you want help.</p>
+  </div>
+  <div class="ttabs" role="tablist" aria-label="Free tools">
+    <button role="tab" aria-selected="true" data-tool="hc" id="tt-hc"><b>Business health check</b><span>Registrations, permits, tax, staff</span></button>
+    <button role="tab" aria-selected="false" data-tool="ff" id="tt-ff"><b>Funding finder</b><span>Loans, grants and programmes</span></button>
+    <button role="tab" aria-selected="false" data-tool="vt" id="tt-vt"><b>VAT &amp; E-VAT check</b><span>New 2026 VAT rules</span></button>
+  </div>
+  <div class="tool" id="tool-hc" role="tabpanel" aria-labelledby="tt-hc"><form class="q" id="hcq"></form><div class="result" id="hcr" hidden></div></div>
+  <div class="tool" id="tool-ff" role="tabpanel" aria-labelledby="tt-ff" hidden><form class="q" id="grq"></form><div class="result" id="grr" hidden></div></div>
+  <div class="tool" id="tool-vt" role="tabpanel" aria-labelledby="tt-vt" hidden><form class="q" id="vatq"></form><div class="result" id="vatr" hidden></div></div>
+  <p class="entity">Prices exclude government and regulator fees, and exclude VAT where it applies; VAT is shown on the invoice. General guidance only, based on public rules current at 24 September 2026, and not legal, tax or investment advice. Your answers stay in your own browser and are not sent to us unless you choose to send them. Always confirm with the agency concerned, such as the GRA, the Registrar of Companies or GIPA; we check the details for you before you act.</p>
+</div></section>
+
+<!-- SERVICES -->
+<section id="services"><div class="wrap">
+  <div class="shead">
+    <div><p class="eyebrow">All practices</p><h2>Ten practices, <em class="serif">one partner.</em></h2></div>
+    <p>From your first business plan to your first investor, and the systems that keep you growing. Every engagement is led by senior consultants with hands-on experience across Africa and Europe.</p>
+  </div>
+  <div class="reveal svc" id="svc"></div>
+
+  <div class="steps" id="steps">
+    <div class="st"><b>Step 1</b><h3>Formalize</h3><p>Registration, GIPA Act 1173 compliance, a clear business plan.</p></div>
+    <div class="st"><b>Step 2</b><h3>Digitize</h3><p>Website, payments, AI workflows and reporting that investors can trust.</p></div>
+    <div class="st"><b>Step 3</b><h3>Prepare</h3><p>Financial model, credit profile, data room and a pitch that holds up.</p></div>
+    <div class="st"><b>Step 4</b><h3>Connect</h3><p>Investor roundtables, trade missions and introductions in Ghana and abroad.</p></div>
+  </div>
+</div></section>
+
+<!-- MINING -->
+<section id="mining"><div class="wrap">
+  <div class="shead">
+    <div><p class="eyebrow">Mining &amp; critical minerals</p><h2>Geology first. Our own technology. <em class="serif">Every step on the record.</em></h2></div>
+    <p>Gotham Consult and its partner Carlson Capital Ltd support mining investors from first screening to production. Field geology, our in-house digital platforms and formal licensing work sit in one team, so you get evidence you can check before you commit capital.</p>
+  </div>
+  <div class="reveal mstats">
+    <div><b>$20.0bn</b><span>Ghana gold exports, 2025: Africa's largest producer</span></div>
+    <div><b>2026</b><span>First lithium mining lease ratified, March 2026</span></div>
+    <div><b>3–4 weeks</b><span>From mandate to a written concession screening report</span></div>
+  </div>
+  <div class="reveal mtools">
+    <article class="mtool">
+      <div class="tg"><h3><small>Field intelligence</small>TERRA</h3><span class="st">Pilot phase 2026</span></div>
+      <p>Our voice-first Android app for geological field work. Field teams capture readings by speaking, even offline, and every observation is checked on the spot.</p>
+      <ul><li>GPS position with a stated accuracy tier, calibrated photos and a timestamp on every reading</li>
+      <li>Sensor kits from village-scale to geologist-grade, linked by USB-C or Bluetooth</li>
+      <li>Review queue and audit trail, so each data point can be traced</li>
+      <li>Supports JORC Table 1 evidence capture; a Competent Person still signs off</li></ul>
+    </article>
+    <article class="mtool">
+      <div class="tg"><h3><small>Geospatial platform</small>Afri-MINEX</h3><span class="st">Built · 134 automated tests</span></div>
+      <p>Our secure web platform that maps concessions, licence boundaries and field data in one place, so investors, partners and reviewers look at the same record.</p>
+      <ul><li>Concession and licence overlays with site data from TERRA</li>
+      <li>Multi-factor sign-in and cryptographically signed documents</li>
+      <li>Structured logs of who viewed or changed what, and when</li>
+      <li>Provenance records for buyers and responsible-sourcing checks</li></ul>
+    </article>
+  </div>
+  <div class="mcta">
+    <a class="btn btn-dark" href="#start" id="goMin">See mining packages →</a>
+    <a class="btn btn-wa" id="waMin" target="_blank" rel="noopener">WhatsApp Uffe Carlson</a>
+    <a class="btn btn-line" href="tel:+233552395548">Call +233 55 239 5548</a>
+    <p class="entity">We work with the Minerals Commission, EPA, GoldBod and other agencies through their formal processes. We charge for preparation and delivery, never for access or approvals.</p>
+  </div>
+</div></section>
+
+<!-- ECONOMY -->
+<div class="kente thin" aria-hidden="true"></div>
+<section id="ghana" class="econ"><div class="wrap">
+  <div class="shead">
+    <div><p class="eyebrow">Invest in Ghana</p><h2>Today's Ghana, <em class="serif">in numbers.</em></h2></div>
+    <p>After the 2022–23 debt crisis, Ghana is growing again: inflation at a multi-year low, record exports and investment flows rising. Here is the picture for investors, as of September 2026.</p>
+  </div>
+  <div class="mosaic reveal"><figure><img src="img/real-bog.webp" alt="Bank of Ghana, High Street, Accra · the central bank" loading="lazy"><figcaption>Bank of Ghana<small>High Street, Accra · the central bank</small></figcaption></figure><figure><img src="img/real-airportcity.webp" alt="Airport City, Accra's business and finance district" loading="lazy"><figcaption>Airport City<small>Accra's business and finance district</small></figcaption></figure><figure><img src="img/real-blackstar.webp" alt="Black Star Gate, Independence Square, Accra" loading="lazy"><figcaption>Black Star Gate<small>Independence Square, Accra</small></figcaption></figure><figure><img src="img/real-tema.webp" alt="Tema Port, Ghana's main container gateway" loading="lazy"><figcaption>Tema Port<small>Ghana's main container gateway</small></figcaption></figure></div>
+  <div class="reveal why">
+    <div><b>GMT all year</b><span>Same time as London, one hour from Berlin and Copenhagen</span></div>
+    <div><b>English-speaking</b><span>Common-law system, a stable democracy since 1992</span></div>
+    <div><b>AfCFTA HQ</b><span>Accra hosts the secretariat of Africa's single market</span></div>
+    <div><b>Act 1173</b><span>GIPA Act 2026: no general minimum capital, except trading (USD 500,000)</span></div>
+  </div>
+  <div class="map reveal"><canvas id="routes" width="1200" height="560" aria-label="Map of trade corridors from Accra to Europe, the Americas, Asia and Africa"></canvas>
+    <div class="cap"><p class="eyebrow">Corridors</p><h3>Accra, connected</h3><p>Direct links to Europe's financial centres, the Gulf, Asia and a continental market of 1.3 billion people.</p></div></div>
+  <div style="height:24px"></div>
+  <div class="reveal stats" id="econStats">
+    <div class="stat"><b class="num" data-count="6.2" data-dec="1" data-suf="%">6.2%</b><span>GDP growth, H1 2026</span><small>Q2 2026: 6.0% · GSS</small></div>
+    <div class="stat"><b class="num" data-count="5.0" data-dec="1" data-suf="%">5.0%</b><span>Inflation, Aug 2026</span><small>Bank of Ghana rate: 14% · BoG</small></div>
+    <div class="stat"><b class="num" data-count="13.6" data-dec="1" data-pre="$" data-suf="bn">$13.6bn</b><span>Trade surplus, 2025</span><small>Reserves: $13.8bn end-2025</small></div>
+    <div class="stat"><b class="num" data-count="2.6" data-dec="1" data-pre="$" data-suf="bn">$2.6bn</b><span>New FDI registered, 2025</span><small>245 projects · $11.5bn pipeline · GIPC</small></div>
+  </div>
+
+  <div class="reveal charts">
+    <div class="panel">
+      <h3>Where the growth is</h3><p class="sub">Year-on-year growth by sector, Q2 2026</p>
+      <div class="bars" id="bars"></div>
+    </div>
+    <div class="panel">
+      <h3>What Ghana sells</h3><p class="sub">Exports 2025: $31.1bn, up from $19.1bn in 2024</p>
+      <div class="stack" id="stack" aria-hidden="true"></div>
+      <div class="legend" id="legend"></div>
+      <h3 style="margin-top:30px">Investment is returning</h3><p class="sub">New FDI registered with GIPC</p>
+      <div class="fdi" id="fdi">
+        <div class="fcol"><b>$0.65bn</b><div style="height:25%"></div><small>2024</small></div>
+        <div class="fcol"><b>$2.6bn</b><div class="hi" style="height:100%"></div><small>2025</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:72px">
+    <p class="eyebrow">Sector outlook</p>
+    <h2 style="font-size:clamp(28px,3.4vw,42px);letter-spacing:-.03em;margin:10px 0 22px">Where to look next, <em class="serif">from where you are.</em></h2>
+    <div class="lens" role="group" aria-label="Investor origin">
+      <button aria-pressed="true" data-lens="global">Global</button>
+      <button aria-pressed="false" data-lens="de">Germany</button>
+      <button aria-pressed="false" data-lens="dk">Denmark &amp; Nordics</button>
+      <button aria-pressed="false" data-lens="uk">United Kingdom</button>
+    </div>
+    <div class="lensnote" id="lensnote" aria-live="polite"></div>
+    <div class="sectors" id="sectors"></div>
+    <p class="disclaim">Outlook ratings are Gotham Consult's view for discussion, not investment advice. Figures: Ghana Statistical Service (Q2 2026 GDP, Aug 2026 CPI), Bank of Ghana (July 2026 MPC, 2025 trade data), GIPC (2025 FDI report). Updated September 2026.</p>
+  </div>
+</div></section>
+
+<!-- FORUMS -->
+<section id="forums"><div class="wrap">
+  <div class="shead">
+    <div><p class="eyebrow">Forums &amp; seminars</p><h2>Meet the people <em class="serif">who move deals.</em></h2></div>
+    <p>Regular forums for SME owners, investors and partners. Register in a minute: we send the price and mobile money details to your WhatsApp, and confirm your seat as soon as payment arrives.</p>
+  </div>
+  <div class="proof">
+    <div class="pg">
+      <div class="vwrap"><video id="recap" playsinline preload="none" poster="img/recap.webp" controls muted preload="metadata"><source src="img/recap.mp4" type="video/mp4"></video>
+        <button class="play" id="recapBtn" type="button">▶ Watch the last Boot Camp</button></div>
+    </div>
+    <div class="shots" role="group" aria-label="Photos from the last Business Boot Camp">
+      <i style="background-image:url('img/boot2.webp')" role="img" aria-label="Speaker at the Gotham Consult Business Boot Camp in Accra"></i>
+      <i style="background-image:url('img/boot4.webp')" role="img" aria-label="Participant presenting at the Business Boot Camp"></i>
+    </div>
+    <div class="cap"><span><b>The Business Boot Camp, Accra.</b> Real footage from our own programme: founders, advisers and a full room.</span><span>Photos and video: Gotham Consult. If you appear here and would rather not, email us and we remove it.</span></div>
+  </div>
+  <div class="band reveal"><div class="bgi" role="img" aria-label="Business roundtable in Accra"></div><div><p class="eyebrow" style="color:#E6B866">Next forum · Saturday 24 October · Tang Palace Hotel</p><h3>SMEs at the Centre: inclusive partnerships under the GIPA Act</h3><p><b>By invitation.</b> Free for SMEs, stakeholders and investors. Government, investors and business owners in one room, and seats are limited.</p><div style="margin-top:16px"><a class="btn" style="background:#fff;color:#0F1B2D" href="register.html?e=F1">Request your invitation <span class="arrow">→</span></a> <a class="btn" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.5)" href="register.html">Company registration form</a></div></div></div>
+  <div class="reveal forums" id="forumList"></div>
+  <p class="past">Past forum: <b>Business Pitch Deck Round Table 2026</b> · Saturday 23 May 2026 · East Legon, Accra</p>
+</div></section>
+
+<!-- MEMBERSHIP -->
+<section id="join" style="padding-top:24px"><div class="wrap">
+  <div class="shead">
+    <div><p class="eyebrow">Membership</p><h2>Stay ahead, <em class="serif">every month.</em></h2></div>
+    <p>Most clients start free, join a forum, then move to a plan. Pay monthly with MTN MoMo, Telecel Cash or AirtelTigo Money. Cancel any time.</p>
+  </div>
+  <div class="tiers" id="tiers"></div>
+</div></section>
+
+<!-- ABOUT -->
+<section id="about" style="padding-top:24px"><div class="wrap about">
+  <figure class="joyfig"><img src="img/joy-gipc.webp" alt="Joy Anthony Preston at the Ghana Club 100 Awards, hosted by GIPC" loading="lazy"><figcaption>Joy Anthony Preston at the GIPC Ghana Club 100 Awards</figcaption></figure>
+  <div>
+    <p class="eyebrow">About Gotham Consult</p>
+    <h2>A bridge between business, government and <em class="serif">global partners.</em></h2>
+    <p>Gotham Consult is an Accra-based business development and international projects consultancy, founded in 2018. We facilitate investment between the private sector and governments across Ghana, Nigeria, the UK, the US and Europe, combining business advisory, technology and media.</p>
+    <p><b style="color:var(--ink)">Joy Anthony Preston</b>, MSc Strategic Leadership and Governance, leads the firm. She brings a decade of experience facilitating high-value partnerships, founded the Global Genius Foundation and convenes the Gotham Consult Business Seminar. She works with a team of senior consultants in finance, energy, mining and technology.</p>
+    <div class="partner"><b>Strategic partner: Carlson Capital Ltd.</b> Gotham Consult delivers mining, technology, fintech and investor services together with Carlson Capital Ltd, a company registered in Ghana. Carlson Capital brings field geology, in-house software platforms (TERRA, Afri-MINEX and Universal Credit Hub) and 25 years of project delivery across Africa and Europe.</div>
+    <div class="facts">
+      <div><b>2018</b><span>Founded in Accra</span></div>
+      <div><b>Boot Camp</b><span>Our flagship SME programme, run in Accra</span></div>
+      <div><b>5</b><span>Markets: GH, NG, UK, US, EU</span></div>
+    </div>
+    <div class="values">
+      <div><i>✓</i><span>We charge for preparation and delivery, never for access or government decisions.</span></div>
+      <div><i>✓</i><span>No SME left behind: inclusive programs for women, youth and persons with disabilities.</span></div>
+      <div><i>✓</i><span>Your data is handled under Ghana's Data Protection Act, 2012 (Act 843), and to GDPR standards for clients in the EU and UK.</span></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- CONTACT -->
+<section id="partners"><div class="wrap">
+  <p class="eyebrow">Partners</p>
+  <div class="phead">
+    <h2>The companies <em class="serif">behind the room.</em></h2>
+    <p>Our forums are made possible by Ghanaian and international businesses who want to be where decisions get made. Mining houses, hotels, banks, law firms and logistics operators sit alongside the SMEs they serve.</p>
+  </div>
+  <div id="sponsorWall"></div>
+
+  <div class="sponsorcta" id="sponsor">
+    <div class="sc-copy">
+      <p class="eyebrow" style="color:#E6B866">Become a partner</p>
+      <h3>Put your business in front of the room.</h3>
+      <p>Every forum fills a room with business owners, investors and institutions who are actively spending. Sponsorship is not a logo on a banner: you get the floor, the introductions and the delegate list, within data protection rules.</p>
+      <div class="sctiers" id="tierList"></div>
+    </div>
+    <form class="sc-form" id="sponF">
+      <h4>Ask for the pack</h4>
+      <label>Company<input name="company" required autocomplete="organization"></label>
+      <label>Your name<input name="contact_name" autocomplete="name"></label>
+      <label>Email<input name="email" type="email" required autocomplete="email"></label>
+      <label>Phone or WhatsApp<input name="phone" autocomplete="tel"></label>
+      <label>Interested in
+        <select name="tier">
+          <option value="">Not sure yet, send me everything</option>
+          <option value="headline">Headline sponsor</option>
+          <option value="partner">Partner</option>
+          <option value="supporting">Supporting</option>
+          <option value="listing">Directory listing</option>
+        </select></label>
+      <label>Anything we should know<textarea name="message" rows="3" placeholder="Sector, what you want out of it, which forum"></textarea></label>
+      <button class="btn btn-dark" type="submit">Send <span class="arrow">→</span></button>
+      <p class="scnote" id="sponMsg">We reply within two working days. Or WhatsApp +233 55 239 5548.</p>
+    </form>
+  </div>
+</div></section>
+
+<section id="contact" style="padding-top:24px"><div class="wrap">
+  <div class="reveal contact">
+    <div>
+      <div class="joycard"><img src="img/joy.webp" alt="Joy Anthony Preston" loading="lazy"><div><b>Joy Anthony Preston</b><span>Founder &amp; Development Partner</span></div></div>
+      <p class="eyebrow" style="color:var(--gold)">Contact</p>
+      <h2>Let's build together.</h2>
+      <p>Tell us where your business is today and where you want it to be. We reply within one working day.</p>
+      <div class="clist">
+        <a href="https://wa.me/233550416627" target="_blank" rel="noopener"><small>WhatsApp</small>+233 55 041 6627</a>
+        <a href="tel:+233550416627"><small>Phone</small>055 041 6627</a>
+        <a href="mailto:info@gothamconsult.com"><small>Email</small>info@gothamconsult.com</a>
+        <div><small>Office hours</small>Monday–Friday, 9:00–17:00 · Accra</div>
+      </div>
+      <div class="clist" style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
+        <div style="grid-column:1/-1"><small>Investor, mining &amp; international desk</small><b style="color:var(--ink)">Uffe Carlson</b> · Carlson Capital Ltd</div>
+        <a href="https://wa.me/233552395548" target="_blank" rel="noopener"><small>WhatsApp</small>+233 55 239 5548</a>
+        <a href="tel:+233552395548"><small>Direct line</small>055 239 5548</a>
+      </div>
+    </div>
+    <form class="cform" id="cform">
+      <div><label for="c-name">Your name</label><input id="c-name" required autocomplete="name"></div>
+      <div><label for="c-co">Company</label><input id="c-co" autocomplete="organization"></div>
+      <div><label for="c-topic">What do you need?</label><select id="c-topic"></select></div>
+      <div><label for="c-msg">Message</label><textarea id="c-msg" placeholder="A few lines about your business or project"></textarea></div>
+      <div class="row"><button class="btn btn-wa" type="submit">Send on WhatsApp</button><button class="btn btn-line" type="button" id="c-mail" style="color:var(--ink)">Send by email</button></div>
+      <p class="priv">We use your details only to reply to you, under Ghana's Data Protection Act, 2012 (Act 843). See our <a href="https://gotham-consult-gh.netlify.app/privacy.html" target="_blank" rel="noopener">privacy notice</a>.</p>
+    </form>
+  </div>
+</div></section>
+</main>
+
+<footer><div class="wrap fgrid">
+  <div><b style="color:var(--ink)">Gotham Consult</b> · Accra, Ghana · Since 2018<br><span style="font-size:13px">In strategic partnership with Carlson Capital Ltd, a company registered in Ghana<br>Registered in Ghana · Company registration number, registered office and TIN available on request<br>Investor, mining &amp; international desk: Uffe Carlson · WhatsApp and direct line +233 55 239 5548</span></div>
+  <div>Services · Invest in Ghana · Forums · About · Contact<br><a href="https://gotham-consult-gh.netlify.app/privacy.html" style="color:var(--mute)">Privacy &amp; data protection</a> · <a href="https://gotham-consult-gh.netlify.app/terms.html" style="color:var(--mute)">Terms of service</a><br><a href="https://gotham.84-12-73-59.sslip.io" target="_blank" rel="noopener" style="font-size:13px;color:var(--mute);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;display:inline-block;margin-top:10px">Team login →</a></div>
+</div><div class="wrap"><p class="credits">Photos: Bank of Ghana by Natsubee, <a href="https://commons.wikimedia.org/wiki/File%3ABank_of_Ghana_High_Street.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>; Airport City by Fanti Salms, <a href="https://commons.wikimedia.org/wiki/File%3AAirport_City_Accra.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>; Black Star Gate by David Stanley from Nanaimo, Canada, <a href="https://commons.wikimedia.org/wiki/File%3ABlack_Star_Gate_(21712600269).jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by/2.0/" target="_blank" rel="noopener">CC BY 2.0</a>; Tema Port by SteKrueBe, <a href="https://commons.wikimedia.org/wiki/File%3AContainerterminal_in_Tema%2C_Ghana.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>. Hero video, sector images and the on-screen presenter are AI-generated illustrations. Nothing on this site is legal, tax or investment advice; summaries of Ghanaian law are general information, current at the date shown. Legal drafting, audit, care work and licensed financial services are delivered by qualified partner firms, not by us.</p></div></footer>
+
+<dialog id="dlg" aria-labelledby="dlgT">
+  <div class="dh"><div><p class="eyebrow" id="dlgE">Register</p><h3 id="dlgT"></h3></div><button class="x" data-close aria-label="Close">✕</button></div>
+  <div class="db" id="dlgB"></div>
+</dialog>
+
+<div class="fab">
+  <div class="chat" id="chat" hidden>
+    <div class="chat-h"><b>Ask Gotham</b><button class="x" id="chatX" aria-label="Close">✕</button></div>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <div class="chips" id="chips"></div>
+    <form id="chatF"><input id="chatI" placeholder="Ask about services, forums, GIPA…" aria-label="Your question"><button class="btn btn-dark" style="padding:9px 16px">Send</button></form>
+  </div>
+  <button class="fabbtn" id="chatO"><span class="dot"></span>Ask Gotham</button>
+</div>
+
+<script>
+/* ===== Settings Joy can change ===== */
+const WA_NUMBER = '233550416627';
+const UF_NUMBER = '233552395548';   // Uffe Carlson · Carlson Capital Ltd
+const REG_URL = 'register.html';          // our own page on the site
+const CRM_API = 'https://gotham.84-12-73-59.sslip.io';
+const MOMO_NUMBER = '[Gotham MoMo number]'; // TODO: Joy's MoMo merchant/wallet number
+const MOMO_NAME = 'Gotham Consult';
+/* =================================== */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const wa=t=>`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(t)}`;
+const waU=t=>`https://wa.me/${UF_NUMBER}?text=${encodeURIComponent(t)}`;
+const ghs=n=>'GHS '+n.toLocaleString('en-GH');
+
+const services=[
+ {t:'Investment readiness & GIPA',p:'Get registered, compliant and ready for investors.',l:['GIPA Act 1173 registration','Business plans & 3-statement models','Credit profile & pitch decks']},
+ {t:'Market entry & international projects',p:'Enter Ghana or expand abroad, with local partners in place.',l:['Ghana, Nigeria, UK, US, EU','Francophone West Africa','Feasibility & due diligence']},
+ {t:'AI in your business',new:1,p:'Put AI to work in finance, research and daily operations.',l:['AI readiness audit','Finance & reporting automation','Staff training workshops']},
+ {t:'Digital & managed hosting',new:1,p:'Websites and apps that take mobile-money payments, run for you.',l:['Websites & online shops','MoMo & card payments','Hosting, email, daily backups']},
+ {t:'AI creative studio',new:1,p:'Marketing made in minutes, in local languages.',l:['Jingles & radio spots','Posters & video adverts','Voice-overs in Twi & English']},
+ {t:'Energy, mining & infrastructure',p:'Bankable projects for developers, investors and lenders.',l:['Solar IPPs, PPAs & EPC','Geology-led due diligence','Packaging for DFIs & banks']},
+ {t:'Compliance & ESG',p:'Meet the standards international partners expect.',l:['AML/KYC & data protection','ESG to IFC Performance Standards','CSR program design']},
+ {t:'Education & schools',p:'Start, licence and strengthen a school or training business.',l:['School registration and regulator licensing','Teacher training and curriculum partners','Study-abroad and scholarship guidance','Digital learning and AI skills for staff']},
+ {t:'Senior citizens & family support',p:'Practical help for older people in Ghana and families abroad.',l:['Pension, NHIS and document renewals','Check-in visits and care coordination','Property and land oversight for absent families','Wills and estate paperwork with partner lawyers']},
+ {t:'Media, forums & inclusive enterprise',p:'Visibility for your business, and growth that includes everyone.',l:['Features & investor roundtables','Trade missions & showcases','Training for persons with disabilities']}
+];
+$('#svc').innerHTML=services.map((s,i)=>`<article class="s">${s.new?'<span class="flag">New</span>':''}<span class="ix">${String(i+1).padStart(2,'0')}</span><h3>${esc(s.t)}</h3><p>${esc(s.p)}</p><ul>${s.l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><a class="ask" href="${wa(`Hello Gotham Consult, I'd like to know more about: ${s.t}.`)}" target="_blank" rel="noopener">Ask about this <span class="arrow">→</span></a></article>`).join('');
+
+/* economy */
+const growth=[['ICT',30.9,1],['Oil & gas',21.4],['Services',8.0],['Whole economy',6.0],['Industry',4.3],['Agriculture',3.9]];
+const mx=32;
+$('#bars').innerHTML=growth.map(([n,v,h])=>`<div class="brow"><span>${n}</span><div class="btrack"><div class="bfill ${h?'hi':''}" style="width:${v/mx*100}%"></div></div><span class="v">+${v.toFixed(1)}%</span></div>`).join('');
+$('#ticker').innerHTML=[...growth,...growth].map(([n,v])=>`<span>${n} <b class="up">▲ ${v.toFixed(1)}%</b></span>`).join('')+'<span>Inflation <b>5.0%</b></span><span>Policy rate <b>14%</b></span>';
+const exp=[['Gold',20.0,'#A9761F'],['Cocoa',3.8,'#6B4B2A'],['Oil',2.6,'#0F1B2D'],['Other',4.7,'#7C8795']];
+$('#stack').innerHTML=exp.map(([n,v,c])=>`<div style="flex:${v};background:${c}">${v>=3?Math.round(v/31.1*100)+'%':''}</div>`).join('');
+$('#legend').innerHTML=exp.map(([n,v,c])=>`<span><i style="background:${c}"></i>${n} <b class="num">$${v.toFixed(1)}bn</b></span>`).join('');
+
+const sectors=[
+ {k:'ict',img:'tech',t:'Digital & fintech',r:'strong',m:'+30.9%',ms:'ICT growth, Q2 2026',p:'The fastest-growing part of the economy, driving 41% of all growth in Q2. Mobile money, software, data centres and digital services.',risk:'Talent competition and regulatory licensing for fintech.',fit:['uk','dk','global']},
+ {k:'agro',img:'cocoa',t:'Agro-processing',r:'strong',m:'$3.8bn',ms:'Cocoa exports 2025, doubled',p:'Cocoa, cashew and shea processing with the AfCFTA secretariat based in Accra. Policy pushes more processing at home.',risk:'Farm-gate prices and crop disease.',fit:['dk','de','global']},
+ {k:'energy',img:'solar',t:'Renewable energy',r:'sel',m:'24/7',ms:'demand from the 24-Hour Economy',p:'Solar for industry and free zones, mini-grids and storage. Strongest with private buyers of power.',risk:'Payment risk on sales to the state utility.',fit:['dk','de']},
+ {k:'mfg',img:'port',t:'Manufacturing & free zones',r:'sel',m:'42',ms:'new free-zone investments, 2025',p:'The 24-Hour Economy program and a new Afreximbank project facility target factories, logistics and export parks.',risk:'Power costs and import dependence.',fit:['de','uk','global']},
+ {k:'gold',t:'Mining & critical minerals',r:'sel',m:'$20.0bn',ms:'Gold exports 2025',p:'Record gold earnings, and lithium now open. Best entry: large-scale licences, JVs with verified Ghanaian partners, and mining services.',risk:'Royalty reform pending in Parliament; land and illegal-mining exposure.',fit:['uk','de','global']},
+ {k:'oil',t:'Oil & gas',r:'watch',m:'+21.4%',ms:'Output growth, Q2 2026',p:'Production recovered in 2026, but oil export earnings fell to $2.6bn in 2025 as fields mature.',risk:'Mature fields and global price swings.',fit:[]}
+];
+const lenses={
+ global:{h:'For investors from anywhere',p:'The GIPA Act 2026 (Act 1173), in force since 15 July 2026, removed the general minimum capital requirement for most foreign investors. Trading companies are the exception and still need USD 500,000 in cash equity. Accra hosts the AfCFTA secretariat, a gateway to a market of 1.3 billion people.',i:['GIPA Act 1173','AfCFTA','Free Zones Authority','24-Hour Economy Authority']},
+ de:{h:'For German investors',p:'Ghana is a G20 Compact with Africa partner. German strengths in manufacturing, vehicle assembly, machinery, vocational training and renewables match Ghana\'s industrial and 24-Hour Economy agenda.',i:['Compact with Africa','DEG','AHK Ghana','KfW']},
+ dk:{h:'For Danish & Nordic investors',p:'Nordic strengths in green energy, water, agri-food and shipping fit Ghana\'s needs. A Danish shipping group co-operates Tema\'s container terminal, and development funds co-invest alongside private capital.',i:['IFU','Norfund','Swedfund','Nordic export credit']},
+ uk:{h:'For UK investors',p:'The UK-Ghana Trade Partnership Agreement keeps duty-free, quota-free access. Shared language and common-law roots make financial services, fintech, education and professional services natural entry points.',i:['UK-Ghana TPA','British International Investment','UK Export Finance']}
+};
+const rl={strong:'Strong',sel:'Selective',watch:'Watch'};
+function renderLens(key){
+  const L=lenses[key];
+  $('#lensnote').innerHTML=`<div><h3>${L.h}</h3><p>${L.p}</p><div class="inst">${L.i.map(x=>`<span>${x}</span>`).join('')}</div></div><a class="btn btn-dark" href="${wa(`Hello Gotham Consult, I'm an investor (${L.h.replace('For ','')}) and would like a Ghana briefing.`)}" target="_blank" rel="noopener">Book a Ghana briefing <span class="arrow">→</span></a>`;
+  $('#sectors').innerHTML=sectors.map(s=>{const fit=key!=='global'&&s.fit.includes(key);const grads={tech:'linear-gradient(135deg,#1c3b5a,#0F1B2D)',cocoa:'linear-gradient(135deg,#7a4b1e,#2f5a2a)',solar:'linear-gradient(135deg,#b5642b,#e3c07a)',port:'linear-gradient(135deg,#123a55,#b5412e)'};const g=s.img?`url(img/${s.img}.webp), ${grads[s.img]}`:(s.k==='gold'?'linear-gradient(135deg,#a9761f,#e3c07a 50%,#6b4a1c)':'linear-gradient(135deg,#1c2230,#3d4656)');return `<article class="sec reveal ${fit?'fit':''}"><div class="pic" style="background-image:${g}" role="img" aria-label="${s.t}"></div><div class="top"><span class="pill ${s.r}">${rl[s.r]}</span>${fit?'<span class="fitmark">Strong fit</span>':''}</div><h3>${s.t}</h3><div class="metric num">${s.m}<small>${s.ms}</small></div><p>${s.p}</p><div class="risk"><b>Watch:</b> ${s.risk}</div></article>`}).join('');
+}
+$$('.lens button').forEach(b=>b.onclick=()=>{$$('.lens button').forEach(x=>x.setAttribute('aria-pressed',x===b));renderLens(b.dataset.lens)});
+renderLens('global');
+
+/* forums */
+const forums=[
+ {id:'F1',t:'SMEs at the Centre: Inclusive Partnerships under the GIPA Act 2026',d:'2026-10-24',time:'14:00–16:00',v:'Tang Palace Hotel, Accra',price:0,invite:1,seats:120,taken:0,note:'By invitation · free for SMEs, stakeholders and investors · Speakers from GIPA and international investors'},
+ {id:'F2',t:'AI in Your Business: Hands-on Workshop for SME Owners',d:'2026-11-07',time:'10:00–13:00',v:'East Legon, Accra',price:450,seats:40,taken:18,note:'Bring your laptop · Finance, marketing and customer service with AI'},
+ {id:'F3',t:'Diaspora & Nordic Investor Roundtable',d:'2026-11-21',time:'16:00–17:30',v:'Online · link sent on WhatsApp',price:0,seats:200,taken:61,note:'Ghana briefing, sector outlook and Q&A'}
+];
+const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const dd=s=>{const x=new Date((s||'2026-01-01')+'T12:00');return{d:x.getDate(),m:mon[x.getMonth()],y:x.getFullYear(),long:x.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}};
+function forumCard(f){const x=dd(f.d);
+ const pic=f.img?`<div class="evpic"><picture><source type="image/webp" srcset="${f.img.sizes.card.webp} 800w, ${f.img.sizes.hero.webp} 1600w" sizes="(max-width:820px) 100vw, 900px"><img src="${f.img.sizes.card.jpg}" width="${f.img.sizes.card.w}" height="${f.img.sizes.card.h}" alt="${esc(f.img.alt||f.t)}" loading="lazy"></picture></div>`:'';
+ const dl=(f.docs||[]).length?`<div class="evdl">${f.docs.map(d=>`<a href="${d.url}" target="_blank" rel="noopener">↓ ${esc(d.label||d.name)}<span>PDF · ${d.kb} KB</span></a>`).join('')}</div>`:'';
+ const cap=f.seats?`<div class="seats">${f.left!=null?`${f.left} of ${f.seats} seats left`:`Limited to ${f.seats} seats`}</div>`:'';
+ return `<article class="evwrap">${pic}<div class="ev"><div class="date"><b>${x.d}</b><span>${x.m} ${x.y}</span></div>
+ <div><h3>${esc(f.t)}</h3><p class="meta">${x.long.split(' ')[0]} · ${f.time?esc(f.time)+' · ':''}${esc(f.v)}</p>
+ ${f.note?`<p class="meta">${esc(f.note)}</p>`:''}${cap}${dl}</div>
+ <div class="price"><b>${f.price?ghs(f.price):'Free'}</b>${f.invite
+   ?`<a class="btn btn-dark" href="${REG_URL}?e=${f.id}">Request invitation <span class="arrow">→</span></a>`
+   :`<a class="btn btn-dark" href="${REG_URL}?e=${f.id}">${f.price?'Register':'RSVP'} <span class="arrow">→</span></a>`}</div></div></article>`}
+
+function renderForums(){$('#forumList').innerHTML=forums.map(forumCard).join('')}
+renderForums();
+
+/* live forums from the back office, so Joy's edits show here without a redeploy */
+fetch(CRM_API+'/api/items',{mode:'cors'}).then(r=>r.json()).then(d=>{
+ const ev=(d.items||[]).filter(i=>i.kind==='event'&&i.phase!=='past');
+ if(!ev.length)return;
+ forums.length=0;
+ ev.forEach(i=>forums.push({
+  id:i.code,t:i.title,d:(i.starts_at||'').slice(0,10),
+  time:i.starts_at?new Date(i.starts_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+(i.ends_at?'–'+new Date(i.ends_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):''):'',
+  v:i.venue||'',price:Number(i.price)||0,invite:!!i.approval,
+  seats:i.capacity||0,left:i.seats_left,note:i.summary||i.subtitle||'',
+  img:i.cover_image||null,docs:i.documents||[]}));
+ renderForums();
+}).catch(()=>{});
+
+/* registration flow */
+const dlg=$('#dlg'); let F,who,qty=1,ref,net='mtn';
+dlg.addEventListener('click',e=>{if(e.target.closest('[data-close]')||e.target===dlg)dlg.close()});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-reg]');if(b)openReg(b.dataset.reg)});
+const prog=n=>`<div class="prog">${[1,2,3].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div>`;
+function openReg(id){F=forums.find(f=>f.id===id);qty=1;$('#dlgT').textContent=F.t;step1();dlg.showModal()}
+function step1(){$('#dlgE').textContent=F.price?'Step 1 of 3 · Your details':'RSVP';
+ $('#dlgB').innerHTML=`${prog(1)}<form class="f" id="f1">
+ <label for="r-n">Full name</label><input id="r-n" required autocomplete="name" value="${esc(who?.n||'')}">
+ <label for="r-c">Company</label><input id="r-c" autocomplete="organization" value="${esc(who?.c||'')}">
+ <label for="r-p">WhatsApp number</label><input id="r-p" required inputmode="tel" autocomplete="tel" placeholder="024 000 0000" value="${esc(who?.p||'')}">
+ ${F.price?`<label>Tickets</label><div class="qty"><button type="button" data-q="-1" aria-label="One less">−</button><output id="q" aria-live="polite">${qty}</output><button type="button" data-q="1" aria-label="One more">+</button><span class="mute" style="margin-left:auto" id="qt">${ghs(F.price*qty)}</span></div>`:''}
+ <div class="acts"><button class="btn btn-dark">${F.price?'See price & payment':'Confirm on WhatsApp'} <span class="arrow">→</span></button></div></form>`;
+ $$('[data-q]').forEach(b=>b.onclick=()=>{qty=Math.min(10,Math.max(1,qty+ +b.dataset.q));$('#q').textContent=qty;$('#qt').textContent=ghs(F.price*qty)});
+ $('#f1').onsubmit=e=>{e.preventDefault();who={n:$('#r-n').value.trim(),c:$('#r-c').value.trim(),p:$('#r-p').value.trim()};ref='GC-'+F.id+'-'+Math.random().toString(36).slice(2,6).toUpperCase();F.price?step2():rsvp()}}
+function msgReg(){const x=dd(F.d);return `Hello Gotham Consult,\nI'd like to register for:\n${F.t}\n${x.long}, ${F.time}\n\nName: ${who.n}${who.c?'\nCompany: '+who.c:''}\nTickets: ${qty} × ${ghs(F.price)} = ${ghs(F.price*qty)}\nReference: ${ref}\n\nPlease confirm the mobile money details.`}
+const NETS={mtn:{n:'MTN MoMo',s:['Dial <code>*170#</code>','Choose <b>1. Transfer Money</b> → <b>1. MoMo User</b>',`Enter <b>${MOMO_NUMBER}</b> (${MOMO_NAME})`,'Enter the amount: <b>AMT</b>','Reference: <b>REF</b>','Confirm with your PIN']},
+ tel:{n:'Telecel Cash',s:['Dial <code>*110#</code>','Choose <b>Send Money</b> → <b>Telecel Cash / Other network</b>',`Enter <b>${MOMO_NUMBER}</b> (${MOMO_NAME})`,'Amount: <b>AMT</b> · Reference: <b>REF</b>','Confirm with your PIN']},
+ at:{n:'AirtelTigo Money',s:['Dial <code>*110#</code>','Choose <b>Send Money</b> → <b>Other networks</b>',`Enter <b>${MOMO_NUMBER}</b> (${MOMO_NAME})`,'Amount: <b>AMT</b> · Reference: <b>REF</b>','Confirm with your PIN']}};
+function step2(){$('#dlgE').textContent='Step 2 of 3 · Price & payment';const tot=F.price*qty;
+ $('#dlgB').innerHTML=`${prog(2)}<div class="order"><div><span>${qty} × ticket</span><span class="num">${ghs(F.price)}</span></div><div><span>Reference</span><span class="ref">${ref}</span></div><div class="tot"><span>Total</span><span class="num">${ghs(tot)}</span></div></div>
+ <div class="nets" role="group" aria-label="Your network">${Object.entries(NETS).map(([k,v])=>`<button type="button" data-net="${k}" aria-pressed="${k===net}">${v.n}</button>`).join('')}</div>
+ <ol class="how" id="how"></ol>
+ ${MOMO_NUMBER.startsWith('[')?'<p class="warn">Demo: the Gotham MoMo number is added once Joy confirms it.</p>':''}
+ <p class="note">Your seat is held for 24 hours. We confirm your ticket on WhatsApp as soon as the payment arrives.</p>
+ <div class="acts"><a class="btn btn-wa" href="${wa(msgReg())}" target="_blank" rel="noopener" id="waReg">Get price &amp; instructions on WhatsApp</a><button class="btn btn-line" id="paid">I've paid</button></div>`;
+ const how=()=>{$('#how').innerHTML=NETS[net].s.map(s=>`<li>${s.replace('AMT',ghs(tot)).replace('REF',ref)}</li>`).join('')};how();
+ $$('[data-net]').forEach(b=>b.onclick=()=>{net=b.dataset.net;$$('[data-net]').forEach(x=>x.setAttribute('aria-pressed',x===b));how()});
+ $('#paid').onclick=step3}
+function step3(){$('#dlgE').textContent='Step 3 of 3 · Confirm payment';const tot=F.price*qty;
+ $('#dlgB').innerHTML=`${prog(3)}<form class="f" id="f3"><label for="r-t">MoMo transaction ID</label><input id="r-t" required placeholder="From your MoMo SMS, e.g. 5123456789">
+ <p class="note">We match it to reference <span class="ref">${ref}</span> and send your ticket on WhatsApp.</p>
+ <div class="acts"><button class="btn btn-wa">Send confirmation on WhatsApp</button><button type="button" class="btn btn-line" id="back">Back</button></div></form>`;
+ $('#back').onclick=step2;
+ $('#f3').onsubmit=e=>{e.preventDefault();const t=`Hello Gotham Consult,\nI have paid ${ghs(tot)} for ${qty} ticket(s).\nEvent: ${F.t}\nName: ${who.n}\nReference: ${ref}\nMoMo transaction ID: ${$('#r-t').value.trim()}`;window.open(wa(t),'_blank','noopener');done()}}
+function rsvp(){const x=dd(F.d);window.open(wa(`Hello Gotham Consult,\nPlease reserve my seat for:\n${F.t}\n${x.long}, ${F.time}\n\nName: ${who.n}${who.c?'\nCompany: '+who.c:''}\nReference: ${ref}`),'_blank','noopener');done()}
+function done(){const x=dd(F.d);$('#dlgE').textContent='Almost there';
+ $('#dlgB').innerHTML=`${prog(3)}<p>WhatsApp should open with your message ready. Tap <b>Send</b>, and you'll get this reply once we've checked it:</p>
+ <div class="wabub">Hi ${esc(who.n.split(' ')[0])}, thank you. Your seat for "${esc(F.t)}" on ${x.long} at ${F.time.split('–')[0]} is confirmed. Ticket: ${ref}. We'll remind you the day before. See you at ${esc(F.v.split(',')[0])}!</div>
+ <div class="acts"><button class="btn btn-dark" data-close>Done</button></div>`}
+
+/* contact */
+$('#c-topic').innerHTML=['General enquiry',...services.map(s=>s.t),'Invest in Ghana briefing','Forums & sponsorship'].map(t=>`<option>${t}</option>`).join('');
+const cmsg=()=>`Hello Gotham Consult,\nName: ${$('#c-name').value}${$('#c-co').value?'\nCompany: '+$('#c-co').value:''}\nTopic: ${$('#c-topic').value}\n\n${$('#c-msg').value}`;
+$('#cform').onsubmit=e=>{e.preventDefault();window.open(wa(cmsg()),'_blank','noopener')};
+$('#c-mail').onclick=()=>{if(!$('#c-name').reportValidity())return;location.href=`mailto:info@gothamconsult.com?subject=${encodeURIComponent('Enquiry: '+$('#c-topic').value)}&body=${encodeURIComponent(cmsg())}`};
+
+/* motion: header, active nav, count-up, bars */
+const hdr=$('#hdr');addEventListener('scroll',()=>hdr.classList.toggle('scrolled',scrollY>8),{passive:true});
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function countUp(el){if(reduce)return;const to=+el.dataset.count,dec=+el.dataset.dec||0,pre=el.dataset.pre||'',suf=el.dataset.suf||'';const t0=performance.now();const f=t=>{const k=Math.min(1,(t-t0)/1100),e=1-Math.pow(1-k,3);el.textContent=pre+(to*e).toFixed(dec)+suf;if(k<1)requestAnimationFrame(f)};requestAnimationFrame(f)}
+if('IntersectionObserver' in window){
+ const io=new IntersectionObserver(es=>es.forEach(e=>{if(!e.isIntersecting)return;const t=e.target;if(t.id==='steps')t.classList.add('seen');else if(t.dataset.count)countUp(t);else if(!reduce)t.classList.add('grow');io.unobserve(t)}),{threshold:.35});
+ ['#steps','#bars','#fdi'].forEach(s=>io.observe($(s)));$$('#econStats [data-count]').forEach(el=>io.observe(el));
+ const secs=$$('main section[id]');const nav=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)$$('nav.main a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id))}),{rootMargin:'-45% 0px -50% 0px'});secs.forEach(s=>nav.observe(s));
+}else $('#steps').classList.add('seen');
+
+/* corridors map */
+(function(){const c=$('#routes');if(!c)return;const x=c.getContext('2d');const W=c.width,H=c.height;
+const P=(lon,lat)=>[(lon+30)/(150)*W*0.92+W*0.04,(62-lat)/(100)*H*0.9+H*0.05];
+const hub={n:'Accra',ll:[-0.19,5.6]};
+const dest=[['London',-0.13,51.5],['Hamburg',10,53.55],['Copenhagen',12.57,55.68],['New York',-74,40.7],['Dubai',55.3,25.2],['Lagos',3.38,6.52],['Abidjan',-4.01,5.35],['Johannesburg',28.05,-26.2],['Shanghai',121.5,31.2],['Nairobi',36.8,-1.29]];
+const P2=(lon,lat)=>{// fit wide range incl NY and Shanghai
+ return [ (lon+80)/(210)*W*0.9+W*0.05, (62-lat)/(95)*H*0.86+H*0.1 ]};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const A=P2(...hub.ll);let t0=performance.now();
+function draw(now){const t=(now-t0)/1000;x.clearRect(0,0,W,H);
+ // dot grid
+ x.fillStyle='rgba(15,27,45,.10)';for(let gx=12;gx<W;gx+=18)for(let gy=12;gy<H;gy+=18){x.fillRect(gx,gy,1.6,1.6)}
+ // equator + tropic lines
+ x.strokeStyle='rgba(15,27,45,.12)';x.setLineDash([4,6]);[[0,'Equator'],[23.4,''],[-23.4,'']].forEach(([lat,l])=>{const y=P2(0,lat)[1];x.beginPath();x.moveTo(0,y);x.lineTo(W,y);x.stroke()});x.setLineDash([]);
+ dest.forEach(([n,lon,lat],i)=>{const B=P2(lon,lat);const mx=(A[0]+B[0])/2,my=Math.min(A[1],B[1])-Math.abs(B[0]-A[0])*.28-30;
+  x.strokeStyle='rgba(169,118,31,.45)';x.lineWidth=1.4;x.beginPath();x.moveTo(...A);x.quadraticCurveTo(mx,my,...B);x.stroke();
+  // moving pulse
+  const k=reduce?1:((t*0.22+i*0.13)%1);const q=(p0,p1,p2,k)=>[(1-k)**2*p0[0]+2*(1-k)*k*p1[0]+k*k*p2[0],(1-k)**2*p0[1]+2*(1-k)*k*p1[1]+k*k*p2[1]];
+  const pt=q(A,[mx,my],B,k);x.fillStyle='#A9761F';x.beginPath();x.arc(pt[0],pt[1],3.2,0,7);x.fill();
+  x.fillStyle='#0F1B2D';x.beginPath();x.arc(B[0],B[1],3,0,7);x.fill();
+  x.font='500 15px "Hanken Grotesk", system-ui, sans-serif';x.fillStyle='rgba(15,27,45,.75)';const off={Abidjan:[-62,5],Hamburg:[8,16],Lagos:[8,-6]}[n]||[7,5];x.fillText(n,B[0]+off[0],B[1]+off[1])});
+ const r=10+ (reduce?0:Math.sin(t*2)*3);x.fillStyle='rgba(169,118,31,.18)';x.beginPath();x.arc(A[0],A[1],r+10,0,7);x.fill();
+ x.fillStyle='#A9761F';x.beginPath();x.arc(A[0],A[1],6,0,7);x.fill();
+ x.font='700 17px "Hanken Grotesk", system-ui, sans-serif';x.fillStyle='#0F1B2D';x.fillText('Accra',A[0]+12,A[1]+22);
+ if(!reduce)requestAnimationFrame(draw)}
+requestAnimationFrame(draw)})();
+
+/* hero presenter controls */
+(function(){const v=$('#hv'),bar=$('#vbar');if(!v||!bar)return;const P=$('#vPlay'),R=$('#vRe'),S=$('#vSnd');
+function place(){const r=v.getBoundingClientRect(),h=v.closest('.herox').getBoundingClientRect();bar.style.top=Math.max(16,Math.min(r.bottom-h.top,h.height)-64)+'px'}
+place();addEventListener('resize',place);v.addEventListener('loadedmetadata',place);
+const sync=()=>{P.textContent=v.paused?'▶':'❚❚';P.setAttribute('aria-label',v.paused?'Play video':'Pause video');S.setAttribute('aria-pressed',!v.muted);$('#vIco').textContent=v.muted?'🔇':'🔊';$('#vLbl').textContent=v.muted?'Sound on':'Sound off'};
+v.addEventListener('play',sync);v.addEventListener('ended',()=>{P.textContent='↻';P.setAttribute('aria-label','Replay video')});v.addEventListener('pause',sync);v.addEventListener('volumechange',sync);
+P.onclick=()=>{if(v.ended)v.currentTime=0;v.paused?v.play().catch(()=>{}):v.pause()};
+R.onclick=()=>{v.currentTime=0;v.play().catch(()=>{})};
+S.onclick=()=>{if(v.muted){userMuted=false;v.muted=false;v.volume=1;v.currentTime=0;v.play().catch(()=>{v.muted=true})}else{userMuted=true;v.muted=true}};
+sync();
+let userMuted=false;
+const unmuteOnGesture=()=>{if(userMuted)return;v.muted=false;v.volume=1;v.currentTime=0;v.play().catch(()=>{v.muted=true})};
+const armGesture=()=>{['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,function h(e){if(e.target.closest&&e.target.closest('#vbar'))return;['pointerdown','keydown','touchstart'].forEach(x=>removeEventListener(x,h,true));unmuteOnGesture()},{capture:true}))};
+const start=()=>{v.preload='auto';v.load();v.muted=false;v.volume=1;
+  v.play().then(sync).catch(()=>{v.muted=true;v.play().catch(()=>{});sync();armGesture()})};
+if(document.readyState==='complete')start();else addEventListener('load',start,{once:true})})();
+
+
+/* ===== pathways, tools, membership ===== */
+const PATHS={
+ biz:{h:'For business owners: grow and get funded',p:'Most SME money in Ghana now flows through programmes, compliance deadlines and government incentives. We prepare you for each one, so you qualify and stay compliant.',
+  pains:['Need funding','E-VAT deadline','Want to export','Bidding for government contracts','24-Hour Economy incentives','Need a website that sells'],
+  pk:[
+   {l:'Most popular',hot:1,t:'Grant & programme readiness pack',d:'Business plan, 3-year financial model and document checklist for GEA, AfDB, EU and bank programmes.',pr:'GHS 4,500',ps:'one-off · application support included'},
+   {t:'E-VAT & tax compliance',d:'E-VAT onboarding with GRA, then bookkeeping and monthly VAT filing.',pr:'From GHS 900 / month',ps:'setup from GHS 2,500'},
+   {t:'Export & AfCFTA readiness',d:'Pricing, certificates of origin, logistics and buyer introductions across Africa.',pr:'GHS 6,000',ps:'one-off'},
+   {t:'Tenders & 24-Hour Economy',d:'GHANEPS registration and bid writing, or registration for 24H+ incentives.',pr:'From GHS 3,000',ps:'per bid or application'}],
+  flow:[['1 · Free check','E-VAT check or funding finder'],['2 · 30-min call','On WhatsApp, free'],['3 · Fixed quote','Pay with MoMo'],['4 · Delivered','Tracked to the outcome']]},
+ inv:{h:'For investors: enter Ghana with a local desk',p:'From your first briefing to a registered company and a verified partner. We work in English, French and Nordic languages, and keep you informed with regular written reports.',
+  pains:['Is Ghana right for us?','Company setup under Act 1173','Who can we trust?','Need eyes on the ground','Energy, mining, agro projects'],
+  pk:[
+   {t:'Ghana briefing',d:'60-minute call on your sector: numbers, rules, risks and next steps.',pr:'USD 250',ps:'credited to any follow-on work'},
+   {l:'Most requested',hot:1,t:'Market entry & company setup',d:'GIPA Act 1173 registration, banking, tax and licences, done end to end.',pr:'From USD 2,500',ps:'plus government fees'},
+   {t:'Partner & project due diligence',d:'Background, licences, site visit and a written risk report before you sign.',pr:'From USD 3,500',ps:'per target'},
+   {t:'Investor desk retainer',d:'Local representation, meetings, monitoring and a monthly report.',pr:'From USD 1,000 / month',ps:'3-month minimum'}],
+  flow:[['1 · Briefing','Book a call'],['2 · Proposal','Scope and fixed fee'],['3 · Setup & checks','Company, bank, partners'],['4 · Local desk','Ongoing reports']],
+  extra:`<div class="watch"><h4>GIPA Act 2026 (Act 1173) · what actually changed</h4><ul>
+   <li><b>In force since 15 July 2026,</b> replacing the GIPC Act 865 of 2013. The GIPC is now the Ghana Investment Promotion Authority.</li>
+   <li><b>No general minimum capital</b> for foreign-owned non-trading businesses or joint ventures. The old USD 500,000 and USD 200,000 thresholds are gone.</li>
+   <li><b>Trading is the exception:</b> a foreign-owned trading company still needs USD 500,000 in cash equity, down from USD 1 million.</li>
+   <li><b>Staffing:</b> foreign trading enterprises must keep at least 75% Ghanaian skilled staff, instead of the old headcount rule.</li>
+   <li><b>Registration in 5 working days</b> from a complete application, and it must now be <b>renewed every year</b>, not every two. Missing a renewal carries a penalty.</li>
+   <li><b>Six activities stay reserved for Ghanaians,</b> down from nine. Betting and lotteries now sit under their own sector law.</li>
+   <li><b>Anti-fronting:</b> a Ghanaian-owned trading company with any non-Ghanaian owner or director must meet the USD 500,000 rule.</li>
+   <li><b>Technology transfer agreements must be registered.</b> Unregistered ones cannot be enforced, the fees are not tax-deductible, and banks cannot remit them.</li>
+   <li><b>Expatriate quotas</b> now scale from 2 to 12 people with the capital invested, valid five years.</li>
+   <li><b>New investor grievance procedure</b> with fixed timelines, free, before arbitration or court.</li></ul>
+   <p class="entity" style="margin-top:10px">Summary only, current at 24 September 2026, and not legal advice. We confirm every detail against the Act and with the Authority for your specific case.</p></div>`},
+ min:{h:'For mining investors: from concession to production, done properly',p:'Geology-led due diligence, a clear licensing path and Ghanaian partners you can verify. Our team combines field geology, our own TERRA field app and Afri-MINEX geospatial platform, and 25 years of project delivery in Africa.',
+  pains:['Is this concession real and clean?','Which licence do we need?','Royalty reform risk','Community and land issues','Power for the mine','Responsible-sourcing proof for buyers'],
+  pk:[
+   {t:'Mining regime briefing',d:'Royalties, reform status, licence types, timelines and risks for your mineral.',pr:'USD 750',ps:'credited to follow-on work'},
+   {l:'Start here',hot:1,t:'Concession screening',d:'Licence check against the mining cadastre, geology review, site visit with TERRA field data, land, community and illegal-mining checks.',pr:'From USD 7,500',ps:'written report in 3–4 weeks'},
+   {t:'Full due diligence & licensing roadmap',d:'With partner certified geologist and mining lawyers: technical, legal, EPA and local-content plan, reconnaissance to mining lease.',pr:'From USD 25,000',ps:'scoped per project'},
+   {t:'Site monitoring & provenance',d:'Monthly site reports with TERRA photo and GPS evidence, and provenance records in Afri-MINEX for buyers and ESG checks.',pr:'From USD 2,000 / month',ps:'plus JV structuring and mine-power studies on mandate'}],
+  flow:[['1 · Briefing','Your mineral, your risks'],['2 · Screening','Licence, geology, site'],['3 · Due diligence','Technical and legal'],['4 · Build & monitor','Permits, partners, power']],
+  extra:`<div class="watch"><h4>Regulatory watch · September 2026</h4><ul>
+   <li><b>Royalty reform pending:</b> a bill before Parliament would raise gold royalties from 3–5% to a price-linked sliding scale and shorten stability agreements. Cabinet approved it in July 2026; we model both regimes for you.</li>
+   <li><b>Forest reserves closed:</b> the regulation that allowed mining in forest reserves (L.I. 2462) has been revoked.</li>
+   <li><b>Small-scale gold</b> buying and export now runs through GoldBod; small-scale licences are reserved for Ghanaian citizens, so foreign capital enters through large-scale licences, JVs or services.</li>
+   <li><b>Lithium is open:</b> Ghana's first lithium mining lease was ratified in March 2026.</li></ul>
+   <div class="chan"><span>Minerals Commission</span><span>EPA</span><span>GoldBod</span><span>Geological Survey Authority</span><span>Lands Commission</span><span>GIPC</span></div>
+   <p class="entity" style="margin-top:10px">We work with these institutions through their formal application and consultation processes. Fees are for preparation and delivery, never for access or approvals. Any personal connection of our team to a public office is disclosed, and that person steps aside from the matter.</p></div>`},
+ ind:{h:'For individuals & diaspora: start or invest without the stress',p:'Whether you are starting a business in Accra or investing from London, Hamburg or Houston: we register, verify and report, so you are never guessing.',
+  pains:['Register my business','Is this land or partner real?','Build from abroad','Care for my parents in Ghana','Start or licence a school','Learn the rules first'],
+  pk:[
+   {t:'Business registration',d:'Sole proprietorship or Ltd with the Registrar, TIN and first steps.',pr:'GHS 1,500',ps:'plus registry fees'},
+   {l:'Diaspora favourite',hot:1,t:'Invest-safely check',d:'We verify the seller, partner or project with our partner lawyers before you send money.',pr:'From USD 300',ps:'per check'},
+   {t:'Project monitoring',d:'Site visits with photo and video reports while your house or business is built.',pr:'USD 150 / visit',ps:'or monthly plan'},
+   {t:'Forums & training',d:'Seminars, workshops and investor roundtables, online and in person.',pr:'From free',ps:'tickets paid with MoMo'},
+   {t:'Family & senior care plan',d:'Monthly visits to your parents, help with NHIS, pension and document renewals, and a written report with photos.',pr:'From GHS 900 / month',ps:'Greater Accra; other regions on request'},
+   {t:'School & training licence',d:'Registration, regulator licensing and the paperwork to run a school or training centre properly.',pr:'From GHS 4,500',ps:'plus government fees'}],
+  flow:[['1 · Tell us','WhatsApp, any time zone'],['2 · Plan & price','Fixed, in GHS or USD'],['3 · We act','Registered, verified, visited'],['4 · You see it','Reports and photos']]}
+};
+function renderPath(k){const P=PATHS[k];
+ $('#ppanel').innerHTML=`<div class="ptop"><div><h3>${P.h}</h3><p>${P.p}</p><div class="pains">${P.pains.map(x=>`<span>${x}</span>`).join('')}</div></div>
+ <a class="btn btn-wa" href="${wa('Hello Gotham Consult, I am interested in: '+P.h.split(':')[0]+'. Can we have a free 30-minute call?')}" target="_blank" rel="noopener">Free 30-min call on WhatsApp</a></div>
+ <div class="pkgs">${P.pk.map(x=>`<div class="pkg ${x.hot?'hot':''}">${x.l?`<span class="lbl">${x.l}</span>`:''}<h4>${x.t}</h4><p>${x.d}</p><div class="pr">${x.pr}<small>${x.ps}</small></div><a href="${wa('Hello Gotham Consult, I would like: '+x.t+' ('+x.pr+'). What is the next step?')}" target="_blank" rel="noopener">Get started <span class="arrow">→</span></a></div>`).join('')}</div>
+ <div class="flow">${P.flow.map(([a,b])=>`<div><b>${a}</b>${b}</div>`).join('')}</div>${P.extra||''}
+ <p class="entity">Indicative prices. Final quotes are fixed before work starts.</p>`;}
+$$('.pbtn').forEach(b=>b.onclick=()=>{$$('.pbtn').forEach(x=>x.setAttribute('aria-selected',x===b));renderPath(b.dataset.path)});
+renderPath('biz');
+(()=>{const f=document.getElementById('briefF');if(!f)return;
+ const S=['Mining & minerals','Energy & power','Agriculture & cocoa','Finance & fintech','Technology & AI','Real estate & construction','Trade & logistics','Manufacturing','Health & education','Creative & tourism','Public sector / NGO','Other'];
+ const sel=document.getElementById('b-sec');sel.innerHTML='<option value="">Your sector</option>'+S.map(x=>`<option>${x}</option>`).join('');
+ f.onsubmit=async e=>{e.preventDefault();
+  const v=id=>document.getElementById(id).value.trim();
+  const note=document.getElementById('b-note');
+  if(!v('b-name')||!v('b-co')||!v('b-ph')||!/^\S+@\S+\.\S+$/.test(v('b-em'))){note.textContent='Please fill in your name, company, a valid email and your WhatsApp number.';return}
+  const btn=f.querySelector('button');btn.disabled=true;btn.textContent='Sending…';
+  try{
+   const r=await fetch('https://gotham.84-12-73-59.sslip.io/api/register',{method:'POST',mode:'cors',headers:{'content-type':'application/json'},
+    body:JSON.stringify({item_code:'BRIEF',company:v('b-co'),full_name:v('b-name'),email:v('b-em'),phone:v('b-ph'),sector:v('b-sec'),consent:true,marketing_opt_in:true,utm_source:'website',utm_campaign:'brief'})});
+   const d=await r.json(); if(!r.ok) throw new Error(d.error||'failed');
+   f.innerHTML='<div class="ok"><b>You are on the list.</b> The first brief reaches you on the next send. Reference '+d.reference+'.</div>';
+  }catch(err){
+   note.innerHTML='Could not reach our system. <a href="'+wa('Hello Gotham Consult, please add me to the Ghana Business Brief.')+'" target="_blank" rel="noopener" style="color:#C6CEDA">Send it on WhatsApp instead →</a>';
+   btn.disabled=false;btn.textContent='Send me the brief';
+  }};})();
+(()=>{const v=document.getElementById('recap'),b=document.getElementById('recapBtn');if(!v||!b)return;
+ b.onclick=()=>{v.muted=false;v.play();b.style.display='none'};
+ v.addEventListener('play',()=>b.style.display='none');})();
+(()=>{const g=document.getElementById('goMin');if(g)g.onclick=()=>{const b=document.getElementById('t-min');if(b)b.click();};
+const w=document.getElementById('waMin');if(w)w.href=waU('Hello Carlson Capital, I am a mining investor and would like a briefing on Ghana.');})();
+
+
+/* ===== free tools ===== */
+$$('.ttabs button').forEach(b=>b.onclick=()=>{$$('.ttabs button').forEach(x=>x.setAttribute('aria-selected',x===b));['hc','ff','vt'].forEach(k=>$('#tool-'+k).hidden=k!==b.dataset.tool)});
+const fs=(n,l,o)=>`<fieldset><legend>${l}</legend><div class="opts">${o.map(x=>`<label><input type="radio" name="${n}" value="${x}"><span>${x}</span></label>`).join('')}</div></fieldset>`;
+const val=(f,n)=>($(`#${f} [name="${n}"]:checked`)||{}).value;
+const SECT=['Trading & retail','Food, drinks & chop bar','Beauty & cosmetics','Farming & agro','Manufacturing','Transport & logistics','Construction & real estate','Tech & creative','Health & education','Hotels & tourism','Services & consulting','Church, NGO or association'];
+
+/* 1. Business health check */
+$('#hcq').innerHTML=`<div class="row2">${fs('ty','How is your business set up?',['Not registered yet','Sole proprietorship','Company (Ltd)','NGO, church or association'])}${fs('st','How many people work with you?',['Just me','1–5','6–30','More than 30'])}</div>
+${fs('se','What do you do?',SECT)}
+<div class="row2">${fs('sa','Yearly sales (roughly)',['Under GHS 200,000','GHS 200,000–750,000','Over GHS 750,000'])}${fs('tin','Do you have a TIN / Ghana Card linked to the business?',['Yes','No','Not sure'])}</div>
+<div class="row2">${fs('bop','Do you have a Business Operating Permit from your District Assembly?',['Yes','No','Not sure'])}${fs('bank','Business bank or MoMo merchant account?',['Yes','No'])}</div>
+${fs('web','Can customers find you online (Google, WhatsApp Business, social media)?',['Yes','A little','No'])}
+<div><button class="btn btn-dark" type="submit">Get my checklist</button></div>`;
+$('#hcq').onsubmit=e=>{e.preventDefault();const k=['ty','st','se','sa','tin','bop','bank','web'],a={};k.forEach(n=>a[n]=val('hcq',n));
+ if(k.some(n=>!a[n])){$('#hcr').hidden=false;$('#hcr').innerHTML='<p>Please answer every question to get your checklist.</p>';return}
+ const L=[],add=(state,t,d,help)=>L.push({state,t,d,help});
+ const goods=!['Services & consulting','Tech & creative','Health & education','Church, NGO or association'].includes(a.se);
+ if(a.ty==='Not registered yet')add('do','Register your business with the Registrar of Companies (ORC)','Sole proprietorship from about GHS 130 in fees, a company about GHS 510 plus stamp duty. You need it for bank loans, contracts and most programmes.','We register it for you, from GHS 500 plus ORC fees');
+ else if(a.ty==='NGO, church or association')add('chk','Check your registration and annual filings','Associations and NGOs must stay registered and file every year to receive donor money.','We prepare filings and donor-ready documents');
+ else add('ok','Registered with the ORC','Keep your annual returns up to date.','');
+ add(a.tin==='Yes'?'ok':'do','Tax Identification Number (TIN)',a.tin==='Yes'?'Good. File your returns on time to avoid penalties.':'Every business owner needs a TIN (your Ghana Card number) linked to the business with GRA.','We link it and set up your tax calendar');
+ add(a.bop==='Yes'?'ok':'do','Business Operating Permit (District Assembly)',a.bop==='Yes'?'Renew it every year.':'Required from your Metropolitan, Municipal or District Assembly. Without it the Assembly can close your business.','We apply at your Assembly for you');
+ if(a.st!=='Just me')add('do','Register as an employer with SSNIT and run PAYE','With staff you must pay SSNIT pension contributions and deduct PAYE income tax every month.','Monthly payroll and SSNIT from our Business Pro plan');
+ if(['Food, drinks & chop bar','Beauty & cosmetics'].includes(a.se))add('do','FDA registration and permits','Food, drinks and cosmetics need Food and Drugs Authority approval, and food handlers need health certificates.','We prepare your FDA application');
+ if(['Manufacturing','Construction & real estate','Farming & agro'].includes(a.se))add('chk','Check EPA and sector permits','Factories, processing and construction may need an Environmental Protection Agency permit and standards (GSA) certification.','We map the permits your project needs');
+ if(a.se==='Health & education')add('chk','Check your sector regulator licence','Clinics, pharmacies and schools need licences from their own regulators, renewed yearly.','We track renewals for you');
+ if(a.sa==='Over GHS 750,000'&&goods)add('do','Register for VAT and move to E-VAT','Since 1 January 2026, businesses selling goods above GHS 750,000 a year must register for VAT (now 20%) and issue E-VAT invoices.','E-VAT setup from GHS 2,500, filing from GHS 900/month');
+ else if(!goods&&a.ty!=='NGO, church or association')add('chk','Check if VAT applies to your services','VAT rules for service businesses differ from goods sellers. Check your position with GRA before you invoice big clients.','Free 15-minute VAT check on WhatsApp');
+ else add('ok','VAT: probably not required yet','Goods sellers under GHS 750,000 a year do not have to register. Keep records so you know when you cross it.','');
+ if(['Company (Ltd)','NGO, church or association'].includes(a.ty)||['Health & education','Tech & creative'].includes(a.se))add('chk','Data Protection Commission registration','If you keep customer, patient or member records, you may need to register as a data controller (Act 843).','We handle the registration');
+ add(a.bank==='Yes'?'ok':'do','Business bank or MoMo merchant account',a.bank==='Yes'?'Good: banks and lenders look at 6–12 months of business transactions.':'Keep business money separate. Lenders and programmes ask for statements in the business name.','We help you open one and set up simple bookkeeping');
+ add(a.web==='Yes'?'ok':(a.web==='A little'?'chk':'do'),'Be easy to find online',a.web==='Yes'?'Keep it active: post weekly, reply fast.':'A free Google Business Profile and WhatsApp Business catalogue bring customers who search on their phones.','Setup from GHS 350; AI posters and jingles from GHS 5');
+ const ok=L.filter(x=>x.state==='ok').length,score=Math.round(ok/L.length*100),col=score>=75?'var(--green)':score>=45?'var(--amber)':'#A8321F';
+ const order={do:0,chk:1,ok:2};L.sort((x,y)=>order[x.state]-order[y.state]);
+ const todo=L.filter(x=>x.state!=='ok').map(x=>'- '+x.t).join('\n');
+ $('#hcr').hidden=false;$('#hcr').innerHTML=`<div class="score"><div class="ring" style="--p:${score};--c:${col}"><b>${score}</b></div><div><h4>Your business health: ${score>=75?'strong':score>=45?'getting there':'needs attention'}</h4><small class="mute">${L.length-ok} thing${L.length-ok===1?'':'s'} to fix, most urgent first</small></div></div>
+ <ul class="todo">${L.map(x=>`<li class="${x.state}"><i>${x.state==='ok'?'✓':x.state==='do'?'!':'?'}</i><div><b>${x.t}</b><small>${x.d}</small>${x.help&&x.state!=='ok'?`<em>${x.help}</em>`:''}</div></li>`).join('')}</ul>
+ <div class="acts"><a class="btn btn-wa" target="_blank" rel="noopener" href="${wa(`Hello Gotham Consult, I did the business health check (${a.se}, ${a.ty}, ${a.st}). My score: ${score}/100. To fix:\n${todo||'- nothing, just checking'}\nCan you help?`)}">Send my checklist on WhatsApp</a></div>`;
+ $('#hcr').scrollIntoView({behavior:'smooth',block:'nearest'})};
+
+/* 2. Funding finder */
+$('#grq').innerHTML=`<div class="row2">${fs('sz','Business size',['Informal or micro (1–5)','Small or medium','Start-up or idea','NGO or community group'])}${fs('who','Who leads it?',['Woman-led','Youth-led (under 35)','Person with a disability','None of these'])}</div>
+${fs('sec','Main activity',SECT)}
+<div class="row2">${fs('rg','Region',['Greater Accra','Ashanti / Western','Northern / Upper / Savannah','Central / Eastern / Volta / other'])}${fs('ex','Do you sell, or want to sell, outside Ghana?',['Yes','Not yet'])}</div>
+<div><button class="btn btn-dark" type="submit">Find programmes</button></div>`;
+const PROG=[
+ {n:'MASLOC micro & small loans',by:'Microfinance and Small Loans Centre',d:'Government micro and small loans for start-ups and small businesses across all regions.',ok:a=>['Informal or micro (1–5)','Start-up or idea','Small or medium'].includes(a.sz)},
+ {n:'GEA SME Growth Grant',by:'Ghana Enterprises Agency · World Bank',d:'Grants, training and consulting for growing SMEs. Micro and large firms are excluded.',ok:a=>a.sz==='Small or medium'},
+ {n:'Development Bank Ghana credit (through partner banks)',by:'Development Bank Ghana',d:'Longer-term, lower-cost loans through participating banks, focused on sectors such as agribusiness, manufacturing and ICT.',ok:a=>a.sz==='Small or medium'&&['Farming & agro','Manufacturing','Tech & creative','Hotels & tourism'].includes(a.sec)},
+ {n:'Women & Youth Access to Finance Compact',by:'Consolidated Bank Ghana · Social Investment Fund',d:'Group, input and equipment loans with business training.',ok:a=>['Woman-led','Youth-led (under 35)'].includes(a.who)&&['Northern / Upper / Savannah','Central / Eastern / Volta / other'].includes(a.rg)},
+ {n:'Women & youth jobs programme',by:'African Development Bank · Government of Ghana',d:'Skills, finance and jobs for women and young people.',ok:a=>['Woman-led','Youth-led (under 35)'].includes(a.who)},
+ {n:"Women's Development Bank",tag:'Announced',by:'Government of Ghana',d:'A dedicated bank for women entrepreneurs, announced for 2026. We track when it opens.',ok:a=>a.who==='Woman-led'},
+ {n:'District Assembly disability fund',by:'District Assemblies Common Fund',d:'Part of each Assembly’s common fund is set aside to support persons with disabilities, including business start-up support.',ok:a=>a.who==='Person with a disability'},
+ {n:'EU-Ghana Youth Empowerment Programme',by:'European Union',d:'Calls for youth employment and entrepreneurship projects.',ok:a=>a.who==='Youth-led (under 35)'},
+ {n:'Feed Ghana Programme',by:'Ministry of Food and Agriculture',d:'Extension officers, inputs and support for farmers and agribusinesses through your district agriculture office.',ok:a=>a.sec==='Farming & agro'},
+ {n:'24-Hour Economy incentives',by:'24-Hour Economy Authority',d:'Duty-free machinery and 24-hour port clearance for registered multi-shift businesses.',ok:a=>['Manufacturing','Farming & agro','Transport & logistics','Hotels & tourism','Food, drinks & chop bar'].includes(a.sec)&&a.sz!=='Start-up or idea'},
+ {n:'AfCFTA market expansion',by:'Ministry of Trade · GEPA',d:'Screening and capacity building for SMEs selling across Africa.',ok:a=>a.ex==='Yes'},
+ {n:'GEF Small Grants Programme',by:'UNDP',d:'Grants for community and environmental projects.',ok:a=>a.sz==='NGO or community group'||a.sec==='Church, NGO or association'}];
+$('#grq').onsubmit=e=>{e.preventDefault();const k=['sz','who','sec','rg','ex'],a={};k.forEach(n=>a[n]=val('grq',n));
+ if(k.some(n=>!a[n])){$('#grr').hidden=false;$('#grr').innerHTML='<p>Please answer every question to see matching programmes.</p>';return}
+ const m=PROG.filter(p=>p.ok(a));
+ $('#grr').hidden=false;$('#grr').innerHTML=`<h4>${m.length?m.length+' programme'+(m.length>1?'s':'')+' may fit you':'No direct match right now'}</h4>${m.length?`<ul class="glist">${m.map(p=>`<li><b>${p.n}${p.tag?`<span class="tag2">${p.tag}</span>`:''}</b><small>${p.by}</small><br>${p.d}</li>`).join('')}</ul>`:'<p>New calls open often. Join the free Ghana Business Brief to be alerted.</p>'}
+ <p class="entity">Most programmes ask for registration, a TIN, a bank account and a business plan. Run the health check to see what you still need.</p>
+ <div class="acts"><a class="btn btn-wa" target="_blank" rel="noopener" href="${wa('Hello Gotham Consult, my funding finder answers: '+Object.values(a).join(', ')+'. Matches: '+(m.map(p=>p.n).join('; ')||'none')+'. Can you help me apply?')}">Get help applying</a></div>`;
+ $('#grr').scrollIntoView({behavior:'smooth',block:'nearest'})};
+
+/* 3. VAT & E-VAT check */
+$('#vatq').innerHTML=`<p class="mute" style="margin:0">New since 1 January 2026: VAT is 20%, the flat rate scheme is gone, and businesses selling goods register once sales pass GHS 750,000 a year.</p>
+${fs('gs','What do you mainly sell?',['Goods','Services','Both'])}${fs('ts','Yearly sales',['Under GHS 750,000','Over GHS 750,000','Not sure'])}${fs('vr','Are you VAT-registered with GRA?',['Yes','No','Not sure'])}${fs('ei','Do you issue invoices through GRA E-VAT?',['Yes','No','Not sure'])}${fs('sw','How do you make invoices today?',['Accounting software','Excel / Word','Paper / receipt book'])}
+<div><button class="btn btn-dark" type="submit">See my result</button></div>`;
+$('#vatq').onsubmit=e=>{e.preventDefault();const k=['gs','ts','vr','ei','sw'],a={};k.forEach(n=>a[n]=val('vatq',n));
+ if(k.some(n=>!a[n])){$('#vatr').hidden=false;$('#vatr').innerHTML='<p>Please answer every question to see your result.</p>';return}
+ let st,h,t;
+ if(a.vr!=='Yes'&&a.gs==='Goods'&&a.ts==='Under GHS 750,000'){st='g';h='No VAT registration needed yet';t='Goods sellers under GHS 750,000 a year do not have to register. Keep good records so you know when you pass it.'}
+ else if(a.vr!=='Yes'&&(a.ts==='Over GHS 750,000'||a.gs!=='Goods')){st='r';h='You may need to register now';t=a.ts==='Over GHS 750,000'?'Your sales are above the new threshold. Registering late can bring penalties and back-taxes.':'Service businesses follow different VAT rules. Check your position with GRA before invoicing big clients.'}
+ else if(a.vr==='Yes'&&a.ei==='Yes'){st='g';h='You look ready';t='You already use E-VAT. Make sure your prices reflect the new 20% rate and that you claim the input tax now allowed on NHIL and GETFund.'}
+ else if(a.vr==='Yes'&&a.sw==='Paper / receipt book'){st='r';h='Act now';t='Paper invoices cannot connect to E-VAT. When GRA calls your batch you may have only weeks to switch.'}
+ else {st='a';h='Prepare in the next 1–3 months';t='You are VAT-registered but not on E-VAT yet. Your invoicing must connect to GRA before your batch is called, and ex-flat-rate businesses must move to standard VAT.'}
+ $('#vatr').hidden=false;$('#vatr').innerHTML=`<span class="st ${st}">${h}</span><p>${t}</p><div class="acts"><a class="btn btn-wa" target="_blank" rel="noopener" href="${wa('Hello Gotham Consult, my VAT check: '+h+'. Sell: '+a.gs+'; sales: '+a.ts+'; VAT-registered: '+a.vr+'; E-VAT: '+a.ei+'; invoicing: '+a.sw+'. Can you help?')}">Send result on WhatsApp</a></div>`};
+
+/* Membership tiers */
+const TIERS=[
+ {t:'Ghana Business Brief',p:'Free',s:'',f:['Weekly brief on WhatsApp','Grant & tender alerts','Forum announcements'],c:'Join free',m:'Please add me to the free Ghana Business Brief on WhatsApp.'},
+ {t:'Member',p:'GHS 150',s:'/ month',f:['Everything in Brief','20% off all forums','Monthly online business clinic','Priority grant alerts'],c:'Become a member',m:'I would like to become a Member (GHS 150/month).'},
+ {t:'Business Pro',hot:1,p:'GHS 1,200',s:'/ month',f:['Bookkeeping & E-VAT filing','Tax & compliance calendar','Quarterly finance review','Two forum seats per quarter'],c:'Start Business Pro',m:'I would like Business Pro (GHS 1,200/month).'},
+ {t:'Investor Desk',p:'USD 1,000',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Deal pipeline & introductions'],c:'Talk to us',m:'I am interested in the Investor Desk (USD 1,000/month).'}];
+$('#tiers').innerHTML=TIERS.map(x=>`<div class="tier reveal ${x.hot?'hot':''}"><h3>${x.t}</h3><div class="price">${x.p} <small>${x.s}</small></div><ul>${x.f.map(i=>`<li>${i}</li>`).join('')}</ul><a class="btn ${x.hot?'btn-dark':'btn-line'}" href="${wa('Hello Gotham Consult. '+x.m)}" target="_blank" rel="noopener">${x.c}</a></div>`).join('');
+
+/* assistant */
+const A=[
+ [/gipa|1173|register|capital|foreign/i,'The GIPA Act 2026 (Act 1173) replaced the old GIPC Act 865 on 15 July 2026. There is no longer a general minimum capital requirement, except for trading companies (USD 500,000). Registration is now meant to take 5 working days and must be renewed every year. We handle it end to end. Shall I connect you with the team on WhatsApp?'],
+ [/pay|momo|price|ticket|cost/i,'Forum tickets are paid by mobile money (MTN, Telecel or AirtelTigo). Click Register on a forum: we send the price, reference and instructions to your WhatsApp, and confirm your seat when payment arrives.'],
+ [/forum|event|seminar|when|where/i,'Next: "SMEs at the Centre" on Saturday 24 October 2026, 14:00 at Tang Palace Hotel, Accra. It is by invitation and free for SMEs, stakeholders and investors: send your details on the registration page and we confirm your invitation.'],
+ [/invest|sector|economy|growth|ghana/i,'Ghana grew 6.2% in the first half of 2026, with ICT up 30.9% and inflation down to 5.0%. The Invest in Ghana section shows sector outlooks for German, Nordic, UK and global investors.'],
+ [/ai|website|digital|hosting|automation/i,'Our AI and digital practices cover AI readiness audits, finance and reporting automation, websites with MoMo payments, and managed hosting.'],
+ [/energy|solar|mining|gold/i,'Our energy, mining and infrastructure practice prepares bankable projects: solar IPPs, PPAs, geology-led due diligence and packaging for development finance.'],
+ [/hello|hi|hey/i,'Hello! Ask me about our services, forums, or investing in Ghana.']];
+const say=(t,w)=>{const m=document.createElement('div');m.className='m '+w;m.textContent=t;$('#msgs').append(m);$('#msgs').scrollTop=1e6};
+function answer(q){say(q,'me');const h=A.find(([r])=>r.test(q));setTimeout(()=>say(h?h[1]:'Good question. Our team will answer you personally on WhatsApp during office hours.','bot'),450)}
+$('#chips').innerHTML=['What is GIPA Act 1173?','How do I pay?','Next forum','Invest in Ghana'].map(c=>`<button type="button">${c}</button>`).join('')+`<a class="btn btn-wa" style="padding:5px 12px;font-size:12.5px" href="${wa('Hello Gotham Consult, I have a question.')}" target="_blank" rel="noopener">WhatsApp us</a>`;
+$('#chips').addEventListener('click',e=>{if(e.target.tagName==='BUTTON')answer(e.target.textContent)});
+$('#chatF').onsubmit=e=>{e.preventDefault();const v=$('#chatI').value.trim();if(v){answer(v);$('#chatI').value=''}};
+$('#chatO').onclick=()=>{$('#chat').hidden=false;$('#chatO').hidden=true;if(!$('#msgs').children.length)say('Hi, welcome to Gotham Consult. How can we help?','bot')};
+$('#chatX').onclick=()=>{$('#chat').hidden=true;$('#chatO').hidden=false};
+
+/* partners wall and sponsorship enquiries, live from the back office */
+const SPON_TIERS=[['headline','Headline','One per forum. Your name in the invitation, the largest logo on the poster and the site, a speaking slot and a table in the room.'],
+ ['partner','Partner','Logo on the forum page, the registration page and the poster, a table in the room and a mention from the stage.'],
+ ['supporting','Supporting','Logo on the forum page and the registration page, and two delegate seats.'],
+ ['listing','Directory listing','Your logo and one line in the partners directory across the site, for a year.']];
+$('#tierList').innerHTML=SPON_TIERS.map(([k,t,d])=>`<div><b>${t}</b><span>${d}</span></div>`).join('');
+
+const TIERLABEL={headline:'Headline sponsor',partner:'Partners',supporting:'Supporting partners',listing:'In the directory'};
+fetch(CRM_API+'/api/sponsors',{mode:'cors'}).then(r=>r.json()).then(d=>{
+ const list=(d.sponsors||[]);
+ const wall=$('#sponsorWall'); if(!wall)return;
+ if(!list.length){wall.innerHTML='';return}
+ const by={};list.forEach(s=>{(by[s.tier]=by[s.tier]||[]).push(s)});
+ wall.innerHTML=['headline','partner','supporting','listing'].filter(t=>by[t]).map(t=>`
+  <div class="sptier"><h4>${TIERLABEL[t]}</h4><div class="splogos">${by[t].map(s=>{
+   const inner=(s.logo?`<picture><source type="image/webp" srcset="${s.logo.sizes.lg.webp}"><img src="${s.logo.sizes.lg.jpg}" alt="${esc(s.name)}" loading="lazy"></picture>`:`<b>${esc(s.name)}</b>`)
+    +(s.blurb?`<span>${esc(s.blurb)}</span>`:'');
+   return s.url?`<a class="splogo t-${t}" href="${esc(s.url)}" target="_blank" rel="noopener sponsored">${inner}</a>`
+               :`<div class="splogo t-${t}">${inner}</div>`}).join('')}</div></div>`).join('');
+}).catch(()=>{});
+
+$('#sponF').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const f=e.target, b=Object.fromEntries(new FormData(f).entries());
+ b.utm_source='website'; b.utm_campaign='sponsorship';
+ const msg=$('#sponMsg'), btn=f.querySelector('button');
+ btn.disabled=true; msg.textContent='Sending…';
+ try{
+  const r=await fetch(CRM_API+'/api/sponsor-enquiry',{method:'POST',mode:'cors',
+   headers:{'content-type':'application/json'},body:JSON.stringify(b)});
+  if(!r.ok)throw new Error();
+  f.reset(); msg.textContent='Thank you. We will come back to you within two working days.';
+ }catch(err){
+  msg.innerHTML='That did not go through. WhatsApp us on <a href="https://wa.me/'+UF_NUMBER+'" target="_blank" rel="noopener">+233 55 239 5548</a> and we will sort it out.';
+ }finally{btn.disabled=false}
+});
+
+</script>

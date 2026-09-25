@@ -1,0 +1,371 @@
+<title>Gotham Registration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">
+<style>
+:root{color-scheme:light;--paper:#FAFAF8;--surface:#fff;--sunk:#F2F2EE;--ink:#0F1B2D;--mute:#5A6472;--line:#E2E4E7;--gold:#A9761F;--gold-soft:#F4EAD7;--green:#1F6B4E;--green-soft:#E1EFE8;--wa:#1FA855;--shadow:0 18px 50px rgba(15,27,45,.10)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16.5px/1.55 "Hanken Grotesk",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.02em;line-height:1.12}
+p{margin:0}button,input,select,textarea{font:inherit;color:inherit}
+em.serif{font-family:Newsreader,Georgia,serif;font-style:italic;font-weight:400}
+.wrap{max-width:1080px;margin:0 auto;padding-inline:16px}
+.kente{height:6px;background:repeating-linear-gradient(90deg,#A9761F 0 28px,#0F1B2D 28px 40px,#1F6B4E 40px 64px,#C9A24B 64px 76px)}
+header{border-bottom:1px solid var(--line);background:rgba(250,250,248,.9)}
+.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-block:14px}
+.brand{color:var(--ink);display:flex;gap:10px;align-items:center;text-decoration:none;font-weight:700;font-size:18px}
+.brand small{display:block;font-size:11px;font-weight:500;color:var(--mute)}
+.mark{width:32px;height:32px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-size:15px}
+nav.main{display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+nav.main a{font-size:14.5px;color:var(--mute);text-decoration:none;padding:7px 12px;border-radius:999px}
+nav.main a:hover{color:var(--ink);background:var(--sunk)}
+nav.main a.here{background:var(--ink);color:#fff}
+@media(max-width:760px){.bar{flex-direction:column;align-items:flex-start;gap:8px}nav.main{justify-content:flex-start;margin-left:-12px}nav.main a{padding:6px 10px;font-size:13.5px}}
+.intro{padding:40px 0 22px}
+.eyebrow{font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600;margin-bottom:10px}
+.intro h1{font-size:clamp(30px,5vw,48px)}
+.intro p.lead{color:var(--mute);max-width:640px;margin-top:12px}
+.feat{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;background:var(--ink);color:#F4F5F2;border-radius:20px;padding:22px 24px;margin:22px 0 8px}
+.feat .d{background:var(--gold);color:#fff;border-radius:14px;padding:10px 14px;text-align:center;line-height:1.1}
+.feat .d b{display:block;font-size:28px}.feat .d span{font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.feat h2{font-size:21px}.feat p{color:#AEB6C2;font-size:14.5px;margin-top:4px}
+.feat .btn{background:#fff;color:var(--ink)}
+.grid{display:grid;grid-template-columns:1.35fr 1fr;gap:26px;align-items:start;padding:22px 0 60px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px}
+.card h3{font-size:19px;margin-bottom:4px}.card .sub{color:var(--mute);font-size:14px;margin-bottom:16px}
+.step{display:flex;gap:10px;align-items:baseline}.step i{font-style:normal;width:26px;height:26px;border-radius:50%;background:var(--gold-soft);color:var(--gold);display:inline-grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+fieldset{border:0;padding:0;margin:0 0 22px}
+legend{font-weight:600;margin-bottom:10px;padding:0}
+.grp{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:14px 0 8px}
+.opt{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.opt:hover{border-color:#BFC5CC}
+.opt input{accent-color:var(--ink);width:18px;height:18px;margin:0}
+.opt b{display:block;font-size:15.5px;line-height:1.3}.opt small{color:var(--mute);font-size:13px}
+.opt .pr{font-weight:600;white-space:nowrap;font-size:15px}
+.opt>div{min-width:0}
+.grid>*{min-width:0}
+label{min-width:0;overflow-wrap:anywhere}
+label>*{min-width:0}
+main,.wrap{min-width:0;max-width:100%}
+.card{min-width:0}
+fieldset{min-width:0}
+#items{min-width:0}
+.opt b,.opt small{overflow-wrap:anywhere}
+@media(max-width:520px){.opt{grid-template-columns:auto 1fr}.opt .pr{grid-column:2;text-align:left;white-space:normal;margin-top:2px}}
+.opt:has(input:checked){border-color:var(--ink);background:#F7F8F9;box-shadow:inset 0 0 0 1px var(--ink)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label.l{display:block;font-size:14px;font-weight:600;margin-bottom:5px}
+label.l span{font-weight:400;color:var(--mute)}
+input.t,select.t,textarea.t{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:#fff;outline:none}
+input.t:focus,select.t:focus,textarea.t:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(15,27,45,.08)}
+textarea.t{min-height:78px;resize:vertical}
+.qty{display:flex;align-items:center;gap:10px}
+.qty button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:18px}
+.qty output{min-width:24px;text-align:center;font-weight:600}
+.pays{display:grid;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:13px 22px;font-weight:600;border:1px solid transparent;cursor:pointer;text-decoration:none;font-size:16px}
+.btn-dark{background:var(--ink);color:#fff}.btn-wa{background:var(--wa);color:#fff}.btn-line{background:#fff;border-color:var(--line)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.sum{position:sticky;top:16px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.row span:first-child{color:var(--mute)}
+.row.tot{border:0;font-size:19px;font-weight:700;padding-top:12px}.row.tot span:first-child{color:var(--ink)}
+.ref{font-family:ui-monospace,Menlo,monospace;background:var(--sunk);border-radius:6px;padding:1px 7px;font-size:14px}
+.how{margin:12px 0 0;padding-left:20px;font-size:14.5px;color:var(--mute);display:grid;gap:4px}
+.how b{color:var(--ink)}
+.box{border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:12px;padding:12px 14px;background:#FFFDF8;font-size:14px;color:var(--mute);margin-top:12px}
+.warn{background:var(--gold-soft);color:#7A5310;border-radius:10px;padding:8px 12px;font-size:13.5px;margin-top:10px}
+.acts{display:grid;gap:10px;margin-top:18px}
+.fine{font-size:12.5px;color:var(--mute);margin-top:12px}
+.ok{display:none;text-align:center;padding:20px 6px}
+.ok.on{display:block}
+.ok .tick{width:58px;height:58px;border-radius:50%;background:var(--green-soft);color:var(--green);display:grid;place-items:center;margin:0 auto 12px;font-size:28px}
+footer{border-top:1px solid var(--line);padding:22px 0 34px;color:var(--mute);font-size:13.5px}
+.err{color:#A1322B;font-size:13.5px;margin-top:8px;min-height:1em}
+@media(max-width:860px){.grid{grid-template-columns:1fr}.sum{position:static}.feat{grid-template-columns:auto 1fr}.feat .btn{grid-column:1/-1}.f2{grid-template-columns:1fr}}
+
+/* selected item detail: picture, story, programme, downloads */
+.dt{margin:14px 0 4px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#fff;min-width:0}
+.dt picture,.dt img{display:block;width:100%;height:auto}
+.dt-b{padding:16px 18px;min-width:0}
+.dt-b p{margin:0 0 10px;color:var(--mute);font-size:15px;line-height:1.62}
+.dt-ag{margin:14px 0 4px;border-top:1px solid var(--line);padding-top:12px}
+.dt-ag b{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+.dt-ag div{display:flex;gap:12px;font-size:14.5px;padding:4px 0;border-bottom:1px dotted var(--line)}
+.dt-ag div:last-child{border-bottom:0}
+.dt-ag span{flex:0 0 58px;font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+.dt-sp{font-size:14.5px}.dt-sp span{color:var(--mute)}
+.dt-dl{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
+.dt-dl a{display:inline-flex;align-items:baseline;gap:7px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:14px;font-weight:600;color:var(--ink);background:#fff}
+.dt-dl a:hover{border-color:var(--ink)}
+.dt-dl a span{font-weight:400;color:var(--mute);font-size:12.5px}
+</style>
+
+<div class="kente" aria-hidden="true"></div>
+<header><div class="wrap bar">
+  <a class="brand" href="#"><span class="mark">G</span><span>Gotham Consult<small>in partnership with Carlson Capital Ltd</small></span></a>
+  <nav class="main" id="nav" aria-label="Main"></nav>
+</div></header>
+
+<main class="wrap">
+  <section class="intro">
+    <p class="eyebrow">Registration</p>
+    <h1>Register your company. <em class="serif">In minutes.</em></h1>
+    <p class="lead">Book a forum seat, a membership or an investor briefing. Add your company details, choose how to pay, and we confirm on WhatsApp or email, usually the same day.</p>
+    <div class="feat" id="feat"></div>
+  </section>
+
+  <div class="grid">
+    <form class="card" id="form" novalidate>
+      <fieldset>
+        <legend class="step"><i>1</i>What are you registering for?</legend>
+        <div id="items"></div>
+        <div id="detail"></div>
+        <div id="inviteNote"></div>
+      </fieldset>
+
+      <fieldset id="qtyBox">
+        <legend class="step"><i>2</i>Number of attendees</legend>
+        <div class="qty"><button type="button" data-q="-1" aria-label="One less">−</button><output id="q">1</output><button type="button" data-q="1" aria-label="One more">+</button><span style="color:var(--mute);font-size:14px;margin-left:6px">max 10 per company</span></div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="step"><i id="n3">3</i>Company &amp; contact</legend>
+        <div class="f2">
+          <div><label class="l" for="co">Company name</label><input class="t" id="co" required autocomplete="organization"></div>
+          <div><label class="l" for="reg">Company reg. no. <span>(optional)</span></label><input class="t" id="reg" placeholder="e.g. CS123456789"></div>
+          <div><label class="l" for="nm">Your full name</label><input class="t" id="nm" required autocomplete="name"></div>
+          <div><label class="l" for="role">Job title <span>(optional)</span></label><input class="t" id="role" autocomplete="organization-title"></div>
+          <div><label class="l" for="em">Email</label><input class="t" id="em" type="email" required autocomplete="email"></div>
+          <div><label class="l" for="ph">WhatsApp / phone</label><input class="t" id="ph" required inputmode="tel" autocomplete="tel" placeholder="+233 24 000 0000"></div>
+          <div><label class="l" for="ct">Country</label><select class="t" id="ct"></select></div>
+          <div><label class="l" for="sec">Sector</label><select class="t" id="sec"></select></div>
+          <div id="catBox" hidden><label class="l" for="cat">I am attending as</label><select class="t" id="cat"></select></div>
+        </div>
+        <div style="margin-top:12px" id="guestsBox"><label class="l" for="gs">Other attendees <span>(names, optional)</span></label><textarea class="t" id="gs" placeholder="One name per line"></textarea></div>
+      </fieldset>
+
+      <fieldset>
+        <legend class="step"><i id="n4">4</i>How would you like to pay?</legend>
+        <div class="pays" id="pays"></div>
+        <div id="payInfo"></div>
+      </fieldset>
+
+      <label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--mute)"><input type="checkbox" id="cons" required style="margin-top:4px;accent-color:var(--ink)"> I agree that Gotham Consult and Carlson Capital Ltd may use these details to process my registration and contact me about it, as described in the <a href="https://gotham-consult-gh.netlify.app/privacy.html" target="_blank" rel="noopener">privacy notice</a>, and I accept the <a href="https://gotham-consult-gh.netlify.app/terms.html" target="_blank" rel="noopener">terms of service</a>. Ghana Data Protection Act 2012 (Act 843); GDPR standards for EU and UK clients.</label>
+      <p class="err" id="err" role="alert"></p>
+    </form>
+
+    <aside class="card sum" aria-live="polite">
+      <div id="sumBody">
+        <h3>Your registration</h3>
+        <p class="sub">Reference <span class="ref" id="refT"></span></p>
+        <div id="rows"></div>
+        <div class="acts">
+          <button class="btn btn-dark" id="goSend" type="button">Complete registration</button>
+          <button class="btn btn-wa" id="goWa" type="button">Register via WhatsApp</button>
+          <button class="btn btn-line" id="goMail" type="button">Register via email</button>
+        </div>
+        <p class="fine">Your seat or service is held for 24 hours while payment is confirmed, and for 48 hours once you report a mobile money transaction. Our fees are for preparation and delivery, never for access or approvals. Cancellations and refunds are covered in the <a href="https://gotham-consult-gh.netlify.app/terms.html" target="_blank" rel="noopener">terms</a>.<br><br><b>Photography:</b> our forums are photographed and filmed for reporting and promotion, so you may appear in that material. Tell us at the desk or by email if you would rather not be.</p>
+      </div>
+      <div class="ok" id="ok">
+        <div class="tick">✓</div>
+        <h3 id="okTitle">Registration received</h3>
+        <p style="color:var(--mute);margin:8px 0 14px">Your reference is <span class="ref" id="refOk"></span>. We confirm on WhatsApp or email, usually the same day.</p>
+        <div id="okExtra"></div>
+        <button class="btn btn-line" type="button" id="again">Register someone else</button>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer><div class="wrap">Gotham Consult · Accra, Ghana · In strategic partnership with Carlson Capital Ltd, registered in Ghana · WhatsApp +233 55 041 6627 · info@gothamconsult.com · <a href="https://gotham-consult-gh.netlify.app/privacy.html" style="color:var(--mute)">Privacy</a> · <a href="https://gotham-consult-gh.netlify.app/terms.html" style="color:var(--mute)">Terms</a><br>Investor, mining &amp; international desk: Uffe Carlson, Carlson Capital Ltd · WhatsApp and direct line <a href="tel:+233552395548" style="color:var(--mute)">+233 55 239 5548</a> · <a href="https://gotham.84-12-73-59.sslip.io" target="_blank" rel="noopener" style="color:var(--mute)">Team login</a></div></footer>
+
+<script>
+/* ===== Settings Joy/Uffe can change ===== */
+const WA_NUMBER='233550416627';
+const EMAIL='info@gothamconsult.com';
+const SITE_URL='index.html';   // our own site on the same domain
+const API='https://gotham.84-12-73-59.sslip.io';   // Gotham CRM
+let PAYL='';                     // Paystack payment page (set in the CRM under Settings)
+let MOMO='[Gotham MoMo number]';  // MoMo number (set in the CRM under Settings)
+const MOMO_NAME='Gotham Consult';
+/* ======================================== */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const QS=new URLSearchParams(location.search);
+const UTM={utm_source:QS.get('utm_source')||'',utm_campaign:QS.get('utm_campaign')||''};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=(n,c)=>Number(n)===0?'Free':c+' '+Number(n).toLocaleString('en-GB');
+let ITEMS=[
+ {id:'F1',g:'Forums',t:'SMEs at the Centre: Inclusive Partnerships under the GIPA Act 2026',s:'Saturday 24 October 2026 · Tang Palace Hotel, Accra',p:0,c:'GHS',q:1,feat:1,day:'24',mon:'Oct'},
+ {id:'F2',g:'Forums',t:'AI in Your Business: Hands-on Workshop for SME Owners',s:'Saturday 7 November 2026 · East Legon, Accra',p:450,c:'GHS',q:1},
+ {id:'F3',g:'Forums',t:'Diaspora & Nordic Investor Roundtable',s:'Saturday 21 November 2026 · Online',p:0,c:'GHS',q:1},
+ {id:'M1',g:'Membership',t:'Member',s:'20% off forums, monthly business clinic, priority grant alerts',p:150,c:'GHS',per:'/ month'},
+ {id:'M2',g:'Membership',t:'Business Pro',s:'Bookkeeping, E-VAT filing, compliance calendar, forum seats',p:1200,c:'GHS',per:'/ month'},
+ {id:'M3',g:'Membership',t:'Investor Desk',s:'Local representation, site visits, monthly written report',p:1000,c:'USD',per:'/ month'},
+ {id:'B1',g:'Investor briefings',t:'Ghana investor briefing',s:'60-minute call on your sector, credited to follow-on work',p:250,c:'USD'},
+ {id:'B2',g:'Investor briefings',t:'Mining regime briefing',s:'Royalties, reform status, licences and risks for your mineral',p:750,c:'USD'}];
+const PAYS=[
+ {id:'online',t:'Pay online',s:'Card (Visa, Mastercard) or mobile money, secure checkout',on:()=>!!PAYL},
+ {id:'momo',t:'Mobile money (Ghana)',s:'MTN MoMo, Telecel Cash or AirtelTigo Money',on:()=>true},
+ {id:'inv',t:'Invoice & bank transfer',s:'For companies and international clients: EUR, USD or GBP',on:()=>true}];
+let sel=ITEMS[0],qty=1,pay='momo',ref='',OKT='Registration received';
+const newRef=()=>ref='GC-'+sel.id+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
+
+/* featured event */
+function buildFeat(F){ if(!F)return;
+ const yr=F.mon?`${F.mon} ${new Date().getFullYear()+(new Date().getMonth()>9?1:0)}`:'';
+ $('#feat').innerHTML=`<div class="d"><b>${F.day}</b><span>${esc(F.year||yr)}</span></div><div><p class="eyebrow" style="color:#E6B866;margin:0 0 4px">Next forum</p><h2>${esc(F.t)}</h2><p>${esc(F.s)} · ${F.p?money(F.p,F.c)+' per seat':(F.appr?'By invitation · free for SMEs, stakeholders and investors':'Free entry · registration required')}${F.left!=null?` · ${F.left} seats left`:''}</p></div><a class="btn" href="#form" id="featBtn">${F.appr?'Request your invitation →':'Book a seat →'}</a>`;
+ $('#featBtn').onclick=()=>pick(F.id);
+}
+buildFeat(ITEMS.find(i=>i.feat));
+
+/* items */
+function buildItems(){let h='',last='';
+ ITEMS.forEach(i=>{if(i.g!==last){h+=`<p class="grp">${i.g}</p>`;last=i.g}
+  const sold=i.left===0;
+  h+=`<label class="opt"><input type="radio" name="item" value="${i.id}" ${sold?'disabled':''}><div><b>${esc(i.t)}</b><small>${esc(i.s)}${sold?' · fully booked':''}</small></div><span class="pr">${money(i.p,i.c)}${i.per?` <small>${i.per}</small>`:''}</span></label>`});
+ $('#items').innerHTML=h;
+ $$('input[name=item]').forEach(r=>r.onchange=()=>pick(r.value,true));
+}
+buildItems();
+
+$('#pays').innerHTML=PAYS.filter(p=>p.on()).map(p=>`<label class="opt"><input type="radio" name="pay" value="${p.id}" ${p.id===pay?'checked':''}><div><b>${p.t}</b><small>${p.s}</small></div><span></span></label>`).join('');
+$$('input[name=pay]').forEach(r=>r.onchange=()=>{pay=r.value;render()});
+
+['Ghana','Nigeria','Côte d\'Ivoire','United Kingdom','Denmark','Germany','Netherlands','Norway','Sweden','France','United States','Canada','United Arab Emirates','China','South Africa','Other'].forEach(c=>$('#ct').add(new Option(c)));
+['Mining & minerals','Energy & power','Agriculture & cocoa','Finance & fintech','Technology & AI','Real estate & construction','Trade & logistics','Manufacturing','Health & education','Creative & tourism','Public sector / NGO','Other'].forEach(c=>$('#sec').add(new Option(c)));
+
+$$('[data-q]').forEach(b=>b.onclick=()=>{qty=Math.min(10,Math.max(1,qty+ +b.dataset.q));$('#q').textContent=qty;render()});
+
+function buildDetail(){const b=$('#detail');if(!b)return;const i=sel;
+ if(!i||(!i.img&&!i.desc&&!(i.docs||[]).length&&!(i.agenda||[]).length)){b.innerHTML='';return}
+ const pic=i.img?`<picture><source type="image/webp" srcset="${i.img.sizes.card.webp} 800w, ${i.img.sizes.hero.webp} 1600w" sizes="(max-width:700px) 100vw, 640px"><img src="${i.img.sizes.card.jpg}" width="${i.img.sizes.card.w}" height="${i.img.sizes.card.h}" alt="${esc(i.img.alt||i.t)}" loading="lazy"></picture>`:'';
+ const paras=(i.desc||'').split(/\n\s*\n/).filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('');
+ const ag=(i.agenda||[]).length?`<div class="dt-ag"><b>Programme</b>${i.agenda.map(a=>`<div><span>${esc(a.time||'')}</span>${esc(a.what||'')}</div>`).join('')}</div>`:'';
+ const sp=(i.speakers||[]).filter(x=>x.name).length?`<p class="dt-sp"><b>Speaking:</b> ${i.speakers.filter(x=>x.name).map(x=>esc(x.name)+(x.role?' <span>('+esc(x.role)+')</span>':'')).join(', ')}</p>`:'';
+ const dl=(i.docs||[]).length?`<div class="dt-dl">${i.docs.map(d=>`<a href="${d.url}" target="_blank" rel="noopener" download>↓ ${esc(d.label||d.name)} <span>PDF · ${d.kb} KB</span></a>`).join('')}</div>`:'';
+ b.innerHTML=`<div class="dt">${pic}<div class="dt-b">${paras||(i.sum?`<p>${esc(i.sum)}</p>`:'')}${ag}${sp}${dl}</div></div>`}
+
+function pick(id,fromRadio){sel=ITEMS.find(i=>i.id===id)||ITEMS[0];if(!fromRadio){const r=$(`input[name=item][value="${sel.id}"]`);if(r)r.checked=true}
+ if(sel.c==='USD'&&pay==='momo'){pay='inv';const r=$('input[name=pay][value=inv]');if(r)r.checked=true}
+ newRef();buildDetail();render()}
+
+function total(){return sel.p*(sel.q?qty:1)}
+function render(){
+ const forum=!!sel.q;$('#qtyBox').hidden=!forum;$('#guestsBox').hidden=!forum;
+ const auds=(sel.aud||'').split(',').map(x=>x.trim()).filter(Boolean);
+ $('#catBox').hidden=!auds.length;
+ if(auds.length){const c=$('#cat');if(c.dataset.for!==sel.id){c.innerHTML=auds.map(a=>`<option>${esc(a)}</option>`).join('');c.dataset.for=sel.id}}
+ $('#inviteNote').innerHTML=sel.appr?`<div class="box"><b style="color:var(--ink)">By invitation.</b> This forum is free for SMEs, stakeholders and investors. Send your details and we confirm your invitation, usually the same day. Seats are limited.</div>`:'';
+ $('#goSend').disabled=sel.phase==='past';
+ $('#n3').textContent=forum?3:2;$('#n4').textContent=forum?4:3;
+ const tot=total(),free=tot===0;
+ $('#pays').closest('fieldset').hidden=free;
+ $('#refT').textContent=ref;
+ $('#rows').innerHTML=`<div class="row"><span>Item</span><span style="text-align:right">${esc(sel.t)}</span></div>
+ ${forum?`<div class="row"><span>Seats</span><span>${qty} × ${money(sel.p,sel.c)}</span></div>`:`<div class="row"><span>Price</span><span>${money(sel.p,sel.c)} ${sel.per||''}</span></div>`}
+ ${free?'':`<div class="row"><span>Payment</span><span>${PAYS.find(p=>p.id===pay).t}</span></div>`}
+ <div class="row tot"><span>Total</span><span>${money(tot,sel.c)}${sel.per?' '+sel.per:''}</span></div>`;
+ const amt=money(tot,sel.c);let info='';
+ if(free) info='';
+ else if(pay==='online') info=`<div class="box">You'll open our secure payment page in a new tab. Enter <b>${amt}</b> and reference <span class="ref">${ref}</span>, then send your registration here.</div><div class="acts"><a class="btn btn-dark" href="${PAYL}" target="_blank" rel="noopener">Open secure payment →</a></div>`;
+ else if(pay==='momo'){
+  const gh=sel.c==='GHS'?amt:'the GHS amount we confirm on WhatsApp';
+  info=`<div class="box"><b style="color:var(--ink)">Pay by mobile money</b><ol class="how">
+  <li>MTN: dial <b>*170#</b> → Transfer Money → MoMo User. Telecel or AirtelTigo: dial <b>*110#</b> → Send Money.</li>
+  <li>${MOMO.startsWith('[')?'Send to the Gotham Consult MoMo number we share on WhatsApp':`Send to <b>${esc(MOMO)}</b> (${MOMO_NAME})`}</li>
+  <li>Amount: <b>${gh}</b> · Reference: <span class="ref">${ref}</span></li>
+  <li>Add the transaction ID from your MoMo SMS to your WhatsApp message.</li></ol>
+</div>`}
+ else info=`<div class="box"><b style="color:var(--ink)">Invoice & bank transfer</b><br>We email a proforma invoice from Carlson Capital Ltd within one working day, in EUR, USD, GBP or GHS, with bank details and reference <span class="ref">${ref}</span>. Your place is confirmed when payment arrives.</div>`;
+ $('#payInfo').innerHTML=info;
+ $('#goWa').textContent=free?'Reserve via WhatsApp':'Register via WhatsApp';
+ $('#goSend').textContent=sel.appr?'Request my invitation':(free?'Reserve my seat':'Complete registration');
+}
+
+function msg(){const guests=$('#gs').value.trim();
+ return `Hello Gotham Consult,\nI would like to register.\n\nItem: ${sel.t}${sel.s?'\n'+sel.s:''}\n${sel.q?`Seats: ${qty} × ${money(sel.p,sel.c)}\n`:''}Total: ${money(total(),sel.c)}${sel.per?' '+sel.per:''}\nReference: ${ref}\n${total()?`Payment: ${PAYS.find(p=>p.id===pay).t}\n`:''}\nCompany: ${$('#co').value.trim()}${$('#reg').value.trim()?'\nReg. no.: '+$('#reg').value.trim():''}\nName: ${$('#nm').value.trim()}${$('#role').value.trim()?' ('+$('#role').value.trim()+')':''}\nEmail: ${$('#em').value.trim()}\nPhone: ${$('#ph').value.trim()}\nCountry: ${$('#ct').value} · Sector: ${$('#sec').value}${sel.q&&guests?'\nOther attendees:\n'+guests:''}${pay==='momo'&&total()?'\nMoMo transaction ID: ':''}`}
+
+function valid(){const bad=['#co','#nm','#em','#ph'].find(s=>!$(s).value.trim());
+ if(bad){$('#err').textContent='Please fill in company name, your name, email and phone.';$(bad).focus();return false}
+ if(!/^\S+@\S+\.\S+$/.test($('#em').value.trim())){$('#err').textContent='Please check your email address.';$('#em').focus();return false}
+ if(!$('#cons').checked){$('#err').textContent='Please tick the consent box.';return false}
+ $('#err').textContent='';return true}
+function done(extra){$('#refOk').textContent=ref;$('#sumBody').hidden=true;$('#ok').classList.add('on'); $('#okTitle').textContent=OKT;
+ const box=$('#okExtra'); box.innerHTML=extra||'';
+ if($('#rpSend'))$('#rpSend').onclick=async()=>{
+   const t=$('#rpTxn').value.trim(); if(!t)return;
+   try{ await fetch(API+'/api/payment-reported',{method:'POST',mode:'cors',headers:{'content-type':'application/json'},
+     body:JSON.stringify({reference:ref,txn:t,phone:$('#ph').value.trim(),network:$('#rpNet').value})});
+     $('#rpOut').textContent='Thank you. We confirm as soon as the payment is matched.';
+   }catch{ $('#rpOut').textContent='Could not send. Please message us on WhatsApp with the transaction ID.'; }};
+ $('#ok').scrollIntoView({behavior:'smooth',block:'center'})}
+
+function payload(){const g=$('#gs').value.trim();
+ return {item_code:sel.id, seats:qty, company:$('#co').value.trim(), reg_no:$('#reg').value.trim(),
+  full_name:$('#nm').value.trim(), job_title:$('#role').value.trim(), email:$('#em').value.trim(),
+  phone:$('#ph').value.trim(), country:$('#ct').value, sector:$('#sec').value,
+  category:$('#cat')&&!$('#catBox').hidden?$('#cat').value:'', utm_source:UTM.utm_source, utm_campaign:UTM.utm_campaign,
+  guests:g?g.split('\n').map(x=>x.trim()).filter(Boolean):[],
+  payment_method:total()?({online:'online',momo:'momo',inv:'invoice'})[pay]:'free', consent:true};}
+
+$('#goSend').onclick=async()=>{
+ if(!valid())return;
+ const b=$('#goSend'); b.disabled=true; b.textContent='Sending…';
+ try{
+  const r=await fetch(API+'/api/register',{method:'POST',mode:'cors',headers:{'content-type':'application/json'},body:JSON.stringify(payload())});
+  const d=await r.json();
+  if(!r.ok) throw new Error(d.error||'failed');
+  ref=d.reference;
+  let extra='';
+  if(d.status==='pending'){
+   extra=`<p class="note" style="margin-top:6px">We review every application so the room stays the right mix of SMEs, stakeholders and investors. You get your invitation on WhatsApp or by email, usually the same day.</p>`;
+  }else if(Number(d.amount)===0){
+   extra=`<p class="note" style="margin-top:6px">Your seat is reserved. Keep this reference and bring it with you.</p>`;
+  }else if(pay==='momo'){
+   extra=`<div class="box" style="text-align:left"><b style="color:var(--ink)">Pay ${money(d.amount,d.currency)} by mobile money</b>
+    <ol class="how"><li>MTN: <b>*170#</b> → Transfer Money. Telecel or AirtelTigo: <b>*110#</b> → Send Money.</li>
+    <li>${MOMO.startsWith('[')?'Send to the number we message you on WhatsApp':'Send to <b>'+esc(MOMO)+'</b> ('+MOMO_NAME+')'}</li>
+    <li>Reference: <span class="ref">${ref}</span></li></ol>
+    <label class="l" for="rpTxn" style="margin-top:8px">Tell us your transaction ID once you have paid</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><input class="t" id="rpTxn" placeholder="e.g. 5123456789" style="flex:1;min-width:150px">
+    <select class="t" id="rpNet" style="max-width:150px"><option>MTN</option><option>Telecel</option><option>AirtelTigo</option></select>
+    <button class="btn btn-dark" id="rpSend" type="button">Send</button></div><p class="note" id="rpOut"></p></div>`;
+  }else if(pay==='online'&&PAYL){
+   extra=`<a class="btn btn-dark" href="${PAYL}" target="_blank" rel="noopener">Open secure payment →</a>`;
+  }else{
+   extra=`<p class="note" style="margin-top:6px">We email a proforma invoice from Carlson Capital Ltd within one working day, with bank details and your reference.</p>`;
+  }
+  OKT = d.status==='pending' ? 'Application received' : 'Registration received';
+  done(extra);
+ }catch(err){
+  $('#err').textContent='We could not reach our system. Please send your registration on WhatsApp instead.';
+ }finally{ b.disabled=false; b.textContent='Complete registration'; }
+};
+$('#goWa').onclick=()=>{if(!valid())return;window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg())}`,'_blank','noopener');done()};
+$('#goMail').onclick=()=>{if(!valid())return;location.href=`mailto:${EMAIL}?subject=${encodeURIComponent('Registration '+ref+': '+sel.t)}&body=${encodeURIComponent(msg())}`;done()};
+$('#again').onclick=()=>{$('#ok').classList.remove('on');$('#sumBody').hidden=false;['#nm','#role','#em','#ph','#gs'].forEach(s=>$(s).value='');newRef();render()};
+const NAV=[['Start here','#start'],['Invest in Ghana','#ghana'],['Mining','#mining'],['Free tools','#tools'],['Forums','#forums'],['Membership','#join'],['Contact','#contact']];
+$('#nav').innerHTML=NAV.map(([t,h])=>`<a href="${SITE_URL}${h}">${t}</a>`).join('')+'<a href="https://gotham.84-12-73-59.sslip.io" target="_blank" rel="noopener" style="border:1px solid var(--line);border-radius:999px;padding:5px 12px">Login</a>'+'<a class="here" href="#form" aria-current="page">Register</a>';
+
+/* live items and payment settings from the CRM */
+fetch(API+'/api/items',{mode:'cors'}).then(r=>r.json()).then(d=>{
+  if(!d.items||!d.items.length)return;
+  const G={event:'Forums',membership:'Membership',briefing:'Investor briefings',service:'Services'};
+  const wd=s=>s?new Date(s).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
+  const live=d.items.map(i=>({id:i.code,g:G[i.kind]||'Other',t:i.title,
+    s:[i.starts_at?wd(i.starts_at):'',i.venue||'',i.subtitle||''].filter(Boolean).join(' · '),
+    p:Number(i.price),c:i.currency,per:i.per||'',q:i.kind==='event'?1:0,left:i.seats_left,appr:!!i.approval,phase:i.phase||'open',aud:i.audiences||'',
+    img:i.cover_image||null,docs:i.documents||[],desc:i.description||'',sum:i.summary||'',agenda:i.agenda||[],speakers:i.speakers||[],
+    feat:0,day:i.starts_at?new Date(i.starts_at).getDate():'',mon:i.starts_at?new Date(i.starts_at).toLocaleDateString('en-GB',{month:'short'}):''}));
+  const next=live.find(i=>i.q&&i.day); if(next)next.feat=1;
+  ITEMS.length=0; live.forEach(i=>ITEMS.push(i));
+  if(d.settings){ if(d.settings.momo_number) MOMO=d.settings.momo_number; if(d.settings.pay_link) PAYL=d.settings.pay_link; }
+  buildItems(); if(next)buildFeat(next);
+  const asked=((new URLSearchParams(location.search).get('e'))||(location.hash||'').slice(1)).toUpperCase();
+  pick(ITEMS.some(i=>i.id===asked)?asked:(ITEMS.some(i=>i.id===sel.id)?sel.id:ITEMS[0].id),false);
+}).catch(()=>{});
+
+/* preselect from link: ...#F1, #M2, #B2 */
+const want=((new URLSearchParams(location.search).get('e'))||(location.hash||'').slice(1)).toUpperCase();
+pick(ITEMS.some(i=>i.id===want)?want:'F1');
+</script>

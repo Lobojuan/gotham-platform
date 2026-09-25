@@ -1,0 +1,28 @@
+services:
+  crm:
+    build: .
+    restart: unless-stopped
+    environment:
+      PORT: "4100"
+      DATABASE_URL: ${DATABASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      ALLOW_ORIGINS: ${ALLOW_ORIGINS}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_NAME: ${ADMIN_NAME:-Administrator}
+      PUBLIC_URL: ${PUBLIC_URL:-https://gotham.84-12-73-59.sslip.io}
+      SITE_URL: ${SITE_URL:-https://gotham-consult-gh.netlify.app}
+      MAIL_FROM: ${MAIL_FROM:-Gotham Consult <info@gothamconsult.com>}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MEDIA_DIR: /data/media
+    volumes:
+      - gotham_media:/data/media
+    expose: ["4100"]
+    networks:
+      oracle_default:
+        aliases: [gotham-crm]
+volumes:
+  gotham_media:
+networks:
+  oracle_default:
+    external: true

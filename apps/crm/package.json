@@ -1,0 +1,11 @@
+{
+ "name": "gotham-crm",
+ "private": true,
+ "type": "module",
+ "version": "1.2.0",
+ "dependencies": {
+  "pg": "^8.13.1",
+  "qrcode": "^1.5.4",
+  "sharp": "^0.33.5"
+ }
+}

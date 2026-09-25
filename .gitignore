@@ -1,0 +1,8 @@
+node_modules/
+apps/site/dist/
+apps/crm/.media/
+.env
+.env.local
+*.log
+.DS_Store
+__pycache__/
