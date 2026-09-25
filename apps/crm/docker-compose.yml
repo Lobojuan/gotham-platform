@@ -15,8 +15,10 @@ services:
       MAIL_FROM: ${MAIL_FROM:-Gotham Consult <info@gothamconsult.com>}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MEDIA_DIR: /data/media
+      SITE_DIR: /data/site
     volumes:
       - gotham_media:/data/media
+      - /srv/gotham-site:/data/site:ro
     expose: ["4100"]
     networks:
       oracle_default:

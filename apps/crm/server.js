@@ -14,6 +14,7 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const q = (t, p) => pool.query(t, p);
 const here = path.dirname(new URL(import.meta.url).pathname);
 const MEDIA = process.env.MEDIA_DIR || path.join(here, 'media');
+const SITE_DIR = process.env.SITE_DIR || '';        // static website, served at / when set
 const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://gotham.84-12-73-59.sslip.io').replace(/\/$/, '');
 const SITE_URL = (process.env.SITE_URL || 'https://gotham-consult-gh.netlify.app').replace(/\/$/, '');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -1631,10 +1632,50 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
 
     /* ---- static admin ---- */
-    if (p === '/' || p === '/admin' || p === '/admin/') {
+    if (p === '/admin' || p === '/admin/' || (!SITE_DIR && p === '/')) {
       const html = fs.readFileSync(path.join(here, 'public', 'admin.html'));
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'x-frame-options': 'DENY' });
       return res.end(html);
+    }
+
+    /* ---- the public website, same machine, same domain ---- */
+    if (SITE_DIR && req.method === 'GET') {
+      const TYPES = {
+        '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
+        '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
+        '.txt': 'text/plain; charset=utf-8', '.xml': 'application/xml; charset=utf-8',
+        '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png',
+        '.gif': 'image/gif', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+        '.mp4': 'video/mp4', '.webm': 'video/webm', '.woff2': 'font/woff2', '.pdf': 'application/pdf'
+      };
+      /* resolve inside SITE_DIR or refuse: no ../ escaping to the rest of the disk */
+      const root = fs.realpathSync(SITE_DIR);
+      const wanted = decodeURIComponent(p);
+      const candidates = wanted.endsWith('/')
+        ? [wanted + 'index.html']
+        : [wanted, wanted + '.html', wanted + '/index.html'];
+      for (const c of candidates) {
+        let full;
+        try { full = fs.realpathSync(path.join(root, c)); } catch { continue; }
+        if (full !== root && !full.startsWith(root + path.sep)) break;
+        if (!fs.statSync(full).isFile()) continue;
+        const ext = path.extname(full).toLowerCase();
+        const buf = fs.readFileSync(full);
+        const etag = '"' + crypto.createHash('sha1').update(buf).digest('hex').slice(0, 16) + '"';
+        if (req.headers['if-none-match'] === etag) { res.writeHead(304); return res.end(); }
+        res.writeHead(200, {
+          'content-type': TYPES[ext] || 'application/octet-stream',
+          'content-length': buf.length, etag,
+          'cache-control': ext === '.html' ? 'public, max-age=60' : 'public, max-age=604800'
+        });
+        return res.end(buf);
+      }
+      /* unknown page: show the site's own 404 if it has one */
+      const nf = path.join(root, '404.html');
+      if (fs.existsSync(nf)) {
+        res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' });
+        return res.end(fs.readFileSync(nf));
+      }
     }
     return json(res, 404, { error: 'not_found' }, cors);
   } catch (e) {

@@ -660,7 +660,7 @@ nav.main a{white-space:nowrap}
       <div class="row"><input id="b-em" type="email" placeholder="Email" autocomplete="email" required><input id="b-ph" placeholder="WhatsApp number" inputmode="tel" autocomplete="tel" required></div>
       <select id="b-sec"></select>
       <button type="submit">Send me the brief</button>
-      <small id="b-note">By subscribing you agree to our <a href="https://gotham-consult-gh.netlify.app/privacy.html" target="_blank" rel="noopener" style="color:#C6CEDA">privacy notice</a>. We never sell your details.</small>
+      <small id="b-note">By subscribing you agree to our <a href="/privacy.html" target="_blank" rel="noopener" style="color:#C6CEDA">privacy notice</a>. We never sell your details.</small>
     </form>
   </div>
 </div></section>
@@ -920,7 +920,7 @@ nav.main a{white-space:nowrap}
       <div><label for="c-topic">What do you need?</label><select id="c-topic"></select></div>
       <div><label for="c-msg">Message</label><textarea id="c-msg" placeholder="A few lines about your business or project"></textarea></div>
       <div class="row"><button class="btn btn-wa" type="submit">Send on WhatsApp</button><button class="btn btn-line" type="button" id="c-mail" style="color:var(--ink)">Send by email</button></div>
-      <p class="priv">We use your details only to reply to you, under Ghana's Data Protection Act, 2012 (Act 843). See our <a href="https://gotham-consult-gh.netlify.app/privacy.html" target="_blank" rel="noopener">privacy notice</a>.</p>
+      <p class="priv">We use your details only to reply to you, under Ghana's Data Protection Act, 2012 (Act 843). See our <a href="/privacy.html" target="_blank" rel="noopener">privacy notice</a>.</p>
     </form>
   </div>
 </div></section>
@@ -928,7 +928,7 @@ nav.main a{white-space:nowrap}
 
 <footer><div class="wrap fgrid">
   <div><b style="color:var(--ink)">Gotham Consult</b> · Accra, Ghana · Since 2018<br><span style="font-size:13px">In strategic partnership with Carlson Capital Ltd, a company registered in Ghana<br>Registered in Ghana · Company registration number, registered office and TIN available on request<br>Investor, mining &amp; international desk: Uffe Carlson · WhatsApp and direct line +233 55 239 5548</span></div>
-  <div>Services · Invest in Ghana · Forums · About · Contact<br><a href="https://gotham-consult-gh.netlify.app/privacy.html" style="color:var(--mute)">Privacy &amp; data protection</a> · <a href="https://gotham-consult-gh.netlify.app/terms.html" style="color:var(--mute)">Terms of service</a><br><a href="/admin" style="font-size:13px;color:var(--mute);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;display:inline-block;margin-top:10px">Team login →</a></div>
+  <div>Services · Invest in Ghana · Forums · About · Contact<br><a href="/privacy.html" style="color:var(--mute)">Privacy &amp; data protection</a> · <a href="/terms.html" style="color:var(--mute)">Terms of service</a><br><a href="/admin" style="font-size:13px;color:var(--mute);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;display:inline-block;margin-top:10px">Team login →</a></div>
 </div><div class="wrap"><p class="credits">Photos: Bank of Ghana by Natsubee, <a href="https://commons.wikimedia.org/wiki/File%3ABank_of_Ghana_High_Street.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>; Airport City by Fanti Salms, <a href="https://commons.wikimedia.org/wiki/File%3AAirport_City_Accra.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>; Black Star Gate by David Stanley from Nanaimo, Canada, <a href="https://commons.wikimedia.org/wiki/File%3ABlack_Star_Gate_(21712600269).jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by/2.0/" target="_blank" rel="noopener">CC BY 2.0</a>; Tema Port by SteKrueBe, <a href="https://commons.wikimedia.org/wiki/File%3AContainerterminal_in_Tema%2C_Ghana.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>. Hero video, sector images and the on-screen presenter are AI-generated illustrations. Nothing on this site is legal, tax or investment advice; summaries of Ghanaian law are general information, current at the date shown. Legal drafting, audit, care work and licensed financial services are delivered by qualified partner firms, not by us.</p></div></footer>
 
 <dialog id="dlg" aria-labelledby="dlgT">
@@ -951,7 +951,7 @@ nav.main a{white-space:nowrap}
 const WA_NUMBER = '233550416627';
 const UF_NUMBER = '233552395548';   // Uffe Carlson · Carlson Capital Ltd
 const REG_URL = 'register.html';          // our own page on the site
-const CRM_API = 'https://gotham.84-12-73-59.sslip.io';
+const CRM_API = '';   // same origin: the site and the back office share one domain
 const MOMO_NUMBER = '[Gotham MoMo number]'; // TODO: Joy's MoMo merchant/wallet number
 const MOMO_NAME = 'Gotham Consult';
 /* =================================== */
@@ -1218,7 +1218,7 @@ renderPath('biz');
   if(!v('b-name')||!v('b-co')||!v('b-ph')||!/^\S+@\S+\.\S+$/.test(v('b-em'))){note.textContent='Please fill in your name, company, a valid email and your WhatsApp number.';return}
   const btn=f.querySelector('button');btn.disabled=true;btn.textContent='Sending…';
   try{
-   const r=await fetch('https://gotham.84-12-73-59.sslip.io/api/register',{method:'POST',mode:'cors',headers:{'content-type':'application/json'},
+   const r=await fetch('/api/register',{method:'POST',mode:'cors',headers:{'content-type':'application/json'},
     body:JSON.stringify({item_code:'BRIEF',company:v('b-co'),full_name:v('b-name'),email:v('b-em'),phone:v('b-ph'),sector:v('b-sec'),consent:true,marketing_opt_in:true,utm_source:'website',utm_campaign:'brief'})});
    const d=await r.json(); if(!r.ok) throw new Error(d.error||'failed');
    f.innerHTML='<div class="ok"><b>You are on the list.</b> The first brief reaches you on the next send. Reference '+d.reference+'.</div>';

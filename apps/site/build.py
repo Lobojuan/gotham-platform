@@ -9,7 +9,7 @@ import os, shutil, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
-SITE = os.environ.get('SITE_URL', 'https://gotham-consult-gh.netlify.app').rstrip('/')
+SITE = os.environ.get('SITE_URL', 'https://gotham.84-12-73-59.sslip.io').rstrip('/')
 
 META = {
  'index.html': dict(

@@ -14,15 +14,20 @@ halves have opposite needs:
 | | `apps/site` | `apps/crm` |
 |---|---|---|
 | What | The public website, registration page, teaser, legal pages | Back office, API, database |
-| Runs on | Netlify CDN, static files | Node 22 + Postgres in Docker, one VM |
+| Runs on | Static files, served by the CRM process | Node 22 + Postgres in Docker, one VM |
 | Who reaches it | Everyone | Signed-in staff, plus a small public API |
 | If it goes down | Nobody can read about you | Nobody can register |
 
-Keeping the marketing site static means it stays fast worldwide and stays up
-even while the back office restarts. Keeping the back office off the CDN means
-the database is never exposed to public traffic. The site talks to the CRM over
-a small CORS API (`/api/items`, `/api/register`), so content edited in the back
-office appears on the site without a redeploy.
+Both are served from one machine on one domain: `/` is the website, `/admin` is
+the back office, and `/api/*` is the API. That means sign-in stays in the same
+tab, the session cookie is first-party, and the browser makes no cross-origin
+requests at all. The site reads events and sponsors from the API on load, so
+content edited in the back office appears without a redeploy — and falls back to
+the copy baked into the page if the API is unreachable.
+
+The site is plain static files. Moving it onto a CDN later is a matter of
+copying `apps/site/dist` there; nothing in the code assumes where it is served
+from.
 
 ```
 gotham-platform/
@@ -60,7 +65,7 @@ Stop with Ctrl-C. To wipe the local database: `docker rm -f gotham-dev-db`.
 ## Deploy
 
 ```bash
-./scripts/deploy-site.sh     # build + push to Netlify
+./scripts/deploy-site.sh     # build + rsync the site to the server
 ./scripts/deploy-crm.sh      # ship the CRM, rebuild the container, health check
 ./scripts/rollback-crm.sh    # put the previous CRM release back
 ```
