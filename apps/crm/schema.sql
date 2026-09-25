@@ -167,3 +167,53 @@ create table if not exists sponsor_leads (
 -- widen the media kinds for logos on an existing database
 alter table media drop constraint if exists media_kind_check;
 alter table media add constraint media_kind_check check (kind in ('image','logo','doc'));
+
+-- ---- outreach: contacts and campaigns (v1.4) ----
+create table if not exists contacts (
+  id serial primary key,
+  company text, full_name text, role text,
+  email text, phone text,
+  sector text, city text, country text default 'Ghana',
+  tags text,                      -- comma separated, e.g. "mining,md,tier-a"
+  source text,                    -- where the name came from, needed under Act 843
+  notes text,
+  status text not null default 'new'
+    check (status in ('new','contacted','replied','meeting','won','lost','do_not_contact')),
+  unsubscribed_at timestamptz,
+  bounced boolean default false,
+  last_sent_at timestamptz,
+  created_at timestamptz default now()
+);
+create unique index if not exists contacts_email_uq on contacts (lower(email)) where email is not null;
+create index if not exists contacts_sector_idx on contacts (sector, status);
+
+create table if not exists campaigns (
+  id serial primary key,
+  name text not null,
+  subject text not null,
+  template text not null default 'invitation'
+    check (template in ('invitation','sponsor','brief','plain')),
+  intro text,                     -- the body, blank line between paragraphs
+  cta_label text, cta_url text,
+  item_code text,                 -- pulls date, venue and cover image from the event
+  seg_sector text, seg_tags text, seg_status text,
+  from_name text,
+  daily_limit int not null default 40,
+  status text not null default 'draft' check (status in ('draft','sending','paused','done')),
+  created_by text,
+  created_at timestamptz default now()
+);
+
+create table if not exists campaign_sends (
+  id serial primary key,
+  campaign_id int not null references campaigns(id) on delete cascade,
+  contact_id int not null references contacts(id) on delete cascade,
+  status text not null default 'queued' check (status in ('queued','sent','skipped','failed')),
+  skip_reason text,
+  token text unique,
+  sent_at timestamptz, clicked_at timestamptz,
+  unique (campaign_id, contact_id)
+);
+create index if not exists campaign_sends_q_idx on campaign_sends (campaign_id, status);
+
+alter table outbox drop constraint if exists outbox_kind_check;

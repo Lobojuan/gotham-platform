@@ -125,7 +125,14 @@ async function flushMail(limit = 20) {
   }
   return { sent, held: 0 };
 }
-const wrapMail = (title, inner, footer = '') => `<div style="font-family:system-ui,-apple-system,'Hanken Grotesk',sans-serif;background:#FAFAF8;padding:24px">
+/* Every outgoing email must declare its character set, or an em dash
+   arrives in someone's inbox as three pieces of rubbish. */
+const mailDoc = (title, body) => `<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>${esc(title)}</title></head><body style="margin:0;padding:0;background:#EDEDE8">${body}</body></html>`;
+
+const wrapMail = (title, inner, footer = '') => mailDoc(title, `<div style="font-family:system-ui,-apple-system,'Hanken Grotesk',sans-serif;background:#FAFAF8;padding:24px">
 <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E2E4E7;border-radius:18px;overflow:hidden">
 <div style="height:6px;background:repeating-linear-gradient(90deg,#A9761F 0 28px,#0F1B2D 28px 40px,#1F6B4E 40px 64px,#C9A24B 64px 76px)"></div>
 <div style="padding:26px">
@@ -134,7 +141,7 @@ const wrapMail = (title, inner, footer = '') => `<div style="font-family:system-
 ${inner}
 <p style="margin-top:22px;font-size:13px;color:#5A6472">Gotham Consult, Accra · in strategic partnership with Carlson Capital Ltd<br>WhatsApp +233 55 041 6627 · info@gothamconsult.com</p>
 ${footer}
-</div></div></div>`;
+</div></div></div>`);
 
 /* ---------- bootstrap ---------- */
 async function init() {
@@ -257,6 +264,157 @@ const mediaPublic = row => {
     out.sizes[k] = { w: v.w, h: v.h, webp: `${PUBLIC_URL}/media/${v.webp}`, jpg: `${PUBLIC_URL}/media/${v.jpg}` };
   return out;
 };
+
+/* ---------- outreach ---------- */
+const firstName = n => String(n || '').trim().split(/\s+/)[0] || '';
+/* Merge fields. Anything we do not know becomes a sensible neutral word,
+   never an empty gap or a visible {{placeholder}} in someone's inbox. */
+function merge(text, c) {
+  return String(text || '')
+    .replace(/\{\{\s*first_name\s*\}\}/gi, firstName(c.full_name) || 'there')
+    .replace(/\{\{\s*full_name\s*\}\}/gi, c.full_name || 'there')
+    .replace(/\{\{\s*company\s*\}\}/gi, c.company || 'your company')
+    .replace(/\{\{\s*role\s*\}\}/gi, c.role || '')
+    .replace(/\{\{\s*sector\s*\}\}/gi, c.sector || 'your sector')
+    .replace(/\{\{\s*city\s*\}\}/gi, c.city || 'Accra');
+}
+const paras = (t, style) => String(t || '').split(/\n\s*\n/).map(x => x.trim()).filter(Boolean)
+  .map(x => `<p style="${style}">${esc(x).replace(/\n/g, '<br>')}</p>`).join('');
+
+/* Parse a pasted list: CSV, semicolons or tabs, with or without a header row. */
+function parseContacts(text) {
+  const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length) return { rows: [], columns: [] };
+  const split = l => {
+    const out = []; let cur = '', inQ = false;
+    for (let i = 0; i < l.length; i++) {
+      const ch = l[i];
+      if (ch === '"') { if (inQ && l[i + 1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+      else if (!inQ && (ch === ',' || ch === ';' || ch === '\t')) { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out.map(x => x.trim().replace(/^"|"$/g, ''));
+  };
+  const head = split(lines[0]).map(h => h.toLowerCase().replace(/[^a-z]/g, ''));
+  const KNOWN = {
+    company: ['company','organisation','organization','firm','business','employer'],
+    full_name: ['name','fullname','contact','contactname','person'],
+    role: ['role','title','position','jobtitle'],
+    email: ['email','emailaddress','mail'],
+    phone: ['phone','telephone','mobile','tel','whatsapp'],
+    sector: ['sector','industry','category'],
+    city: ['city','town','location'],
+    country: ['country'],
+    tags: ['tags','tag','labels'],
+    source: ['source','where','origin'],
+    notes: ['notes','note','comment','comments']
+  };
+  const map = {};
+  head.forEach((h, i) => {
+    for (const [field, names] of Object.entries(KNOWN)) if (names.includes(h)) map[i] = field;
+  });
+  const hasHeader = Object.keys(map).length >= 2;
+  const body = hasHeader ? lines.slice(1) : lines;
+  /* No header? Guess by shape: whatever looks like an email is the email. */
+  const rows = body.map(l => {
+    const cells = split(l);
+    const r = {};
+    if (hasHeader) cells.forEach((v, i) => { if (map[i] && v) r[map[i]] = v; });
+    else {
+      cells.forEach(v => {
+        if (/^\S+@\S+\.\S+$/.test(v) && !r.email) r.email = v;
+        else if (/^[+\d][\d\s()-]{6,}$/.test(v) && !r.phone) r.phone = v;
+        else if (!r.company) r.company = v;
+        else if (!r.full_name) r.full_name = v;
+        else if (!r.role) r.role = v;
+      });
+    }
+    return r;
+  }).filter(r => r.email || r.company);
+  return { rows, columns: hasHeader ? Object.values(map) : ['guessed'] };
+}
+
+/* The four email designs. Plain is deliberately undesigned: for a managing
+   director, a message that looks like a newsletter is a message that gets
+   deleted. */
+function campaignHtml(cam, c, item, links) {
+  return mailDoc(merge(cam.subject, c), campaignBody(cam, c, item, links));
+}
+function campaignBody(cam, c, item, links) {
+  const body = merge(cam.intro, c);
+  const cta = cam.cta_label ? `<tr><td style="padding:6px 0 4px">
+      <a href="${links.cta}" style="display:inline-block;background:#0F1B2D;color:#ffffff;text-decoration:none;
+        border-radius:999px;padding:13px 26px;font-weight:600;font-size:15px">${esc(merge(cam.cta_label, c))}</a></td></tr>` : '';
+  const foot = `<tr><td style="padding:22px 0 0;border-top:1px solid #E2E4E7;color:#8A93A0;font-size:12px;line-height:1.6">
+      Gotham Consult, Accra, in partnership with Carlson Capital Ltd · WhatsApp or call +233 55 239 5548<br>
+      You are receiving this because we believe it is relevant to your work${c.source ? ' (' + esc(c.source) + ')' : ''}.
+      <a href="${links.unsub}" style="color:#8A93A0">Tell us to stop</a> and we will not write again.</td></tr>`;
+
+  if (cam.template === 'plain') {
+    return `<div style="font:16px/1.65 -apple-system,Segoe UI,Helvetica,Arial,sans-serif;color:#111;max-width:560px">
+      ${paras(body, 'margin:0 0 14px')}
+      ${cam.cta_label ? `<p style="margin:0 0 14px"><a href="${links.cta}" style="color:#0F1B2D">${esc(merge(cam.cta_label, c))}</a></p>` : ''}
+      <p style="margin:0 0 4px">${esc(cam.from_name || 'Joy Anthony Preston')}<br>
+      <span style="color:#555">Gotham Consult · +233 55 239 5548</span></p>
+      <p style="margin:18px 0 0;color:#999;font-size:12px">
+        If you would rather not hear from us, <a href="${links.unsub}" style="color:#999">say so here</a>.</p></div>`;
+  }
+
+  const when = item && item.starts_at
+    ? new Date(item.starts_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+  const cover = item && item.cover_url
+    ? `<tr><td style="padding:0"><img src="${item.cover_url}" width="600" alt="" style="width:100%;max-width:600px;display:block;border-radius:12px"></td></tr>` : '';
+  const facts = item ? `<tr><td style="padding:16px 0 4px">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+        ${when ? `<tr><td style="padding:3px 18px 3px 0;color:#8A93A0;font-size:12px;letter-spacing:.1em;text-transform:uppercase">Date</td><td style="font-size:15px;font-weight:600;color:#0F1B2D">${esc(when)}</td></tr>` : ''}
+        ${item.venue ? `<tr><td style="padding:3px 18px 3px 0;color:#8A93A0;font-size:12px;letter-spacing:.1em;text-transform:uppercase">Venue</td><td style="font-size:15px;font-weight:600;color:#0F1B2D">${esc(item.venue)}</td></tr>` : ''}
+        <tr><td style="padding:3px 18px 3px 0;color:#8A93A0;font-size:12px;letter-spacing:.1em;text-transform:uppercase">Entry</td><td style="font-size:15px;font-weight:600;color:#0F1B2D">${Number(item.price) > 0 ? esc(item.currency + ' ' + Number(item.price).toLocaleString()) : 'By invitation, no charge'}</td></tr>
+      </table></td></tr>` : '';
+
+  return `<div style="background:#EDEDE8;padding:26px 14px">
+   <table role="presentation" width="600" cellpadding="0" cellspacing="0" align="center"
+     style="max-width:600px;margin:0 auto;background:#FAFAF8;border-radius:18px;overflow:hidden;
+     font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+    <tr><td style="height:6px;background:#A9761F;font-size:0;line-height:0">&nbsp;</td></tr>
+    <tr><td style="padding:26px 34px 0">
+      <table role="presentation" width="100%"><tr>
+        <td style="font-size:15px;font-weight:700;color:#0F1B2D;letter-spacing:.01em">Gotham Consult</td>
+        <td align="right" style="font-size:11px;color:#8A93A0">with Carlson Capital Ltd</td>
+      </tr></table></td></tr>
+    <tr><td style="padding:22px 34px 0">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${cover}
+        ${paras(body, 'margin:0 0 14px;color:#3A4453;font-size:15.5px;line-height:1.66') ? `<tr><td style="padding:${item && item.cover_url ? '20px' : '0'} 0 0">${paras(body, 'margin:0 0 14px;color:#3A4453;font-size:15.5px;line-height:1.66')}</td></tr>` : ''}
+        ${facts}
+        ${cta}
+        ${foot}
+      </table></td></tr>
+    <tr><td style="padding:24px 34px 26px">
+      <table role="presentation" width="100%"><tr>
+        <td style="height:5px;background:#A9761F;font-size:0">&nbsp;</td>
+        <td style="height:5px;background:#0F1B2D;font-size:0">&nbsp;</td>
+        <td style="height:5px;background:#1F6B4E;font-size:0">&nbsp;</td>
+        <td style="height:5px;background:#C9A24B;font-size:0">&nbsp;</td>
+      </tr></table></td></tr>
+   </table></div>`;
+}
+
+/* Who this campaign would go to, after the suppression rules. */
+function segmentSql(cam) {
+  const where = [`(c.email is not null and c.email <> '')`,
+    `c.unsubscribed_at is null`, `not coalesce(c.bounced,false)`, `c.status <> 'do_not_contact'`];
+  const vals = [];
+  if (cam.seg_sector) { vals.push(cam.seg_sector); where.push(`lower(c.sector) = lower($${vals.length})`); }
+  if (cam.seg_status) { vals.push(cam.seg_status); where.push(`c.status = $${vals.length}`); }
+  if (cam.seg_tags) {
+    for (const t of String(cam.seg_tags).split(',').map(x => x.trim()).filter(Boolean)) {
+      vals.push('%' + t.toLowerCase() + '%');
+      where.push(`lower(coalesce(c.tags,'')) like $${vals.length}`);
+    }
+  }
+  return { where: where.join(' and '), vals };
+}
 
 /* ---------- queries ---------- */
 const ITEM_COLS = `i.code,i.kind,i.title,i.subtitle,i.venue,i.starts_at,i.ends_at,i.currency,i.price,i.per,i.capacity,
@@ -586,6 +744,31 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
     }
 
     /* ---- short links ---- */
+
+    /* tracked click from a campaign email */
+    const mClick = p.match(/^\/c\/([A-Za-z0-9_-]{10,})$/);
+    if (mClick && req.method === 'GET') {
+      const { rows } = await q(`update campaign_sends set clicked_at=coalesce(clicked_at,now())
+        where token=$1 returning campaign_id`, [mClick[1]]);
+      let to = SITE_URL;
+      if (rows[0]) {
+        const c = (await q('select cta_url from campaigns where id=$1', [rows[0].campaign_id])).rows[0];
+        if (c && c.cta_url) to = c.cta_url;
+      }
+      res.writeHead(302, { location: to });
+      return res.end();
+    }
+
+    /* one click and we never write to them again */
+    const mUnsub2 = p.match(/^\/u\/([A-Za-z0-9_-]{10,})$/);
+    if (mUnsub2 && req.method === 'GET') {
+      const { rows } = await q(`update contacts set unsubscribed_at=now(), status='do_not_contact'
+        where id = (select contact_id from campaign_sends where token=$1) returning company, full_name`, [mUnsub2[1]]);
+      return sendHtml(pageShell('Removed', rows[0]
+        ? `<h1>Done, we will not write again</h1><p>${esc(rows[0].company || rows[0].full_name || 'You')} has been removed from our list. Nothing further will be sent.</p>`
+        : '<h1>That link is no longer valid</h1><p>Write to info@gothamconsult.com and we will remove you by hand.</p>'));
+    }
+
     const mShort = p.match(/^\/s\/([A-Za-z0-9_-]{1,40})$/);
     if (mShort && req.method === 'GET') {
       const { rows } = await q('select * from shortlinks where lower(slug)=lower($1)', [mShort[1]]);
@@ -875,6 +1058,171 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       return json(res, 200, { ok: true });
     }
 
+
+    /* ---- contacts ---- */
+    if (p === '/api/contacts' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q('select * from contacts order by company nulls last, id desc limit 2000');
+      const sec = await q(`select coalesce(nullif(sector,''),'Not stated') as sector, count(*)::int as n
+        from contacts group by 1 order by n desc`);
+      return json(res, 200, { rows, sectors: sec.rows });
+    }
+
+    if (p === '/api/contacts/import' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      let b;
+      try { b = await bodyBig(req, 4 * 1024 * 1024); } catch { return json(res, 413, { error: 'too_large' }); }
+      const source = clean(b.source, 120) || 'imported';
+      const tags = clean(b.tags, 200);
+      const sector = clean(b.sector, 60);
+      const { rows: parsed } = parseContacts(b.text);
+      if (!parsed.length) return json(res, 400, { error: 'nothing_recognised' });
+      let added = 0, updated = 0, skipped = 0;
+      for (const r of parsed.slice(0, 5000)) {
+        const email = clean(r.email, 160).toLowerCase();
+        if (email && !/^\S+@\S+\.\S+$/.test(email)) { skipped++; continue; }
+        if (!email && !clean(r.company, 160)) { skipped++; continue; }
+        const vals = [clean(r.company, 160), clean(r.full_name, 120), clean(r.role, 140),
+          email || null, phoneGH(clean(r.phone, 40)), clean(r.sector, 60) || sector || null,
+          clean(r.city, 80), clean(r.country, 60) || 'Ghana',
+          [tags, clean(r.tags, 200)].filter(Boolean).join(','), clean(r.source, 120) || source, clean(r.notes, 1000)];
+        if (email) {
+          const ex = await q('select id from contacts where lower(email)=lower($1)', [email]);
+          if (ex.rows.length) {
+            /* fill gaps only, and never touch someone who has told us to stop */
+            await q(`update contacts set company=coalesce(nullif($1,''),company), full_name=coalesce(nullif($2,''),full_name),
+              role=coalesce(nullif($3,''),role), phone=coalesce(nullif($4,''),phone), sector=coalesce(nullif($5,''),sector),
+              city=coalesce(nullif($6,''),city), tags=coalesce(nullif($7,''),tags)
+              where id=$8 and unsubscribed_at is null`,
+              [vals[0], vals[1], vals[2], vals[4], vals[5], vals[6], vals[8], ex.rows[0].id]);
+            updated++; continue;
+          }
+        }
+        await q(`insert into contacts(company,full_name,role,email,phone,sector,city,country,tags,source,notes)
+                 values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`, vals);
+        added++;
+      }
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+        [u.email, 'contacts_import', `${added} added, ${updated} updated, ${skipped} skipped — source: ${source}`]);
+      return json(res, 200, { added, updated, skipped, seen: parsed.length });
+    }
+
+    if (p === '/api/contacts/preview' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      let b; try { b = await bodyBig(req, 4 * 1024 * 1024); } catch { return json(res, 413, { error: 'too_large' }); }
+      const { rows } = parseContacts(b.text);
+      return json(res, 200, { count: rows.length, sample: rows.slice(0, 5) });
+    }
+
+    const mCon = p.match(/^\/api\/contacts\/(\d+)$/);
+    if (mCon && (req.method === 'PATCH' || req.method === 'DELETE')) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (req.method === 'DELETE') { await q('delete from contacts where id=$1', [+mCon[1]]); return json(res, 200, { ok: true }); }
+      const b = await body(req);
+      if (b.status && !['new','contacted','replied','meeting','won','lost','do_not_contact'].includes(b.status))
+        return json(res, 400, { error: 'bad_status' });
+      await q(`update contacts set status=coalesce($1,status), notes=coalesce($2,notes), tags=coalesce($3,tags),
+        unsubscribed_at = case when $1='do_not_contact' then coalesce(unsubscribed_at, now()) else unsubscribed_at end
+        where id=$4`, [b.status || null, b.notes ?? null, b.tags ?? null, +mCon[1]]);
+      return json(res, 200, { ok: true });
+    }
+
+    /* ---- campaigns ---- */
+    if (p === '/api/campaigns' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q(`select c.*,
+        (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.status='sent') as sent,
+        (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.status='queued') as pending,
+        (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.clicked_at is not null) as clicked
+        from campaigns c order by c.id desc`);
+      return json(res, 200, { rows });
+    }
+
+    if (p === '/api/campaigns' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      if (!clean(b.name, 120) || !clean(b.subject, 200)) return json(res, 400, { error: 'name_and_subject' });
+      const vals = [clean(b.name, 120), clean(b.subject, 200),
+        ['invitation','sponsor','brief','plain'].includes(b.template) ? b.template : 'invitation',
+        clean(b.intro, 6000), clean(b.cta_label, 60), clean(b.cta_url, 400),
+        clean(b.item_code, 12).toUpperCase() || null, clean(b.seg_sector, 60), clean(b.seg_tags, 200),
+        clean(b.seg_status, 20), clean(b.from_name, 120),
+        Math.max(1, Math.min(200, parseInt(b.daily_limit) || 40))];
+      if (b.id) {
+        await q(`update campaigns set name=$1,subject=$2,template=$3,intro=$4,cta_label=$5,cta_url=$6,item_code=$7,
+          seg_sector=$8,seg_tags=$9,seg_status=$10,from_name=$11,daily_limit=$12 where id=$13`, [...vals, +b.id]);
+        return json(res, 200, { ok: true, id: +b.id });
+      }
+      const { rows } = await q(`insert into campaigns(name,subject,template,intro,cta_label,cta_url,item_code,
+        seg_sector,seg_tags,seg_status,from_name,daily_limit,created_by)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning id`, [...vals, u.email]);
+      return json(res, 200, { ok: true, id: rows[0].id });
+    }
+
+    const mCam = p.match(/^\/api\/campaigns\/(\d+)$/);
+    if (mCam && req.method === 'DELETE') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      await q('delete from campaigns where id=$1', [+mCam[1]]);
+      return json(res, 200, { ok: true });
+    }
+
+    /* how many it would reach, and what it looks like */
+    const mCamPrev = p.match(/^\/api\/campaigns\/(\d+)\/preview$/);
+    if (mCamPrev && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const cam = (await q('select * from campaigns where id=$1', [+mCamPrev[1]])).rows[0];
+      if (!cam) return json(res, 404, { error: 'not_found' });
+      const { where, vals } = segmentSql(cam);
+      const cnt = await q(`select count(*)::int as n from contacts c where ${where}`, vals);
+      const one = (await q(`select * from contacts c where ${where} order by id limit 1`, vals)).rows[0]
+        || { company: 'Acme Mining Ghana', full_name: 'Ama Mensah', role: 'Managing Director', sector: 'Mining', source: 'sample' };
+      const item = cam.item_code ? await itemForMail(cam.item_code) : null;
+      const html = campaignHtml(cam, one, item, { cta: PUBLIC_URL + '/c/sample', unsub: PUBLIC_URL + '/u/sample' });
+      return json(res, 200, { audience: cnt.rows[0].n, sample_to: one.company || one.full_name, subject: merge(cam.subject, one), html });
+    }
+
+    /* send one to yourself before it goes to two hundred people */
+    const mCamTest = p.match(/^\/api\/campaigns\/(\d+)\/test$/);
+    if (mCamTest && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      const to = clean(b.email, 160).toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(to)) return json(res, 400, { error: 'bad_email' });
+      const cam = (await q('select * from campaigns where id=$1', [+mCamTest[1]])).rows[0];
+      if (!cam) return json(res, 404, { error: 'not_found' });
+      const sample = { company: 'Acme Mining Ghana', full_name: 'Ama Mensah', role: 'Managing Director', sector: 'Mining', city: 'Accra', source: 'test send' };
+      const item = cam.item_code ? await itemForMail(cam.item_code) : null;
+      await queueMail(to, 'Test', '[TEST] ' + merge(cam.subject, sample),
+        campaignHtml(cam, sample, item, { cta: PUBLIC_URL + '/c/sample', unsub: PUBLIC_URL + '/u/sample' }), 'campaign_test');
+      await flushMail(3);
+      return json(res, 200, { ok: true });
+    }
+
+    /* build the queue and start sending, a few a day */
+    const mCamStart = p.match(/^\/api\/campaigns\/(\d+)\/(start|pause)$/);
+    if (mCamStart && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const id = +mCamStart[1];
+      if (mCamStart[2] === 'pause') {
+        await q("update campaigns set status='paused' where id=$1", [id]);
+        return json(res, 200, { ok: true, status: 'paused' });
+      }
+      const cam = (await q('select * from campaigns where id=$1', [id])).rows[0];
+      if (!cam) return json(res, 404, { error: 'not_found' });
+      const { where, vals } = segmentSql(cam);
+      const { rows: aud } = await q(`select c.id from contacts c where ${where}`, vals);
+      if (!aud.length) return json(res, 400, { error: 'empty_audience' });
+      for (const a of aud) {
+        await q(`insert into campaign_sends(campaign_id,contact_id,token) values ($1,$2,$3)
+                 on conflict (campaign_id,contact_id) do nothing`, [id, a.id, tok() + tok()]);
+      }
+      await q("update campaigns set status='sending' where id=$1", [id]);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+        [u.email, 'campaign_start', `${cam.name} → ${aud.length} contacts, ${cam.daily_limit}/day`]);
+      const r = await runCampaigns();
+      return json(res, 200, { ok: true, queued: aud.length, sent_now: r });
+    }
+
     if (p === '/api/audit' && req.method === 'GET') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const { rows } = await q('select actor,action,detail,at from audit_log order by at desc limit 100');
@@ -1049,6 +1397,60 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     return json(res, 500, { error: 'server_error' }, cors);
   }
 });
+/* Look up an event once for the mail templates. */
+async function itemForMail(code) {
+  const it = (await q('select * from items where code=$1', [code])).rows[0];
+  if (!it) return null;
+  let cover_url = null;
+  if (it.cover) {
+    const m = (await q('select variants from media where id=$1', [it.cover])).rows[0];
+    if (m && m.variants && m.variants.og) cover_url = `${PUBLIC_URL}/media/${m.variants.og.jpg}`;
+  }
+  return { ...it, cover_url };
+}
+
+/* Send each running campaign's daily allowance, slowly and on purpose.
+   Cold outreach that arrives in one burst is what gets a domain blocked,
+   and a blocked domain means registration confirmations stop arriving too. */
+async function runCampaigns() {
+  let sentTotal = 0;
+  const { rows: cams } = await q("select * from campaigns where status='sending'");
+  for (const cam of cams) {
+    const today = await q(`select count(*)::int as n from campaign_sends
+      where campaign_id=$1 and status='sent' and sent_at > now() - interval '24 hours'`, [cam.id]);
+    const room = cam.daily_limit - today.rows[0].n;
+    if (room <= 0) continue;
+
+    /* c.* would clobber s.id, so both keys are aliased explicitly */
+    const { rows: due } = await q(`select s.id as send_id, s.token, s.contact_id, c.*
+      from campaign_sends s join contacts c on c.id = s.contact_id
+      where s.campaign_id=$1 and s.status='queued' order by s.id limit $2`, [cam.id, room]);
+    if (!due.length) {
+      const left = await q("select count(*)::int as n from campaign_sends where campaign_id=$1 and status='queued'", [cam.id]);
+      if (left.rows[0].n === 0) await q("update campaigns set status='done' where id=$1", [cam.id]);
+      continue;
+    }
+
+    const item = cam.item_code ? await itemForMail(cam.item_code) : null;
+    for (const c of due) {
+      /* re-check suppression at send time, not just when the queue was built */
+      if (!c.email || c.unsubscribed_at || c.bounced || c.status === 'do_not_contact') {
+        await q("update campaign_sends set status='skipped', skip_reason='suppressed' where id=$1", [c.send_id]);
+        continue;
+      }
+      const links = { cta: `${PUBLIC_URL}/c/${c.token}`, unsub: `${PUBLIC_URL}/u/${c.token}` };
+      await queueMail(c.email, c.full_name || c.company, merge(cam.subject, c),
+        campaignHtml(cam, c, item, links), 'campaign');
+      await q("update campaign_sends set status='sent', sent_at=now() where id=$1", [c.send_id]);
+      await q("update contacts set last_sent_at=now(), status = case when status='new' then 'contacted' else status end where id=$1", [c.contact_id]);
+      sentTotal++;
+    }
+    await q('insert into jobs_log(job,detail) values ($1,$2)', ['campaign', `${cam.name}: ${due.length} queued to send`]);
+  }
+  if (sentTotal) await flushMail(Math.min(100, sentTotal + 10));
+  return sentTotal;
+}
+
 async function runJobs() {
   try {
     // 1. release seats whose hold expired
@@ -1085,6 +1487,9 @@ async function runJobs() {
       await q("update registrations set duephone='nudged' where id=$1", [r.id]);
     }
     await flushMail(30);
+
+    // 4. outreach campaigns, within their daily limit
+    await runCampaigns();
   } catch (e) { console.error('jobs', e); }
 }
 
