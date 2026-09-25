@@ -1163,6 +1163,34 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       return json(res, 200, { rows, sectors: sec.rows });
     }
 
+    if (p === '/api/contacts' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      const company = clean(b.company, 160), full_name = clean(b.full_name, 120);
+      const email = clean(b.email, 160).toLowerCase();
+      if (!company && !full_name) return json(res, 400, { error: 'name_required' });
+      if (email && !/^\S+@\S+\.\S+$/.test(email)) return json(res, 400, { error: 'bad_email' });
+      /* warn rather than silently create a second copy of someone */
+      const dup = email
+        ? await q('select id, company, full_name from contacts where lower(email)=lower($1)', [email])
+        : await q(`select id, company, full_name from contacts
+             where lower(coalesce(company,''))=lower($1) and lower(coalesce(full_name,''))=lower($2)`, [company, full_name]);
+      if (dup.rows.length && b.confirm_duplicate !== true)
+        return json(res, 409, { error: 'already_there', id: dup.rows[0].id,
+          who: dup.rows[0].company || dup.rows[0].full_name });
+      const { rows } = await q(`insert into contacts(company,full_name,role,email,phone,sector,city,country,
+          website,priority,tags,notes,source,status)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning id`,
+        [company, full_name, clean(b.role, 140), email || null, phoneGH(clean(b.phone, 60)),
+          clean(b.sector, 60), clean(b.city, 80), clean(b.country, 60) || 'Ghana',
+          clean(b.website, 200), clean(b.priority, 40), clean(b.tags, 200), clean(b.notes, 4000),
+          clean(b.source, 120) || 'added by hand',
+          ['new','contacted','replied','meeting','won','lost','do_not_contact'].includes(b.status) ? b.status : 'new']);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+        [u.email, 'contact_add', company || full_name]);
+      return json(res, 200, { ok: true, id: rows[0].id });
+    }
+
     if (p === '/api/contacts/import' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       let b;
@@ -1321,9 +1349,26 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const b = await body(req);
       if (b.status && !['new','contacted','replied','meeting','won','lost','do_not_contact'].includes(b.status))
         return json(res, 400, { error: 'bad_status' });
-      await q(`update contacts set status=coalesce($1,status), notes=coalesce($2,notes), tags=coalesce($3,tags),
-        unsubscribed_at = case when $1='do_not_contact' then coalesce(unsubscribed_at, now()) else unsubscribed_at end
-        where id=$4`, [b.status || null, b.notes ?? null, b.tags ?? null, +mCon[1]]);
+      const email = b.email === undefined ? undefined : clean(b.email, 160).toLowerCase();
+      if (email && !/^\S+@\S+\.\S+$/.test(email)) return json(res, 400, { error: 'bad_email' });
+      if (email) {
+        const clash = await q('select id from contacts where lower(email)=lower($1) and id<>$2', [email, +mCon[1]]);
+        if (clash.rows.length) return json(res, 409, { error: 'email_taken' });
+      }
+      /* undefined leaves a field alone; an empty string clears it */
+      const set = (v, col) => v === undefined ? null : v;
+      await q(`update contacts set
+          company   = coalesce($1, company),   full_name = coalesce($2, full_name),
+          role      = coalesce($3, role),      email     = case when $4 = '' then null else coalesce($4, email) end,
+          phone     = coalesce($5, phone),     sector    = coalesce($6, sector),
+          city      = coalesce($7, city),      website   = coalesce($8, website),
+          priority  = coalesce($9, priority),  tags      = coalesce($10, tags),
+          notes     = coalesce($11, notes),    status    = coalesce($12, status),
+          unsubscribed_at = case when $12='do_not_contact' then coalesce(unsubscribed_at, now()) else unsubscribed_at end
+        where id=$13`,
+        [set(b.company), set(b.full_name), set(b.role), email === undefined ? null : email,
+          b.phone === undefined ? null : phoneGH(clean(b.phone, 60)), set(b.sector), set(b.city),
+          set(b.website), set(b.priority), set(b.tags), set(b.notes), b.status || null, +mCon[1]]);
       return json(res, 200, { ok: true });
     }
 
