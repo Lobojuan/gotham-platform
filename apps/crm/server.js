@@ -76,9 +76,12 @@ function bodyBig(req, limit) {
   });
 }
 const hits = new Map();
-function rateLimited(ip, max = 20, win = 60e3) {
-  const now = Date.now(); const a = (hits.get(ip) || []).filter(t => now - t < win);
-  a.push(now); hits.set(ip, a);
+/* One counter per form per IP. A shared counter meant signing in, or
+   registering for a forum, used up someone's allowance for another form. */
+function rateLimited(ip, max = 20, win = 60e3, bucket = 'default') {
+  const key = bucket + ':' + ip;
+  const now = Date.now(); const a = (hits.get(key) || []).filter(t => now - t < win);
+  a.push(now); hits.set(key, a);
   if (hits.size > 5000) hits.clear();
   return a.length > max;
 }
@@ -96,6 +99,20 @@ function phoneGH(raw) {                       // normalise Ghanaian numbers to +
   if (p.startsWith('0') && p.length >= 9) return '+233' + p.slice(1);
   if (p.length === 9) return '+233' + p;
   return p;
+}
+/* phoneGH() assumes Ghana: "07700 900123" typed in London would become a
+   wrong +233 number. Anyone abroad gives a dial code and a local number. */
+function phoneIntl(dial, local) {
+  const cc = String(dial || '').trim();
+  if (!/^\+\d{1,4}$/.test(cc)) return '';
+  let n = String(local || '').replace(/[^0-9+]/g, '');
+  if (!n) return '';
+  if (n.startsWith('+')) return /^\+\d{8,15}$/.test(n) ? n : '';      // they typed the full number anyway
+  if (n.startsWith('00')) { n = '+' + n.slice(2); return /^\+\d{8,15}$/.test(n) ? n : ''; }
+  if (n.startsWith(cc.slice(1)) && n.length > 9) n = n.slice(cc.length - 1);  // "44 7700…" typed after +44
+  if (cc !== '+39' && n.startsWith('0')) n = n.slice(1);                 // drop the trunk 0, except Italy
+  const full = cc + n;
+  return /^\+\d{8,15}$/.test(full) ? full : '';
 }
 const BASE = process.env.PUBLIC_URL || 'https://gotham.84-12-73-59.sslip.io';
 const FROM = process.env.MAIL_FROM || 'Gotham Consult <info@gothamconsult.com>';
@@ -611,7 +628,7 @@ const server = http.createServer(async (req, res) => {
 
     /* ---- someone wants to sponsor us ---- */
     if (p === '/api/sponsor-enquiry' && req.method === 'POST') {
-      if (rateLimited(ip, 6, 300e3)) return json(res, 429, { error: 'too_many' }, cors);
+      if (rateLimited(ip, 6, 300e3, 'sponsor')) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
       const company = clean(b.company, 160), email = clean(b.email, 160).toLowerCase();
       if (!company || !/^\S+@\S+\.\S+$/.test(email)) return json(res, 400, { error: 'missing_fields' }, cors);
@@ -630,8 +647,79 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, id: rows[0].id }, cors);
     }
 
+
+    /* ---- Family Desk: founding families interest list ----
+       Deliberately collects nothing about the parent's health and not even
+       their name. Under Act 843 the parent is the data subject; we ask them
+       directly, in their own language, when we call. */
+    if (p === '/api/family-interest' && req.method === 'POST') {
+      if (rateLimited(ip, 5, 600e3, 'family')) return json(res, 429, { error: 'too_many' }, cors);
+      const b = await body(req);
+      if (clean(b.website, 200)) return json(res, 200, { ok: true }, cors);      // honeypot: pretend success
+      const REGIONS = ['Greater Accra','Ashanti','Central','Eastern','Western','Western North','Volta','Oti',
+        'Northern','Savannah','North East','Upper East','Upper West','Bono','Bono East','Ahafo'];
+      const NEEDS = ['SSNIT pension renewal','NHIS renewal','Ghana Card','Bills and paperwork','Regular visits',
+        'Property or land watch','Appointments and hospital visits','A carer or nurse','Will or estate','Not sure yet'];
+      const LANGS = ['English','Twi','Fante','Ga','Ewe','Dagbani','Hausa','Nzema','Dagaare','Other'];
+      const full_name = clean(b.full_name, 120), email = clean(b.email, 160).toLowerCase();
+      const country = clean(b.country, 60);
+      const phone = country === 'Ghana' ? phoneGH(clean(b.phone_local, 40)) : phoneIntl(b.dial, b.phone_local);
+      const region = REGIONS.includes(b.parent_region) ? b.parent_region : '';
+      const needs = (Array.isArray(b.needs) ? b.needs : []).filter(x => NEEDS.includes(x)).slice(0, 10);
+      const langs = (Array.isArray(b.languages) ? b.languages : []).filter(x => LANGS.includes(x)).slice(0, 6);
+      const errors = [];
+      if (!full_name) errors.push('full_name');
+      if (!/^\S+@\S+\.\S+$/.test(email)) errors.push('email');
+      if (!phone) errors.push('phone');
+      if (!country) errors.push('country');
+      if (!region) errors.push('parent_region');
+      if (!needs.length) errors.push('needs');
+      if (b.consent !== true) errors.push('consent');
+      if (errors.length) return json(res, 400, { error: 'missing_fields', fields: errors }, cors);
+
+      const extra = {
+        'Family Desk': 'founding families interest',
+        'Lives in': country,
+        'Relationship': clean(b.relationship, 40),
+        'Parent town': clean(b.parent_town, 80),
+        'Parent region': region,
+        'Parent languages': langs.join(', '),
+        'Help wanted': needs.join(', '),
+        'Heard about us': clean(b.heard, 80),
+        'Message': clean(b.message, 600)
+      };
+      Object.keys(extra).forEach(k => { if (!extra[k]) delete extra[k]; });
+      const notes = `Family Desk interest. ${extra['Relationship'] ? extra['Relationship'] + ' of a parent in ' : 'Parent in '}` +
+        `${[extra['Parent town'], region].filter(Boolean).join(', ')}. Wants: ${needs.join(', ')}.`;
+
+      const ex = await q('select id, tags from contacts where lower(email)=lower($1)', [email]);
+      if (ex.rows.length) {
+        const tags = new Set(String(ex.rows[0].tags || '').split(',').map(t => t.trim()).filter(Boolean));
+        ['family-desk', 'founding'].forEach(t => tags.add(t));
+        await q(`update contacts set full_name=coalesce(nullif($1,''),full_name), phone=coalesce(nullif($2,''),phone),
+            country=coalesce(nullif($3,''),country), tags=$4, extra=coalesce(extra,'{}'::jsonb) || $5::jsonb,
+            notes=concat_ws(E'\\n', nullif(notes,''), $6::text)
+          where id=$7 and unsubscribed_at is null`,
+          [full_name, phone, country, [...tags].join(','), JSON.stringify(extra), notes, ex.rows[0].id]);
+      } else {
+        await q(`insert into contacts(full_name,email,phone,country,sector,city,tags,source,notes,extra,status)
+                 values ($1,$2,$3,$4,'Family Desk',$5,'family-desk,founding',$6,$7,$8::jsonb,'new')`,
+          [full_name, email, phone, country, clean(b.parent_town, 80) || region,
+            'Website: Family Desk founding families list', notes, JSON.stringify(extra)]);
+      }
+      await queueMail(email, full_name, 'You are on the Family Desk founding list',
+        wrapMail('Thank you, ' + esc(firstName(full_name)),
+          `<p style="color:#5A6472;font-size:15px;line-height:1.6">You are on the founding families list for Family Desk. We will call or WhatsApp you within two working days to hear what your family needs.</p>
+           <p style="color:#5A6472;font-size:15px;line-height:1.6">Before anything starts, we speak to your ${esc(extra['Relationship'] ? 'parent' : 'family member')} in Ghana directly, in their own language, and nothing happens without their agreement.</p>
+           <p style="color:#5A6472;font-size:15px;line-height:1.6">Please do not send medical details by email. We will talk about care needs in person.</p>`),
+        'family_ack', null);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+        ['website', 'family_interest', `${country} · ${region} · ${needs.join(', ')}`]);
+      return json(res, 200, { ok: true }, cors);
+    }
+
     if (p === '/api/register' && req.method === 'POST') {
-      if (rateLimited(ip, 10)) return json(res, 429, { error: 'too_many' }, cors);
+      if (rateLimited(ip, 10, 60e3, 'register')) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
       const company = clean(b.company), full_name = clean(b.full_name), email = clean(b.email).toLowerCase(), phone = phoneGH(clean(b.phone));
       if (!company || !full_name || !phone || !/^\S+@\S+\.\S+$/.test(email)) return json(res, 400, { error: 'missing_fields' }, cors);
@@ -751,7 +839,7 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
 
     /* ---- auth ---- */
     if (p === '/api/login' && req.method === 'POST') {
-      if (rateLimited(ip, 8, 300e3)) return json(res, 429, { error: 'too_many' });
+      if (rateLimited(ip, 8, 300e3, 'login')) return json(res, 429, { error: 'too_many' });
       const b = await body(req);
       const u = (await q('select * from users where email=$1 and coalesce(active,true)', [clean(b.email).toLowerCase()])).rows[0];
       const ok = u && crypto.timingSafeEqual(Buffer.from(hash(String(b.password || ''), u.pw_salt)), Buffer.from(u.pw_hash));

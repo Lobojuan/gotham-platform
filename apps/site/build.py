@@ -20,6 +20,10 @@ META = {
    title='Register · Gotham Consult',
    desc='Register for a Gotham Consult forum, membership or investor briefing. Mobile money, card or invoice.',
    og='img/forum.webp'),
+ 'family.html': dict(
+   title='Family Desk · care and paperwork for your parents in Ghana · Gotham Consult',
+   desc='Renewals, visits, property watch and appointments for older parents in Ghana, with a written report after every visit. For families abroad.',
+   og='img/forum.webp'),
  'teaser.html': dict(
    title='SMEs at the Centre · 24 October 2026 · Gotham Consult',
    desc='A working forum at Tang Palace Hotel, Accra. By invitation, free for SMEs, stakeholders and investors.',
@@ -72,7 +76,7 @@ def main():
 
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n')
-    pages = ['', 'register.html', 'teaser.html', 'privacy.html', 'terms.html']
+    pages = ['', 'family.html', 'register.html', 'teaser.html', 'privacy.html', 'terms.html']
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc></url>\n' for p in pages)
     open(os.path.join(DIST, 'sitemap.xml'), 'w').write(
         '<?xml version="1.0" encoding="UTF-8"?>\n'

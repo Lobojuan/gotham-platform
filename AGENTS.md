@@ -95,3 +95,20 @@ Three rules that exist because of real data:
 Columns the user did not map are kept in `contacts.extra` (jsonb) and shown in
 the contact drawer. Never drop them — a "pitch angle" or "sensitivities" column
 is often the most valuable thing in the sheet.
+
+## Visitors abroad, and knowing who a visitor is
+
+- **Phone numbers:** `phoneGH()` assumes a Ghanaian number. Anything a person
+  abroad types goes through `phoneIntl(dial, local)` instead, or a UK "07700…"
+  becomes a wrong +233 number. The Family Desk form sends a dial code and a
+  local number separately for exactly this reason.
+- **Client IP:** rate limits key on `X-Real-IP`, which Caddy sets from the real
+  visitor address (`header_up X-Real-IP {remote_host}`). If anything is ever put
+  in front of Caddy — Cloudflare, a load balancer — that value becomes the proxy's
+  address and every visitor shares one limit. Update the Caddy block to use the
+  forwarded client address before doing that.
+- **Rate limits are per form** (`rateLimited(ip, max, window, bucket)`), so signing
+  in never uses up someone's allowance for a public form.
+- **Money:** Ghanaian law prohibits pricing, advertising or charging for services
+  in foreign currency. Every price, invoice and email is in cedis. Paystack Ghana
+  charges foreign cards in cedis. See `docs/family-desk.md` §5.

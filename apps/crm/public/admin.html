@@ -470,7 +470,8 @@ async function outreach(){
    <div class="kpi"><b>${rows.length}</b><span>contacts</span></div>
    <div class="kpi"><b>${reachable}</b><span>reachable by email</span></div>
    <div class="kpi"><b>${noEmail}</b><span>no email address</span></div>
-   <div class="kpi"><b>${rows.filter(r=>r.status==='replied'||r.status==='meeting').length}</b><span>replied or met</span></div></div>
+   <div class="kpi"><b>${rows.filter(r=>r.status==='replied'||r.status==='meeting').length}</b><span>replied or met</span></div>
+   <div class="kpi" style="cursor:pointer" id="k-fd" title="Show Family Desk interest"><b>${rows.filter(r=>(r.tags||'').includes('family-desk')).length}</b><span>Family Desk families</span></div></div>
 
   <div class="card"><div class="ch"><h3>Campaigns</h3><button class="btn btn-dark" id="c-new">New campaign</button></div>
    <div class="wrapx"><table><thead><tr><th>Name</th><th>Design</th><th>Sent</th><th>Waiting</th><th>Clicked</th><th>Pace</th><th>Status</th><th></th></tr></thead><tbody>
@@ -510,13 +511,16 @@ Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></te
   <div class="card"><div class="ch"><h3>Contacts</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
      <input class="t" id="c-find" placeholder="Search company, name or sector" style="max-width:240px">
+     <button class="btn btn-line" id="c-fd">Family Desk</button>
      <button class="btn btn-dark" id="c-add">Add a company</button></div></div>
    <div class="wrapx"><table><thead><tr><th>Company</th><th>Person</th><th>Sector</th><th>Email</th><th>Last written to</th><th>Status</th><th></th></tr></thead>
    <tbody id="ctb"></tbody></table></div></div>`;
 
  const draw=()=>{const f=($('#c-find').value||'').toLowerCase();
-  const list=CONTACTS.filter(r=>!f||[r.company,r.full_name,r.sector,r.role].join(' ').toLowerCase().includes(f)).slice(0,400);
-  $('#ctb').innerHTML=list.map(r=>`<tr><td><b>${esc(r.company||'—')}</b><div class="note">${esc(r.city||'')}</div></td>
+  const hay=r=>[r.company,r.full_name,r.sector,r.role,r.tags,r.city,r.country,
+    ...(r.extra?Object.values(r.extra):[])].join(' ').toLowerCase();
+  const list=CONTACTS.filter(r=>!f||hay(r).includes(f)).slice(0,400);
+  $('#ctb').innerHTML=list.map(r=>`<tr><td><b>${esc(r.company||((r.tags||'').includes('family-desk')?'Family Desk':'—'))}</b><div class="note">${esc((r.tags||'').includes('family-desk')&&r.extra?[r.extra['Parent region'],r.extra['Lives in']?'payer in '+r.extra['Lives in']:''].filter(Boolean).join(' · '):(r.city||''))}</div></td>
    <td>${esc(r.full_name||'—')}<div class="note">${esc(r.role||'')}</div></td>
    <td class="note">${esc(r.sector||'—')}${r.priority?`<div><span class="tag t-hold">${esc(r.priority)}</span></div>`:''}</td>
    <td class="note">${r.email?esc(r.email):'<span class="tag t-hold">no email</span>'}${r.unsubscribed_at?' <span class="tag t-canc">opted out</span>':''}</td>
@@ -531,6 +535,8 @@ Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></te
    contactForm(CONTACTS.find(x=>String(x.id)===b.dataset.cmore)));};
  $('#c-add').onclick=()=>contactForm(null);
  draw(); $('#c-find').oninput=draw;
+ const fd=()=>{$('#c-find').value='family desk';draw();$('#c-find').scrollIntoView({behavior:'smooth',block:'center'})};
+ $('#c-fd').onclick=fd; $('#k-fd').onclick=fd;
 
  $('#im-check').onclick=async()=>{const t=$('#im-text').value;if(!t.trim())return toast('Paste a list first');
   const d=await api('/api/contacts/preview',{method:'POST',body:JSON.stringify({text:t})});
