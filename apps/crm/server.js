@@ -5,6 +5,7 @@ import path from 'node:path';
 import pg from 'pg';
 import QR from 'qrcode';
 import sharp from 'sharp';
+import ExcelJS from 'exceljs';
 
 const PORT = process.env.PORT || 4100;
 const SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
@@ -280,6 +281,98 @@ function merge(text, c) {
 }
 const paras = (t, style) => String(t || '').split(/\n\s*\n/).map(x => x.trim()).filter(Boolean)
   .map(x => `<p style="${style}">${esc(x).replace(/\n/g, '<br>')}</p>`).join('');
+
+/* A spreadsheet cell can be a string, a number, a date, a formula result or a
+   rich-text object. Everything becomes a plain trimmed string. */
+function cellText(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'string') return v.trim();
+  if (typeof v === 'number' || typeof v === 'boolean') return String(v);
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  if (typeof v === 'object') {
+    if (Array.isArray(v.richText)) return v.richText.map(t => t.text).join('').trim();
+    if (v.text) return String(v.text).trim();
+    if (v.result !== undefined) return cellText(v.result);
+    if (v.hyperlink) return String(v.hyperlink).trim();
+  }
+  return String(v).trim();
+}
+/* Placeholders people type when they have not found something yet. */
+const PLACEHOLDER = /^(to find|tofind|tbd|tba|t\.b\.d\.?|n\/?a|none|unknown|\?+|-+|—+)$/i;
+const realValue = t => (PLACEHOLDER.test(String(t || '').trim()) ? '' : String(t || '').trim());
+
+/* Read an uploaded workbook or CSV into { sheets: [{name, columns, rows}] }. */
+async function readSheet(buf, filename) {
+  const wb = new ExcelJS.Workbook();
+  if (/\.csv$/i.test(filename || '')) {
+    const { rows } = parseContacts(buf.toString('utf8'));   // csv path stays as it was
+    return { csv: true, rows };
+  }
+  await wb.xlsx.load(buf);
+  const sheets = [];
+  for (const ws of wb.worksheets) {
+    if (ws.rowCount < 2) continue;
+    /* The header is the first row with two or more non-empty cells. */
+    let headRow = 1;
+    for (let i = 1; i <= Math.min(8, ws.rowCount); i++) {
+      const filled = (ws.getRow(i).values || []).slice(1).filter(v => cellText(v)).length;
+      if (filled >= 2) { headRow = i; break; }
+    }
+    const columns = (ws.getRow(headRow).values || []).slice(1).map(v => cellText(v));
+    if (columns.filter(Boolean).length < 2) continue;
+    const rows = [];
+    for (let i = headRow + 1; i <= ws.rowCount; i++) {
+      const vals = (ws.getRow(i).values || []).slice(1).map(cellText);
+      if (!vals.some(Boolean)) continue;
+      rows.push(vals);
+    }
+    if (rows.length) sheets.push({ name: ws.name, columns, rows });
+  }
+  return { sheets };
+}
+
+/* Guess which spreadsheet column is which CRM field. The user can override
+   every one of these in the mapping step. */
+const FIELD_HINTS = {
+  company:   [/company/i, /organisation/i, /organization/i, /\bfirm\b/i, /institution/i, /business/i, /entity/i],
+  full_name: [/ghana (md|ceo)/i, /\bmd\b/i, /\bceo\b/i, /leader/i, /contact name/i, /^name$/i, /person/i, /manager/i],
+  role:      [/role/i, /title/i, /position/i],
+  email:     [/e-?mail/i],
+  phone:     [/phone/i, /telephone/i, /mobile/i, /whatsapp/i, /\btel\b/i],
+  website:   [/website/i, /\bweb\b/i, /\burl\b/i, /domain/i],
+  sector:    [/sector/i, /industry/i, /mineral/i, /category/i],
+  city:      [/city/i, /town/i, /location/i],
+  priority:  [/priority/i, /tier/i, /rank/i],
+  status:    [/outreach status/i, /^status$/i],
+  notes:     [/notes/i, /sensitiv/i, /comment/i, /pitch/i, /next step/i]
+};
+function guessMapping(columns) {
+  const map = {}, taken = new Set(), done = new Set();
+  /* Walk the hints one pattern at a time rather than one field at a time, so a
+     specific pattern ("Ghana MD") beats a loose one ("CEO") even when the loose
+     column comes first. Without this, a list of local managing directors gets
+     mapped to the group chief executive in another country. */
+  const depth = Math.max(...Object.values(FIELD_HINTS).map(p => p.length));
+  for (let round = 0; round < depth; round++) {
+    for (const [field, pats] of Object.entries(FIELD_HINTS)) {
+      if (done.has(field) || !pats[round]) continue;
+      for (let i = 0; i < columns.length; i++) {
+        if (taken.has(i) || !columns[i]) continue;
+        if (pats[round].test(columns[i])) { map[i] = field; taken.add(i); done.add(field); break; }
+      }
+    }
+  }
+  return map;
+}
+const STATUS_WORDS = {
+  'not contacted': 'new', 'new': 'new', 'to contact': 'new',
+  'contacted': 'contacted', 'emailed': 'contacted', 'sent': 'contacted',
+  'replied': 'replied', 'responded': 'replied',
+  'meeting': 'meeting', 'meeting booked': 'meeting', 'call booked': 'meeting',
+  'won': 'won', 'signed': 'won', 'closed won': 'won',
+  'lost': 'lost', 'declined': 'lost', 'no': 'lost',
+  'do not contact': 'do_not_contact', 'dnc': 'do_not_contact', 'opted out': 'do_not_contact'
+};
 
 /* Parse a pasted list: CSV, semicolons or tabs, with or without a header row. */
 function parseContacts(text) {
@@ -1062,7 +1155,9 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     /* ---- contacts ---- */
     if (p === '/api/contacts' && req.method === 'GET') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
-      const { rows } = await q('select * from contacts order by company nulls last, id desc limit 2000');
+      const { rows } = await q(`select * from contacts
+        order by case priority when 'Tier 1' then 0 when 'Tier 2' then 1 when 'Tier 3' then 2 else 3 end,
+                 company nulls last, id desc limit 2000`);
       const sec = await q(`select coalesce(nullif(sector,''),'Not stated') as sector, count(*)::int as n
         from contacts group by 1 order by n desc`);
       return json(res, 200, { rows, sectors: sec.rows });
@@ -1086,15 +1181,21 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           email || null, phoneGH(clean(r.phone, 40)), clean(r.sector, 60) || sector || null,
           clean(r.city, 80), clean(r.country, 60) || 'Ghana',
           [tags, clean(r.tags, 200)].filter(Boolean).join(','), clean(r.source, 120) || source, clean(r.notes, 1000)];
-        if (email) {
-          const ex = await q('select id from contacts where lower(email)=lower($1)', [email]);
+        {
+          const ex = email
+            ? await q(`select id from contacts where lower(email)=lower($1)
+                 or (lower(coalesce(company,''))=lower($2) and lower(coalesce(full_name,''))=lower($3)
+                     and coalesce(email,'')='')`, [email, clean(r.company, 160), clean(r.full_name, 120)])
+            : await q(`select id from contacts where lower(coalesce(company,''))=lower($1)
+                 and lower(coalesce(full_name,''))=lower($2)`, [clean(r.company, 160), clean(r.full_name, 120)]);
           if (ex.rows.length) {
             /* fill gaps only, and never touch someone who has told us to stop */
             await q(`update contacts set company=coalesce(nullif($1,''),company), full_name=coalesce(nullif($2,''),full_name),
               role=coalesce(nullif($3,''),role), phone=coalesce(nullif($4,''),phone), sector=coalesce(nullif($5,''),sector),
               city=coalesce(nullif($6,''),city), tags=coalesce(nullif($7,''),tags)
+              , email=coalesce(email, $9)
               where id=$8 and unsubscribed_at is null`,
-              [vals[0], vals[1], vals[2], vals[4], vals[5], vals[6], vals[8], ex.rows[0].id]);
+              [vals[0], vals[1], vals[2], vals[4], vals[5], vals[6], vals[8], ex.rows[0].id, email || null]);
             updated++; continue;
           }
         }
@@ -1112,6 +1213,105 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       let b; try { b = await bodyBig(req, 4 * 1024 * 1024); } catch { return json(res, 413, { error: 'too_large' }); }
       const { rows } = parseContacts(b.text);
       return json(res, 200, { count: rows.length, sample: rows.slice(0, 5) });
+    }
+
+
+    /* Step 1: hand us the file, we tell you what is in it and what we think
+       each column is. Nothing is saved yet. */
+    if (p === '/api/contacts/inspect' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      let b; try { b = await bodyBig(req, 28 * 1024 * 1024); } catch { return json(res, 413, { error: 'file_too_large' }); }
+      const raw = String(b.data || '').replace(/^data:[^;]+;base64,/, '');
+      if (!raw) return json(res, 400, { error: 'no_file' });
+      let out;
+      try { out = await readSheet(Buffer.from(raw, 'base64'), b.name || ''); }
+      catch { return json(res, 400, { error: 'unreadable' }); }
+      if (out.csv) return json(res, 200, { csv: true, count: out.rows.length, sample: out.rows.slice(0, 5) });
+      if (!out.sheets.length) return json(res, 400, { error: 'no_table_found' });
+      return json(res, 200, {
+        sheets: out.sheets.map(sh => ({
+          name: sh.name, rows: sh.rows.length, columns: sh.columns,
+          mapping: guessMapping(sh.columns),
+          sample: sh.rows.slice(0, 3)
+        }))
+      });
+    }
+
+    /* Step 2: import one sheet with a mapping you have confirmed. */
+    if (p === '/api/contacts/import-sheet' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      let b; try { b = await bodyBig(req, 28 * 1024 * 1024); } catch { return json(res, 413, { error: 'file_too_large' }); }
+      const source = clean(b.source, 120);
+      if (!source) return json(res, 400, { error: 'source_required' });
+      const raw = String(b.data || '').replace(/^data:[^;]+;base64,/, '');
+      let out;
+      try { out = await readSheet(Buffer.from(raw, 'base64'), b.name || ''); }
+      catch { return json(res, 400, { error: 'unreadable' }); }
+      const sh = (out.sheets || []).find(x => x.name === b.sheet) || (out.sheets || [])[0];
+      if (!sh) return json(res, 400, { error: 'no_table_found' });
+      const map = (b.mapping && typeof b.mapping === 'object') ? b.mapping : guessMapping(sh.columns);
+      const tags = clean(b.tags, 200), sector = clean(b.sector, 60);
+
+      let added = 0, updated = 0, skipped = 0;
+      for (const cells of sh.rows.slice(0, 5000)) {
+        const f = {}, extra = {};
+        cells.forEach((v, i) => {
+          const val = realValue(v);
+          const field = map[i] ?? map[String(i)];
+          if (field && field !== 'ignore') f[field] = [f[field], val].filter(Boolean).join(' · ');
+          else if (val && sh.columns[i]) extra[sh.columns[i]] = val;
+        });
+        const company = clean(f.company, 160);
+        /* "Ama Mensah – Managing Director" in one cell: split it. */
+        let full_name = clean(f.full_name, 160), role = clean(f.role, 140);
+        if (full_name && !role) {
+          const m = full_name.match(/^(.*?)\s*[–—-]\s*(.+)$/);
+          if (m && m[2].length < 90) { full_name = m[1].trim(); role = m[2].trim(); }
+        }
+        const email = clean(f.email, 160).toLowerCase();
+        if (email && !/^\S+@\S+\.\S+$/.test(email)) { skipped++; continue; }
+        if (!company && !full_name && !email) { skipped++; continue; }
+        const status = STATUS_WORDS[String(f.status || '').toLowerCase().trim()] || null;
+        const vals = {
+          company, full_name: full_name.slice(0, 120), role,
+          email: email || null, phone: phoneGH(clean(f.phone, 60)),
+          sector: clean(f.sector, 60) || sector || null, city: clean(f.city, 80),
+          website: clean(f.website, 200), priority: clean(f.priority, 40),
+          tags: [tags, clean(f.priority, 40)].filter(Boolean).join(','),
+          notes: clean(f.notes, 4000), source, extra: JSON.stringify(extra), status
+        };
+
+        /* Match on email when we have one; otherwise on company plus person,
+           because a list of leads often has no addresses yet and importing
+           the same sheet twice must not double it. */
+        const found = email
+          ? await q('select id from contacts where lower(email)=lower($1)', [email])
+          : await q(`select id from contacts where lower(coalesce(company,''))=lower($1)
+                     and lower(coalesce(full_name,''))=lower($2)`, [company, vals.full_name]);
+        if (found.rows.length) {
+          await q(`update contacts set
+              company=coalesce(nullif($1,''),company), full_name=coalesce(nullif($2,''),full_name),
+              role=coalesce(nullif($3,''),role), email=coalesce($4,email), phone=coalesce(nullif($5,''),phone),
+              sector=coalesce(nullif($6,''),sector), city=coalesce(nullif($7,''),city),
+              website=coalesce(nullif($8,''),website), priority=coalesce(nullif($9,''),priority),
+              tags=coalesce(nullif($10,''),tags), notes=coalesce(nullif($11,''),notes),
+              extra = coalesce(extra,'{}'::jsonb) || $12::jsonb,
+              status = case when status in ('do_not_contact') then status else coalesce($13,status) end
+            where id=$14 and unsubscribed_at is null`,
+            [vals.company, vals.full_name, vals.role, vals.email, vals.phone, vals.sector, vals.city,
+              vals.website, vals.priority, vals.tags, vals.notes, vals.extra, vals.status, found.rows[0].id]);
+          updated++;
+        } else {
+          await q(`insert into contacts(company,full_name,role,email,phone,sector,city,website,priority,tags,notes,source,extra,status)
+            values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,coalesce($14,'new'))`,
+            [vals.company, vals.full_name, vals.role, vals.email, vals.phone, vals.sector, vals.city,
+              vals.website, vals.priority, vals.tags, vals.notes, vals.source, vals.extra, vals.status]);
+          added++;
+        }
+      }
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+        [u.email, 'contacts_import', `${sh.name}: ${added} added, ${updated} updated, ${skipped} skipped — source: ${source}`]);
+      return json(res, 200, { added, updated, skipped, sheet: sh.name });
     }
 
     const mCon = p.match(/^\/api\/contacts\/(\d+)$/);

@@ -217,3 +217,9 @@ create table if not exists campaign_sends (
 create index if not exists campaign_sends_q_idx on campaign_sends (campaign_id, status);
 
 alter table outbox drop constraint if exists outbox_kind_check;
+
+-- ---- spreadsheet import (v1.5) ----
+alter table contacts add column if not exists website text;
+alter table contacts add column if not exists priority text;      -- Tier 1 / Tier 2 / …
+alter table contacts add column if not exists extra jsonb default '{}'::jsonb;  -- every column we were not asked to map
+create index if not exists contacts_company_idx on contacts (lower(company));

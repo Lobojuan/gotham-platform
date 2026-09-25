@@ -72,3 +72,26 @@ it against a throwaway Postgres, never the production database.
 `./scripts/deploy-crm.sh` and `./scripts/deploy-site.sh`. The CRM deploy
 snapshots the previous release first; `./scripts/rollback-crm.sh` restores it.
 Never edit files directly on the server — the next deploy overwrites them.
+
+## Importing lists
+
+`readSheet()` (exceljs) reads every worksheet, finds the header row and returns
+its columns. `guessMapping()` proposes a field per column, but the user confirms
+every one in the UI before anything is written — never import on a guess alone.
+
+Three rules that exist because of real data:
+
+- **Placeholders are not values.** `TO FIND`, `TBD`, `N/A`, `-` and friends are
+  stripped by `realValue()`. A column of "TO FIND" must never become a column of
+  email addresses.
+- **Specific column names beat loose ones.** `guessMapping()` walks the hint
+  patterns in rounds so "Ghana MD / CEO" wins over a "Group CEO" column that
+  happens to appear first. Add new hints in priority order within each field.
+- **Dedupe on email when there is one, otherwise on company plus person.** Lead
+  lists routinely have no addresses yet, and the same sheet gets re-uploaded as
+  it fills in. Both import paths must behave the same way, or a contact gains a
+  twin the day someone finds their email.
+
+Columns the user did not map are kept in `contacts.extra` (jsonb) and shown in
+the contact drawer. Never drop them — a "pitch angle" or "sensitivities" column
+is often the most valuable thing in the sheet.
