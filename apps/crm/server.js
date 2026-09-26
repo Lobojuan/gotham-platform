@@ -15,8 +15,10 @@ const q = (t, p) => pool.query(t, p);
 const here = path.dirname(new URL(import.meta.url).pathname);
 const MEDIA = process.env.MEDIA_DIR || path.join(here, 'media');
 const SITE_DIR = process.env.SITE_DIR || '';        // static website, served at / when set
-const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://gotham.84-12-73-59.sslip.io').replace(/\/$/, '');
-const SITE_URL = (process.env.SITE_URL || process.env.PUBLIC_URL || 'https://gotham.84-12-73-59.sslip.io').replace(/\/$/, '');
+const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://gothamconsult.com').replace(/\/$/, '');
+const CANON_HOST = new URL(PUBLIC_URL).host;
+const REDIRECT_HOSTS = (process.env.REDIRECT_HOSTS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+const SITE_URL = (process.env.SITE_URL || process.env.PUBLIC_URL || 'https://gothamconsult.com').replace(/\/$/, '');
 fs.mkdirSync(MEDIA, { recursive: true });
 
 /* ---------- image sizes, fixed to the website layout ---------- */
@@ -114,7 +116,7 @@ function phoneIntl(dial, local) {
   const full = cc + n;
   return /^\+\d{8,15}$/.test(full) ? full : '';
 }
-const BASE = process.env.PUBLIC_URL || 'https://gotham.84-12-73-59.sslip.io';
+const BASE = process.env.PUBLIC_URL || 'https://gothamconsult.com';
 const FROM = process.env.MAIL_FROM || 'Gotham Consult <info@gothamconsult.com>';
 
 async function queueMail(to_email, to_name, subject, body, kind, reg_id = null) {
@@ -569,6 +571,18 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
   const ip = (req.headers['x-real-ip'] || req.socket.remoteAddress || '').toString();
+  /* One address for everyone: pages asked for on an old host (www, the sslip test address)
+     move to PUBLIC_URL. The API is left alone so older copies of the form keep working. */
+  const host = String(req.headers.host || '').toLowerCase().split(':')[0];
+  if ((req.method === 'GET' || req.method === 'HEAD') && REDIRECT_HOSTS.includes(host) && host !== CANON_HOST
+      && !p.startsWith('/api/') && !p.startsWith('/media/')) {
+    res.writeHead(301, { location: PUBLIC_URL + req.url, 'cache-control': 'public, max-age=3600' }); return res.end();
+  }
+  /* addresses from the old WordPress site */
+  const OLD = { '/services': '/#services', '/contact': '/#contact', '/faq': '/#contact', '/about': '/#about', '/hello-world': '/',
+    '/wp-admin': '/admin', '/wp-login.php': '/admin', '/feed': '/', '/wp-sitemap.xml': '/sitemap.xml', '/sample-page': '/' };
+  const oldKey = p.replace(/\/+$/, '') || '/';
+  if ((req.method === 'GET' || req.method === 'HEAD') && OLD[oldKey]) { res.writeHead(301, { location: OLD[oldKey] }); return res.end(); }
   const origin = req.headers.origin;
   const cors = origin && (ORIGINS.includes(origin) || ORIGINS.includes('*'))
     ? { 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', 'vary': 'Origin' } : {};

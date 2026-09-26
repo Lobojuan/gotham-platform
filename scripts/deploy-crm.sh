@@ -19,4 +19,4 @@ ssh "$HOST" "rsync -a --exclude .env /tmp/crmup/ $REMOTE/ && cd $REMOTE && docke
 
 echo "→ health check"
 sleep 8
-curl -fsS "${PUBLIC_URL:-https://gotham.84-12-73-59.sslip.io}/api/health" && echo "  OK"
+curl -fsS "${PUBLIC_URL:-https://gothamconsult.com}/api/health" && echo "  OK"

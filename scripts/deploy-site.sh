@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HOST="${HOST:-nuru@84.12.73.59}"
 REMOTE="${REMOTE_SITE:-/srv/gotham-site}"
-PUBLIC="${PUBLIC_URL:-https://gotham.84-12-73-59.sslip.io}"
+PUBLIC="${PUBLIC_URL:-https://gothamconsult.com}"
 
 SITE_URL="$PUBLIC" "$ROOT/scripts/build-site.sh"
 

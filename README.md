@@ -140,3 +140,12 @@ check-in with contact details hidden.
 - The site pages are written as page *bodies*, not complete documents, so they
   can double as artifacts. `build.py` adds the `<head>`. Do not add a doctype
   to the files in `pages/`.
+
+## Domain
+
+The live address is **https://gothamconsult.com** (DNS at Namecheap cPanel: only the apex A record points at
+the Oracle server, 84.12.73.59; `www` is a CNAME to it; mail, webmail and MX stay on Namecheap hosting).
+`REDIRECT_HOSTS` (in `/srv/gotham/.env`) lists old hosts whose page requests 301 to `PUBLIC_URL`
+(`www.gothamconsult.com,gotham.84-12-73-59.sslip.io`); `/api/*` is never redirected so old copies of the form keep posting.
+Old WordPress paths (`/services`, `/contact`, `/faq`, `/wp-admin`…) redirect to their new places.
+The old WordPress files are untouched on the Namecheap server: pointing the A record back to 199.188.201.131 restores it.
