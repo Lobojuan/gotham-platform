@@ -223,3 +223,11 @@ alter table contacts add column if not exists website text;
 alter table contacts add column if not exists priority text;      -- Tier 1 / Tier 2 / …
 alter table contacts add column if not exists extra jsonb default '{}'::jsonb;  -- every column we were not asked to map
 create index if not exists contacts_company_idx on contacts (lower(company));
+
+-- ---- forum registration questions, from the SMEs at the Centre form (v1.6) ----
+alter table registrations add column if not exists company_about text;
+alter table registrations add column if not exists company_size text;
+alter table registrations add column if not exists challenge text;
+alter table registrations add column if not exists heard_via text;
+alter table registrations add column if not exists follow_up text;   -- yes / maybe / no
+update contacts set unsubscribed_at = coalesce(unsubscribed_at, now()) where status = 'do_not_contact' and unsubscribed_at is null;

@@ -112,3 +112,15 @@ is often the most valuable thing in the sheet.
 - **Money:** Ghanaian law prohibits pricing, advertising or charging for services
   in foreign currency. Every price, invoice and email is in cedis. Paystack Ghana
   charges foreign cards in cedis. See `docs/family-desk.md` §5.
+
+## Registration: never make a new field required on the server
+
+Old copies of the registration page stay out in the world — shared in WhatsApp
+groups, cached, or still hosted on the retired Netlify address — and they keep
+posting to `/api/register` with only the fields they knew about. A field that
+becomes required server-side silently breaks every one of those links. Validate
+new questions in the page; accept their absence in the API.
+
+A "Yes" or "Maybe" to the follow-up question creates or tags a contact
+(`forum-lead`, `forum-yes` / `forum-maybe`). Anyone with `unsubscribed_at` set or
+status `do_not_contact` is never re-tagged — check both, every time.

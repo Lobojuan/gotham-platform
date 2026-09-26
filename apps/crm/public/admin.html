@@ -243,6 +243,10 @@ async function drawer(id){
  <span>Email</span><div>${esc(r.email)}</div><span>Phone</span><div>${esc(r.phone)}</div>
  <span>Country</span><div>${esc(r.country||'—')} · ${esc(r.sector||'—')}</div>
  <span>Reg. no.</span><div>${esc(r.reg_no||'—')}</div>
+ ${r.company_about||r.company_size?`<span>Business</span><div>${esc(r.company_about||'—')}${r.company_size?' <span class="note">· '+esc(r.company_size)+' people</span>':''}</div>`:''}
+ ${r.challenge?`<span>Biggest challenge</span><div>${esc(r.challenge)}</div>`:''}
+ ${r.heard_via?`<span>Heard via</span><div>${esc(r.heard_via)}</div>`:''}
+ ${r.follow_up?`<span>Wants to hear from us</span><div><span class="tag ${r.follow_up==='yes'?'t-paid':r.follow_up==='maybe'?'t-hold':'t-canc'}">${esc(r.follow_up)}</span>${r.follow_up!=='no'?' <span class="note">· on the follow-up list in Outreach</span>':''}</div>`:''}
  <span>Seats</span><div>${r.seats}${r.guests?'<div class="note">'+esc(r.guests).replace(/\n/g,'<br>')+'</div>':''}</div>
  <span>Amount</span><div>${money(r.amount,r.currency)} · ${esc(r.payment_method)}</div>
  <span>Paid</span><div>${r.paid?'Yes · '+dt(r.paid_at)+(r.paid_by?' by '+esc(r.paid_by):''):'No'}</div>
@@ -512,6 +516,7 @@ Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></te
     <div style="display:flex;gap:8px;flex-wrap:wrap">
      <input class="t" id="c-find" placeholder="Search company, name or sector" style="max-width:240px">
      <button class="btn btn-line" id="c-fd">Family Desk</button>
+     <button class="btn btn-line" id="c-fl">Forum leads</button>
      <button class="btn btn-dark" id="c-add">Add a company</button></div></div>
    <div class="wrapx"><table><thead><tr><th>Company</th><th>Person</th><th>Sector</th><th>Email</th><th>Last written to</th><th>Status</th><th></th></tr></thead>
    <tbody id="ctb"></tbody></table></div></div>`;
@@ -537,6 +542,7 @@ Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></te
  draw(); $('#c-find').oninput=draw;
  const fd=()=>{$('#c-find').value='family desk';draw();$('#c-find').scrollIntoView({behavior:'smooth',block:'center'})};
  $('#c-fd').onclick=fd; $('#k-fd').onclick=fd;
+ $('#c-fl').onclick=()=>{$('#c-find').value='forum-lead';draw();$('#c-find').scrollIntoView({behavior:'smooth',block:'center'})};
 
  $('#im-check').onclick=async()=>{const t=$('#im-text').value;if(!t.trim())return toast('Paste a list first');
   const d=await api('/api/contacts/preview',{method:'POST',body:JSON.stringify({text:t})});

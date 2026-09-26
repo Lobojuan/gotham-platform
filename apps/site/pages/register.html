@@ -106,6 +106,17 @@ footer{border-top:1px solid var(--line);padding:22px 0 34px;color:var(--mute);fo
 .consent input{width:24px;height:24px;margin:1px 0 0;accent-color:var(--ink);cursor:pointer}
 .consent span{min-width:0;overflow-wrap:normal;word-break:normal}
 .consent a{color:var(--ink);text-underline-offset:2px}
+
+/* event questions */
+.evq{margin-top:14px;border-top:1px solid var(--line);padding-top:14px}
+.evq[hidden]{display:none}
+.fu p.l{display:block;font-size:14px;font-weight:600;margin-bottom:5px;margin:0 0 8px}
+.fuo{display:flex;gap:8px;flex-wrap:wrap}
+.fuo label{position:relative}
+.fuo input{position:absolute;opacity:0;width:1px;height:1px}
+.fuo span{display:inline-flex;align-items:center;min-height:44px;padding:9px 20px;border:1px solid var(--line);border-radius:999px;cursor:pointer;background:#fff;font-weight:500}
+.fuo input:checked+span{background:var(--ink);border-color:var(--ink);color:#fff}
+.fuo input:focus-visible+span{outline:3px solid rgba(15,27,45,.35);outline-offset:2px}
 </style>
 
 <div class="kente" aria-hidden="true"></div>
@@ -150,6 +161,28 @@ footer{border-top:1px solid var(--line);padding:22px 0 34px;color:var(--mute);fo
           <div id="catBox" hidden><label class="l" for="cat">I am attending as</label><select class="t" id="cat"></select></div>
         </div>
         <div style="margin-top:12px" id="guestsBox"><label class="l" for="gs">Other attendees <span>(names, optional)</span></label><textarea class="t" id="gs" placeholder="One name per line"></textarea></div>
+        <div id="eventQs" class="evq">
+          <div class="f2">
+            <div><label class="l" for="about">What does your company do?</label><input class="t" id="about" maxlength="160" placeholder="e.g. Poultry farm supplying eggs in Accra"></div>
+            <div><label class="l" for="size">Company size</label><select class="t" id="size">
+              <option value="">Choose</option><option>Just me</option><option>2–5</option><option>6–20</option><option>21–50</option><option>50+</option></select></div>
+          </div>
+          <div style="margin-top:12px"><label class="l" for="chal">What's your biggest challenge as an SME right now? <span>(optional)</span></label>
+            <textarea class="t" id="chal" maxlength="500" placeholder="Finance, customers, staff, regulation, anything: it helps us shape the programme"></textarea></div>
+          <div class="f2" style="margin-top:12px">
+            <div><label class="l" for="heard">How did you hear about this event? <span>(optional)</span></label><select class="t" id="heard">
+              <option value="">Choose</option><option>WhatsApp</option><option>Social media</option><option>Friend or colleague</option>
+              <option>Gotham Consult directly</option><option>Church or association</option><option>Other</option></select></div>
+          </div>
+          <div class="fu" role="radiogroup" aria-labelledby="fuL" style="margin-top:14px">
+            <p class="l" id="fuL">Would you like to hear about Gotham Consult's services after the event?</p>
+            <div class="fuo">
+              <label><input type="radio" name="fu" value="yes"><span>Yes</span></label>
+              <label><input type="radio" name="fu" value="maybe"><span>Maybe</span></label>
+              <label><input type="radio" name="fu" value="no"><span>No</span></label>
+            </div>
+          </div>
+        </div>
       </fieldset>
 
       <fieldset>
@@ -259,7 +292,7 @@ function pick(id,fromRadio){sel=ITEMS.find(i=>i.id===id)||ITEMS[0];if(!fromRadio
 
 function total(){return sel.p*(sel.q?qty:1)}
 function render(){
- const forum=!!sel.q;$('#qtyBox').hidden=!forum;$('#guestsBox').hidden=!forum;
+ const forum=!!sel.q;$('#qtyBox').hidden=!forum;$('#guestsBox').hidden=!forum;$('#eventQs').hidden=!forum;
  const auds=(sel.aud||'').split(',').map(x=>x.trim()).filter(Boolean);
  $('#catBox').hidden=!auds.length;
  if(auds.length){const c=$('#cat');if(c.dataset.for!==sel.id){c.innerHTML=auds.map(a=>`<option>${esc(a)}</option>`).join('');c.dataset.for=sel.id}}
@@ -296,6 +329,11 @@ function msg(){const guests=$('#gs').value.trim();
 function valid(){const bad=['#co','#nm','#em','#ph'].find(s=>!$(s).value.trim());
  if(bad){$('#err').textContent='Please fill in company name, your name, email and phone.';$(bad).focus();return false}
  if(!/^\S+@\S+\.\S+$/.test($('#em').value.trim())){$('#err').textContent='Please check your email address.';$('#em').focus();return false}
+ if(!$('#eventQs').hidden){
+  if(!$('#about').value.trim()){$('#err').textContent='Please tell us briefly what your company does.';$('#about').focus();return false}
+  if(!$('#size').value){$('#err').textContent='Please choose your company size.';$('#size').focus();return false}
+  if(!document.querySelector('input[name=fu]:checked')){$('#err').textContent='Please say whether you would like to hear about our services after the event.';document.querySelector('input[name=fu]').focus();return false}
+ }
  if(!$('#cons').checked){$('#err').textContent='Please tick the consent box.';return false}
  $('#err').textContent='';return true}
 function done(extra){$('#refOk').textContent=ref;$('#sumBody').hidden=true;$('#ok').classList.add('on'); $('#okTitle').textContent=OKT;
@@ -314,7 +352,10 @@ function payload(){const g=$('#gs').value.trim();
   phone:$('#ph').value.trim(), country:$('#ct').value, sector:$('#sec').value,
   category:$('#cat')&&!$('#catBox').hidden?$('#cat').value:'', utm_source:UTM.utm_source, utm_campaign:UTM.utm_campaign,
   guests:g?g.split('\n').map(x=>x.trim()).filter(Boolean):[],
-  payment_method:total()?({online:'online',momo:'momo',inv:'invoice'})[pay]:'free', consent:true};}
+  payment_method:total()?({online:'online',momo:'momo',inv:'invoice'})[pay]:'free', consent:true,
+  ...($('#eventQs').hidden?{}:{company_about:$('#about').value.trim(),company_size:$('#size').value,
+    challenge:$('#chal').value.trim(),heard_via:$('#heard').value,
+    follow_up:(document.querySelector('input[name=fu]:checked')||{}).value||''})};}
 
 $('#goSend').onclick=async()=>{
  if(!valid())return;

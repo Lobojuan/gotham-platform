@@ -699,7 +699,7 @@ const server = http.createServer(async (req, res) => {
         await q(`update contacts set full_name=coalesce(nullif($1,''),full_name), phone=coalesce(nullif($2,''),phone),
             country=coalesce(nullif($3,''),country), tags=$4, extra=coalesce(extra,'{}'::jsonb) || $5::jsonb,
             notes=concat_ws(E'\\n', nullif(notes,''), $6::text)
-          where id=$7 and unsubscribed_at is null`,
+          where id=$7 and unsubscribed_at is null and status <> 'do_not_contact'`,
           [full_name, phone, country, [...tags].join(','), JSON.stringify(extra), notes, ex.rows[0].id]);
       } else {
         await q(`insert into contacts(full_name,email,phone,country,sector,city,tags,source,notes,extra,status)
@@ -749,6 +749,40 @@ const server = http.createServer(async (req, res) => {
           tok(), tok(), ticket()]);
       const reg = rows[0];
       await q('insert into activity(reg_id,actor,action,detail) values ($1,$2,$3,$4)', [reg.id, 'website', 'registered', it.title]);
+
+      /* The SMEs at the Centre questions. Optional here on purpose: older copies
+         of the form, still out in WhatsApp groups, don't send them. */
+      const SIZES = ['Just me', '2–5', '6–20', '21–50', '50+'];
+      const HEARD = ['WhatsApp', 'Social media', 'Friend or colleague', 'Gotham Consult directly', 'Church or association', 'Other'];
+      const follow = ['yes', 'maybe', 'no'].includes(b.follow_up) ? b.follow_up : null;
+      const about = clean(b.company_about, 160), challenge = clean(b.challenge, 500);
+      await q(`update registrations set company_about=$1, company_size=$2, challenge=$3, heard_via=$4, follow_up=$5 where id=$6`,
+        [about || null, SIZES.includes(b.company_size) ? b.company_size : null, challenge || null,
+          HEARD.includes(b.heard_via) ? b.heard_via : null, follow, reg.id]);
+
+      /* "Yes" or "Maybe" is an explicit ask to hear from us, so the person goes
+         straight onto the follow-up list in Outreach with their challenge
+         attached. That list is where the money is the week after the forum. */
+      if (follow === 'yes' || follow === 'maybe') {
+        const note = `${it.title}: said ${follow} to hearing about our services.` + (challenge ? ` Biggest challenge: ${challenge}` : '');
+        const tagFor = 'forum-lead,forum-' + follow;
+        const ex = await q('select id, tags from contacts where lower(email)=lower($1)', [email]);
+        if (ex.rows.length) {
+          const tags = new Set(String(ex.rows[0].tags || '').split(',').map(t => t.trim()).filter(Boolean));
+          tagFor.split(',').forEach(t => tags.add(t));
+          await q(`update contacts set tags=$1, notes=concat_ws(E'\\n', nullif(notes,''), $2::text),
+              company=coalesce(nullif(company,''),$3), phone=coalesce(nullif(phone,''),$4)
+            where id=$5 and unsubscribed_at is null and status <> 'do_not_contact'`, [[...tags].join(','), note, company, phone, ex.rows[0].id]);
+        } else {
+          await q(`insert into contacts(company,full_name,role,email,phone,sector,country,tags,source,notes,priority,extra,status)
+                   values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,'new')`,
+            [company, full_name, clean(b.job_title, 80), email, phone, clean(b.sector, 60), clean(b.country, 60) || 'Ghana',
+              tagFor, 'Forum registration: ' + it.code, note, follow === 'yes' ? 'Forum: yes' : 'Forum: maybe',
+              JSON.stringify(Object.fromEntries(Object.entries({
+                'What they do': about, 'Company size': b.company_size, 'Biggest challenge': challenge,
+                'Heard via': b.heard_via, 'Registered for': it.title }).filter(([, v]) => v)))]);
+        }
+      }
 
       const confirmUrl = BASE + '/confirm/' + reg.confirm_token;
       const unsubUrl = BASE + '/unsubscribe/' + reg.unsub_token;
@@ -1176,7 +1210,8 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       if (!auth()) return json(res, 401, { error: 'no_session' });
       const { rows } = await q(`select r.reference,i.title item,r.company,r.reg_no,r.full_name,r.job_title,r.email,r.phone,
         r.country,r.sector,r.seats,r.currency,r.amount,r.payment_method,r.paid,r.paid_at,r.payment_ref,r.status,
-        r.checked_in_at,r.notes,r.created_at from registrations r join items i on i.code=r.item_code order by r.created_at desc`);
+        r.checked_in_at,r.company_about,r.company_size,r.challenge,r.heard_via,r.follow_up,r.notes,r.created_at
+        from registrations r join items i on i.code=r.item_code order by r.created_at desc`);
       const head = Object.keys(rows[0] || { reference: '' });
       const csv = [head.join(','), ...rows.map(r => head.map(h => csvCell(r[h])).join(','))].join('\n');
       res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': 'attachment; filename="gotham-registrations.csv"' });
@@ -1268,8 +1303,9 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         return json(res, 409, { error: 'already_there', id: dup.rows[0].id,
           who: dup.rows[0].company || dup.rows[0].full_name });
       const { rows } = await q(`insert into contacts(company,full_name,role,email,phone,sector,city,country,
-          website,priority,tags,notes,source,status)
-        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning id`,
+          website,priority,tags,notes,source,status,unsubscribed_at)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
+          case when $14::text = 'do_not_contact' then now() else null end) returning id`,
         [company, full_name, clean(b.role, 140), email || null, phoneGH(clean(b.phone, 60)),
           clean(b.sector, 60), clean(b.city, 80), clean(b.country, 60) || 'Ghana',
           clean(b.website, 200), clean(b.priority, 40), clean(b.tags, 200), clean(b.notes, 4000),
@@ -1311,7 +1347,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
               role=coalesce(nullif($3,''),role), phone=coalesce(nullif($4,''),phone), sector=coalesce(nullif($5,''),sector),
               city=coalesce(nullif($6,''),city), tags=coalesce(nullif($7,''),tags)
               , email=coalesce(email, $9)
-              where id=$8 and unsubscribed_at is null`,
+              where id=$8 and unsubscribed_at is null and status <> 'do_not_contact'`,
               [vals[0], vals[1], vals[2], vals[4], vals[5], vals[6], vals[8], ex.rows[0].id, email || null]);
             updated++; continue;
           }
@@ -1414,7 +1450,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
               tags=coalesce(nullif($10,''),tags), notes=coalesce(nullif($11,''),notes),
               extra = coalesce(extra,'{}'::jsonb) || $12::jsonb,
               status = case when status in ('do_not_contact') then status else coalesce($13,status) end
-            where id=$14 and unsubscribed_at is null`,
+            where id=$14 and unsubscribed_at is null and status <> 'do_not_contact'`,
             [vals.company, vals.full_name, vals.role, vals.email, vals.phone, vals.sector, vals.city,
               vals.website, vals.priority, vals.tags, vals.notes, vals.extra, vals.status, found.rows[0].id]);
           updated++;
