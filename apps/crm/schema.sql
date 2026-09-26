@@ -95,6 +95,9 @@ create table if not exists jobs_log (
 );
 
 alter table users add column if not exists active boolean default true;
+-- bumped on password change/reset/disable so older sign-ins stop working at once
+alter table users add column if not exists sv integer not null default 0;
+alter table users add column if not exists pw_changed_at timestamptz;
 
 -- ---- rich event content (v1.2) ----
 alter table items add column if not exists slug text;
@@ -231,3 +234,6 @@ alter table registrations add column if not exists challenge text;
 alter table registrations add column if not exists heard_via text;
 alter table registrations add column if not exists follow_up text;   -- yes / maybe / no
 update contacts set unsubscribed_at = coalesce(unsubscribed_at, now()) where status = 'do_not_contact' and unsubscribed_at is null;
+
+-- Sept 2026: email is optional on registrations (name + phone are enough)
+alter table registrations alter column email drop not null;

@@ -1,5 +1,5 @@
 css=open('common.css').read()
-SITE='https://gotham-consult-gh.netlify.app/'
+SITE='/'
 def page(title,desc,body,active):
     items=[('Website','','site'),('Register','register.html','reg'),('Privacy','privacy.html','privacy'),('Terms','terms.html','terms')]
     nav=''

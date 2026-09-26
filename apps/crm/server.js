@@ -16,7 +16,7 @@ const here = path.dirname(new URL(import.meta.url).pathname);
 const MEDIA = process.env.MEDIA_DIR || path.join(here, 'media');
 const SITE_DIR = process.env.SITE_DIR || '';        // static website, served at / when set
 const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://gotham.84-12-73-59.sslip.io').replace(/\/$/, '');
-const SITE_URL = (process.env.SITE_URL || 'https://gotham-consult-gh.netlify.app').replace(/\/$/, '');
+const SITE_URL = (process.env.SITE_URL || process.env.PUBLIC_URL || 'https://gotham.84-12-73-59.sslip.io').replace(/\/$/, '');
 fs.mkdirSync(MEDIA, { recursive: true });
 
 /* ---------- image sizes, fixed to the website layout ---------- */
@@ -38,7 +38,7 @@ const b64 = s => Buffer.from(s).toString('base64url');
 const unb64 = s => Buffer.from(s, 'base64url').toString();
 const sign = v => crypto.createHmac('sha256', SECRET).update(v).digest('base64url');
 function makeToken(user) {
-  const p = b64(JSON.stringify({ id: user.id, email: user.email, role: user.role, exp: Date.now() + 12 * 3600e3 }));
+  const p = b64(JSON.stringify({ id: user.id, email: user.email, role: user.role, sv: user.sv || 0, exp: Date.now() + 12 * 3600e3 }));
   return p + '.' + sign(p);
 }
 function readToken(tok) {
@@ -180,10 +180,14 @@ async function init() {
     ['F3', 'event', 'Diaspora & Nordic Investor Roundtable', 'Ghana briefing, sector outlook and Q&A', 'Online', '2026-11-21T16:00:00Z', '2026-11-21T17:30:00Z', 'GHS', 0, null, 200, false, 3],
     ['M1', 'membership', 'Member', '20% off forums, monthly clinic, priority grant alerts', null, null, null, 'GHS', 150, '/ month', null, true, 10],
     ['M2', 'membership', 'Business Pro', 'Bookkeeping, E-VAT filing, compliance calendar', null, null, null, 'GHS', 1200, '/ month', null, true, 11],
-    ['M3', 'membership', 'Investor Desk', 'Local representation, site visits, monthly report', null, null, null, 'USD', 1000, '/ month', null, true, 12],
-    ['B1', 'briefing', 'Ghana investor briefing', '60-minute call, credited to follow-on work', null, null, null, 'USD', 250, null, null, true, 20],
-    ['B2', 'briefing', 'Mining regime briefing', 'Royalties, reform status, licences and risks', null, null, null, 'USD', 750, null, null, true, 21],
+    ['M3', 'membership', 'Investor Desk', 'Local representation, site visits, monthly report', null, null, null, 'GHS', 11500, '/ month', null, true, 12],
+    ['B1', 'briefing', 'Ghana investor briefing', '60-minute call, credited to follow-on work', null, null, null, 'GHS', 2900, null, null, true, 20],
+    ['B2', 'briefing', 'Mining regime briefing', 'Royalties, reform status, licences and risks', null, null, null, 'GHS', 8500, null, null, true, 21],
   ];
+  // Bank of Ghana: prices may only be shown and charged in cedis. Earlier builds seeded three
+  // investor products in USD; move them to GHS (about GHS 11.40 per USD, Sept 2026, rounded).
+  for (const [code, usd, ghs] of [['M3', 1000, 11500], ['B1', 250, 2900], ['B2', 750, 8500]])
+    await q(`update items set currency='GHS', price=$3 where code=$1 and currency='USD' and price=$2`, [code, usd, ghs]);
   for (const s of seed) {
     await q(`insert into items(code,kind,title,subtitle,venue,starts_at,ends_at,currency,price,per,capacity,published,sort)
              values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) on conflict (code) do nothing`, s);
@@ -572,10 +576,21 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(204, { ...cors, 'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS', 'access-control-allow-headers': 'content-type' });
     return res.end();
   }
-  const auth = () => readToken(cookies(req).gc_session);
+  // A signed cookie alone is not enough: every signed-in request is checked against the
+  // users table, so removing, disabling or resetting someone takes effect on their next click,
+  // and a role change applies at once. Someone still on a first/reset password can only reach
+  // /api/me and /api/password until they choose their own.
+  let sess = null;
+  const auth = () => (sess && !sess.must_change ? sess : null);
+  const authAny = () => sess;
   const need = role => { const u = auth(); if (!u) return null; if (role === 'admin' && u.role === 'staff') return null; return u; };
 
   try {
+    const ctok = readToken(cookies(req).gc_session);
+    if (ctok && p.startsWith('/api/')) {
+      const r = (await q('select id,email,name,role,must_change,coalesce(active,true) as active,sv from users where id=$1', [ctok.id])).rows[0];
+      if (r && r.active && (r.sv || 0) === (ctok.sv || 0)) sess = { id: r.id, email: r.email, name: r.name, role: r.role, must_change: !!r.must_change };
+    }
     /* ---- public ---- */
     if (p === '/api/health') return json(res, 200, { ok: true });
 
@@ -721,15 +736,22 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/register' && req.method === 'POST') {
       if (rateLimited(ip, 10, 60e3, 'register')) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
-      const company = clean(b.company), full_name = clean(b.full_name), email = clean(b.email).toLowerCase(), phone = phoneGH(clean(b.phone));
-      if (!company || !full_name || !phone || !/^\S+@\S+\.\S+$/.test(email)) return json(res, 400, { error: 'missing_fields' }, cors);
+      // Only a name and a phone number are required. Many SME owners have no registered
+      // company name or no email they check; asking for them lost registrations.
+      const full_name = clean(b.full_name), email = clean(b.email).toLowerCase(), phone = phoneGH(clean(b.phone));
+      const company = clean(b.company) || 'Not given';
+      const fields = [];
+      if (!full_name) fields.push('full_name');
+      if (!phone || phone.replace(/\D/g, '').length < 9) fields.push('phone');
+      if (email && !/^\S+@\S+\.\S+$/.test(email)) fields.push('email');
+      if (fields.length) return json(res, 400, { error: 'missing_fields', fields }, cors);
       if (b.consent !== true) return json(res, 400, { error: 'consent_required' }, cors);
       const it = (await q('select * from items where code=$1 and published', [clean(b.item_code, 12)])).rows[0];
       if (!it) return json(res, 400, { error: 'unknown_item' }, cors);
       if (it.phase === 'past') return json(res, 409, { error: 'closed' }, cors);
-      const category = clean(b.category, 60);
-      if (it.audiences && !it.audiences.split(',').map(x => x.trim()).includes(category))
-        return json(res, 400, { error: 'category_required' }, cors);
+      const categoryIn = clean(b.category, 60);
+      // An unrecognised or missing "attending as" no longer blocks anyone; staff see it blank and ask.
+      const category = it.audiences && !it.audiences.split(',').map(x => x.trim()).includes(categoryIn) ? '' : categoryIn;
       let seats = it.kind === 'event' ? Math.max(1, Math.min(10, parseInt(b.seats) || 1)) : 1;
       const left = it.capacity === null ? null : (await itemsPublic()).rows.find(r => r.code === it.code)?.seats_left;
       if (left !== null && left !== undefined && left < seats) return json(res, 409, { error: 'sold_out' }, cors);
@@ -743,7 +765,7 @@ const server = http.createServer(async (req, res) => {
          confirm_token,unsub_token,ticket_code)
         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,now(),$18,$19,$20,$21,$22,$23,$24,$25)
         returning id,reference,ticket_code,confirm_token,unsub_token`,
-        [r, it.code, company, clean(b.reg_no, 60), full_name, clean(b.job_title, 80), email, phone, clean(b.country, 60),
+        [r, it.code, company, clean(b.reg_no, 60), full_name, clean(b.job_title, 80), email || null, phone, clean(b.country, 60),
           clean(b.sector, 60), seats, clean(Array.isArray(b.guests) ? b.guests.join('\n') : b.guests, 1000), it.currency, amount,
           method, amount === 0, status, b.marketing_opt_in === true, ip, category, clean(b.utm_source, 60), clean(b.utm_campaign, 60),
           tok(), tok(), ticket()]);
@@ -766,7 +788,8 @@ const server = http.createServer(async (req, res) => {
       if (follow === 'yes' || follow === 'maybe') {
         const note = `${it.title}: said ${follow} to hearing about our services.` + (challenge ? ` Biggest challenge: ${challenge}` : '');
         const tagFor = 'forum-lead,forum-' + follow;
-        const ex = await q('select id, tags from contacts where lower(email)=lower($1)', [email]);
+        const ex = email ? await q('select id, tags from contacts where lower(email)=lower($1)', [email])
+                          : await q('select id, tags from contacts where phone=$1 and email is null', [phone]);
         if (ex.rows.length) {
           const tags = new Set(String(ex.rows[0].tags || '').split(',').map(t => t.trim()).filter(Boolean));
           tagFor.split(',').forEach(t => tags.add(t));
@@ -776,7 +799,7 @@ const server = http.createServer(async (req, res) => {
         } else {
           await q(`insert into contacts(company,full_name,role,email,phone,sector,country,tags,source,notes,priority,extra,status)
                    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::jsonb,'new')`,
-            [company, full_name, clean(b.job_title, 80), email, phone, clean(b.sector, 60), clean(b.country, 60) || 'Ghana',
+            [company, full_name, clean(b.job_title, 80), email || null, phone, clean(b.sector, 60), clean(b.country, 60) || 'Ghana',
               tagFor, 'Forum registration: ' + it.code, note, follow === 'yes' ? 'Forum: yes' : 'Forum: maybe',
               JSON.stringify(Object.fromEntries(Object.entries({
                 'What they do': about, 'Company size': b.company_size, 'Biggest challenge': challenge,
@@ -883,15 +906,28 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
         { 'set-cookie': `gc_session=${makeToken(u)}; HttpOnly; Path=/; Max-Age=43200; SameSite=Lax; Secure` });
     }
     if (p === '/api/logout') return json(res, 200, { ok: true }, { 'set-cookie': 'gc_session=; Path=/; Max-Age=0' });
-    if (p === '/api/me') { const u = auth(); return u ? json(res, 200, u) : json(res, 401, { error: 'no_session' }); }
+    if (p === '/api/me') { const u = authAny(); return u ? json(res, 200, u) : json(res, 401, { error: 'no_session' }); }
 
     if (p === '/api/password' && req.method === 'POST') {
-      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      const u = authAny(); if (!u) return json(res, 401, { error: 'no_session' });
+      if (rateLimited(ip, 6, 300e3, 'password')) return json(res, 429, { error: 'too_many' });
       const b = await body(req);
-      if (String(b.password || '').length < 10) return json(res, 400, { error: 'too_short' });
+      const row = (await q('select * from users where id=$1', [u.id])).rows[0];
+      const cur = String(b.current || '');
+      const okCur = row && crypto.timingSafeEqual(Buffer.from(hash(cur, row.pw_salt)), Buffer.from(row.pw_hash));
+      if (!okCur) return json(res, 400, { error: 'wrong_current' });
+      const pw = String(b.password || '');
+      if (pw.length < 10) return json(res, 400, { error: 'too_short' });
+      if (pw.length > 200) return json(res, 400, { error: 'too_long' });
+      if (pw === cur) return json(res, 400, { error: 'same_as_old' });
+      if (/^(.)\1+$/.test(pw) || /^(0123456789|1234567890|password\d*|qwertyuiop)$/i.test(pw)) return json(res, 400, { error: 'too_weak' });
       const salt = newSalt();
-      await q('update users set pw_hash=$1, pw_salt=$2, must_change=false where id=$3', [hash(b.password, salt), salt, u.id]);
-      return json(res, 200, { ok: true });
+      const up = (await q('update users set pw_hash=$1, pw_salt=$2, must_change=false, pw_changed_at=now(), sv=coalesce(sv,0)+1 where id=$3 returning *',
+        [hash(pw, salt), salt, u.id])).rows[0];
+      await q('insert into jobs_log(job,detail) values ($1,$2)', ['password_changed', up.email + ' changed their own password']);
+      // other devices are signed out; this one gets a fresh cookie
+      return json(res, 200, { ok: true, name: up.name, email: up.email, role: up.role, must_change: false },
+        { 'set-cookie': `gc_session=${makeToken(up)}; HttpOnly; Path=/; Max-Age=43200; SameSite=Lax; Secure` });
     }
 
     /* ---- admin data ---- */
@@ -1236,7 +1272,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const tier = ['headline','partner','supporting','listing'].includes(b.tier) ? b.tier : 'listing';
       const vals = [name, tier, clean(b.category, 60), clean(b.blurb, 200), clean(b.url, 300),
         clean(b.logo, 32) || null, clean(b.item_code, 12).toUpperCase() || null,
-        b.starts_on || null, b.ends_on || null, Number(b.amount) || 0, clean(b.currency, 4) || 'GHS',
+        b.starts_on || null, b.ends_on || null, Number(b.amount) || 0, 'GHS',
         b.paid === true, clean(b.contact_name, 120), clean(b.contact_email, 160).toLowerCase(),
         phoneGH(clean(b.contact_phone, 40)), clean(b.notes, 2000), b.published !== false, +b.sort || 0];
       if (b.id) {
@@ -1692,7 +1728,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           description=excluded.description,cover=excluded.cover,gallery=excluded.gallery,docs=excluded.docs,
           agenda=excluded.agenda,speakers=excluded.speakers`,
         [code, clean(b.kind, 12) || 'event', clean(b.title, 200), clean(b.subtitle, 200), clean(b.venue, 120),
-          b.starts_at || null, b.ends_at || null, clean(b.currency, 4) || 'GHS', Number(b.price) || 0, clean(b.per, 20) || null,
+          b.starts_at || null, b.ends_at || null, 'GHS', Number(b.price) || 0, clean(b.per, 20) || null,
           b.capacity ? +b.capacity : null, b.published !== false, +b.sort || 0,
           b.approval === true, ['teaser','open','live','past'].includes(b.phase) ? b.phase : 'open', clean(b.audiences, 300),
           slug, clean(b.summary, 300), clean(b.description, 6000), clean(b.cover, 32) || null,
@@ -1712,11 +1748,19 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
     if (p === '/api/users' && req.method === 'POST') {
       const u = auth(); if (!u || u.role !== 'owner') return json(res, 401, { error: 'not_allowed' });
-      const b = await body(req); const salt = newSalt();
-      const pw = crypto.randomBytes(9).toString('base64url');
-      await q('insert into users(email,name,role,pw_hash,pw_salt,must_change) values ($1,$2,$3,$4,$5,true) on conflict (email) do nothing',
-        [clean(b.email).toLowerCase(), clean(b.name, 80), ['owner', 'admin', 'staff'].includes(b.role) ? b.role : 'staff', hash(pw, salt), salt]);
-      return json(res, 200, { email: clean(b.email).toLowerCase(), password: pw });
+      const b = await body(req);
+      const login = clean(b.email, 120).toLowerCase(), name = clean(b.name, 80);
+      if (!/^[a-z0-9][a-z0-9._+@-]{1,119}$/.test(login) || (login.includes('@') && !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(login)))
+        return json(res, 400, { error: 'bad_login_name', fields: ['email'] });
+      if (!name) return json(res, 400, { error: 'name_required', fields: ['name'] });
+      const role = ['owner', 'admin', 'staff'].includes(b.role) ? b.role : 'staff';
+      const salt = newSalt();
+      const pw = crypto.randomBytes(9).toString('base64url').replace(/[^A-Za-z0-9]/g, 'x');
+      const r = await q('insert into users(email,name,role,pw_hash,pw_salt,must_change) values ($1,$2,$3,$4,$5,true) on conflict (email) do nothing',
+        [login, name, role, hash(pw, salt), salt]);
+      if (!r.rowCount) return json(res, 409, { error: 'exists' });
+      await q('insert into jobs_log(job,detail) values ($1,$2)', ['user_added', login + ' as ' + role + ' by ' + u.email]);
+      return json(res, 200, { email: login, name, role, password: pw });
     }
     if (p === '/api/users' && req.method === 'GET') {
       if (!auth()) return json(res, 401, { error: 'no_session' });
@@ -1736,7 +1780,12 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       }
       const b = await body(req); const sets = []; const vals = [];
       if (['owner', 'admin', 'staff'].includes(b.role)) sets.push(`role=$${vals.push(b.role)}`);
-      if (typeof b.active === 'boolean') sets.push(`active=$${vals.push(b.active)}`);
+      if (typeof b.active === 'boolean') { sets.push(`active=$${vals.push(b.active)}`); if (!b.active) sets.push('sv=coalesce(sv,0)+1'); }
+      if (b.role && b.role !== 'owner' || b.active === false) {
+        const owners = (await q("select count(*)::int n from users where role='owner' and coalesce(active,true) and email<>$1", [email])).rows[0].n;
+        const isOwner = (await q("select 1 from users where email=$1 and role='owner'", [email])).rowCount;
+        if (isOwner && owners < 1) return json(res, 400, { error: 'last_owner' });
+      }
       if (typeof b.name === 'string' && b.name.trim()) sets.push(`name=$${vals.push(clean(b.name, 80))}`);
       if (!sets.length) return json(res, 400, { error: 'nothing_to_update' });
       await q(`update users set ${sets.join(',')} where email=$${vals.push(email)}`, vals);
@@ -1749,7 +1798,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const email = decodeURIComponent(mReset[1]).toLowerCase();
       const pw = crypto.randomBytes(9).toString('base64url').replace(/[^A-Za-z0-9]/g, 'x');
       const salt = newSalt();
-      const r = await q('update users set pw_hash=$1, pw_salt=$2, must_change=true where email=$3', [hash(pw, salt), salt, email]);
+      const r = await q('update users set pw_hash=$1, pw_salt=$2, must_change=true, sv=coalesce(sv,0)+1 where email=$3', [hash(pw, salt), salt, email]);
       if (!r.rowCount) return json(res, 404, { error: 'no_such_user' });
       await q('insert into jobs_log(job,detail) values ($1,$2)', ['password_reset', email + ' by ' + u.email]);
       return json(res, 200, { email, password: pw });
@@ -1763,7 +1812,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
 
     /* ---- the public website, same machine, same domain ---- */
-    if (SITE_DIR && req.method === 'GET') {
+    if (SITE_DIR && (req.method === 'GET' || req.method === 'HEAD')) {
       const TYPES = {
         '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
         '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8',
@@ -1787,12 +1836,26 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         const buf = fs.readFileSync(full);
         const etag = '"' + crypto.createHash('sha1').update(buf).digest('hex').slice(0, 16) + '"';
         if (req.headers['if-none-match'] === etag) { res.writeHead(304); return res.end(); }
+        const cacheCtl = ext === '.html' ? 'public, max-age=60' : 'public, max-age=604800';
+        /* byte ranges: iPhones will not play a video without them, and seeking needs them everywhere */
+        const rg = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+        if (rg && (rg[1] || rg[2])) {
+          let start = rg[1] ? +rg[1] : buf.length - +rg[2], end = rg[1] && rg[2] ? Math.min(+rg[2], buf.length - 1) : buf.length - 1;
+          if (start < 0) start = 0;
+          if (start >= buf.length || start > end) {
+            res.writeHead(416, { 'content-range': `bytes */${buf.length}` }); return res.end();
+          }
+          res.writeHead(206, { 'content-type': TYPES[ext] || 'application/octet-stream', 'accept-ranges': 'bytes',
+            'content-range': `bytes ${start}-${end}/${buf.length}`, 'content-length': end - start + 1, etag, 'cache-control': cacheCtl });
+          return res.end(req.method === 'HEAD' ? undefined : buf.subarray(start, end + 1));
+        }
         res.writeHead(200, {
+          'accept-ranges': 'bytes',
           'content-type': TYPES[ext] || 'application/octet-stream',
           'content-length': buf.length, etag,
-          'cache-control': ext === '.html' ? 'public, max-age=60' : 'public, max-age=604800'
+          'cache-control': cacheCtl
         });
-        return res.end(buf);
+        return res.end(req.method === 'HEAD' ? undefined : buf);
       }
       /* unknown page: show the site's own 404 if it has one */
       const nf = path.join(root, '404.html');

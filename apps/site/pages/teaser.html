@@ -26,7 +26,7 @@ p{margin:0}em.serif{font-family:Newsreader,Georgia,serif;font-style:italic;font-
 .count{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:440px;margin-top:30px}
 .count div{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:12px 8px;text-align:center}
 .count b{display:block;font-size:clamp(24px,5vw,34px);font-variant-numeric:tabular-nums;line-height:1}
-.count span{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:#AEB6C2}
+.count span{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#AEB6C2}
 .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:30px;align-items:center}
 .btn{display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:14px 24px;font-weight:600;font-size:16px;border:1px solid transparent;cursor:pointer;text-decoration:none}
 .btn-gold{background:var(--gold);color:#fff}.btn-ghost{border-color:rgba(255,255,255,.45);color:#fff}
@@ -124,7 +124,7 @@ footer a{color:var(--mute)}
 
 <script>
 const REG='/register.html#F1';
-const SHARE='/teaser.html';
+const SHARE=location.origin+'/teaser';
 const API='';   // same origin
 const $=s=>document.querySelector(s);
 const START=new Date('2026-10-24T14:00:00+00:00');   // Accra time (UTC)

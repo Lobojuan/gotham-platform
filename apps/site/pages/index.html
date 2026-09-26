@@ -604,6 +604,23 @@ nav.main a{white-space:nowrap}
 .fdtitle{font-size:clamp(16px,1.6vw,19px);line-height:1.45}
 .fdgo{font-weight:600;white-space:nowrap}
 @media(max-width:820px){.fdband{grid-template-columns:1fr;gap:12px;padding:22px}.fdtag{justify-self:start}}
+
+/* ===== QA sweep, Sept 2026: phones ===== */
+.fnav a{color:var(--mute)}
+.brand small{font-size:12px}
+.flag{font-size:12px}
+.pkg .lbl{font-size:12px}
+@media (max-width:980px){.vbar{top:12px!important;right:12px!important;bottom:auto!important;left:auto!important}}
+@media (max-width:620px){
+  input,select,textarea{font-size:16px!important}          /* iPhone zooms in on anything smaller */
+  .stat{padding:18px 16px}.stat b{font-size:30px}.stat small{font-size:12.5px}
+  .lens{border-radius:16px;width:100%}.lens button{flex:1 1 auto;padding:9px 12px}
+  .band{min-height:0}.band::after{background:linear-gradient(0deg,rgba(15,27,45,.9),rgba(15,27,45,.72))!important}
+  .fabbtn{padding:11px 16px;font-size:15px}
+  footer a{display:inline-block;padding:4px 0}
+  .fnav{line-height:2}
+}
+@media(pointer:coarse){input,select,textarea{font-size:16px!important}}
 </style>
 
 <div class="demo">Design demo · payments are handled by mobile money transfer and confirmed on WhatsApp</div>
@@ -838,7 +855,7 @@ nav.main a{white-space:nowrap}
     </div>
     <div class="cap"><span><b>The Business Boot Camp, Accra.</b> Real footage from our own programme: founders, advisers and a full room.</span><span>Photos and video: Gotham Consult. If you appear here and would rather not, email us and we remove it.</span></div>
   </div>
-  <div class="band reveal"><div class="bgi" role="img" aria-label="Business roundtable in Accra"></div><div><p class="eyebrow" style="color:#E6B866">Next forum · Saturday 24 October · Tang Palace Hotel</p><h3>SMEs at the Centre: inclusive partnerships under the GIPA Act</h3><p><b>By invitation.</b> Free for SMEs, stakeholders and investors. Government, investors and business owners in one room, and seats are limited.</p><div style="margin-top:16px"><a class="btn" style="background:#fff;color:#0F1B2D" href="register.html?e=F1">Request your invitation <span class="arrow">→</span></a> <a class="btn" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.5)" href="register.html">Company registration form</a></div></div></div>
+  <div class="band reveal"><div class="bgi" role="img" aria-label="Business roundtable in Accra"></div><div><p class="eyebrow" id="bandEy" style="color:#E6B866">Next forum · Saturday 24 October · Tang Palace Hotel</p><h3 id="bandT">SMEs at the Centre: inclusive partnerships under the GIPA Act</h3><p id="bandP"><b>By invitation.</b> Free for SMEs, stakeholders and investors. Government, investors and business owners in one room, and seats are limited.</p><div style="margin-top:16px"><a class="btn" style="background:#fff;color:#0F1B2D" id="bandA" href="register.html?e=F1">Request your invitation <span class="arrow">→</span></a> <a class="btn" style="background:transparent;color:#fff;border-color:rgba(255,255,255,.5)" href="register.html">Company registration form</a></div></div></div>
   <div class="reveal forums" id="forumList"></div>
   <p class="past">Past forum: <b>Business Pitch Deck Round Table 2026</b> · Saturday 23 May 2026 · East Legon, Accra</p>
 </div></section>
@@ -944,7 +961,7 @@ nav.main a{white-space:nowrap}
 
 <footer><div class="wrap fgrid">
   <div><b style="color:var(--ink)">Gotham Consult</b> · Accra, Ghana · Since 2018<br><span style="font-size:13px">In strategic partnership with Carlson Capital Ltd, a company registered in Ghana<br>Registered in Ghana · Company registration number, registered office and TIN available on request<br>Investor, mining &amp; international desk: Uffe Carlson · WhatsApp and direct line +233 55 239 5548</span></div>
-  <div>Services · Invest in Ghana · Forums · <a href="/family.html" style="color:var(--mute)">Family Desk</a> · About · Contact<br><a href="/privacy.html" style="color:var(--mute)">Privacy &amp; data protection</a> · <a href="/terms.html" style="color:var(--mute)">Terms of service</a><br><a href="/admin" style="font-size:13px;color:var(--mute);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;display:inline-block;margin-top:10px">Team login →</a></div>
+  <div class="fnav"><a href="#services">Services</a> · <a href="#ghana">Invest in Ghana</a> · <a href="#forums">Forums</a> · <a href="/family">Family Desk</a> · <a href="#about">About</a> · <a href="#contact">Contact</a><br><a href="/privacy.html" style="color:var(--mute)">Privacy &amp; data protection</a> · <a href="/terms.html" style="color:var(--mute)">Terms of service</a><br><a href="/admin" style="font-size:13px;color:var(--mute);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:4px 12px;display:inline-block;margin-top:10px">Team login →</a></div>
 </div><div class="wrap"><p class="credits">Photos: Bank of Ghana by Natsubee, <a href="https://commons.wikimedia.org/wiki/File%3ABank_of_Ghana_High_Street.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>; Airport City by Fanti Salms, <a href="https://commons.wikimedia.org/wiki/File%3AAirport_City_Accra.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>; Black Star Gate by David Stanley from Nanaimo, Canada, <a href="https://commons.wikimedia.org/wiki/File%3ABlack_Star_Gate_(21712600269).jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by/2.0/" target="_blank" rel="noopener">CC BY 2.0</a>; Tema Port by SteKrueBe, <a href="https://commons.wikimedia.org/wiki/File%3AContainerterminal_in_Tema%2C_Ghana.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noopener">CC BY-SA 3.0</a>. Hero video, sector images and the on-screen presenter are AI-generated illustrations. Nothing on this site is legal, tax or investment advice; summaries of Ghanaian law are general information, current at the date shown. Legal drafting, audit, care work and licensed financial services are delivered by qualified partner firms, not by us.</p></div></footer>
 
 <dialog id="dlg" aria-labelledby="dlgT">
@@ -1046,17 +1063,28 @@ function renderForums(){$('#forumList').innerHTML=forums.map(forumCard).join('')
 renderForums();
 
 /* live forums from the back office, so Joy's edits show here without a redeploy */
+const accT=s=>new Date(s).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Accra'});
 fetch(CRM_API+'/api/items',{mode:'cors'}).then(r=>r.json()).then(d=>{
  const ev=(d.items||[]).filter(i=>i.kind==='event'&&i.phase!=='past');
  if(!ev.length)return;
  forums.length=0;
  ev.forEach(i=>forums.push({
   id:i.code,t:i.title,d:(i.starts_at||'').slice(0,10),
-  time:i.starts_at?new Date(i.starts_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+(i.ends_at?'–'+new Date(i.ends_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):''):'',
+  time:i.starts_at?accT(i.starts_at)+(i.ends_at?'–'+accT(i.ends_at):''):'',
   v:i.venue||'',price:Number(i.price)||0,invite:!!i.approval,
   seats:i.capacity||0,left:i.seats_left,note:i.summary||i.subtitle||'',
   img:i.cover_image||null,docs:i.documents||[]}));
  renderForums();
+ const nx=ev.filter(i=>i.starts_at&&new Date(i.starts_at)>Date.now()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at))[0];
+ if(nx&&$('#bandT')){
+  const day=new Date(nx.starts_at).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',timeZone:'Africa/Accra'});
+  $('#bandEy').textContent='Next forum · '+day+(nx.venue?' · '+nx.venue.split(',')[0]:'');
+  $('#bandT').textContent=nx.title;
+  const line=nx.summary||nx.subtitle||'';
+  $('#bandP').innerHTML=(nx.approval?'<b>By invitation.</b> ':'')+(Number(nx.price)?'':'Free to attend. ')+esc(line)+(nx.seats_left!=null?' '+nx.seats_left+' seats left.':'');
+  $('#bandA').href=REG_URL+'?e='+encodeURIComponent(nx.code);
+  $('#bandA').firstChild.textContent=nx.approval?'Request your invitation ':'Reserve your seat ';
+ }
 }).catch(()=>{});
 
 /* registration flow */
@@ -1174,10 +1202,10 @@ const PATHS={
  inv:{h:'For investors: enter Ghana with a local desk',p:'From your first briefing to a registered company and a verified partner. We work in English, French and Nordic languages, and keep you informed with regular written reports.',
   pains:['Is Ghana right for us?','Company setup under Act 1173','Who can we trust?','Need eyes on the ground','Energy, mining, agro projects'],
   pk:[
-   {t:'Ghana briefing',d:'60-minute call on your sector: numbers, rules, risks and next steps.',pr:'USD 250',ps:'credited to any follow-on work'},
-   {l:'Most requested',hot:1,t:'Market entry & company setup',d:'GIPA Act 1173 registration, banking, tax and licences, done end to end.',pr:'From USD 2,500',ps:'plus government fees'},
-   {t:'Partner & project due diligence',d:'Background, licences, site visit and a written risk report before you sign.',pr:'From USD 3,500',ps:'per target'},
-   {t:'Investor desk retainer',d:'Local representation, meetings, monitoring and a monthly report.',pr:'From USD 1,000 / month',ps:'3-month minimum'}],
+   {t:'Ghana briefing',d:'60-minute call on your sector: numbers, rules, risks and next steps.',pr:'GHS 2,900',ps:'credited to any follow-on work'},
+   {l:'Most requested',hot:1,t:'Market entry & company setup',d:'GIPA Act 1173 registration, banking, tax and licences, done end to end.',pr:'From GHS 28,500',ps:'plus government fees'},
+   {t:'Partner & project due diligence',d:'Background, licences, site visit and a written risk report before you sign.',pr:'From GHS 40,000',ps:'per target'},
+   {t:'Investor desk retainer',d:'Local representation, meetings, monitoring and a monthly report.',pr:'From GHS 11,500 / month',ps:'3-month minimum'}],
   flow:[['1 · Briefing','Book a call'],['2 · Proposal','Scope and fixed fee'],['3 · Setup & checks','Company, bank, partners'],['4 · Local desk','Ongoing reports']],
   extra:`<div class="watch"><h4>GIPA Act 2026 (Act 1173) · what actually changed</h4><ul>
    <li><b>In force since 15 July 2026,</b> replacing the GIPC Act 865 of 2013. The GIPC is now the Ghana Investment Promotion Authority.</li>
@@ -1194,10 +1222,10 @@ const PATHS={
  min:{h:'For mining investors: from concession to production, done properly',p:'Geology-led due diligence, a clear licensing path and Ghanaian partners you can verify. Our team combines field geology, our own TERRA field app and Afri-MINEX geospatial platform, and 25 years of project delivery in Africa.',
   pains:['Is this concession real and clean?','Which licence do we need?','Royalty reform risk','Community and land issues','Power for the mine','Responsible-sourcing proof for buyers'],
   pk:[
-   {t:'Mining regime briefing',d:'Royalties, reform status, licence types, timelines and risks for your mineral.',pr:'USD 750',ps:'credited to follow-on work'},
-   {l:'Start here',hot:1,t:'Concession screening',d:'Licence check against the mining cadastre, geology review, site visit with TERRA field data, land, community and illegal-mining checks.',pr:'From USD 7,500',ps:'written report in 3–4 weeks'},
-   {t:'Full due diligence & licensing roadmap',d:'With partner certified geologist and mining lawyers: technical, legal, EPA and local-content plan, reconnaissance to mining lease.',pr:'From USD 25,000',ps:'scoped per project'},
-   {t:'Site monitoring & provenance',d:'Monthly site reports with TERRA photo and GPS evidence, and provenance records in Afri-MINEX for buyers and ESG checks.',pr:'From USD 2,000 / month',ps:'plus JV structuring and mine-power studies on mandate'}],
+   {t:'Mining regime briefing',d:'Royalties, reform status, licence types, timelines and risks for your mineral.',pr:'GHS 8,500',ps:'credited to follow-on work'},
+   {l:'Start here',hot:1,t:'Concession screening',d:'Licence check against the mining cadastre, geology review, site visit with TERRA field data, land, community and illegal-mining checks.',pr:'From GHS 85,000',ps:'written report in 3–4 weeks'},
+   {t:'Full due diligence & licensing roadmap',d:'With partner certified geologist and mining lawyers: technical, legal, EPA and local-content plan, reconnaissance to mining lease.',pr:'From GHS 285,000',ps:'scoped per project'},
+   {t:'Site monitoring & provenance',d:'Monthly site reports with TERRA photo and GPS evidence, and provenance records in Afri-MINEX for buyers and ESG checks.',pr:'From GHS 23,000 / month',ps:'plus JV structuring and mine-power studies on mandate'}],
   flow:[['1 · Briefing','Your mineral, your risks'],['2 · Screening','Licence, geology, site'],['3 · Due diligence','Technical and legal'],['4 · Build & monitor','Permits, partners, power']],
   extra:`<div class="watch"><h4>Regulatory watch · September 2026</h4><ul>
    <li><b>Royalty reform pending:</b> a bill before Parliament would raise gold royalties from 3–5% to a price-linked sliding scale and shorten stability agreements. Cabinet approved it in July 2026; we model both regimes for you.</li>
@@ -1210,12 +1238,12 @@ const PATHS={
   pains:['Register my business','Is this land or partner real?','Build from abroad','Care for my parents in Ghana','Start or licence a school','Learn the rules first'],
   pk:[
    {t:'Business registration',d:'Sole proprietorship or Ltd with the Registrar, TIN and first steps.',pr:'GHS 1,500',ps:'plus registry fees'},
-   {l:'Diaspora favourite',hot:1,t:'Invest-safely check',d:'We verify the seller, partner or project with our partner lawyers before you send money.',pr:'From USD 300',ps:'per check'},
-   {t:'Project monitoring',d:'Site visits with photo and video reports while your house or business is built.',pr:'USD 150 / visit',ps:'or monthly plan'},
+   {l:'Diaspora favourite',hot:1,t:'Invest-safely check',d:'We verify the seller, partner or project with our partner lawyers before you send money.',pr:'From GHS 3,500',ps:'per check'},
+   {t:'Project monitoring',d:'Site visits with photo and video reports while your house or business is built.',pr:'GHS 1,700 / visit',ps:'or monthly plan'},
    {t:'Forums & training',d:'Seminars, workshops and investor roundtables, online and in person.',pr:'From free',ps:'tickets paid with MoMo'},
    {t:'Family & senior care plan',d:'Monthly visits to your parents, help with NHIS, pension and document renewals, and a written report with photos.',pr:'From GHS 900 / month',ps:'Greater Accra; other regions on request'},
    {t:'School & training licence',d:'Registration, regulator licensing and the paperwork to run a school or training centre properly.',pr:'From GHS 4,500',ps:'plus government fees'}],
-  flow:[['1 · Tell us','WhatsApp, any time zone'],['2 · Plan & price','Fixed, in GHS or USD'],['3 · We act','Registered, verified, visited'],['4 · You see it','Reports and photos']]}
+  flow:[['1 · Tell us','WhatsApp, any time zone'],['2 · Plan & price','Fixed, in Ghana cedis'],['3 · We act','Registered, verified, visited'],['4 · You see it','Reports and photos']]}
 };
 function renderPath(k){const P=PATHS[k];
  $('#ppanel').innerHTML=`<div class="ptop"><div><h3>${P.h}</h3><p>${P.p}</p><div class="pains">${P.pains.map(x=>`<span>${x}</span>`).join('')}</div></div>
@@ -1334,7 +1362,7 @@ const TIERS=[
  {t:'Ghana Business Brief',p:'Free',s:'',f:['Weekly brief on WhatsApp','Grant & tender alerts','Forum announcements'],c:'Join free',m:'Please add me to the free Ghana Business Brief on WhatsApp.'},
  {t:'Member',p:'GHS 150',s:'/ month',f:['Everything in Brief','20% off all forums','Monthly online business clinic','Priority grant alerts'],c:'Become a member',m:'I would like to become a Member (GHS 150/month).'},
  {t:'Business Pro',hot:1,p:'GHS 1,200',s:'/ month',f:['Bookkeeping & E-VAT filing','Tax & compliance calendar','Quarterly finance review','Two forum seats per quarter'],c:'Start Business Pro',m:'I would like Business Pro (GHS 1,200/month).'},
- {t:'Investor Desk',p:'USD 1,000',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Deal pipeline & introductions'],c:'Talk to us',m:'I am interested in the Investor Desk (USD 1,000/month).'}];
+ {t:'Investor Desk',p:'GHS 11,500',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Deal pipeline & introductions'],c:'Talk to us',m:'I am interested in the Investor Desk (USD 1,000/month).'}];
 $('#tiers').innerHTML=TIERS.map(x=>`<div class="tier reveal ${x.hot?'hot':''}"><h3>${x.t}</h3><div class="price">${x.p} <small>${x.s}</small></div><ul>${x.f.map(i=>`<li>${i}</li>`).join('')}</ul><a class="btn ${x.hot?'btn-dark':'btn-line'}" href="${wa('Hello Gotham Consult. '+x.m)}" target="_blank" rel="noopener">${x.c}</a></div>`).join('');
 
 /* assistant */

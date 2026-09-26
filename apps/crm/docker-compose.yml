@@ -11,7 +11,7 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       ADMIN_NAME: ${ADMIN_NAME:-Administrator}
       PUBLIC_URL: ${PUBLIC_URL:-https://gotham.84-12-73-59.sslip.io}
-      SITE_URL: ${SITE_URL:-https://gotham-consult-gh.netlify.app}
+      SITE_URL: ${SITE_URL:-https://gotham.84-12-73-59.sslip.io}
       MAIL_FROM: ${MAIL_FROM:-Gotham Consult <info@gothamconsult.com>}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       MEDIA_DIR: /data/media

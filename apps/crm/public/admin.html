@@ -92,6 +92,62 @@ label.l{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;z-index:20}
 .toast.on{opacity:1}
 @media(max-width:820px){#app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:6px}aside .brand,aside .who{display:none}main{padding:18px 14px 50px}.f2{grid-template-columns:1fr}}
+
+/* ===== QA sweep, Sept 2026 ===== */
+.ext::after{content:" ↗";opacity:.6}
+aside a span:not(:empty){background:rgba(255,255,255,.14);border-radius:999px;padding:0 8px;font-size:12px;line-height:20px;margin-left:8px}
+aside a.on span:not(:empty){background:var(--sunk)}
+aside .brand small{font-size:12px}
+a.btn{color:inherit}a.btn-dark,a.btn-green,a.btn-wa{color:#fff}
+.btn.danger{color:var(--red)}
+.menubtn{display:none}
+.ev{align-items:center}.ev>div:last-child:not(:first-child){flex:none}
+.ev .btn{white-space:nowrap}
+.pwf{position:relative}.pwf input.t{padding-right:64px}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:var(--sunk);border-radius:8px;padding:5px 9px;font-size:13px;font-weight:600;cursor:pointer;color:var(--mute)}
+.pwgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px;max-width:900px}
+#pwfirst{min-height:100vh;place-items:center;padding:24px}
+#pwfirst .lcard label.l{margin-top:14px}
+.subcard{border:1px solid var(--line);border-radius:14px;padding:4px 16px 16px;margin:10px 0;background:var(--paper)}
+.pwcard{border:1px solid var(--gold);background:var(--gold-soft);border-radius:14px;padding:14px 16px;margin:10px 0}
+.pwshow{display:flex;gap:10px;align-items:center;margin:8px 0;flex-wrap:wrap}.pwshow code{font-size:20px;letter-spacing:.06em;background:#fff;border:1px solid var(--line);border-radius:10px;padding:6px 12px;user-select:all}
+.team{margin-top:10px;border-top:1px solid var(--line)}
+.tm{display:flex;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tm-a{display:flex;gap:12px;min-width:0;flex:1 1 280px}.tm-a b{overflow-wrap:anywhere}.tm-a .note{overflow-wrap:anywhere}
+.av{flex:none;width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700}
+.tm-b{flex:0 1 380px}.tm-b select.t{max-width:260px}
+.evc-img span,.tag{font-size:12px}
+@media(max-width:820px){
+  aside{position:sticky;top:0;z-index:8;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 14px;gap:4px}
+  aside .brand{display:flex;margin:0;padding:0;flex:1}
+  .menubtn{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;border-radius:999px;padding:8px 14px;font-weight:600;font-size:15px;cursor:pointer}
+  aside>a:not(.brand){display:none}
+  aside.open>a:not(.brand){display:flex;flex:1 1 45%;padding:11px 12px}
+  aside.open{max-height:100vh;overflow:auto}
+  .hd h1{font-size:24px}
+}
+@media(max-width:640px){
+  input.t,select.t,textarea.t,.lcard input{font-size:16px}
+  main{padding:14px 12px 60px}
+  .card{padding:14px;border-radius:14px}
+  .kpis{grid-template-columns:1fr 1fr;gap:10px}.kpi{padding:12px 14px}.kpi b{font-size:20px}
+  .filters input.t,.filters select.t{min-width:0;flex:1 1 140px}
+  .ev{flex-wrap:wrap}.ev>div:first-child{flex:1 1 100%}
+  .wrapx{max-height:none;overflow:visible}
+  .wrapx table{min-width:0}
+  .wrapx thead{display:none}
+  .wrapx tbody tr{display:block;border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin-bottom:10px;background:#fff}
+  .wrapx td{display:block;position:relative;border:0;padding:4px 0 4px 100px;min-height:26px;overflow-wrap:anywhere}
+  .wrapx td::before{content:attr(data-l);position:absolute;left:0;top:6px;width:92px;font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+  .wrapx td[data-l=""]{padding-left:0}.wrapx td[data-l=""]::before{display:none}
+  .wrapx td:empty{display:none}
+  .pwgrid{grid-template-columns:1fr}
+  .row3{flex-wrap:nowrap}.row3>input.t:first-child{flex:0 0 76px}.row3>input.t:nth-child(2){flex:1 1 auto}.row3 .btn{padding:9px 12px;flex:none}
+  .drawer{padding:18px 16px}
+  .kv{grid-template-columns:96px 1fr}
+  .hd>div{flex-wrap:wrap}
+}
+@media(pointer:coarse){input.t,select.t,textarea.t,.lcard input{font-size:16px}}
 </style></head><body>
 <div class="kente"></div>
 
@@ -103,9 +159,12 @@ label.l{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
   <button class="btn btn-dark" style="width:100%;justify-content:center;margin-top:6px">Sign in</button>
 </form></section>
 
+<section id="pwfirst" style="display:none"></section>
+
 <div id="app">
   <aside>
-    <a class="brand" href="https://gotham-consult-gh.netlify.app" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><div class="mark">G</div><div><b>Gotham CRM</b><small>registrations &amp; payments</small></div></a>
+    <a class="brand" href="/" style="text-decoration:none;color:inherit"><div class="mark">G</div><div><b>Gotham CRM</b><small>registrations &amp; payments</small></div></a>
+    <button type="button" class="menubtn" id="menubtn" aria-expanded="false" aria-controls="app">☰ Menu</button>
     <a data-v="dash" class="on">Dashboard</a>
     <a data-v="regs">Registrations <span id="cnt"></span></a>
     <a data-v="events">Events &amp; prices</a>
@@ -118,8 +177,8 @@ label.l{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
     <a data-v="links">Campaign links</a>
     <a data-v="data">Data health</a>
     <a data-v="settings">Settings</a>
-    <a href="https://gotham-consult-gh.netlify.app" target="_blank" rel="noopener">View website ↗</a>
-    <a href="https://gotham-consult-gh.netlify.app/register.html" target="_blank" rel="noopener">Registration page ↗</a>
+    <a href="/" class="ext">View website</a>
+    <a href="/register" class="ext">Registration page</a>
     <a id="out">Sign out</a>
     <div class="who" id="who"></div>
   </aside>
@@ -133,14 +192,16 @@ label.l{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
 <div class="toast" id="toast"></div>
 
 <script>
-const $=s=>document.querySelector(s), api=(u,o={})=>fetch(u,{credentials:'same-origin',headers:{'content-type':'application/json'},...o}).then(async r=>{const d=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(d.error||r.status),d);return d});
+const $=s=>document.querySelector(s), api=(u,o={})=>fetch(u,{credentials:'same-origin',headers:{'content-type':'application/json'},...o}).then(async r=>{const d=await r.json().catch(()=>({}));
+ if(r.status===401&&d.error==='no_session'&&ME&&!/\/api\/(me|login|password)$/.test(u)){ME=null;toast('You were signed out. Please sign in again.');setTimeout(()=>location.reload(),1600)}
+ if(!r.ok)throw Object.assign(new Error(d.error||r.status),d);return d});
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=(n,c)=>Number(n)===0?'Free':c+' '+Number(n).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:2});
 const amt=(n,c)=>c+' '+Number(n).toLocaleString('en-GB',{minimumFractionDigits:0,maximumFractionDigits:2});
 const dt=s=>s?new Date(s).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
 const day=s=>s?new Date(s).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'—';
 let ME=null, ROWS=[], STATS=null, ITEMS=[], SET={}, ALL_ITEMS=[], VENUE_MAX=0, SPONSORS=[];
-const SITEBASE='https://gotham-consult-gh.netlify.app';
+const SITEBASE=location.origin;
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)};
 
 /* login */
@@ -150,19 +211,50 @@ $('#lform').onsubmit=async e=>{e.preventDefault();$('#lerr').textContent='';
 $('#out').onclick=async()=>{await fetch('/api/logout',{credentials:'same-origin'});location.reload()};
 
 async function start(){
- $('#login').style.display='none';$('#app').style.display='grid';
- $('#who').textContent=(ME.name||ME.email)+' · '+ME.role;
- await load(); if(ME.must_change) go('settings',true);
+ $('#login').style.display='none';
+ if(ME.must_change){$('#app').style.display='none';return firstPassword()}
+ $('#pwfirst').style.display='none';$('#app').style.display='grid';
+ $('#who').textContent=(ME.name||ME.email)+' · '+ROLE_NAME[ME.role];
+ await load();
+}
+const ROLE_NAME={owner:'owner (super admin)',admin:'admin',staff:'staff'};
+/* password fields with a show/hide toggle, shared by the first-sign-in screen and Settings */
+const pwField=(id,label,ac)=>`<label class="l" for="${id}">${label}</label><div class="pwf"><input class="t" id="${id}" type="password" autocomplete="${ac}" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-eye="${id}" aria-label="Show password">Show</button></div>`;
+function wireEyes(root){root.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{const i=document.getElementById(b.dataset.eye);const s=i.type==='password';i.type=s?'text':'password';b.textContent=s?'Hide':'Show';b.setAttribute('aria-label',s?'Hide password':'Show password')})}
+const PW_MSG={wrong_current:'Your current password is not right.',too_short:'Use at least 10 characters.',too_long:'That is too long (200 characters at most).',same_as_old:'Choose a password you have not used here before.',too_weak:'That password is too easy to guess.',too_many:'Too many tries. Wait 5 minutes.',mismatch:'The two new passwords do not match.'};
+async function changePassword(cur,np,np2,out){
+ out.textContent='';out.className='err';
+ if(np!==np2){out.textContent=PW_MSG.mismatch;return false}
+ try{const r=await api('/api/password',{method:'POST',body:JSON.stringify({current:cur,password:np})});ME={...ME,...r,must_change:false};return true}
+ catch(e){out.textContent=PW_MSG[e.message]||'Could not change the password.';return false}
+}
+function firstPassword(){
+ const s=$('#pwfirst');s.style.display='grid';
+ s.innerHTML=`<form class="lcard" id="pwform" novalidate>
+  <div style="display:flex;gap:12px;align-items:center"><div class="mark">G</div><div><b>Choose your own password</b><div class="note">Signed in as ${esc(ME.email)}</div></div></div>
+  <p class="note" style="margin:14px 0 0">You are using a password someone gave you. Pick your own before you continue. Only you will know it: nobody at Gotham Consult can see it, only reset it.</p>
+  ${pwField('fp-cur','The password you were given','current-password')}
+  ${pwField('fp-new','New password · 10 characters or more','new-password')}
+  ${pwField('fp-new2','New password again','new-password')}
+  <p class="err" id="fp-err"></p>
+  <button class="btn btn-dark" style="width:100%;justify-content:center;margin-top:6px">Save and continue</button>
+  <button type="button" class="btn btn-line" id="fp-out" style="width:100%;justify-content:center;margin-top:8px">Sign out</button></form>`;
+ wireEyes(s);
+ $('#pwform').onsubmit=async e=>{e.preventDefault();
+  if(await changePassword($('#fp-cur').value,$('#fp-new').value,$('#fp-new2').value,$('#fp-err'))){toast('Password saved');start()}};
+ $('#fp-out').onclick=async()=>{await fetch('/api/logout',{credentials:'same-origin'});location.reload()};
+ $('#fp-cur').focus();
 }
 async function load(){
  [STATS,{rows:ROWS},{items:ITEMS,settings:SET}]=await Promise.all([api('/api/stats'),api('/api/registrations'),api('/api/items')]);
  VENUE_MAX=parseInt(SET.max_seats)||0;
  $('#cnt').textContent=ROWS.length; render();
 }
+$('#menubtn').onclick=()=>{const a=document.querySelector('aside');a.classList.toggle('open');$('#menubtn').setAttribute('aria-expanded',a.classList.contains('open'))};
 $('#refresh').onclick=()=>load().then(()=>toast('Updated'));
 let V='dash';
 document.querySelectorAll('aside a[data-v]').forEach(a=>a.onclick=()=>go(a.dataset.v));
-function go(v,pw){V=v;document.querySelectorAll('aside a[data-v]').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
+function go(v,pw){V=v;document.querySelector('aside').classList.remove('open');$('#menubtn').setAttribute('aria-expanded','false');scrollTo(0,0);document.querySelectorAll('aside a[data-v]').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
  $('#vt').textContent={dash:'Dashboard',regs:'Registrations',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',events:'Events, content & media',out:'Outreach, contacts & invitations',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'}[v];render(pw)}
 
 function render(pw){
@@ -240,7 +332,7 @@ async function drawer(id){
  <span>Category</span><div>${esc(r.category||'—')}</div>
  <span>Came from</span><div>${esc(r.utm_source||'direct')}${r.utm_campaign?' · '+esc(r.utm_campaign):''}</div>
  <span>Invitation</span><div>${esc(r.invite_code||'—')}</div>
- <span>Email</span><div>${esc(r.email)}</div><span>Phone</span><div>${esc(r.phone)}</div>
+ <span>Email</span><div>${r.email?esc(r.email):'<span class="note">not given</span>'}</div><span>Phone</span><div>${esc(r.phone)}</div>
  <span>Country</span><div>${esc(r.country||'—')} · ${esc(r.sector||'—')}</div>
  <span>Reg. no.</span><div>${esc(r.reg_no||'—')}</div>
  ${r.company_about||r.company_size?`<span>Business</span><div>${esc(r.company_about||'—')}${r.company_size?' <span class="note">· '+esc(r.company_size)+' people</span>':''}</div>`:''}
@@ -257,7 +349,7 @@ async function drawer(id){
   ${Number(r.amount)>0?`<button class="btn ${r.paid?'btn-line':'btn-green'}" id="pay">${r.paid?'Mark as unpaid':'Mark as paid'}</button>`:''}
   ${r.checked_in_at?'<span class="tag t-paid">Checked in '+dt(r.checked_in_at)+'</span>':'<button class="btn btn-line" id="cin">Check in</button>'}
   <a class="btn btn-wa" target="_blank" rel="noopener" href="${wa(`Hello ${r.full_name.split(' ')[0]}, this is Gotham Consult about your registration ${r.reference}.`)}">WhatsApp</a>
-  <a class="btn btn-line" href="mailto:${esc(r.email)}?subject=${encodeURIComponent('Gotham Consult · '+r.reference)}">Email</a>
+  ${r.email?`<a class="btn btn-line" href="mailto:${esc(r.email)}?subject=${encodeURIComponent('Gotham Consult · '+r.reference)}">Email</a>`:''}
  </div>
  <label class="l" for="pref">Payment reference (MoMo transaction ID)</label><input class="t" id="pref" value="${esc(r.payment_ref||'')}">
  <label class="l" for="st">Status</label><select class="t" id="st">${['pending','new','confirmed','declined','attended','waitlist','cancelled'].map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}</select>
@@ -380,7 +472,7 @@ function evEditor(){
   <button class="btn btn-line" id="i-sp-add" style="margin-top:6px">Add a speaker</button>
 
   <h4 class="sec">Money, seats and access</h4>
-  <div class="f2"><div><label class="l">Currency</label><select class="t" id="i-cur">${['GHS','USD','EUR','GBP'].map(c=>`<option ${c===i.currency?'selected':''}>${c}</option>`).join('')}</select></div>
+  <div class="f2"><div><label class="l">Currency <span class="note">· cedis only, Bank of Ghana rule</span></label><select class="t" id="i-cur">${'<option>GHS</option>'}</select></div>
    <div><label class="l">Price (0 = free)</label><input class="t" id="i-price" type="number" min="0" step="1" value="${Number(i.price)||0}"></div></div>
   <div class="f2"><div><label class="l">Per (optional)</label><input class="t" id="i-per" value="${esc(i.per||'')}" placeholder="per seat / per month"></div>
    <div><label class="l">Seats <span class="note">— venue limit is ${VENUE_MAX||'not set'}</span></label>
@@ -836,7 +928,7 @@ function sponsorEditor(){
 
   <h4 class="sec">The deal</h4>
   <div class="f2"><div><label class="l">Fee agreed</label><input class="t" id="sp-amt" type="number" min="0" step="1" value="${Number(r.amount)||0}"></div>
-   <div><label class="l">Currency</label><select class="t" id="sp-cur">${['GHS','USD','EUR','GBP'].map(c=>`<option ${c===r.currency?'selected':''}>${c}</option>`).join('')}</select></div></div>
+   <div><label class="l">Currency <span class="note">· cedis only</span></label><select class="t" id="sp-cur">${'<option>GHS</option>'}</select></div></div>
   <div class="f2"><div><label class="l">Paid?</label><select class="t" id="sp-paid"><option value="false" ${!r.paid?'selected':''}>Not yet</option><option value="true" ${r.paid?'selected':''}>Paid</option></select></div><div></div></div>
   <div class="f2"><div><label class="l">Contact name</label><input class="t" id="sp-cn" value="${esc(r.contact_name||'')}"></div>
    <div><label class="l">Contact email</label><input class="t" id="sp-ce" type="email" value="${esc(r.contact_email||'')}"></div></div>
@@ -1056,7 +1148,7 @@ async function links(){
   <div class="card"><h3>Create a link</h3>
   <div class="f2"><div><label class="l">Short name (what goes on the flyer)</label><input class="t" id="l-slug" placeholder="smes"></div>
   <div><label class="l">Label for you</label><input class="t" id="l-label" placeholder="Flyer QR code"></div></div>
-  <label class="l">Destination</label><input class="t" id="l-target" value="https://gotham-consult-gh.netlify.app/register.html#F1">
+  <label class="l">Destination</label><input class="t" id="l-target" value="${location.origin}/register?e=F1">
   <div class="f2"><div><label class="l">Channel tag (utm_source)</label><input class="t" id="l-src" placeholder="flyer, whatsapp, linkedin, instagram"></div>
   <div><label class="l">Campaign phase (utm_campaign)</label><select class="t" id="l-camp"><option value="teaser">teaser</option><option value="launch">launch</option><option value="reveal">reveal</option><option value="post">post-event</option></select></div></div>
   <button class="btn btn-dark" id="l-save" style="margin-top:14px">Create link</button></div>`;
@@ -1067,54 +1159,80 @@ async function links(){
 }
 
 /* settings */
-async function settings(pw){
+async function settings(){
+ const owner=ME.role==='owner';
  const users=await api('/api/users').catch(()=>({rows:[]}));
- $('#view').innerHTML=`${pw?'<div class="card" style="border-left:4px solid var(--gold)"><b>Please change your password.</b> You are still using the password you were given.</div>':''}
- <div class="card"><h3>Your password</h3><label class="l">New password (10 characters or more)</label>
-  <input class="t" id="np" type="password" autocomplete="new-password" style="max-width:340px">
-  <button class="btn btn-dark" id="sp" style="margin-top:12px">Change password</button></div>
+ $('#view').innerHTML=`
+ <div class="card"><h3>Your password</h3>
+  <p class="note">Signed in as <b>${esc(ME.email)}</b> · ${ROLE_NAME[ME.role]}. Changing it signs you out on your other devices.</p>
+  <div class="pwgrid">${pwField('cp-cur','Current password','current-password')}${pwField('cp-new','New password · 10 characters or more','new-password')}${pwField('cp-new2','New password again','new-password')}</div>
+  <p class="err" id="cp-err"></p>
+  <button class="btn btn-dark" id="sp">Change password</button></div>
  <div class="card"><h3>Venue and seats</h3>
   <p class="note">The largest number of seats any single event may be set to. It stops a room that holds 40 being sold as 120.</p>
-  <div class="f2"><div><label class="l">Maximum seats per event</label><input class="t" id="s-max" type="number" min="1" value="${esc(SET.max_seats||'')}" placeholder="40"></div><div></div></div>
+  <div class="f2"><div><label class="l">Maximum seats per event</label><input class="t" id="s-max" type="number" inputmode="numeric" min="1" value="${esc(SET.max_seats||'')}" placeholder="40"></div><div></div></div>
   <button class="btn btn-dark" id="s-maxb" style="margin-top:12px">Save venue limit</button></div>
  <div class="card"><h3>Payment details shown to customers</h3>
-  <div class="f2"><div><label class="l">MoMo number</label><input class="t" id="s-momo" value="${esc(SET.momo_number||'')}" placeholder="024 000 0000"></div>
+  <div class="f2"><div><label class="l">MoMo number</label><input class="t" id="s-momo" inputmode="tel" value="${esc(SET.momo_number||'')}" placeholder="024 000 0000"></div>
   <div><label class="l">MoMo account name</label><input class="t" id="s-name" value="${esc(SET.momo_name||'')}"></div></div>
-  <div class="f2"><div><label class="l">WhatsApp number</label><input class="t" id="s-wa" value="${esc(SET.whatsapp||'')}"></div>
-  <div><label class="l">Online payment link (Paystack)</label><input class="t" id="s-pay" value="${esc(SET.pay_link||'')}" placeholder="https://paystack.com/pay/..."></div></div>
+  <div class="f2"><div><label class="l">WhatsApp number</label><input class="t" id="s-wa" inputmode="tel" value="${esc(SET.whatsapp||'')}"></div>
+  <div><label class="l">Online payment link (Paystack)</label><input class="t" id="s-pay" inputmode="url" value="${esc(SET.pay_link||'')}" placeholder="https://paystack.com/pay/..."></div></div>
   <button class="btn btn-dark" id="ss" style="margin-top:14px">Save settings</button></div>
- <div class="card"><h3>Team</h3><div class="wrapx"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last sign-in</th><th></th></tr></thead><tbody>
-  ${users.rows.map(u=>`<tr><td>${esc(u.name||'')}${u.must_change?'<div class="note">has not set a password yet</div>':''}</td><td>${esc(u.email)}</td>
-   <td>${ME.role==='owner'&&u.email!==ME.email?`<select class="t" data-role="${esc(u.email)}" style="min-width:130px">${['owner','admin','staff'].map(r=>`<option ${r===u.role?'selected':''}>${r}</option>`).join('')}</select>`:esc(u.role)}</td>
-   <td class="note">${dt(u.last_login)}<div>${u.active===false?'<span class="tag t-canc">disabled</span>':'<span class="tag t-paid">active</span>'}</div></td>
-   <td>${ME.role==='owner'&&u.email!==ME.email?`<button class="btn btn-line" data-reset="${esc(u.email)}">Reset password</button>
-     <button class="btn btn-line" data-toggle="${esc(u.email)}" data-on="${u.active===false?'1':'0'}">${u.active===false?'Enable':'Disable'}</button>
-     <button class="btn btn-line" data-del="${esc(u.email)}">Remove</button>`:'<span class="note">that is you</span>'}</td></tr>`).join('')}</tbody></table></div>
-  ${ME.role==='owner'?`<div class="f2" style="margin-top:14px"><div><label class="l">Name</label><input class="t" id="u-name"></div>
-   <div><label class="l">Email or username</label><input class="t" id="u-email" type="text" autocapitalize="off" spellcheck="false"></div></div>
-   <label class="l">Role</label><select class="t" id="u-role" style="max-width:220px"><option value="staff">staff (view, check-in)</option><option value="admin">admin (payments, items)</option><option value="owner">owner (everything)</option></select>
-   <button class="btn btn-dark" id="u-add" style="margin-top:12px">Create user</button><p class="note" id="u-out"></p>
-   <p class="note" style="margin-top:14px"><b>Owner</b> everything, including this screen. <b>Admin</b> registrations, payments, events and settings. <b>Staff</b> view and door check-in only, with contact details hidden.</p>`:''}</div>`;
- $('#sp').onclick=async()=>{try{await api('/api/password',{method:'POST',body:JSON.stringify({password:$('#np').value})});toast('Password changed')}catch(e){toast(e.message==='too_short'?'Use at least 10 characters':'Could not change')}};
+ <div class="card" id="team"><div class="ch"><h3>Team</h3>${owner?'<button class="btn btn-dark" id="u-new">Add a person</button>':''}</div>
+  <p class="note">${owner?'Only an owner (super admin) can add people, change roles, reset passwords or remove access. Changes take effect on the person\'s next click.':'Ask an owner to add people or reset a password.'}</p>
+  <div id="u-form"></div><div id="u-out"></div>
+  <div class="team">${users.rows.map(u=>{const me=u.email===ME.email;return `<div class="tm">
+   <div class="tm-a"><span class="av">${esc((u.name||u.email).trim()[0]||'?').toUpperCase()}</span>
+    <div><b>${esc(u.name||u.email)}</b>${me?' <span class="tag t-free">you</span>':''}<div class="note">${esc(u.email)} · last sign-in ${u.last_login?dt(u.last_login):'never'}</div>
+    <div style="margin-top:4px">${u.active===false?'<span class="tag t-canc">access off</span>':'<span class="tag t-paid">active</span>'} ${u.must_change?'<span class="tag t-due">has not chosen a password yet</span>':''}</div></div></div>
+   <div class="tm-b">${owner&&!me?`<select class="t" data-role="${esc(u.email)}" aria-label="Role for ${esc(u.email)}">${['owner','admin','staff'].map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${ROLE_NAME[r]}</option>`).join('')}</select>
+     <div class="acts" style="margin:8px 0 0"><button class="btn btn-line" data-reset="${esc(u.email)}">Reset password</button>
+     <button class="btn btn-line" data-toggle="${esc(u.email)}" data-on="${u.active===false?'1':'0'}">${u.active===false?'Turn access on':'Turn access off'}</button>
+     <button class="btn btn-line danger" data-del="${esc(u.email)}">Remove</button></div>`:`<span class="note">${ROLE_NAME[u.role]}</span>`}</div></div>`}).join('')}</div>
+  <p class="note" style="margin-top:14px"><b>Owner (super admin)</b> everything, including this team list. <b>Admin</b> registrations, payments, events, outreach and settings. <b>Staff</b> view and door check-in only, with contact details hidden.</p></div>`;
+ wireEyes($('#view'));
+ $('#sp').onclick=async()=>{const b=$('#sp');b.disabled=true;
+  if(await changePassword($('#cp-cur').value,$('#cp-new').value,$('#cp-new2').value,$('#cp-err'))){['cp-cur','cp-new','cp-new2'].forEach(i=>$('#'+i).value='');toast('Password changed')}
+  b.disabled=false};
  $('#s-maxb').onclick=async()=>{const v=$('#s-max').value;
   if(v&&(+v<1||+v>100000))return toast('Give a sensible number of seats');
   await api('/api/settings',{method:'POST',body:JSON.stringify({max_seats:v})});
   SET.max_seats=v;VENUE_MAX=parseInt(v)||0;toast('Venue limit saved');load()};
  $('#ss').onclick=async()=>{await api('/api/settings',{method:'POST',body:JSON.stringify({momo_number:$('#s-momo').value,momo_name:$('#s-name').value,whatsapp:$('#s-wa').value,pay_link:$('#s-pay').value})});toast('Settings saved');load()};
- if($('#u-add'))$('#u-add').onclick=async()=>{const r=await api('/api/users',{method:'POST',body:JSON.stringify({name:$('#u-name').value,email:$('#u-email').value,role:$('#u-role').value})});
-  $('#u-out').textContent='Created. First password for '+r.email+': '+r.password+' — they must change it after signing in.'};
+ const showPw=(r,what)=>{$('#u-out').innerHTML=`<div class="pwcard"><b>${what} for ${esc(r.name||r.email)}</b>
+   <div class="note">Sign-in name <code>${esc(r.email)}</code> · first password</div>
+   <div class="pwshow"><code id="u-pw">${esc(r.password)}</code><button class="btn btn-line" id="u-copy">Copy</button></div>
+   <div class="note">Give it to them in person or by phone. It works once: they choose their own password when they sign in at ${esc(location.origin)}/admin. This is the only time it is shown.</div></div>`;
+   $('#u-copy').onclick=async()=>{try{await navigator.clipboard.writeText(r.password);toast('Copied')}catch{toast('Select it and copy')}};$('#u-out').scrollIntoView({block:'nearest'})};
+ if($('#u-new'))$('#u-new').onclick=()=>{$('#u-out').innerHTML='';$('#u-form').innerHTML=`<div class="subcard"><div class="f2">
+   <div><label class="l" for="u-name">Name</label><input class="t" id="u-name" autocomplete="off"></div>
+   <div><label class="l" for="u-email">Email or username</label><input class="t" id="u-email" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="joy@gothamconsult.com"></div></div>
+   <label class="l" for="u-role">Role</label><select class="t" id="u-role" style="max-width:320px"><option value="staff">Staff · view and door check-in</option><option value="admin">Admin · registrations, payments, events</option><option value="owner">Owner (super admin) · everything</option></select>
+   <p class="err" id="u-err"></p><div class="acts" style="margin:4px 0 0"><button class="btn btn-dark" id="u-add">Create sign-in</button><button class="btn btn-line" id="u-cancel">Cancel</button></div></div>`;
+  $('#u-name').focus();
+  $('#u-cancel').onclick=()=>$('#u-form').innerHTML='';
+  $('#u-add').onclick=async()=>{$('#u-err').textContent='';
+   try{const r=await api('/api/users',{method:'POST',body:JSON.stringify({name:$('#u-name').value,email:$('#u-email').value,role:$('#u-role').value})});
+    await settings();showPw(r,'Sign-in created');toast('Person added')}
+   catch(e){$('#u-err').textContent={exists:'Someone already signs in with that name or email.',bad_login_name:'Use an email address, or a username of letters, numbers and dots.',name_required:'Add their name.'}[e.message]||'Could not add them.'}}};
  document.querySelectorAll('[data-role]').forEach(sel=>sel.onchange=async()=>{
-  await api('/api/users/'+encodeURIComponent(sel.dataset.role),{method:'PATCH',body:JSON.stringify({role:sel.value})});toast('Role updated');settings()});
+  try{await api('/api/users/'+encodeURIComponent(sel.dataset.role),{method:'PATCH',body:JSON.stringify({role:sel.value})});toast('Role updated')}catch(e){toast('Could not change the role')}settings()});
  document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{
+  if(!confirm('Give '+b.dataset.reset+' a new first password? Their current one stops working at once.'))return;
   const r=await api('/api/users/'+encodeURIComponent(b.dataset.reset)+'/reset',{method:'POST'});
-  $('#u-out').textContent='New password for '+r.email+': '+r.password+' — they must change it on first sign-in.';toast('Password reset')});
+  showPw({...r,name:b.dataset.reset},'New password');toast('Password reset')});
  document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{
   await api('/api/users/'+encodeURIComponent(b.dataset.toggle),{method:'PATCH',body:JSON.stringify({active:b.dataset.on==='1'})});
-  toast(b.dataset.on==='1'?'Enabled':'Disabled');settings()});
+  toast(b.dataset.on==='1'?'Access turned on':'Access turned off');settings()});
  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
   if(!confirm('Remove '+b.dataset.del+' permanently? Their sign-in stops working immediately.'))return;
   await api('/api/users/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});toast('Removed');settings()});
 }
+
+/* phones: tables turn into cards, each value labelled with its column */
+function labelTables(root){root.querySelectorAll('table').forEach(t=>{const h=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());if(!h.length)return;
+ t.querySelectorAll('tbody tr').forEach(tr=>[...tr.children].forEach((td,i)=>{if(td.dataset.l===undefined)td.dataset.l=h[i]||''}))})}
+['#view','#drb'].forEach(s=>{let q=0;new MutationObserver(()=>{if(q)return;q=requestAnimationFrame(()=>{q=0;labelTables($(s))})}).observe($(s),{childList:true,subtree:true})});
 
 /* session check */
 api('/api/me').then(u=>{ME=u;start()}).catch(()=>{$('#login').style.display='grid'});
