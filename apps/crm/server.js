@@ -945,7 +945,7 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
     if (p === '/api/stats' && req.method === 'GET') {
       if (!auth()) return json(res, 401, { error: 'no_session' });
       const paid = await q(`select currency, sum(amount)::float total, count(*)::int n from registrations
-        where paid and status<>'cancelled' group by currency`);
+        where paid and amount>0 and status<>'cancelled' group by currency`);
       const due = await q(`select currency, sum(amount)::float total, count(*)::int n from registrations
         where not paid and amount>0 and status<>'cancelled' group by currency`);
       const ev = await q(`select i.code,i.title,i.capacity,i.currency,
