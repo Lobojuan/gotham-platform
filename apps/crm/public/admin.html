@@ -1,4 +1,4 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gotham CRM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
@@ -18,16 +18,7 @@ input.t:focus,select.t:focus,textarea.t:focus{border-color:var(--ink);box-shadow
 .mark{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700}
 .lcard label{display:block;font-size:13px;font-weight:600;margin:14px 0 5px}
 .err{color:var(--red);font-size:13.5px;min-height:1.2em;margin-top:10px}
-/* app */
-#app{display:none;grid-template-columns:230px 1fr;min-height:100vh}
-aside{background:var(--ink);color:#F4F5F2;padding:20px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
-aside .brand{display:flex;gap:10px;align-items:center;margin-bottom:18px;padding:0 6px}
-aside .brand b{font-size:16px}aside .brand small{display:block;font-size:10.5px;color:#AEB6C2;font-weight:500}
-aside a{color:#C9CFD8;text-decoration:none;padding:9px 12px;border-radius:10px;font-size:14.5px;cursor:pointer;display:flex;justify-content:space-between}
-aside a:hover{background:rgba(255,255,255,.07);color:#fff}aside a.on{background:#fff;color:var(--ink);font-weight:600}
-aside .who{margin-top:auto;font-size:12.5px;color:#AEB6C2;border-top:1px solid rgba(255,255,255,.12);padding-top:12px}
-main{padding:26px 28px 60px;max-width:1400px}
-.hd{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:20px;flex-wrap:wrap}
+/* components */
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
 .kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px}
 .kpi b{display:block;font-size:26px}.kpi span{font-size:13px;color:var(--mute)}
@@ -95,12 +86,8 @@ label.l{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
 
 /* ===== QA sweep, Sept 2026 ===== */
 .ext::after{content:" ↗";opacity:.6}
-aside a span:not(:empty){background:rgba(255,255,255,.14);border-radius:999px;padding:0 8px;font-size:12px;line-height:20px;margin-left:8px}
-aside a.on span:not(:empty){background:var(--sunk)}
-aside .brand small{font-size:12px}
 a.btn{color:inherit}a.btn-dark,a.btn-green,a.btn-wa{color:#fff}
 .btn.danger{color:var(--red)}
-.menubtn{display:none}
 .ev{align-items:center}.ev>div:last-child:not(:first-child){flex:none}
 .ev .btn{white-space:nowrap}
 .pwf{position:relative}.pwf input.t{padding-right:64px}
@@ -117,15 +104,6 @@ a.btn{color:inherit}a.btn-dark,a.btn-green,a.btn-wa{color:#fff}
 .av{flex:none;width:36px;height:36px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700}
 .tm-b{flex:0 1 380px}.tm-b select.t{max-width:260px}
 .evc-img span,.tag{font-size:12px}
-@media(max-width:820px){
-  aside{position:sticky;top:0;z-index:8;flex-direction:row;flex-wrap:wrap;align-items:center;padding:10px 14px;gap:4px}
-  aside .brand{display:flex;margin:0;padding:0;flex:1;justify-content:flex-start}
-  .menubtn{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;border-radius:999px;padding:8px 14px;font-weight:600;font-size:15px;cursor:pointer}
-  aside>a:not(.brand){display:none}
-  aside.open>a:not(.brand){display:flex;flex:1 1 45%;padding:11px 12px}
-  aside.open{max-height:100vh;overflow:auto}
-  .hd h1{font-size:24px}
-}
 @media(max-width:640px){
   input.t,select.t,textarea.t,.lcard input{font-size:16px}
   main{padding:14px 12px 60px}
@@ -148,6 +126,191 @@ a.btn{color:inherit}a.btn-dark,a.btn-green,a.btn-wa{color:#fff}
   .hd>div{flex-wrap:wrap}
 }
 @media(pointer:coarse){input.t,select.t,textarea.t,.lcard input{font-size:16px}}
+/* ===== v2 shell: sidebar, top bar, bottom bar on phones ===== */
+:root{--side:252px;--top:60px;--shadow:0 1px 2px rgba(15,27,45,.04),0 6px 18px rgba(15,27,45,.05);--blue:#2F5D8C;--blue-soft:#E4ECF5}
+body{background:#F5F5F2}
+.kente{height:4px}
+#app{display:none;grid-template-columns:var(--side) minmax(0,1fr);min-height:100vh}
+.side{background:var(--ink);color:#DDE2E9;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;overflow:hidden;z-index:30}
+.side .brand{display:flex;gap:11px;align-items:center;padding:18px 18px 10px;color:#fff;text-decoration:none}
+.side .brand .mark{width:34px;height:34px;background:var(--gold);color:#fff;font-size:15px}
+.side .brand b{display:block;font-size:15.5px;letter-spacing:-.01em}.side .brand small{display:block;font-size:12px;color:#9AA6B6;font-weight:500}
+.nav{padding:0 10px 14px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin}
+.nav h6{margin:14px 10px 4px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#7F8C9D;font-weight:600}
+.nav a{display:flex;align-items:center;gap:11px;padding:7px 10px;border-radius:8px;color:#C9D1DB;text-decoration:none;font-size:14.5px;cursor:pointer;position:relative;line-height:1.3}
+.nav a svg{width:18px;height:18px;flex:none;opacity:.75}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.on{background:rgba(255,255,255,.1);color:#fff;font-weight:600}.nav a.on svg{opacity:1}
+.nav a.on::before{content:"";position:absolute;left:-10px;top:7px;bottom:7px;width:3px;border-radius:0 3px 3px 0;background:var(--gold)}
+.nav .b{margin-left:auto;background:rgba(255,255,255,.14);border-radius:999px;padding:0 7px;font-size:12px;line-height:20px;min-width:22px;text-align:center;font-weight:600}
+.nav .b:empty{display:none}.nav .b.warn{background:#C0492F;color:#fff}
+.side .links{padding:0 20px 10px;display:flex;gap:14px;flex-wrap:wrap}
+.side .links a{color:#9AA6B6;font-size:13px;text-decoration:none}.side .links a:hover{color:#fff}
+.side .me{border-top:1px solid rgba(255,255,255,.1);padding:12px 14px;display:flex;gap:10px;align-items:center}
+.side .me .av{width:34px;height:34px;background:#2A3A52;font-size:14px}
+.side .me b{display:block;color:#fff;font-size:14px;line-height:1.2}.side .me small{color:#9AA6B6;font-size:12px}
+.side .me button{margin-left:auto;background:none;border:1px solid rgba(255,255,255,.2);color:#DDE2E9;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px;white-space:nowrap}
+.side .me button:hover{background:rgba(255,255,255,.08)}
+.mainw{min-width:0;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:20;height:var(--top);background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 24px}
+.hamb{display:none;border:1px solid var(--line);background:#fff;border-radius:10px;width:40px;height:40px;place-items:center;cursor:pointer;flex:none}
+.hamb svg,.iconbtn svg{width:20px;height:20px}
+.crumb{font-size:14px;color:var(--mute);white-space:nowrap}.crumb b{color:var(--ink);font-weight:600}
+.gsearch{position:relative;margin-left:auto;width:min(440px,42vw)}
+.gsearch input{width:100%;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 40px 9px 36px;outline:none;font-size:14.5px}
+.gsearch input:focus{background:#fff;border-color:var(--ink);box-shadow:0 0 0 3px rgba(15,27,45,.07)}
+.gsearch>svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--mute);pointer-events:none}
+.gsearch kbd{position:absolute;right:9px;top:50%;transform:translateY(-50%);font:12px ui-monospace,monospace;color:var(--mute);border:1px solid var(--line);border-radius:5px;padding:1px 6px;background:#fff}
+.sres{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgba(15,27,45,.16);max-height:70vh;overflow:auto;display:none;z-index:40;padding:4px 0}
+.sres.on{display:block}
+.sres h6{margin:10px 14px 4px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.sres a{display:block;padding:8px 14px;cursor:pointer;text-decoration:none;color:inherit}.sres a:hover,.sres a.hl{background:var(--sunk)}
+.sres a small{display:block;color:var(--mute);font-size:13px}
+.sres .none{padding:14px;color:var(--mute);font-size:14px}
+.newbtn{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 18px 50px rgba(15,27,45,.16);padding:6px;min-width:230px;display:none;z-index:40}
+.menu.on{display:block}
+.menu button{display:flex;width:100%;gap:10px;align-items:center;border:0;background:none;padding:10px;border-radius:8px;cursor:pointer;text-align:left;font-size:14.5px}
+.menu button:hover{background:var(--sunk)}.menu button svg{width:18px;height:18px;color:var(--mute)}
+.iconbtn{border:1px solid var(--line);background:#fff;border-radius:10px;width:40px;height:40px;display:inline-grid;place-items:center;cursor:pointer;color:var(--ink);flex:none}
+.iconbtn:hover{background:var(--sunk)}
+main{padding:22px 24px 60px;max-width:1440px;width:100%}
+.phead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.phead h1{font-size:26px;letter-spacing:-.025em}
+.phead p{margin:4px 0 0;color:var(--mute);font-size:14.5px}
+.pact{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.card{box-shadow:var(--shadow);border-color:#E6E7E9}
+.kpis{grid-template-columns:repeat(auto-fit,minmax(165px,1fr))}
+.kpi{box-shadow:var(--shadow);border-color:#E6E7E9;position:relative}
+.kpi b{font-variant-numeric:tabular-nums}
+.kpi small{display:block;color:var(--mute);font-size:13px;margin-top:2px}
+.kpi.link{cursor:pointer}.kpi.link:hover{border-color:var(--ink)}
+.bnav{display:none}
+#scrim{position:fixed;inset:0;background:rgba(15,27,45,.38);z-index:45;display:none}
+#scrim.on{display:block}
+.drawer{z-index:50;width:min(560px,100%)}
+#drb a:not(.btn):not(.chip){color:var(--ink);text-decoration:underline;text-decoration-color:#B9BEC6;text-underline-offset:3px}
+.drawer.wide{width:min(720px,100%)}
+table td{font-variant-numeric:tabular-nums}
+/* shared bits for the CRM views */
+.seg{display:inline-flex;background:#fff;border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:7px 12px;border-radius:7px;cursor:pointer;font-weight:600;font-size:14px;color:var(--mute)}
+.seg button.on{background:var(--ink);color:#fff}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;border-radius:999px;padding:2px 9px;background:var(--sunk);color:var(--ink);white-space:nowrap;text-decoration:none;cursor:default}
+a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
+.chip.gold{background:var(--gold-soft);color:#7A5310}.chip.green{background:var(--green-soft);color:var(--green)}.chip.red{background:var(--red-soft);color:var(--red)}.chip.blue{background:var(--blue-soft);color:var(--blue)}
+.av.sm{width:26px;height:26px;font-size:12px}
+.empty{padding:26px 10px;text-align:center;color:var(--mute)}
+.empty b{display:block;color:var(--ink);margin-bottom:4px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:18px;align-items:start}
+.grid2 .card{margin-bottom:18px}
+.ch h3{font-size:17px}
+.list{margin:0;padding:0;list-style:none}
+.li{display:flex;gap:12px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}
+.li .grow{flex:1;min-width:0}
+.li .grow b{overflow-wrap:anywhere}
+.muted{color:var(--mute)}
+.num{font-variant-numeric:tabular-nums}
+/* tasks */
+.tcheck{appearance:none;-webkit-appearance:none;flex:none;width:22px;height:22px;border:2px solid #B9BEC6;border-radius:6px;margin:1px 0 0;cursor:pointer;display:grid;place-items:center;background:#fff}
+.tcheck:checked{background:var(--green);border-color:var(--green)}
+.tcheck:checked::after{content:"";width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg)}
+.task.done b{text-decoration:line-through;color:var(--mute)}
+.task .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;align-items:center;font-size:13px}
+.due.over{color:var(--red);font-weight:600}.due.today{color:#7A5310;font-weight:600}
+.pri{color:var(--red);font-weight:700}
+.tgroup{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--mute);margin:18px 0 2px;font-weight:600}
+.tgroup.over{color:var(--red)}
+.qadd{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px;align-items:center}
+.qadd .t{min-width:0}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.presets button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer}
+.presets button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* pipeline */
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,1fr);gap:12px;overflow-x:auto;padding-bottom:10px;align-items:start;scroll-snap-type:x proximity}
+.col{background:#EDEDE8;border-radius:14px;padding:10px;min-height:120px;scroll-snap-align:start;display:flex;flex-direction:column;gap:8px}
+.col.drop{outline:2px dashed var(--gold);outline-offset:-2px;background:#F4EAD7}
+.colh{display:flex;justify-content:space-between;align-items:baseline;padding:2px 4px 4px}
+.colh b{font-size:14px}.colh span{font-size:13px;color:var(--mute)}
+.colh .sum{display:block;font-size:13px;color:var(--ink);font-weight:600}
+.col.won{background:#E5EFE9}.col.lost{background:#F3E9E7}
+.dcard{background:#fff;border:1px solid #E3E4E6;border-radius:11px;padding:11px 12px;cursor:pointer;box-shadow:0 1px 2px rgba(15,27,45,.05);touch-action:manipulation}
+.dcard:hover{border-color:var(--ink)}
+.dcard.dragging{opacity:.45}
+.dcard b{display:block;font-size:14.5px;overflow-wrap:anywhere;line-height:1.3}
+.dcard .co{font-size:13px;color:var(--mute);overflow-wrap:anywhere}
+.dcard .row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px}
+.dcard .val{font-weight:700;font-variant-numeric:tabular-nums;font-size:14px}
+.dcard .nx{font-size:13px;margin-top:6px;color:var(--mute);overflow-wrap:anywhere}
+.stages{display:flex;gap:4px;flex-wrap:wrap;margin:6px 0 14px}
+.stages button{border:1px solid var(--line);background:#fff;padding:7px 11px;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--mute)}
+.stages button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.stages button.won.on{background:var(--green);border-color:var(--green)}.stages button.lost.on{background:var(--red);border-color:var(--red)}
+.pipesum{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--mute)}.pipesum b{color:var(--ink)}
+/* record */
+.rec{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:18px;align-items:start}
+.rhead{display:flex;gap:14px;align-items:center}
+.rhead .av{width:52px;height:52px;font-size:20px;background:var(--gold)}
+.rhead h2{font-size:22px;overflow-wrap:anywhere}
+.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 4px}
+.quick a,.quick button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1px solid var(--line);border-radius:12px;background:#fff;text-decoration:none;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer}
+.quick a:hover,.quick button:hover{border-color:var(--ink)}
+.quick svg{width:20px;height:20px}
+.quick .off{opacity:.4;pointer-events:none}
+.composer{border:1px solid var(--line);border-radius:14px;background:#fff;padding:12px}
+.composer textarea{border:0;outline:none;width:100%;resize:vertical;min-height:70px;font:inherit;padding:4px}
+.composer .cbar{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:10px;margin-top:6px}
+.tl{position:relative;margin:14px 0 0;padding:0 0 0 26px;list-style:none}
+.tl::before{content:"";position:absolute;left:10px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl li{position:relative;padding:0 0 16px}
+.tl li i{position:absolute;left:-26px;top:1px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid var(--line);font-style:normal;font-size:11px}
+.tl li.call i,.tl li.whatsapp i{border-color:var(--green);color:var(--green)}
+.tl li.meeting i{border-color:var(--blue);color:var(--blue)}
+.tl li.deal i{border-color:var(--gold);color:var(--gold)}
+.tl li.registration i,.tl li.attended i{border-color:var(--ink)}
+.tl li .when{font-size:12.5px;color:var(--mute)}
+.tl li .txt{white-space:pre-wrap;overflow-wrap:anywhere}
+/* reports */
+.rgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.rgrid .card{margin:0}
+.bars{display:flex;align-items:flex-end;gap:4px;height:200px;padding-top:10px;border-bottom:1px solid var(--line)}
+.bars .bc{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.bars .stk{width:100%;max-width:46px;display:flex;flex-direction:column-reverse;border-radius:6px 6px 0 0;overflow:hidden;min-height:2px}
+.bars .stk i{display:block}
+.bars .bl{font-size:12px;color:var(--mute);white-space:nowrap}
+.bars .bv{font-size:12px;font-weight:600;white-space:nowrap;writing-mode:vertical-rl;transform:rotate(180deg);max-height:70px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mute);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.hbar{display:grid;grid-template-columns:minmax(90px,150px) minmax(0,1fr) auto;gap:10px;align-items:center;padding:7px 0;font-size:14px}
+.hbar .tr{background:var(--sunk);border-radius:99px;height:10px;overflow:hidden}.hbar .tr i{display:block;height:100%;background:var(--gold);border-radius:99px}
+.hbar b{font-variant-numeric:tabular-nums}
+@media(max-width:1100px){.grid2,.rec{grid-template-columns:1fr}.rgrid{grid-template-columns:1fr}}
+@media(max-width:900px){
+  #app{grid-template-columns:1fr}
+  .side{position:fixed;inset:0 auto 0 0;width:min(300px,86vw);transform:translateX(-105%);transition:transform .2s ease;height:100%}
+  .side.open{transform:none}
+  #scrim.side-on{display:block;z-index:29}
+  .side{z-index:46}
+  .hamb{display:grid}
+  .crumb{display:none}
+  .top{padding:0 12px;gap:8px}
+  .gsearch{width:auto;flex:1;margin-left:0}
+  .gsearch kbd{display:none}
+  main{padding:14px 12px 96px}
+  .phead h1{font-size:22px}
+  .bnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:25;background:rgba(255,255,255,.97);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+  .bnav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:var(--mute);text-decoration:none;padding:4px 0;cursor:pointer;position:relative}
+  .bnav a svg{width:22px;height:22px}
+  .bnav a.on{color:var(--ink);font-weight:700}
+  .bnav a .b{position:absolute;top:0;left:calc(50% + 6px);background:#C0492F;color:#fff;border-radius:99px;font-size:11px;line-height:16px;min-width:16px;padding:0 4px;text-align:center;font-weight:700}
+  .bnav a .b:empty{display:none}
+  .toast{bottom:88px}
+  .board{grid-auto-columns:84%;margin:0 -12px;padding:0 12px 10px;scroll-padding:12px}
+  .qadd{grid-template-columns:1fr 1fr}.qadd>input.t{grid-column:1/-1}
+  .drawer{top:0;bottom:0}
+}
+@media(max-width:640px){.quick{grid-template-columns:repeat(3,1fr)}.hbar{grid-template-columns:100px minmax(0,1fr) auto}}
 </style></head><body>
 <div class="kente"></div>
 
@@ -157,36 +320,66 @@ a.btn{color:inherit}a.btn-dark,a.btn-green,a.btn-wa{color:#fff}
   <label for="pw">Password</label><input class="t" id="pw" type="password" autocomplete="current-password" required>
   <p class="err" id="lerr"></p>
   <button class="btn btn-dark" style="width:100%;justify-content:center;margin-top:6px">Sign in</button>
+  <p class="note" style="margin:14px 0 0;text-align:center">Forgotten your password? Ask an owner to reset it under Settings → Team.</p>
 </form></section>
 
 <section id="pwfirst" style="display:none"></section>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-cols" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18" rx="1.5"/><rect x="10" y="3" width="5" height="12" rx="1.5"/><rect x="17" y="3" width="4" height="8" rx="1.5"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M16 4a4 4 0 0 1 0 8M22 21a7 7 0 0 0-4-6.3"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16v-5M12 16V8M17 16v-9"/></symbol>
+<symbol id="i-ticket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/><path d="M13 6v12"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+<symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></symbol>
+<symbol id="i-news" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13v16H6a2 2 0 0 1-2-2zM17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3"/></symbol>
+<symbol id="i-qr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+<symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4L21 8M21 3v5h-5"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
+<symbol id="i-wa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-4.6A9 9 0 1 1 8 19.6z"/><path d="M9 9.5c.3 1.8 2.7 4.3 4.6 4.7l1.2-1.2 1.8.8-.4 1.7c-3 .5-7.3-3.6-7.2-6.8L10.6 8l.9 1.8z"/></symbol>
+<symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
+<symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+</defs></svg>
+
 <div id="app">
-  <aside>
-    <a class="brand" href="/" style="text-decoration:none;color:inherit"><div class="mark">G</div><div><b>Gotham CRM</b><small>registrations &amp; payments</small></div></a>
-    <button type="button" class="menubtn" id="menubtn" aria-expanded="false" aria-controls="app">☰ Menu</button>
-    <a data-v="dash" class="on">Dashboard</a>
-    <a data-v="regs">Registrations <span id="cnt"></span></a>
-    <a data-v="events">Events &amp; prices</a>
-    <a data-v="subs">Subscribers <span id="scnt"></span></a>
-    <a data-v="door">Door check-in</a>
-    <a data-v="mail">Email outbox <span id="mcnt"></span></a>
-    <a data-v="out">Outreach &amp; invitations</a>
-    <a data-v="spon">Sponsors &amp; partners</a>
-    <a data-v="qr">Scan codes &amp; posters</a>
-    <a data-v="links">Campaign links</a>
-    <a data-v="data">Data health</a>
-    <a data-v="settings">Settings</a>
-    <a href="/" class="ext">View website</a>
-    <a href="/register" class="ext">Registration page</a>
-    <a id="out">Sign out</a>
-    <div class="who" id="who"></div>
+  <aside class="side" id="side">
+    <a class="brand" href="#dash"><div class="mark">G</div><div><b>Gotham CRM</b><small>Gotham Consult · Carlson Capital</small></div></a>
+    <nav class="nav" id="nav" aria-label="Back office"></nav>
+    <div class="links"><a href="/">Website ↗</a><a href="/register">Registration page ↗</a></div>
+    <div class="me"><span class="av" id="meav">?</span><div style="min-width:0"><b id="mename"></b><small id="who"></small></div><button id="out" type="button">Sign out</button></div>
   </aside>
-  <main>
-    <div class="hd"><h1 id="vt">Dashboard</h1><div style="display:flex;gap:8px"><button class="btn btn-line" id="refresh">Refresh</button><a class="btn btn-dark" href="/api/export.csv">Export CSV</a></div></div>
-    <div id="view"></div>
-  </main>
+  <div class="mainw">
+    <header class="top">
+      <button class="hamb" id="hamb" type="button" aria-label="Open menu" aria-controls="side"><svg><use href="#i-menu"/></svg></button>
+      <div class="crumb" id="crumb"><b>Gotham CRM</b></div>
+      <div class="gsearch" id="gs"><svg><use href="#i-search"/></svg><input id="gq" type="search" placeholder="Search companies, people, deals, references" autocomplete="off" aria-label="Search"><kbd>/</kbd><div class="sres" id="sres"></div></div>
+      <div class="newbtn"><button class="btn btn-dark" id="newb" type="button" aria-haspopup="true"><svg width="16" height="16"><use href="#i-plus"/></svg><span class="nl">New</span></button>
+        <div class="menu" id="newm" role="menu">
+          <button type="button" data-new="task"><svg><use href="#i-check"/></svg>Task</button>
+          <button type="button" data-new="deal" data-admin><svg><use href="#i-cols"/></svg>Deal</button>
+          <button type="button" data-new="contact" data-admin><svg><use href="#i-users"/></svg>Company or person</button>
+          <button type="button" data-new="event" data-admin><svg><use href="#i-cal"/></svg>Event</button>
+        </div></div>
+    </header>
+    <main>
+      <div class="phead"><div><h1 id="vt">Dashboard</h1><p id="vsub"></p></div><div class="pact" id="pact"></div></div>
+      <div id="view"></div>
+    </main>
+  </div>
+  <nav class="bnav" id="bnav" aria-label="Quick navigation"></nav>
 </div>
+<div id="scrim"></div>
 
 <div class="drawer" id="dr"><button class="x" id="drx">✕</button><div id="drb"></div></div>
 <div class="toast" id="toast"></div>
@@ -214,10 +407,9 @@ async function start(){
  $('#login').style.display='none';
  if(ME.must_change){$('#app').style.display='none';return firstPassword()}
  $('#pwfirst').style.display='none';$('#app').style.display='grid';
- $('#who').textContent=(ME.name||ME.email)+' · '+ROLE_NAME[ME.role];
- await load();
+ $('#mename').textContent=ME.name||ME.email;$('#who').textContent=ROLE_NAME[ME.role];$('#meav').textContent=initials(ME.name||ME.email);
+ buildNav();parseHash();await loadUsers();await load();badges();
 }
-const ROLE_NAME={owner:'owner (super admin)',admin:'admin',staff:'staff'};
 /* password fields with a show/hide toggle, shared by the first-sign-in screen and Settings */
 const pwField=(id,label,ac)=>`<label class="l" for="${id}">${label}</label><div class="pwf"><input class="t" id="${id}" type="password" autocomplete="${ac}" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-eye="${id}" aria-label="Show password">Show</button></div>`;
 function wireEyes(root){root.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{const i=document.getElementById(b.dataset.eye);const s=i.type==='password';i.type=s?'text':'password';b.textContent=s?'Hide':'Show';b.setAttribute('aria-label',s?'Hide password':'Show password')})}
@@ -248,49 +440,402 @@ function firstPassword(){
 async function load(){
  [STATS,{rows:ROWS},{items:ITEMS,settings:SET}]=await Promise.all([api('/api/stats'),api('/api/registrations'),api('/api/items')]);
  VENUE_MAX=parseInt(SET.max_seats)||0;
- $('#cnt').textContent=ROWS.length; render();
+ if($('#cnt'))$('#cnt').textContent=ROWS.filter(r=>r.status==='pending').length||'';
+ render();
 }
-$('#menubtn').onclick=()=>{const a=document.querySelector('aside');a.classList.toggle('open');$('#menubtn').setAttribute('aria-expanded',a.classList.contains('open'))};
-$('#refresh').onclick=()=>load().then(()=>toast('Updated'));
-let V='dash';
-document.querySelectorAll('aside a[data-v]').forEach(a=>a.onclick=()=>go(a.dataset.v));
-function go(v,pw){V=v;document.querySelector('aside').classList.remove('open');$('#menubtn').setAttribute('aria-expanded','false');scrollTo(0,0);document.querySelectorAll('aside a[data-v]').forEach(a=>a.classList.toggle('on',a.dataset.v===v));
- $('#vt').textContent={dash:'Dashboard',regs:'Registrations',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',events:'Events, content & media',out:'Outreach, contacts & invitations',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'}[v];render(pw)}
+/* ===================== v2 shell: navigation, search, quick add ===================== */
+const ROLE_NAME={owner:'owner (super admin)',admin:'admin',staff:'staff'};
+const isAdmin=()=>!!ME&&ME.role!=='staff';
+const ic=n=>`<svg aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const initials=s=>String(s||'?').replace(/@.*/,'').split(/[\s._-]+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';
+const first=s=>String(s||'').trim().split(/[\s@]+/)[0]||'';
+const ghs=n=>'GHS '+Number(n||0).toLocaleString('en-GB',{maximumFractionDigits:0});
+const ghsShort=n=>{n=Number(n||0);return n>=1e6?'GHS '+(n/1e6).toFixed(n>=1e7?0:1)+'m':n>=1e4?'GHS '+Math.round(n/1e3)+'k':ghs(n)};
+const dshort=s=>s?new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+const NAV=[
+ ['Overview',[['dash','Dashboard','home'],['tasks','Tasks','check','tcnt']]],
+ ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['reports','Reports','chart',null,1]]],
+ ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
+ ['System',[['mail','Email outbox','mail','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
+const TITLES={dash:'Dashboard',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',rec:'Company record',reports:'Reports',
+ regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',
+ out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
+const ADMIN_ONLY=new Set(['pipe','contacts','rec','reports','out','spon','events','subs','qr','links','mail','data']);
+let V='dash', ARG=null, USERS=[];
+function buildNav(){
+ $('#nav').innerHTML=NAV.map(([g,items])=>{const it=items.filter(x=>!x[4]||isAdmin());
+  return it.length?`<h6>${g}</h6>`+it.map(([v,l,i,b])=>`<a data-v="${v}" href="#${v}">${ic(i)}<span>${l}</span>${b?`<span class="b" id="${b}"></span>`:''}</a>`).join(''):''}).join('');
+ const bn=isAdmin()?[['dash','Home','home'],['tasks','Tasks','check','tcnt2'],['pipe','Pipeline','cols'],['contacts','Contacts','users'],['more','More','dots']]
+                   :[['dash','Home','home'],['tasks','Tasks','check','tcnt2'],['regs','Guests','ticket'],['door','Check-in','scan'],['more','More','dots']];
+ $('#bnav').innerHTML=bn.map(([v,l,i,b])=>`<a data-b="${v}" ${v!=='more'?`href="#${v}"`:'role="button" tabindex="0"'}>${ic(i)}<span>${l}</span>${b?`<span class="b" id="${b}"></span>`:''}</a>`).join('');
+ $('#bnav [data-b="more"]').onclick=openSide;
+ document.querySelectorAll('[data-admin]').forEach(e=>e.hidden=!isAdmin());
+ $('#gq').placeholder=isAdmin()?'Search companies, people, deals, references':'Search guests by name or reference';
+}
+function setTitle(t,sub){$('#vt').textContent=t;$('#vsub').textContent=sub||'';$('#crumb').innerHTML='Gotham CRM / <b>'+esc(t)+'</b>';document.title=t+' · Gotham CRM'}
+function parseHash(){const [v,a]=(location.hash.slice(1)||'dash').split('/');V=TITLES[v]?v:'dash';if(!isAdmin()&&ADMIN_ONLY.has(V))V='dash';if(V!==v&&location.hash)history.replaceState(null,'','#'+V);ARG=a===undefined?null:decodeURIComponent(a);
+ document.querySelectorAll('#nav a').forEach(x=>x.classList.toggle('on',x.dataset.v===V||(V==='rec'&&x.dataset.v==='contacts')));
+ document.querySelectorAll('#bnav a').forEach(x=>x.classList.toggle('on',x.dataset.b===V||(V==='rec'&&x.dataset.b==='contacts')));
+ setTitle(TITLES[V]);}
+function go(v,arg){const h='#'+v+(arg!=null?'/'+encodeURIComponent(arg):'');if(location.hash!==h)location.hash=h;else route()}
+function route(){parseHash();closeSide();closeDr();$('#sres').classList.remove('on');scrollTo(0,0);render()}
+addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
+function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
+ $('#pref').onclick=async()=>{await load();toast('Updated')}}
+function render(){
+ const m={dash:dashboard,tasks:tasksView,pipe:pipeline,contacts:contactsView,rec:()=>record(+ARG),reports:reportsView,
+  regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
+ const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
+  contacts:'<button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>'};
+ pageActions(acts[V]||'');
+ const f=m[V];if(!f)return;const r=f();if(typeof r==='string')$('#view').innerHTML=r;
+}
+/* side menu on phones */
+function openSide(){$('#side').classList.add('open');$('#scrim').classList.add('side-on')}
+function closeSide(){$('#side').classList.remove('open');$('#scrim').classList.remove('side-on')}
+$('#hamb').onclick=openSide;
+/* the drawer gets a dimmed backdrop, and Escape closes it */
+function closeDr(){$('#dr').classList.remove('on','wide')}
+new MutationObserver(()=>$('#scrim').classList.toggle('on',$('#dr').classList.contains('on'))).observe($('#dr'),{attributes:true,attributeFilter:['class']});
+$('#scrim').onclick=()=>{closeDr();closeSide()};
+$('#drx').onclick=closeDr;
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'){closeDr();closeSide();$('#sres').classList.remove('on');$('#newm').classList.remove('on')}
+ if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&ME){e.preventDefault();$('#gq').focus()}
+});
+/* + New */
+$('#newb').onclick=e=>{e.stopPropagation();$('#newm').classList.toggle('on')};
+document.addEventListener('click',e=>{if(!e.target.closest('.newbtn'))$('#newm').classList.remove('on');if(!e.target.closest('#gs'))$('#sres').classList.remove('on');
+ const n=e.target.closest('[data-new]');if(!n)return;$('#newm').classList.remove('on');
+ ({task:()=>taskForm({}),deal:()=>dealForm({}),contact:()=>contactForm(null),event:()=>go('events')})[n.dataset.new]?.()});
+/* global search */
+let sT=0,sItems=[],sHl=-1;
+$('#gq').addEventListener('input',()=>{clearTimeout(sT);const s=$('#gq').value.trim();if(s.length<2){$('#sres').classList.remove('on');return}sT=setTimeout(()=>doSearch(s),170)});
+$('#gq').addEventListener('keydown',e=>{if(!$('#sres').classList.contains('on'))return;
+ if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();sHl=(sHl+(e.key==='ArrowDown'?1:-1)+sItems.length)%sItems.length;
+  document.querySelectorAll('#sres a').forEach((a,i)=>a.classList.toggle('hl',i===sHl))}
+ if(e.key==='Enter'){e.preventDefault();(sItems[sHl]||sItems[0])?.();}});
+async function doSearch(s){
+ let groups=[];
+ if(isAdmin()){const r=await api('/api/search?q='+encodeURIComponent(s)).catch(()=>null);if(!r)return;
+  groups=[['Companies & people',r.contacts.map(c=>[c.company||c.full_name||c.email,[c.company&&c.full_name,c.phone,c.sector].filter(Boolean).join(' · '),()=>go('rec',c.id)])],
+   ['Deals',r.deals.map(d=>[d.title,[STAGE_NAME[d.stage],ghs(d.value),d.company].filter(Boolean).join(' · '),()=>openDeal(d.id)])],
+   ['Registrations',r.registrations.map(g=>[g.full_name+(g.company&&g.company!=='Not given'?' · '+g.company:''),g.reference+' · '+g.title+' · '+g.status,()=>{go('regs');setTimeout(()=>drawer(g.id),350)}])]];
+ } else {const f=s.toLowerCase();groups=[['Guests',ROWS.filter(r=>[r.full_name,r.company,r.reference].join(' ').toLowerCase().includes(f)).slice(0,10)
+   .map(g=>[g.full_name,g.reference+' · '+g.item_title,()=>{go('regs');setTimeout(()=>drawer(g.id),350)}])]]}
+ sItems=[];sHl=-1;
+ const html=groups.filter(g=>g[1].length).map(([h,items])=>`<h6>${h}</h6>`+items.map(([t,sub,fn])=>{sItems.push(fn);return `<a data-si="${sItems.length-1}"><b>${esc(t)}</b><small>${esc(sub)}</small></a>`}).join('')).join('');
+ $('#sres').innerHTML=html||'<div class="none">Nothing found for “'+esc(s)+'”.</div>';$('#sres').classList.add('on');
+ document.querySelectorAll('#sres a').forEach(a=>a.onclick=()=>{$('#sres').classList.remove('on');$('#gq').value='';$('#gq').blur();sItems[+a.dataset.si]()});
+}
+async function loadUsers(){USERS=(await api('/api/users').catch(()=>({rows:[]}))).rows.filter(u=>u.active!==false)}
+const userName=e=>{const u=USERS.find(x=>x.email===e);return u?(u.name||u.email):(e||'Unassigned')};
+const userOpts=(sel,withNone)=>(withNone?`<option value="" ${!sel?'selected':''}>Unassigned</option>`:'')+USERS.map(u=>`<option value="${esc(u.email)}" ${u.email===sel?'selected':''}>${esc(u.name||u.email)}${u.email===ME.email?' (you)':''}</option>`).join('');
+async function badges(){const o=await api('/api/overview').catch(()=>null);if(!o)return null;const n=(o.my_tasks.overdue||0)+(o.my_tasks.today||0);
+ ['#tcnt','#tcnt2'].forEach(s=>{const e=$(s);if(e){e.textContent=n||'';e.classList.toggle('warn',o.my_tasks.overdue>0)}});return o}
 
-function render(pw){
- const v=$('#view');
- if(V==='dash')return v.innerHTML=dash();
- if(V==='regs')return regs();
- if(V==='events')return events();
- if(V==='qr')return qrview();
- if(V==='spon')return sponsors();
- if(V==='out')return outreach();
- if(V==='links')return links();
- if(V==='subs')return subs();
- if(V==='door')return door();
- if(V==='mail')return mail();
- if(V==='data')return data();
- if(V==='settings')return settings(pw);
+/* ===================== dashboard ===================== */
+async function dashboard(){
+ const h=new Date().getHours();setTitle((h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', '+first(ME.name||ME.email),new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
+ $('#view').innerHTML='<div class="empty">Loading…</div>';
+ const [o,tk]=await Promise.all([badges(),api('/api/tasks?scope=mine')]);if(!o||V!=='dash')return;
+ const ev=o.next_event, pend=ROWS.filter(r=>r.status==='pending'), unpaid=ROWS.filter(r=>!r.paid&&Number(r.amount)>0&&!['cancelled','declined'].includes(r.status));
+ const kp=(label,val,sub,to)=>`<div class="kpi ${to?'link':''}" ${to?`data-go="${to}"`:''}><span>${label}</span><b>${val}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+ const t=o.my_tasks;
+ const kpis=isAdmin()?kp('Open pipeline',ghsShort(o.pipeline_value),o.open_deals+' open deals','pipe')+kp('Won this month',ghsShort(o.won_month.v),o.won_month.n+' deals','reports')
+   +kp('Received this month',ghsShort(o.received_month),'forums, services and sponsors','reports')+kp('Registrations',o.regs_week,'in the last 7 days','regs')
+   +kp('My tasks',t.open,(t.overdue?`<b style="color:var(--red);display:inline;font-size:13px">${t.overdue} overdue</b> · `:'')+t.today+' due today','tasks')
+  :kp('Registrations',o.regs_week,'in the last 7 days','regs')+kp('My tasks',t.open,t.overdue?t.overdue+' overdue':t.today+' due today','tasks')+(ev?kp('Seats taken',ev.seats+(ev.capacity?' / '+ev.capacity:''),esc(ev.title),'regs'):'');
+ const today=tk.rows.filter(x=>!x.due_at||new Date(x.due_at)<new Date(new Date().setHours(24,0,0,0))).slice(0,8);
+ const upcoming=tk.rows.filter(x=>x.due_at&&new Date(x.due_at)>=new Date(new Date().setHours(24,0,0,0))).slice(0,4);
+ const evCard=ev?`<div class="card"><div class="ch"><div><p class="note" style="margin:0 0 2px">Next event · ${new Date(ev.starts_at).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}, ${new Date(ev.starts_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Accra'})}</p><h3>${esc(ev.title)}</h3><p class="note" style="margin:2px 0 0">${esc(ev.venue||'')}</p></div>
+   <div class="pact"><a class="btn btn-line" href="#door">Check-in</a><a class="btn btn-dark" href="#regs">Guest list</a></div></div>
+   <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:14px"><span><b>${ev.seats}</b> seats taken${ev.capacity?' of '+ev.capacity:''}</span><span class="muted">${ev.pending?`<b style="color:#7A5310">${ev.pending} waiting for approval</b> · `:''}${ev.checked_in} checked in</span></div>
+   ${ev.capacity?`<div class="bar" style="height:8px"><i style="width:${Math.min(100,ev.seats/ev.capacity*100)}%"></i></div>`:''}</div>`:'';
+ const stages=['lead','contacted','meeting','proposal'].map(s=>({s,...(o.pipeline.find(p=>p.stage===s)||{n:0,v:0})}));const maxv=Math.max(1,...stages.map(s=>s.v));
+ const html=`<div class="kpis">${kpis}</div>
+ <div class="grid2"><div>
+  ${evCard}
+  <div class="card"><div class="ch"><h3>My tasks</h3><a class="btn btn-line" href="#tasks">All tasks</a></div>
+   ${today.length||upcoming.length?`<ul class="list">${today.concat(upcoming).map(taskRow).join('')}</ul>`:`<div class="empty"><b>Nothing due.</b>Add follow-ups with “New” at the top, or from any company record.</div>`}</div>
+  ${pend.length&&isAdmin()?`<div class="card"><div class="ch"><h3>Applications to approve <span class="chip gold">${pend.length}</span></h3></div><ul class="list">${pend.slice(0,8).map(r=>`<li class="li"><div class="grow"><b>${esc(r.full_name)}</b>${r.company&&r.company!=='Not given'?' · '+esc(r.company):''}<div class="note">${esc(r.category||'category not stated')} · ${esc(r.item_title)} · ${r.seats} seat(s)</div></div><div class="pact"><button class="btn btn-green" data-appr="${r.id}">Approve</button><button class="btn btn-line" data-decl="${r.id}">Decline</button></div></li>`).join('')}</ul></div>`:''}
+  ${unpaid.length&&isAdmin()?`<div class="card"><div class="ch"><h3>Waiting for payment <span class="chip">${unpaid.length}</span></h3></div><ul class="list">${unpaid.slice(0,8).map(r=>`<li class="li"><div class="grow"><b>${esc(r.full_name)}</b>${r.company&&r.company!=='Not given'?' · '+esc(r.company):''}<div class="note">${esc(r.item_title)} · ${money(r.amount,r.currency)}${r.payment_ref?' · reported '+esc(r.payment_ref):''}</div></div><button class="btn btn-green" data-paid="${r.id}">Mark paid</button></li>`).join('')}</ul></div>`:''}
+ </div><div>
+  ${isAdmin()?`<div class="card"><div class="ch"><h3>Pipeline</h3><a class="btn btn-line" href="#pipe">Open board</a></div>
+   ${stages.map(s=>`<div class="hbar"><span>${STAGE_NAME[s.s]} <span class="muted">· ${s.n}</span></span><span class="tr"><i style="width:${s.v/maxv*100}%"></i></span><b>${ghsShort(s.v)}</b></div>`).join('')}</div>
+  <div class="card"><div class="ch"><h3>Recent activity</h3></div>${o.activity.length?`<ul class="list">${o.activity.map(a=>`<li class="li"><span class="av sm" style="background:${{note:'#1F6B4E',deal:'#A9761F',registration:'#0F1B2D',enquiry:'#2F5D8C'}[a.type]}">${{note:'✎',deal:'◆',registration:'✓',enquiry:'★'}[a.type]}</span><div class="grow"><div>${esc(a.text)}</div><div class="note">${dt(a.at)}${a.who&&a.who!=='website'?' · '+esc(userName(a.who)):''}</div></div>${a.contact_id?`<a class="chip" href="#rec/${a.contact_id}">Open</a>`:''}</li>`).join('')}</ul>`:'<div class="empty">Nothing yet.</div>'}</div>`:''}
+  <div class="card"><div class="ch"><h3>Events</h3></div>${(STATS.events||[]).map(e=>{const pct=e.capacity?Math.min(100,e.seats/e.capacity*100):0;return `<div class="ev"><div style="flex:1"><b>${esc(e.title)}</b><div class="note">${e.seats} registered${e.capacity?' of '+e.capacity:''} · ${e.seats_paid} paid · ${e.checked_in} checked in</div>${e.capacity?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}</div></div>`}).join('')||'<div class="empty">No events yet.</div>'}</div>
+ </div></div>`;
+ $('#view').innerHTML=html;wireTasks($('#view'),dashboard);
+ document.querySelectorAll('[data-go]').forEach(k=>k.onclick=()=>go(k.dataset.go));
 }
 
-/* dashboard */
-function dash(){
- const paid=STATS.paid.map(r=>`<div class="kpi"><b>${amt(r.total,r.currency)}</b><span>Received · ${r.n} registrations</span></div>`).join('')||'<div class="kpi"><b>0</b><span>Received</span></div>';
- const due=STATS.due.map(r=>`<div class="kpi"><b>${amt(r.total,r.currency)}</b><span>Awaiting payment · ${r.n}</span></div>`).join('');
- const ev=STATS.events.map(e=>{const pct=e.capacity?Math.min(100,e.seats/e.capacity*100):0;return `<div class="ev"><div><b>${esc(e.title)}</b><div class="note">${e.seats} registered${e.capacity?' of '+e.capacity+' seats':''} · ${e.seats_paid} paid · ${e.checked_in} checked in</div>${e.capacity?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}</div></div>`}).join('');
- const need=ROWS.filter(r=>!r.paid&&Number(r.amount)>0&&!['cancelled','declined'].includes(r.status));
- const pend=ROWS.filter(r=>r.status==='pending');
- const bars=(rows,key)=>{const tot=rows.reduce((a,b)=>a+b.n,0)||1;return rows.map(r=>`<div class="ev"><div style="flex:1"><b>${esc(r[key])}</b><div class="note">${r.n} · ${Math.round(r.n/tot*100)}%</div><div class="bar"><i style="width:${r.n/tot*100}%"></i></div></div></div>`).join('')};
- return `<div class="kpis">${paid}${due}<div class="kpi"><b>${STATS.week}</b><span>New this week</span></div><div class="kpi"><b>${ROWS.length}</b><span>Total registrations</span></div></div>
- <div class="card"><h3>Events</h3>${ev||'<p class="note">No events yet.</p>'}</div>
- ${pend.length?`<div class="card"><h3>Applications to approve (${pend.length})</h3>
- ${pend.slice(0,15).map(r=>`<div class="ev"><div><b>${esc(r.company)}</b> · ${esc(r.full_name)}<div class="note">${esc(r.category||'category not stated')} · ${esc(r.item_title)} · ${r.seats} seat(s) · ${esc(r.email)}</div></div>
-  <div style="display:flex;gap:6px"><button class="btn btn-green" data-appr="${r.id}">Approve</button><button class="btn btn-line" data-decl="${r.id}">Decline</button></div></div>`).join('')}</div>`:''}
- <div class="card"><h3>Who is registering</h3><div class="f2"><div>${bars(STATS.categories||[],'category')||'<p class="note">No data yet.</p>'}</div>
-  <div><p class="note" style="margin-bottom:6px">Where they came from</p>${bars(STATS.sources||[],'source')||''}</div></div></div>
- <div class="card"><h3>Needs action · unpaid (${need.length})</h3>
- ${need.slice(0,12).map(r=>`<div class="ev"><div><b>${esc(r.company)}</b> · ${esc(r.full_name)}<div class="note">${esc(r.item_title)} · ${money(r.amount,r.currency)}${r.payment_ref?' · reported '+esc(r.payment_ref):''}</div></div>
-   <button class="btn btn-green" data-paid="${r.id}">Mark paid</button></div>`).join('')||'<p class="note">Nothing outstanding.</p>'}</div>`;
+/* ===================== tasks ===================== */
+let TSCOPE='mine';
+const dayStart=(d=0)=>{const x=new Date();x.setHours(0,0,0,0);x.setDate(x.getDate()+d);return x};
+function dueLabel(t){if(!t.due_at)return '';const d=new Date(t.due_at);if(t.done_at)return dshort(d);
+ if(d<dayStart(0))return `<span class="due over">Overdue · ${dshort(d)}</span>`;if(d<dayStart(1))return `<span class="due today">Today ${d.getHours()||d.getMinutes()?d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}):''}</span>`;
+ if(d<dayStart(2))return '<span class="due">Tomorrow</span>';return `<span class="due">${d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</span>`}
+function taskRow(t){return `<li class="li task ${t.done_at?'done':''}" data-tid="${t.id}"><input type="checkbox" class="tcheck" data-tdone="${t.id}" ${t.done_at?'checked':''} aria-label="Done: ${esc(t.title)}">
+ <div class="grow" data-topen="${t.id}" style="cursor:pointer"><b>${t.priority==='high'?'<span class="pri" title="High priority">! </span>':''}${esc(t.title)}</b>
+ <div class="meta">${dueLabel(t)}${t.company||t.contact_name?`<a class="chip" href="#rec/${t.contact_id}" onclick="event.stopPropagation()">${esc(t.company||t.contact_name)}</a>`:''}${t.deal_title?`<span class="chip gold">${esc(t.deal_title)}</span>`:''}${TSCOPE!=='mine'||V!=='tasks'?(t.assignee?`<span class="chip">${esc(first(userName(t.assignee)))}</span>`:'<span class="chip red">Unassigned</span>'):''}</div></div></li>`}
+let TASKCACHE={};
+function wireTasks(root,redraw){const here=V+'/'+ARG,inDrawer=root.id==='drb';
+ root.querySelectorAll('[data-tdone]').forEach(c=>c.onchange=async()=>{c.closest('.task').classList.toggle('done',c.checked);
+  await api('/api/tasks/'+c.dataset.tdone,{method:'PATCH',body:JSON.stringify({done:c.checked})});toast(c.checked?'Done':'Reopened');badges();
+  setTimeout(()=>{if(inDrawer?$('#dr').classList.contains('on'):V+'/'+ARG===here)redraw()},400)});
+ root.querySelectorAll('[data-topen]').forEach(c=>c.onclick=async()=>{const id=+c.dataset.topen;const t=TASKCACHE[id]||(await api('/api/tasks?scope=all')).rows.find(x=>x.id===id);if(t)taskForm(t)});
+}
+async function tasksView(){
+ setTitle('Tasks','Follow-ups for you'+(isAdmin()?' and the team':''));
+ const scopes=isAdmin()?[['mine','Mine'],['unassigned','Unassigned'],['all','Everyone'],['done','Done']]:[['mine','Mine'],['done','Done']];
+ if(!scopes.find(s=>s[0]===TSCOPE))TSCOPE='mine';
+ $('#view').innerHTML=`<div class="card"><div class="qadd"><input class="t" id="qa-t" placeholder="Add a task, e.g. Call Kojo about the sponsorship pack" aria-label="New task">
+  <input class="t" id="qa-d" type="date" aria-label="Due date" value="${dayStart(0).toISOString().slice(0,10)}">
+  ${isAdmin()?`<select class="t" id="qa-a" aria-label="Assign to">${userOpts(ME.email,true)}</select>`:''}
+  <button class="btn btn-dark" id="qa-go">Add</button></div>
+  <div class="presets" id="qa-p"><button data-d="0" class="on">Today</button><button data-d="1">Tomorrow</button><button data-d="7">Next week</button><button data-d="">No date</button><button data-hi>High priority</button></div></div>
+  <div style="margin:4px 0 6px"><div class="seg" id="tseg">${scopes.map(([k,l])=>`<button data-s="${k}" class="${k===TSCOPE?'on':''}">${l}</button>`).join('')}</div></div>
+  <div class="card" id="tlist"><div class="empty">Loading…</div></div>`;
+ let hi=false;
+ $('#qa-p').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.hi!==undefined){hi=!hi;b.classList.toggle('on',hi);return}
+  $('#qa-p').querySelectorAll('[data-d]').forEach(x=>x.classList.toggle('on',x===b));$('#qa-d').value=b.dataset.d===''?'':dayStart(+b.dataset.d).toISOString().slice(0,10)};
+ const add=async()=>{const title=$('#qa-t').value.trim();if(!title){$('#qa-t').focus();return toast('Write the task first')}
+  const d=$('#qa-d').value;await api('/api/tasks',{method:'POST',body:JSON.stringify({title,due_at:d?d+'T09:00:00':null,priority:hi?'high':'normal',assignee:$('#qa-a')?$('#qa-a').value:ME.email})});
+  $('#qa-t').value='';toast('Task added');draw();badges()};
+ $('#qa-go').onclick=add;$('#qa-t').onkeydown=e=>{if(e.key==='Enter')add()};
+ $('#tseg').onclick=e=>{const b=e.target.closest('button');if(!b)return;TSCOPE=b.dataset.s;$('#tseg').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));draw()};
+ async function draw(){
+  const q=TSCOPE==='done'?'?scope='+(isAdmin()?'all':'mine')+'&status=done':'?scope='+TSCOPE;
+  const r=await api('/api/tasks'+q);if(!$('#tlist'))return;TASKCACHE=Object.fromEntries(r.rows.map(t=>[t.id,t]));
+  if(TSCOPE==='done'){$('#tlist').innerHTML=r.rows.length?`<ul class="list">${r.rows.map(taskRow).join('')}</ul>`:'<div class="empty">Nothing finished in the last 30 days.</div>';return wireTasks($('#tlist'),draw)}
+  const g={over:[],today:[],week:[],later:[],none:[]};
+  r.rows.forEach(t=>{const d=t.due_at&&new Date(t.due_at);(!d?g.none:d<dayStart(0)?g.over:d<dayStart(1)?g.today:d<dayStart(7)?g.week:g.later).push(t)});
+  const sec=(k,l)=>g[k].length?`<div class="tgroup ${k==='over'?'over':''}">${l} · ${g[k].length}</div><ul class="list">${g[k].map(taskRow).join('')}</ul>`:'';
+  $('#tlist').innerHTML=r.rows.length?sec('over','Overdue')+sec('today','Today')+sec('week','Next 7 days')+sec('later','Later')+sec('none','No date')
+   :`<div class="empty"><b>All clear.</b>${TSCOPE==='mine'?'Nothing is waiting for you.':'No open tasks here.'}</div>`;
+  wireTasks($('#tlist'),draw);
+ }
+ draw();
+}
+function taskForm(t){
+ const isNew=!t.id;$('#dr').classList.add('on');
+ const due=t.due_at?new Date(new Date(t.due_at).getTime()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,16):'';
+ $('#drb').innerHTML=`<h2>${isNew?'New task':'Task'}</h2>${t.company||t.contact_name?`<p class="note">For <a href="#rec/${t.contact_id}">${esc(t.company||t.contact_name)}</a>${t.deal_title?' · '+esc(t.deal_title):''}</p>`:''}
+  <label class="l" for="tf-t">What needs doing</label><input class="t" id="tf-t" value="${esc(t.title||'')}">
+  <div class="f2"><div><label class="l" for="tf-d">Due</label><input class="t" id="tf-d" type="datetime-local" value="${due}"></div>
+  <div><label class="l" for="tf-p">Priority</label><select class="t" id="tf-p"><option value="normal">Normal</option><option value="high" ${t.priority==='high'?'selected':''}>High</option></select></div></div>
+  ${isAdmin()?`<label class="l" for="tf-a">Assigned to</label><select class="t" id="tf-a">${userOpts(isNew?(t.assignee??ME.email):t.assignee,true)}</select>`:''}
+  <label class="l" for="tf-n">Notes <span class="note">(optional)</span></label><textarea class="t" id="tf-n" rows="3">${esc(t.notes||'')}</textarea>
+  <p class="err" id="tf-e"></p>
+  <div class="acts"><button class="btn btn-dark" id="tf-s">${isNew?'Add task':'Save'}</button>${!isNew?`<button class="btn btn-line" id="tf-done">${t.done_at?'Reopen':'Mark done'}</button><button class="btn btn-line danger" id="tf-x">Delete</button>`:''}</div>`;
+ $('#tf-t').focus();
+ const after=()=>{closeDr();badges();render()};
+ $('#tf-s').onclick=async()=>{const title=$('#tf-t').value.trim();if(!title){$('#tf-e').textContent='Write what needs doing.';return}
+  const b={title,due_at:$('#tf-d').value?new Date($('#tf-d').value).toISOString():null,priority:$('#tf-p').value,notes:$('#tf-n').value};
+  if($('#tf-a'))b.assignee=$('#tf-a').value;
+  try{if(isNew)await api('/api/tasks',{method:'POST',body:JSON.stringify({...b,contact_id:t.contact_id,deal_id:t.deal_id,reg_id:t.reg_id})});
+   else await api('/api/tasks/'+t.id,{method:'PATCH',body:JSON.stringify(b)});toast(isNew?'Task added':'Saved');after()}catch(e){$('#tf-e').textContent='Could not save the task.'}};
+ if(!isNew){$('#tf-done').onclick=async()=>{await api('/api/tasks/'+t.id,{method:'PATCH',body:JSON.stringify({done:!t.done_at})});toast('Updated');after()};
+  $('#tf-x').onclick=async()=>{if(!confirm('Delete this task?'))return;await api('/api/tasks/'+t.id,{method:'DELETE'});toast('Deleted');after()}}
+}
+
+/* ===================== pipeline ===================== */
+const STAGE_NAME={lead:'Lead',contacted:'Contacted',meeting:'Meeting',proposal:'Proposal',won:'Won',lost:'Lost'};
+const KIND_NAME={sponsorship:'Sponsorship',consulting:'Consulting',family_desk:'Family Desk',membership:'Membership',event:'Event',other:'Other'};
+const KIND_CHIP={sponsorship:'gold',consulting:'blue',family_desk:'green',membership:'',event:'',other:''};
+let PF={kind:'',owner:'',q:'',closed:false},DEALS=[];
+async function pipeline(){
+ setTitle('Pipeline','Every deal from first contact to won · drag cards between stages');
+ $('#view').innerHTML=`<div class="filters"><input class="t" id="pf-q" placeholder="Filter deals" value="${esc(PF.q)}" style="max-width:220px">
+  <select class="t" id="pf-k" style="max-width:200px"><option value="">All kinds</option>${Object.entries(KIND_NAME).map(([k,l])=>`<option value="${k}" ${PF.kind===k?'selected':''}>${l}</option>`).join('')}</select>
+  <select class="t" id="pf-o" style="max-width:200px"><option value="">Everyone's deals</option><option value="${esc(ME.email)}" ${PF.owner===ME.email?'selected':''}>My deals</option>${USERS.filter(u=>u.email!==ME.email).map(u=>`<option value="${esc(u.email)}" ${PF.owner===u.email?'selected':''}>${esc(u.name||u.email)}</option>`).join('')}</select>
+  <label class="chip" style="padding:8px 12px;cursor:pointer"><input type="checkbox" id="pf-c" ${PF.closed?'checked':''} style="margin:0 6px 0 0">Show won &amp; lost</label></div>
+  <div class="pipesum" id="psum"></div><div class="board" id="board" style="margin-top:12px"><div class="empty">Loading…</div></div>`;
+ ['q','k','o','c'].forEach(k=>$('#pf-'+k).oninput=()=>{PF={q:$('#pf-q').value,kind:$('#pf-k').value,owner:$('#pf-o').value,closed:$('#pf-c').checked};drawBoard()});
+ DEALS=(await api('/api/deals')).rows;if(V==='pipe')drawBoard();
+}
+function drawBoard(){if(!$('#board'))return;
+ const f=PF.q.toLowerCase();
+ const list=DEALS.filter(d=>(!PF.kind||d.kind===PF.kind)&&(!PF.owner||d.owner===PF.owner)&&(!f||[d.title,d.company,d.contact_name,d.next_step].join(' ').toLowerCase().includes(f)));
+ const cols=['lead','contacted','meeting','proposal'].concat(PF.closed?['won','lost']:[]);
+ const open=list.filter(d=>!['won','lost'].includes(d.stage));
+ const wonM=list.filter(d=>d.stage==='won'&&d.closed_at&&new Date(d.closed_at)>=new Date(new Date().getFullYear(),new Date().getMonth(),1));
+ $('#psum').innerHTML=`<span><b>${open.length}</b> open · <b>${ghs(open.reduce((a,d)=>a+Number(d.value),0))}</b></span><span>Won this month · <b>${ghs(wonM.reduce((a,d)=>a+Number(d.value),0))}</b></span>`;
+ $('#board').innerHTML=cols.map(s=>{const ds=list.filter(d=>d.stage===s).sort((a,b)=>a.sort-b.sort||new Date(b.updated_at)-new Date(a.updated_at));
+  return `<section class="col ${s}" data-stage="${s}"><div class="colh"><div><b>${STAGE_NAME[s]}</b> <span>${ds.length}</span><span class="sum">${ghs(ds.reduce((a,d)=>a+Number(d.value),0))}</span></div></div>
+  ${ds.map(d=>{const late=d.next_date&&new Date(d.next_date)<dayStart(0)&&!['won','lost'].includes(d.stage);
+   return `<article class="dcard" draggable="true" data-deal="${d.id}"><b>${esc(d.title)}</b>${d.company&&d.company!==d.title?`<div class="co">${esc(d.company)}</div>`:''}
+   <div class="row"><span class="val">${ghs(d.value)}</span><span style="display:flex;gap:6px;align-items:center">${KIND_CHIP[d.kind]!==undefined?`<span class="chip ${KIND_CHIP[d.kind]}">${KIND_NAME[d.kind]}</span>`:''}${d.owner?`<span class="av sm" title="Owner: ${esc(userName(d.owner))}">${initials(userName(d.owner))}</span>`:'<span class="av sm" title="No owner yet" style="background:#C9CED6">?</span>'}</span></div>
+   ${d.next_step||d.next_date?`<div class="nx">${late?'<span class="due over">':''}${d.next_date?dshort(d.next_date)+' · ':''}${esc(d.next_step||'')}${late?'</span>':''}</div>`:''}
+   ${d.open_tasks?`<div class="nx">☐ ${d.open_tasks} open task${d.open_tasks>1?'s':''}</div>`:''}</article>`}).join('')||'<div class="note" style="padding:6px 4px">Nothing here.</div>'}</section>`}).join('');
+ document.querySelectorAll('.dcard').forEach(c=>{c.onclick=()=>openDeal(+c.dataset.deal);
+  c.ondragstart=e=>{e.dataTransfer.setData('text/plain',c.dataset.deal);c.classList.add('dragging')};c.ondragend=()=>c.classList.remove('dragging')});
+ document.querySelectorAll('.col').forEach(col=>{col.ondragover=e=>{e.preventDefault();col.classList.add('drop')};col.ondragleave=()=>col.classList.remove('drop');
+  col.ondrop=async e=>{e.preventDefault();col.classList.remove('drop');const id=+e.dataTransfer.getData('text/plain');const d=DEALS.find(x=>x.id===id);if(!d||d.stage===col.dataset.stage)return;
+   if(col.dataset.stage==='lost')return openDeal(id,'lost');
+   d.stage=col.dataset.stage;drawBoard();await api('/api/deals/'+id,{method:'PATCH',body:JSON.stringify({stage:d.stage})});toast(d.title+' → '+STAGE_NAME[d.stage]+(d.stage==='won'?' 🎉':''))}});
+}
+async function openDeal(id,wantStage){
+ const r=await api('/api/deals/'+id);const d=r.deal;$('#dr').classList.add('on','wide');
+ $('#drb').innerHTML=`<p class="note" style="margin:0">${KIND_NAME[d.kind]} deal · opened ${dshort(d.created_at)}${d.source?' · '+esc(d.source):''}</p>
+  <h2 style="margin:2px 0 4px">${esc(d.title)}</h2>${d.contact_id?`<p style="margin:0 0 6px"><a href="#rec/${d.contact_id}">${esc(d.company||d.contact_name||'Open company record')}</a>${d.contact_name&&d.company?' · '+esc(d.contact_name):''}</p>`:''}
+  <div class="stages" id="dstg">${Object.keys(STAGE_NAME).map(s=>`<button class="${s} ${s===d.stage?'on':''}" data-s="${s}">${STAGE_NAME[s]}</button>`).join('')}</div>
+  <div id="dlost" ${d.stage==='lost'||wantStage==='lost'?'':'hidden'}><label class="l" for="df-lr">Why was it lost?</label><div style="display:flex;gap:8px"><input class="t" id="df-lr" value="${esc(d.lost_reason||'')}" placeholder="e.g. Budget moved to next year"><button class="btn btn-dark" id="df-lost">Mark lost</button></div></div>
+  <div class="f2"><div><label class="l" for="df-v">Value (GHS)</label><input class="t" id="df-v" inputmode="decimal" value="${Number(d.value)||''}"></div>
+  <div><label class="l" for="df-o">Owner</label><select class="t" id="df-o">${userOpts(d.owner,true)}</select></div>
+  <div><label class="l" for="df-n">Next step</label><input class="t" id="df-n" value="${esc(d.next_step||'')}" placeholder="e.g. Send proposal"></div>
+  <div><label class="l" for="df-nd">By</label><input class="t" id="df-nd" type="date" value="${d.next_date?String(d.next_date).slice(0,10):''}"></div>
+  <div><label class="l" for="df-k">Kind</label><select class="t" id="df-k">${Object.entries(KIND_NAME).map(([k,l])=>`<option value="${k}" ${k===d.kind?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div><label class="l" for="df-t">Title</label><input class="t" id="df-t" value="${esc(d.title)}"></div></div>
+  <div class="acts"><button class="btn btn-dark" id="df-s">Save</button>${d.contact_phone?`<a class="btn btn-wa" target="_blank" rel="noopener" href="https://wa.me/${d.contact_phone.replace(/\D/g,'')}">WhatsApp</a>`:''}<button class="btn btn-line" id="df-task">Add task</button></div>
+  <h4 class="sec">Tasks</h4>${r.tasks.length?`<ul class="list">${r.tasks.map(t=>(TASKCACHE[t.id]=t,taskRow(t))).join('')}</ul>`:'<p class="note">No tasks yet.</p>'}
+  <h4 class="sec">Notes</h4><div class="composer"><textarea id="dn-b" placeholder="What happened? e.g. Called Ama, she wants the headline package"></textarea><div class="cbar"><div class="seg" id="dn-k">${['note','call','whatsapp','meeting','email'].map((k,i)=>`<button data-k="${k}" class="${i?'':'on'}">${NOTE_NAME[k]}</button>`).join('')}</div><button class="btn btn-dark" id="dn-s">Add note</button></div></div>
+  <ul class="tl">${r.notes.map(n=>`<li class="${n.kind}"><i>${NOTE_ICON[n.kind]}</i><div class="when">${dt(n.at)} · ${esc(userName(n.author))} · ${NOTE_NAME[n.kind]}</div><div class="txt">${esc(n.body)}</div></li>`).join('')}
+   ${r.events.map(e=>`<li class="deal"><i>◆</i><div class="when">${dt(e.at)} · ${esc(userName(e.by_user))}</div><div class="txt">${e.detail==='created'?'Opened as '+STAGE_NAME[e.to_stage]:STAGE_NAME[e.from_stage]+' → '+STAGE_NAME[e.to_stage]+(e.detail?' · '+esc(e.detail):'')}</div></li>`).join('')}</ul>
+  <div style="margin-top:18px"><button class="btn btn-line danger" id="df-x">Delete deal</button></div>`;
+ wireTasks($('#drb'),()=>openDeal(id));
+ const patch=async b=>{try{await api('/api/deals/'+id,{method:'PATCH',body:JSON.stringify(b)});toast('Saved');if(V==='pipe'){DEALS=(await api('/api/deals')).rows;drawBoard()}openDeal(id);if(V==='rec')record(+ARG)}catch(e){toast(e.message==='unknown_owner'?'Pick a team member as owner':'Could not save')}};
+ $('#dstg').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.s==='lost'){$('#dlost').hidden=false;$('#df-lr').focus();return}patch({stage:b.dataset.s})};
+ $('#df-lost').onclick=()=>patch({stage:'lost',lost_reason:$('#df-lr').value});
+ $('#df-s').onclick=()=>patch({value:$('#df-v').value,owner:$('#df-o').value,next_step:$('#df-n').value,next_date:$('#df-nd').value||null,kind:$('#df-k').value,title:$('#df-t').value});
+ $('#df-task').onclick=()=>taskForm({deal_id:id,contact_id:d.contact_id,title:d.next_step||'',company:d.company,deal_title:d.title});
+ let nk='note';$('#dn-k').onclick=e=>{const b=e.target.closest('button');if(!b)return;nk=b.dataset.k;$('#dn-k').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))};
+ $('#dn-s').onclick=async()=>{const body=$('#dn-b').value.trim();if(!body)return $('#dn-b').focus();await api('/api/notes',{method:'POST',body:JSON.stringify({deal_id:id,kind:nk,body})});toast('Note added');openDeal(id)};
+ $('#df-x').onclick=async()=>{if(!confirm('Delete the deal "'+d.title+'"? Its tasks and notes go too.'))return;await api('/api/deals/'+id,{method:'DELETE'});toast('Deleted');closeDr();render()};
+ if(wantStage==='lost')$('#df-lr').focus();
+}
+function dealForm(pre){
+ $('#dr').classList.add('on');
+ $('#drb').innerHTML=`<h2>New deal</h2><p class="note">A deal is anything that can earn money: a sponsorship, a consulting job, a Family Desk family, a membership.</p>
+  ${pre.contact_id?`<p>For <b>${esc(pre.company||'this company')}</b></p>`:`<label class="l" for="nd-c">Company or person</label><input class="t" id="nd-c" placeholder="Start typing to find an existing one" autocomplete="off"><div class="sres" id="nd-r" style="position:relative;top:4px"></div>
+   <div id="nd-new"><div class="f2"><div><label class="l" for="nd-p">Contact person <span class="note">(optional)</span></label><input class="t" id="nd-p"></div><div><label class="l" for="nd-ph">Phone <span class="note">(optional)</span></label><input class="t" id="nd-ph" inputmode="tel"></div></div></div>`}
+  <label class="l" for="nd-t">Deal name</label><input class="t" id="nd-t" placeholder="e.g. Headline sponsorship, SMEs at the Centre">
+  <div class="f2"><div><label class="l" for="nd-k">Kind</label><select class="t" id="nd-k">${Object.entries(KIND_NAME).map(([k,l])=>`<option value="${k}" ${k===(pre.kind||'consulting')?'selected':''}>${l}</option>`).join('')}</select></div>
+  <div><label class="l" for="nd-v">Value (GHS)</label><input class="t" id="nd-v" inputmode="decimal" placeholder="e.g. 25000"></div>
+  <div><label class="l" for="nd-s">Stage</label><select class="t" id="nd-s">${Object.entries(STAGE_NAME).filter(([k])=>k!=='lost').map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+  <div><label class="l" for="nd-o">Owner</label><select class="t" id="nd-o">${userOpts(ME.email)}</select></div>
+  <div><label class="l" for="nd-n">Next step</label><input class="t" id="nd-n" placeholder="e.g. Send the pack"></div><div><label class="l" for="nd-nd">By</label><input class="t" id="nd-nd" type="date"></div></div>
+  <p class="err" id="nd-e"></p><button class="btn btn-dark" id="nd-go">Create deal</button>`;
+ let cid=pre.contact_id||null,sT2=0;
+ if($('#nd-c')){$('#nd-c').focus();$('#nd-c').oninput=()=>{cid=null;$('#nd-new').hidden=false;clearTimeout(sT2);const s=$('#nd-c').value.trim();if(s.length<2){$('#nd-r').classList.remove('on');return}
+  sT2=setTimeout(async()=>{const r=await api('/api/search?q='+encodeURIComponent(s));if(!$('#nd-r')||cid)return;$('#nd-r').innerHTML=r.contacts.map(c=>`<a data-c="${c.id}" data-n="${esc(c.company||c.full_name)}"><b>${esc(c.company||c.full_name)}</b><small>${esc([c.full_name,c.phone].filter(Boolean).join(' · '))}</small></a>`).join('')+`<div class="none">Not listed? Keep typing, a new company is created.</div>`;
+   $('#nd-r').classList.add('on');$('#nd-r').querySelectorAll('a').forEach(a=>a.onclick=()=>{cid=+a.dataset.c;$('#nd-c').value=a.dataset.n;$('#nd-r').classList.remove('on');$('#nd-new').hidden=true;if(!$('#nd-t').value)$('#nd-t').value=a.dataset.n})},180)}}
+ $('#nd-go').onclick=async()=>{const b={title:$('#nd-t').value.trim(),kind:$('#nd-k').value,value:$('#nd-v').value,stage:$('#nd-s').value,owner:$('#nd-o').value,next_step:$('#nd-n').value,next_date:$('#nd-nd').value||null};
+  if(cid)b.contact_id=cid;else if($('#nd-c')&&$('#nd-c').value.trim())b.new_contact={company:$('#nd-c').value.trim(),full_name:$('#nd-p').value,phone:$('#nd-ph').value};
+  if(!b.title&&!b.contact_id&&!b.new_contact){$('#nd-e').textContent='Give the deal a name or pick a company.';return}
+  try{const d=await api('/api/deals',{method:'POST',body:JSON.stringify(b)});toast('Deal created');if(V==='pipe')pipeline();else if(V==='rec')record(+ARG);openDeal(d.id)}catch(e){$('#nd-e').textContent='Could not create the deal.'}};
+}
+
+/* ===================== companies & people ===================== */
+let CF={q:'',st:'',tag:''};
+async function contactsView(){
+ setTitle('Companies & people','Everyone you work with, in one list');
+ $('#view').innerHTML='<div class="empty">Loading…</div>';
+ const r=await api('/api/contacts');CONTACTS=r.rows;if(V!=='contacts')return;
+ $('#view').innerHTML=`<div class="filters"><input class="t" id="cf-q" placeholder="Search name, company, phone, sector, tag" value="${esc(CF.q)}" style="max-width:320px">
+  <select class="t" id="cf-st" style="max-width:190px"><option value="">Any status</option>${Object.entries(CSTATUS).map(([k,t])=>`<option value="${k}" ${CF.st===k?'selected':''}>${t}</option>`).join('')}</select>
+  <div class="seg" id="cf-tag">${[['','All'],['family-desk','Family Desk'],['forum-lead','Forum leads'],['mining','Mining']].map(([k,l])=>`<button data-t="${k}" class="${CF.tag===k?'on':''}">${l}</button>`).join('')}</div></div>
+  <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Company</th><th>Person</th><th>Phone</th><th>Sector</th><th>Status</th><th>Added</th></tr></thead><tbody id="cf-tb"></tbody></table></div></div><p class="note" id="cf-n"></p>`;
+ const draw=()=>{const f=CF.q.toLowerCase(),fd=f.replace(/\D/g,'').replace(/^0+/,'');
+  const L=CONTACTS.filter(c=>(!CF.st||c.status===CF.st)&&(!CF.tag||(c.tags||'').includes(CF.tag))&&(!f||[c.company,c.full_name,c.email,c.sector,c.tags,c.city,c.role].join(' ').toLowerCase().includes(f)||(fd.length>3&&(c.phone||'').replace(/\D/g,'').includes(fd))));
+  $('#cf-tb').innerHTML=L.slice(0,300).map(c=>`<tr class="r" data-rec="${c.id}"><td><b>${esc(c.company||c.full_name||'—')}</b>${c.priority?` <span class="chip gold">${esc(c.priority)}</span>`:''}</td><td>${esc(c.company?c.full_name||'':'')}<div class="note">${esc(c.role||'')}</div></td><td class="note">${esc(c.phone||'—')}</td><td class="note">${esc(c.sector||'—')}</td><td><span class="chip ${c.status==='won'?'green':c.status==='do_not_contact'||c.status==='lost'?'red':c.status==='new'?'':'blue'}">${esc(CSTATUS[c.status]||c.status)}</span></td><td class="note">${dshort(c.created_at)}</td></tr>`).join('')||'<tr><td colspan="6"><div class="empty">Nothing matches.</div></td></tr>';
+  $('#cf-n').textContent=L.length+' of '+CONTACTS.length+(L.length>300?' · showing the first 300, search to narrow down':'');
+  document.querySelectorAll('[data-rec]').forEach(t=>t.onclick=()=>go('rec',t.dataset.rec))};
+ $('#cf-q').oninput=()=>{CF.q=$('#cf-q').value;draw()};$('#cf-st').onchange=()=>{CF.st=$('#cf-st').value;draw()};
+ $('#cf-tag').onclick=e=>{const b=e.target.closest('button');if(!b)return;CF.tag=b.dataset.t;$('#cf-tag').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));draw()};
+ draw();
+}
+const NOTE_NAME={note:'Note',call:'Call',whatsapp:'WhatsApp',meeting:'Meeting',email:'Email'};
+const NOTE_ICON={note:'✎',call:'☎',whatsapp:'◉',meeting:'◎',email:'✉'};
+const TL_ICON={...NOTE_ICON,deal:'◆',registration:'✓',attended:'★',campaign:'✉',click:'↗',enquiry:'★',task:'☑',created:'+'};
+async function record(id){
+ $('#view').innerHTML='<div class="empty">Loading…</div>';
+ const r=await api('/api/contacts/'+id+'/record').catch(()=>null);if(V!=='rec')return;
+ if(!r){$('#view').innerHTML='<div class="empty"><b>Not found.</b>It may have been removed.</div>';return}
+ const c=r.contact,name=c.company||c.full_name||c.email||'Unnamed';setTitle(name,c.company&&c.full_name?c.full_name+(c.role?' · '+c.role:''):'');
+ pageActions(`<a class="btn btn-line" href="#contacts">← All contacts</a><button class="btn btn-line" id="rc-edit">Edit details</button>`);
+ const tel=(c.phone||'').replace(/[^\d+]/g,''),wa=tel.replace(/\D/g,'');
+ const tags=(c.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
+ const openD=r.deals.filter(d=>!['won','lost'].includes(d.stage)),openT=r.tasks.filter(t=>!t.done_at);
+ r.tasks.forEach(t=>TASKCACHE[t.id]={...t,company:c.company,contact_name:c.full_name});
+ $('#view').innerHTML=`<div class="rec"><div>
+  <div class="card"><div class="rhead"><span class="av">${initials(name)}</span><div style="min-width:0"><h2>${esc(name)}</h2><div class="note">${esc([c.company&&c.full_name,c.role,c.sector,c.city].filter(Boolean).join(' · '))}</div></div></div>
+   <div class="quick"><a class="${tel?'':'off'}" href="tel:${esc(tel)}">${ic('phone')}Call</a><a class="${wa?'':'off'}" target="_blank" rel="noopener" href="https://wa.me/${wa}">${ic('wa')}WhatsApp</a><a class="${c.email?'':'off'}" href="mailto:${esc(c.email||'')}">${ic('mail')}Email</a></div>
+   <div class="kv"><span>Phone</span><div>${esc(c.phone||'—')}</div><span>Email</span><div style="overflow-wrap:anywhere">${esc(c.email||'—')}</div>
+    ${c.website?`<span>Website</span><div><a href="${/^https?:/.test(c.website)?'':'https://'}${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a></div>`:''}
+    <span>Country</span><div>${esc(c.country||'—')}</div><span>Source</span><div>${esc(c.source||'—')}</div><span>Added</span><div>${dt(c.created_at)}</div>
+    ${tags.length?`<span>Tags</span><div>${tags.map(t=>`<span class="chip">${esc(t)}</span>`).join(' ')}</div>`:''}
+    ${c.extra&&Object.keys(c.extra).length?Object.entries(c.extra).slice(0,10).map(([k,v])=>`<span>${esc(k)}</span><div>${esc(v)}</div>`).join(''):''}</div>
+   <label class="l" for="rc-st">Status</label><select class="t" id="rc-st">${Object.entries(CSTATUS).map(([k,t])=>`<option value="${k}" ${k===c.status?'selected':''}>${t}</option>`).join('')}</select>
+   ${c.unsubscribed_at?'<p class="note" style="color:var(--red)">Opted out of emails '+dshort(c.unsubscribed_at)+'. Do not add to campaigns.</p>':''}</div>
+  <div class="card"><div class="ch"><h3>Deals <span class="chip">${openD.length} open</span></h3><button class="btn btn-line" id="rc-deal">New deal</button></div>
+   ${r.deals.length?`<ul class="list">${r.deals.map(d=>`<li class="li" style="cursor:pointer" data-od="${d.id}"><div class="grow"><b>${esc(d.title)}</b><div class="note">${KIND_NAME[d.kind]}${d.next_step?' · next: '+esc(d.next_step):''}</div></div><div style="text-align:right"><b class="num">${ghs(d.value)}</b><div><span class="chip ${d.stage==='won'?'green':d.stage==='lost'?'red':'gold'}">${STAGE_NAME[d.stage]}</span></div></div></li>`).join('')}</ul>`:'<p class="note">No deals yet.</p>'}</div>
+  <div class="card"><div class="ch"><h3>Tasks <span class="chip">${openT.length} open</span></h3><button class="btn btn-line" id="rc-task">Add task</button></div>
+   ${openT.length?`<ul class="list">${openT.map(t=>taskRow({...t,company:null,contact_name:null})).join('')}</ul>`:'<p class="note">Nothing open.</p>'}</div>
+ </div><div>
+  <div class="card"><h3 style="margin-bottom:10px">Log what happened</h3><div class="composer"><textarea id="rn-b" placeholder="e.g. Called Kwame. Interested in the headline package, wants the pack by Friday."></textarea>
+   <div class="cbar"><div class="seg" id="rn-k">${Object.keys(NOTE_NAME).map((k,i)=>`<button data-k="${k}" class="${i===1?'on':''}">${NOTE_NAME[k]}</button>`).join('')}</div>
+   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label class="note" style="display:flex;gap:6px;align-items:center">Follow up <select class="t" id="rn-f" style="width:auto;padding:6px 8px"><option value="">no</option><option value="1">tomorrow</option><option value="3">in 3 days</option><option value="7">next week</option></select></label><button class="btn btn-dark" id="rn-s">Save</button></div></div></div>
+  <h4 class="sec">History</h4><ul class="tl">${r.timeline.map(e=>`<li class="${e.type}"><i>${TL_ICON[e.type]||'•'}</i><div class="when">${dt(e.at)}${e.by&&e.by!=='website'?' · '+esc(userName(e.by)):''}${NOTE_NAME[e.type]?' · '+NOTE_NAME[e.type]:''}</div><div class="txt">${esc(e.text)}</div></li>`).join('')}</ul></div>
+ </div></div>`;
+ $('#rc-edit').onclick=()=>contactForm(c);
+ $('#rc-st').onchange=async()=>{await api('/api/contacts/'+id,{method:'PATCH',body:JSON.stringify({status:$('#rc-st').value})});toast('Status updated')};
+ $('#rc-deal').onclick=()=>dealForm({contact_id:id,company:name,kind:(c.tags||'').includes('family-desk')?'family_desk':'consulting'});
+ $('#rc-task').onclick=()=>taskForm({contact_id:id,company:name});
+ document.querySelectorAll('[data-od]').forEach(x=>x.onclick=()=>openDeal(+x.dataset.od));
+ wireTasks($('#view'),()=>record(id));
+ let nk='call';$('#rn-k').onclick=e=>{const b=e.target.closest('button');if(!b)return;nk=b.dataset.k;$('#rn-k').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))};
+ $('#rn-s').onclick=async()=>{const body=$('#rn-b').value.trim();if(!body){$('#rn-b').focus();return toast('Write what happened first')}
+  await api('/api/notes',{method:'POST',body:JSON.stringify({contact_id:id,kind:nk,body})});
+  const f=$('#rn-f').value;if(f)await api('/api/tasks',{method:'POST',body:JSON.stringify({title:'Follow up with '+name,contact_id:id,due_at:dayStart(+f).toISOString().slice(0,10)+'T09:00:00'})});
+  toast(f?'Saved, follow-up added':'Saved');badges();record(id)};
+}
+
+/* ===================== reports ===================== */
+let RP={p:'12m'};
+const PERIODS={month:['This month',()=>[new Date(new Date().getFullYear(),new Date().getMonth(),1),new Date()]],'3m':['Last 3 months',()=>[new Date(Date.now()-91*864e5),new Date()]],
+ year:['This year',()=>[new Date(new Date().getFullYear(),0,1),new Date()]],'12m':['Last 12 months',()=>[new Date(Date.now()-365*864e5),new Date()]]};
+const ymd=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+function csv(name,rows){const s=rows.map(r=>r.map(x=>{x=String(x??'');return /[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x}).join(',')).join('\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+s],{type:'text/csv'}));a.download=name+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)}
+async function reportsView(){
+ setTitle('Reports','Money, deals, registrations and follow-up, in Ghana cedis');
+ const [f,t]=RP.p==='custom'?[new Date(RP.from),new Date(RP.to)]:PERIODS[RP.p][1]();
+ $('#view').innerHTML=`<div class="filters"><div class="seg" id="rp-p">${Object.entries(PERIODS).map(([k,[l]])=>`<button data-p="${k}" class="${RP.p===k?'on':''}">${l}</button>`).join('')}</div>
+  <input class="t" type="date" id="rp-f" value="${ymd(f)}" style="max-width:170px" aria-label="From"><input class="t" type="date" id="rp-t" value="${ymd(t)}" style="max-width:170px" aria-label="To"></div><div id="rp"><div class="empty">Loading…</div></div>`;
+ $('#rp-p').onclick=e=>{const b=e.target.closest('button');if(!b)return;RP={p:b.dataset.p};reportsView()};
+ ['f','t'].forEach(k=>$('#rp-'+k).onchange=()=>{RP={p:'custom',from:$('#rp-f').value,to:$('#rp-t').value};reportsView()});
+ const d=await api(`/api/reports?from=${ymd(f)}&to=${ymd(t)}`);if(V!=='reports')return;
+ const months=[];for(let x=new Date(f.getFullYear(),f.getMonth(),1);x<=t;x.setMonth(x.getMonth()+1))months.push(x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0'));
+ const ml=m=>{const s=new Date(m+'-01').toLocaleDateString('en-GB',{month:'short'});return months.length>7?s.slice(0,1)+(m.endsWith('-01')?" '"+m.slice(2,4):''):s+(m.endsWith('-01')?" '"+m.slice(2,4):'')};
+ const get=(arr,m,key='v')=>arr.filter(r=>r.m===m).reduce((a,r)=>a+r[key],0);
+ const recv=months.map(m=>[get(d.revenue_registrations,m),get(d.revenue_sponsors,m)]);
+ const kinds=Object.keys(KIND_NAME),KC={sponsorship:'#A9761F',consulting:'#2F5D8C',family_desk:'#1F6B4E',membership:'#0F1B2D',event:'#8A6FB0',other:'#9AA6B6'};
+ const won=months.map(m=>kinds.map(k=>d.won_by_month.filter(r=>r.m===m&&r.kind===k).reduce((a,r)=>a+r.v,0)));
+ const bars=(data,colors,fmt=ghsShort)=>{const mx=Math.max(1,...data.map(r=>r.reduce((a,b)=>a+b,0)));
+  return `<div class="bars">${data.map((r,i)=>{const tot=r.reduce((a,b)=>a+b,0);return `<div class="bc"><span class="bv">${tot?fmt(tot):''}</span><div class="stk" style="height:${tot/mx*150}px">${r.map((v2,j)=>v2?`<i style="height:${v2/tot*100}%;background:${colors[j]}"></i>`:'').join('')}</div><span class="bl">${ml(months[i])}</span></div>`}).join('')}</div>`};
+ const totRecv=recv.reduce((a,r)=>a+r[0]+r[1],0),totWon=d.won_by_month.reduce((a,r)=>a+r.v,0),wl=d.winloss,rate=wl.won+wl.lost?Math.round(wl.won/(wl.won+wl.lost)*100):null;
+ const fu=d.funnel,fmax=Math.max(1,fu.registered);
+ const openSt=['lead','contacted','meeting','proposal'].map(s=>d.stages.find(x=>x.stage===s)||{stage:s,n:0,v:0}),smax=Math.max(1,...openSt.map(s=>s.v));
+ const kp=(l,v2,s)=>`<div class="kpi"><span>${l}</span><b>${v2}</b>${s?`<small>${s}</small>`:''}</div>`;
+ $('#rp').innerHTML=`<div class="kpis">${kp('Money received',ghsShort(totRecv),'forums, services and sponsors')+kp('Business won',ghsShort(totWon),wl.won+' deals')+kp('Win rate',rate===null?'—':rate+'%',wl.won+' won · '+wl.lost+' lost')+kp('Days to close',wl.days?Math.round(wl.days):'—','average for won deals')+kp('Registrations',fu.registered,fu.attended+' attended')+kp('Open tasks',d.tasks.open,d.tasks.overdue+' overdue · '+d.tasks.done+' done')}</div>
+ <div class="rgrid">
+  <div class="card"><div class="ch"><h3>Money received by month</h3><button class="btn btn-line" data-csv="recv">CSV</button></div>${bars(recv,['#0F1B2D','#A9761F'])}<div class="legend"><span><i style="background:#0F1B2D"></i>Forums &amp; services</span><span><i style="background:#A9761F"></i>Sponsors</span></div></div>
+  <div class="card"><div class="ch"><h3>Business won by month</h3><button class="btn btn-line" data-csv="won">CSV</button></div>${bars(won,kinds.map(k=>KC[k]))}<div class="legend">${kinds.map(k=>`<span><i style="background:${KC[k]}"></i>${KIND_NAME[k]}</span>`).join('')}</div></div>
+  <div class="card"><div class="ch"><h3>Open pipeline</h3><a class="btn btn-line" href="#pipe">Board</a></div>${openSt.map(s=>`<div class="hbar"><span>${STAGE_NAME[s.stage]} <span class="muted">· ${s.n}</span></span><span class="tr"><i style="width:${s.v/smax*100}%"></i></span><b>${ghsShort(s.v)}</b></div>`).join('')}
+   <h4 class="sec">By kind</h4><div class="wrapx"><table><thead><tr><th>Kind</th><th>Open</th><th>Open value</th><th>Won</th><th>Won value</th></tr></thead><tbody>${d.kinds.map(k=>`<tr><td>${KIND_NAME[k.kind]}</td><td>${k.open}</td><td>${ghs(k.open_v)}</td><td>${k.won}</td><td>${ghs(k.won_v)}</td></tr>`).join('')||'<tr><td colspan="5" class="note">No deals yet.</td></tr>'}</tbody></table></div></div>
+  <div class="card"><div class="ch"><h3>From registration to client</h3></div>${[['Registered',fu.registered],['Confirmed or paid',fu.confirmed],['Attended',fu.attended],['Became a client',fu.clients]].map(([l,n])=>`<div class="hbar"><span>${l}</span><span class="tr"><i style="width:${n/fmax*100}%;background:var(--green)"></i></span><b>${n}${fu.registered?' <span class="muted">· '+Math.round(n/fmax*100)+'%</span>':''}</b></div>`).join('')}
+   <p class="note">“Became a client” means the same email or phone now has a won deal.</p></div>
+  <div class="card"><div class="ch"><h3>Where registrations came from</h3><button class="btn btn-line" data-csv="chan">CSV</button></div><div class="wrapx"><table><thead><tr><th>Channel</th><th>Registered</th><th>Confirmed</th><th>Attended</th><th>Paid</th></tr></thead><tbody>${d.channels.map(c2=>`<tr><td><b>${esc(c2.src)}</b></td><td>${c2.n}</td><td>${c2.confirmed}</td><td>${c2.attended}</td><td>${ghs(c2.paid)}</td></tr>`).join('')||'<tr><td colspan="5" class="note">No registrations in this period.</td></tr>'}</tbody></table></div></div>
+  <div class="card"><div class="ch"><h3>Events</h3><button class="btn btn-line" data-csv="ev">CSV</button></div><div class="wrapx"><table><thead><tr><th>Event</th><th>Date</th><th>Seats</th><th>Attended</th><th>Paid</th></tr></thead><tbody>${d.events.map(e=>`<tr><td><b>${esc(e.title)}</b></td><td class="note">${e.starts_at?dshort(e.starts_at):'—'}</td><td>${e.seats}${e.capacity?' / '+e.capacity:''}</td><td>${e.attended}</td><td>${ghs(e.paid)}</td></tr>`).join('')}</tbody></table></div></div>
+  ${d.lost_reasons.length?`<div class="card"><div class="ch"><h3>Why deals were lost</h3></div>${d.lost_reasons.map(l=>`<div class="hbar"><span style="overflow-wrap:anywhere">${esc(l.why)}</span><span class="tr"><i style="width:${l.n/d.lost_reasons[0].n*100}%;background:var(--red)"></i></span><b>${l.n}</b></div>`).join('')}</div>`:''}
+ </div>`;
+ const C={recv:()=>csv('money-received',[['Month','Forums & services (GHS)','Sponsors (GHS)','Total (GHS)']].concat(months.map((m,i)=>[m,recv[i][0],recv[i][1],recv[i][0]+recv[i][1]]))),
+  won:()=>csv('business-won',[['Month'].concat(kinds.map(k=>KIND_NAME[k]+' (GHS)'))].concat(months.map((m,i)=>[m,...won[i]]))),
+  chan:()=>csv('registrations-by-channel',[['Channel','Registered','Confirmed','Attended','Paid (GHS)']].concat(d.channels.map(c2=>[c2.src,c2.n,c2.confirmed,c2.attended,c2.paid]))),
+  ev:()=>csv('events',[['Event','Date','Seats','Capacity','Attended','Paid (GHS)']].concat(d.events.map(e=>[e.title,e.starts_at?e.starts_at.slice(0,10):'',e.seats,e.capacity||'',e.attended,e.paid])))};
+ document.querySelectorAll('[data-csv]').forEach(b=>b.onclick=()=>C[b.dataset.csv]());
 }
 
 /* registrations */
@@ -350,6 +895,7 @@ async function drawer(id){
   ${r.checked_in_at?'<span class="tag t-paid">Checked in '+dt(r.checked_in_at)+'</span>':'<button class="btn btn-line" id="cin">Check in</button>'}
   <a class="btn btn-wa" target="_blank" rel="noopener" href="${wa(`Hello ${r.full_name.split(' ')[0]}, this is Gotham Consult about your registration ${r.reference}.`)}">WhatsApp</a>
   ${r.email?`<a class="btn btn-line" href="mailto:${esc(r.email)}?subject=${encodeURIComponent('Gotham Consult · '+r.reference)}">Email</a>`:''}
+  ${isAdmin()?'<button class="btn btn-line" id="torec">Company record</button><button class="btn btn-line" id="rtask">Add task</button>':''}
  </div>
  <label class="l" for="pref">Payment reference (MoMo transaction ID)</label><input class="t" id="pref" value="${esc(r.payment_ref||'')}">
  <label class="l" for="st">Status</label><select class="t" id="st">${['pending','new','confirmed','declined','attended','waitlist','cancelled'].map(s=>`<option ${s===r.status?'selected':''}>${s}</option>`).join('')}</select>
@@ -360,10 +906,11 @@ async function drawer(id){
  if($('#pay'))$('#pay').onclick=()=>patch({paid:!r.paid});
  if($('#cin'))$('#cin').onclick=()=>patch({check_in:true});
  $('#save').onclick=()=>patch({notes:$('#nt').value,status:$('#st').value,payment_ref:$('#pref').value});
+ if($('#torec'))$('#torec').onclick=async()=>{const c=await api('/api/contacts/from-registration/'+id,{method:'POST'});go('rec',c.id)};
+ if($('#rtask'))$('#rtask').onclick=async()=>{const c=await api('/api/contacts/from-registration/'+id,{method:'POST'});taskForm({contact_id:c.id,reg_id:id,company:r.company!=='Not given'?r.company:r.full_name,title:'Follow up with '+first(r.full_name)})};
  const h=await api('/api/registrations/'+id+'/activity');
  $('#log').innerHTML='<b>History</b>'+h.rows.map(a=>`<div>${dt(a.at)} · ${esc(a.actor)} · ${esc(a.action)}${a.detail?' · '+esc(a.detail):''}</div>`).join('');
 }
-$('#drx').onclick=()=>$('#dr').classList.remove('on');
 document.addEventListener('click',e=>{const d=e.target.dataset||{};
  if(d.paid){e.stopPropagation();api('/api/registrations/'+d.paid,{method:'PATCH',body:JSON.stringify({paid:true})}).then(()=>{toast('Marked paid');load()})}
  if(d.appr){e.stopPropagation();api('/api/registrations/'+d.appr+'/approve',{method:'POST'}).then(r=>{toast('Approved · '+(r.invite_code||''));$('#dr').classList.remove('on');load()})}
@@ -628,8 +1175,7 @@ Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></te
   document.querySelectorAll('[data-cst]').forEach(sel=>sel.onchange=async()=>{
    await api('/api/contacts/'+sel.dataset.cst,{method:'PATCH',body:JSON.stringify({status:sel.value})});
    toast('Updated')});
-  document.querySelectorAll('[data-cmore]').forEach(b=>b.onclick=()=>
-   contactForm(CONTACTS.find(x=>String(x.id)===b.dataset.cmore)));};
+  document.querySelectorAll('[data-cmore]').forEach(b=>b.onclick=()=>go('rec',b.dataset.cmore));};
  $('#c-add').onclick=()=>contactForm(null);
  draw(); $('#c-find').oninput=draw;
  const fd=()=>{$('#c-find').value='family desk';draw();$('#c-find').scrollIntoView({behavior:'smooth',block:'center'})};
@@ -736,7 +1282,7 @@ function contactForm(r){
   full_name:$('#k-name').value,role:$('#k-role').value,email:$('#k-em').value,phone:$('#k-ph').value,
   priority:$('#k-pri').value,status:$('#k-st').value,tags:$('#k-tags').value,notes:$('#k-notes').value,
   ...(r?{}:{source:$('#k-src').value})});
- const close=()=>{$('#dr').classList.remove('on');outreach()};
+ const close=()=>{closeDr();render()};
  $('#k-cancel').onclick=()=>$('#dr').classList.remove('on');
  $('#k-save').onclick=async()=>{
   const b=body();
@@ -878,19 +1424,20 @@ async function sponsors(){
 
   <div class="card"><h3>Sponsorship enquiries from the website</h3>
    <p class="note">People who filled in "Become a sponsor". Move them along as you talk to them.</p>
-   <div class="wrapx"><table><thead><tr><th>When</th><th>Company</th><th>Contact</th><th>Interested in</th><th>Budget</th><th>Status</th></tr></thead><tbody>
+   <div class="wrapx"><table><thead><tr><th>When</th><th>Company</th><th>Contact</th><th>Interested in</th><th>Budget</th><th>Status &amp; deal</th></tr></thead><tbody>
    ${leads.map(l=>`<tr><td class="note">${dt(l.created_at)}</td>
     <td><b>${esc(l.company)}</b><div class="note">${esc(l.message||'').slice(0,90)}</div></td>
     <td>${esc(l.contact_name||'')}<div class="note">${esc(l.email||'')}${l.phone?' · '+esc(l.phone):''}</div></td>
     <td>${esc(TIERS[l.tier]?TIERS[l.tier].split(' —')[0]:'—')}${l.item_code?'<div class="note">'+esc(l.item_code)+'</div>':''}</td>
     <td class="note">${esc(l.budget||'—')}</td>
-    <td><select class="t" data-lead="${l.id}" style="min-width:110px">${['new','talking','won','lost'].map(x=>`<option ${x===l.status?'selected':''}>${x}</option>`).join('')}</select></td></tr>`).join('')
+    <td><select class="t" data-lead="${l.id}" style="min-width:110px">${['new','talking','won','lost'].map(x=>`<option ${x===l.status?'selected':''}>${x}</option>`).join('')}</select> <button class="btn btn-line" data-ldeal="${l.id}" style="margin-top:6px">Deal →</button></td></tr>`).join('')
     ||'<tr><td colspan="6" class="note">No enquiries yet.</td></tr>'}
    </tbody></table></div></div>`;
 
  $('#sp-new').onclick=()=>{SP={tier:'listing',currency:'GHS',published:true,paid:false,sort:0};sponsors()};
  document.querySelectorAll('[data-spedit]').forEach(b=>b.onclick=()=>{
   SP=JSON.parse(JSON.stringify(rows.find(r=>String(r.id)===b.dataset.spedit)));sponsors()});
+ document.querySelectorAll('[data-ldeal]').forEach(b=>b.onclick=async()=>{const d=await api('/api/sponsor-leads/'+b.dataset.ldeal+'/deal',{method:'POST'});openDeal(d.id)});
  document.querySelectorAll('[data-lead]').forEach(sel=>sel.onchange=async()=>{
   await api('/api/sponsor-leads/'+sel.dataset.lead,{method:'PATCH',body:JSON.stringify({status:sel.value})});
   toast('Updated')});

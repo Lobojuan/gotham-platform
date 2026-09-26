@@ -237,3 +237,63 @@ update contacts set unsubscribed_at = coalesce(unsubscribed_at, now()) where sta
 
 -- Sept 2026: email is optional on registrations (name + phone are enough)
 alter table registrations alter column email drop not null;
+
+-- ---- CRM: pipeline, tasks, notes (v2.0, Sept 2026) ----
+-- A deal is anything that can earn money: a sponsorship, a consulting job, a Family Desk family,
+-- a membership. Values are always in Ghana cedis.
+create table if not exists deals (
+  id serial primary key,
+  title text not null,
+  contact_id int references contacts(id) on delete set null,
+  company text,                         -- copied from the contact, so the board reads without joins
+  kind text not null default 'consulting'
+    check (kind in ('sponsorship','consulting','family_desk','membership','event','other')),
+  stage text not null default 'lead'
+    check (stage in ('lead','contacted','meeting','proposal','won','lost')),
+  value numeric(14,2) not null default 0,   -- GHS
+  owner text,                           -- users.email
+  next_step text, next_date date,
+  source text,                          -- where it came from: forum lead, sponsor enquiry, referral…
+  lost_reason text,
+  reg_id int references registrations(id) on delete set null,
+  sponsor_lead_id int references sponsor_leads(id) on delete set null,
+  sort int not null default 0,
+  created_by text,
+  created_at timestamptz default now(), updated_at timestamptz default now(), closed_at timestamptz
+);
+create index if not exists deals_stage_idx on deals (stage, sort);
+create index if not exists deals_contact_idx on deals (contact_id);
+
+create table if not exists deal_events (
+  id serial primary key,
+  deal_id int not null references deals(id) on delete cascade,
+  from_stage text, to_stage text, detail text,
+  by_user text, at timestamptz default now()
+);
+
+create table if not exists tasks (
+  id serial primary key,
+  title text not null,
+  notes text,
+  due_at timestamptz,
+  priority text not null default 'normal' check (priority in ('normal','high')),
+  assignee text,                        -- users.email
+  contact_id int references contacts(id) on delete cascade,
+  deal_id int references deals(id) on delete cascade,
+  reg_id int references registrations(id) on delete set null,
+  done_at timestamptz, done_by text,
+  created_by text, created_at timestamptz default now()
+);
+create index if not exists tasks_open_idx on tasks (assignee, due_at) where done_at is null;
+
+-- a line in a company's history: a call, a WhatsApp, a meeting, a note
+create table if not exists notes (
+  id serial primary key,
+  contact_id int references contacts(id) on delete cascade,
+  deal_id int references deals(id) on delete cascade,
+  kind text not null default 'note' check (kind in ('note','call','whatsapp','meeting','email')),
+  body text not null,
+  author text, at timestamptz default now()
+);
+create index if not exists notes_contact_idx on notes (contact_id, at desc);
+create index if not exists notes_deal_idx on notes (deal_id, at desc);

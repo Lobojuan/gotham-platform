@@ -15,7 +15,7 @@ const DEVICES = [
 ];
 const only = process.env.DEV ? process.env.DEV.split(',') : null;
 const PAGES = ['/', '/register', '/register?e=F1', '/family', '/teaser', '/privacy', '/terms'];
-const TABS = ['dash', 'regs', 'events', 'subs', 'door', 'mail', 'out', 'spon', 'qr', 'links', 'data', 'settings'];
+const TABS = ['dash', 'tasks', 'pipe', 'contacts', 'reports', 'regs', 'events', 'subs', 'door', 'mail', 'out', 'spon', 'qr', 'links', 'data', 'settings'];
 
 const CHECK = (mobile) => {
   const W = document.documentElement.clientWidth, issues = [];
@@ -72,18 +72,22 @@ const CHECK = (mobile) => {
     await page.fill('#e', 'admin'); await page.fill('#pw', ADMIN_PW); await page.click('#lform button');
     await page.waitForTimeout(1200);
     for (const t of TABS) {
-      const ok = await page.evaluate(v => { const a = document.querySelector(`aside a[data-v="${v}"]`); if (!a) return false; if (typeof go === 'function') { go(v); return true; } a.click(); return true; }, t);
+      const ok = await page.evaluate(v => { if (!document.querySelector(`#nav a[data-v="${v}"]`)) return false; location.hash = v; return true; }, t);
       if (!ok) { report[d.name + ' admin-' + t] = { issues: [['MISSING', 'no tab ' + t]], errs: [] }; continue; }
       await page.waitForTimeout(900);
       await snap('admin-' + t);
     }
     // drawers
-    await page.evaluate(() => go('regs')); await page.waitForTimeout(700);
+    await page.evaluate(() => location.hash = 'regs'); await page.waitForTimeout(700);
     const row = await page.$('tr.r'); if (row) { await row.click(); await page.waitForTimeout(600); await snap('admin-reg-drawer'); await page.evaluate(() => document.querySelector('#dr').classList.remove('on')); }
-    await page.evaluate(() => go('out')); await page.waitForTimeout(900);
+    await page.evaluate(() => location.hash = 'out'); await page.waitForTimeout(900);
     const addBtn = await page.$('text=Add a company'); if (addBtn) { await addBtn.click(); await page.waitForTimeout(600); await snap('admin-contact-drawer'); await page.evaluate(() => document.querySelector('#dr').classList.remove('on')); }
-    await page.evaluate(() => go('events')); await page.waitForTimeout(900);
+    await page.evaluate(() => location.hash = 'events'); await page.waitForTimeout(900);
     const evc = await page.$('.evc'); if (evc) { await evc.click(); await page.waitForTimeout(900); await snap('admin-event-editor'); }
+        await page.evaluate(() => location.hash = 'contacts'); await page.waitForTimeout(900);
+    const rc = await page.$('[data-rec]'); if (rc) { await rc.click(); await page.waitForTimeout(1000); await snap('admin-record'); }
+    await page.evaluate(() => location.hash = 'pipe'); await page.waitForTimeout(900);
+    const dc = await page.$('.dcard'); if (dc) { await dc.click(); await page.waitForTimeout(900); await snap('admin-deal-drawer'); }
     await ctx.close();
   }
   await browser.close();

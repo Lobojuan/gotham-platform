@@ -659,6 +659,9 @@ const server = http.createServer(async (req, res) => {
            <p style="color:#5A6472;font-size:15px">If it is urgent, WhatsApp or call +233 55 239 5548.</p>`),
         'sponsor_ack', null);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'sponsor_enquiry', company + ' · ' + (b.tier || 'no tier')]);
+      await inboundDeal({ company, full_name: clean(b.contact_name, 120), email, phone: phoneGH(clean(b.phone, 40)), kind: 'sponsorship',
+        title: `${company} · ${b.tier ? b.tier + ' sponsorship' : 'sponsorship'}`, source: 'Website sponsor enquiry', sponsor_lead_id: rows[0].id,
+        task: `Send the sponsorship pack to ${clean(b.contact_name, 120) || company}` }).catch(e => console.error('inboundDeal', e.message));
       return json(res, 200, { ok: true, id: rows[0].id }, cors);
     }
 
@@ -730,6 +733,8 @@ const server = http.createServer(async (req, res) => {
         'family_ack', null);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
         ['website', 'family_interest', `${country} · ${region} · ${needs.join(', ')}`]);
+      await inboundDeal({ full_name, email, phone, kind: 'family_desk', title: `Family Desk · ${full_name} (${region})`,
+        source: 'Website Family Desk list', task: `Call ${firstName(full_name)} about Family Desk (${country})` }).catch(e => console.error('inboundDeal', e.message));
       return json(res, 200, { ok: true }, cors);
     }
 
@@ -805,6 +810,13 @@ const server = http.createServer(async (req, res) => {
                 'What they do': about, 'Company size': b.company_size, 'Biggest challenge': challenge,
                 'Heard via': b.heard_via, 'Registered for': it.title }).filter(([, v]) => v)))]);
         }
+        /* a follow-up task for the day after the event, so a "yes" is never forgotten */
+        const cid = (email ? (await q('select id,status from contacts where lower(email)=lower($1)', [email])).rows[0]
+                           : (await q('select id,status from contacts where phone=$1 order by id desc limit 1', [phone])).rows[0]);
+        if (cid && cid.status !== 'do_not_contact')
+          await q(`insert into tasks(title,due_at,contact_id,reg_id,created_by,priority)
+                   values ($1, coalesce(date_trunc('day',$2::timestamptz),date_trunc('day',now())) + interval '1 day 10 hours', $3, $4, 'website', $5)`,
+            [`Follow up: ${full_name} said ${follow} at ${it.title}`, it.starts_at, cid.id, reg.id, follow === 'yes' ? 'high' : 'normal']);
       }
 
       const confirmUrl = BASE + '/confirm/' + reg.confirm_token;
@@ -1804,6 +1816,321 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       return json(res, 200, { email, password: pw });
     }
 
+    /* =================== CRM: pipeline, tasks, notes, records, reports =================== */
+    const STAGES = ['lead', 'contacted', 'meeting', 'proposal', 'won', 'lost'];
+    const KINDS = ['sponsorship', 'consulting', 'family_desk', 'membership', 'event', 'other'];
+    const NOTE_KINDS = ['note', 'call', 'whatsapp', 'meeting', 'email'];
+    const day = s => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? s : null);
+    const money = v => { const n = Math.round(Number(String(v ?? '').replace(/[^\d.]/g, '')) * 100) / 100; return isFinite(n) && n >= 0 ? Math.min(n, 1e12) : 0; };
+    const isUser = async e => !e || (await q('select 1 from users where email=$1', [e])).rowCount > 0;
+
+    /* ---- deals ---- */
+    if (p === '/api/deals' && req.method === 'GET') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q(`select d.*, c.full_name as contact_name, c.phone as contact_phone, c.email as contact_email,
+          (select count(*)::int from tasks t where t.deal_id=d.id and t.done_at is null) as open_tasks,
+          (select min(t.due_at) from tasks t where t.deal_id=d.id and t.done_at is null) as next_task_due
+        from deals d left join contacts c on c.id=d.contact_id
+        order by d.stage, d.sort, d.updated_at desc limit 1000`);
+      return json(res, 200, { rows, stages: STAGES, kinds: KINDS });
+    }
+    if (p === '/api/deals' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      let contactId = Number(b.contact_id) || null;
+      if (!contactId && b.new_contact && (clean(b.new_contact.company) || clean(b.new_contact.full_name))) {
+        const nc = b.new_contact, em = clean(nc.email, 160).toLowerCase() || null;
+        const ex = em ? (await q('select id from contacts where lower(email)=$1', [em])).rows[0] : null;
+        contactId = ex ? ex.id : (await q(`insert into contacts(company,full_name,email,phone,source,status) values ($1,$2,$3,$4,$5,'new') returning id`,
+          [clean(nc.company, 160) || null, clean(nc.full_name, 120) || null, em, phoneGH(clean(nc.phone, 40)) || null, 'Added with a deal by ' + u.email])).rows[0].id;
+      }
+      const c = contactId ? (await q('select * from contacts where id=$1', [contactId])).rows[0] : null;
+      const title = clean(b.title, 160) || (c ? (c.company || c.full_name) : '');
+      if (!title) return json(res, 400, { error: 'title_required', fields: ['title'] });
+      const owner = clean(b.owner, 120).toLowerCase() || u.email;
+      if (!(await isUser(owner))) return json(res, 400, { error: 'unknown_owner', fields: ['owner'] });
+      const stage = STAGES.includes(b.stage) ? b.stage : 'lead';
+      const { rows } = await q(`insert into deals(title,contact_id,company,kind,stage,value,owner,next_step,next_date,source,reg_id,sponsor_lead_id,created_by,closed_at)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) returning *`,
+        [title, contactId, c ? (c.company || c.full_name) : clean(b.company, 160) || null, KINDS.includes(b.kind) ? b.kind : 'consulting', stage,
+          money(b.value), owner, clean(b.next_step, 300) || null, day(b.next_date), clean(b.source, 120) || null,
+          Number(b.reg_id) || null, Number(b.sponsor_lead_id) || null, u.email, ['won', 'lost'].includes(stage) ? new Date() : null]);
+      await q('insert into deal_events(deal_id,to_stage,detail,by_user) values ($1,$2,$3,$4)', [rows[0].id, stage, 'created', u.email]);
+      if (b.sponsor_lead_id) await q(`update sponsor_leads set status='talking' where id=$1 and status='new'`, [Number(b.sponsor_lead_id)]);
+      return json(res, 200, rows[0]);
+    }
+    const mDeal = p.match(/^\/api\/deals\/(\d+)$/);
+    if (mDeal && req.method === 'GET') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      const d = (await q(`select d.*, c.full_name as contact_name, c.phone as contact_phone, c.email as contact_email
+        from deals d left join contacts c on c.id=d.contact_id where d.id=$1`, [+mDeal[1]])).rows[0];
+      if (!d) return json(res, 404, { error: 'not_found' });
+      const [ev, nt, tk] = await Promise.all([
+        q('select * from deal_events where deal_id=$1 order by at desc', [d.id]),
+        q('select * from notes where deal_id=$1 order by at desc', [d.id]),
+        q('select * from tasks where deal_id=$1 order by done_at nulls first, due_at nulls last', [d.id])]);
+      return json(res, 200, { deal: d, events: ev.rows, notes: nt.rows, tasks: tk.rows });
+    }
+    if (mDeal && req.method === 'PATCH') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      const d = (await q('select * from deals where id=$1', [+mDeal[1]])).rows[0];
+      if (!d) return json(res, 404, { error: 'not_found' });
+      const sets = [], vals = [], put = (col, v) => sets.push(`${col}=$${vals.push(v)}`);
+      if (typeof b.title === 'string') { if (!clean(b.title)) return json(res, 400, { error: 'title_required', fields: ['title'] }); put('title', clean(b.title, 160)); }
+      if (KINDS.includes(b.kind)) put('kind', b.kind);
+      if (b.value !== undefined) put('value', money(b.value));
+      if (b.owner !== undefined) { const o = clean(b.owner, 120).toLowerCase(); if (!(await isUser(o))) return json(res, 400, { error: 'unknown_owner', fields: ['owner'] }); put('owner', o || null); }
+      if (b.next_step !== undefined) put('next_step', clean(b.next_step, 300) || null);
+      if (b.next_date !== undefined) put('next_date', day(b.next_date));
+      if (b.source !== undefined) put('source', clean(b.source, 120) || null);
+      if (b.sort !== undefined) put('sort', parseInt(b.sort) || 0);
+      if (b.lost_reason !== undefined) put('lost_reason', clean(b.lost_reason, 300) || null);
+      const moving = STAGES.includes(b.stage) && b.stage !== d.stage;
+      if (moving) {
+        put('stage', b.stage);
+        put('closed_at', ['won', 'lost'].includes(b.stage) ? new Date() : null);
+      }
+      if (!sets.length) return json(res, 400, { error: 'nothing_to_update' });
+      sets.push('updated_at=now()');
+      const up = (await q(`update deals set ${sets.join(',')} where id=$${vals.push(d.id)} returning *`, vals)).rows[0];
+      if (moving) {
+        await q('insert into deal_events(deal_id,from_stage,to_stage,detail,by_user) values ($1,$2,$3,$4,$5)',
+          [d.id, d.stage, b.stage, b.stage === 'lost' ? clean(b.lost_reason, 300) || null : null, u.email]);
+        if (d.contact_id && b.stage === 'won') await q(`update contacts set status='won' where id=$1 and status<>'do_not_contact'`, [d.contact_id]);
+        if (d.sponsor_lead_id && ['won', 'lost'].includes(b.stage)) await q('update sponsor_leads set status=$1 where id=$2', [b.stage, d.sponsor_lead_id]);
+      }
+      return json(res, 200, up);
+    }
+    if (mDeal && req.method === 'DELETE') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const d = (await q('delete from deals where id=$1 returning title', [+mDeal[1]])).rows[0];
+      if (d) await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'deal_deleted', d.title]);
+      return json(res, 200, { ok: true });
+    }
+
+    /* ---- tasks: staff see and tick their own; admins see everyone's ---- */
+    if (p === '/api/tasks' && req.method === 'GET') {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      const scope = u.role === 'staff' ? 'mine' : (url.searchParams.get('scope') || 'mine');
+      const where = ['1=1'], vals = [];
+      if (scope === 'mine') where.push(`t.assignee=$${vals.push(u.email)}`);
+      if (scope === 'unassigned') where.push('t.assignee is null');
+      if (url.searchParams.get('contact_id')) where.push(`t.contact_id=$${vals.push(+url.searchParams.get('contact_id'))}`);
+      if (url.searchParams.get('deal_id')) where.push(`t.deal_id=$${vals.push(+url.searchParams.get('deal_id'))}`);
+      if (url.searchParams.get('status') === 'done') where.push(`t.done_at > now() - interval '30 days'`);
+      else where.push('t.done_at is null');
+      const { rows } = await q(`select t.*, c.company, c.full_name as contact_name, c.phone as contact_phone, d.title as deal_title
+        from tasks t left join contacts c on c.id=t.contact_id left join deals d on d.id=t.deal_id
+        where ${where.join(' and ')} order by t.done_at desc nulls first, t.due_at nulls last, t.id limit 500`, vals);
+      if (u.role === 'staff') rows.forEach(r => { r.contact_phone = null; });
+      return json(res, 200, { rows });
+    }
+    if (p === '/api/tasks' && req.method === 'POST') {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      const b = await body(req);
+      const title = clean(b.title, 200); if (!title) return json(res, 400, { error: 'title_required', fields: ['title'] });
+      let assignee = b.assignee === '' ? null : clean(b.assignee, 120).toLowerCase() || u.email;
+      if (u.role === 'staff') assignee = u.email;
+      if (!(await isUser(assignee))) return json(res, 400, { error: 'unknown_assignee', fields: ['assignee'] });
+      const due = b.due_at && !isNaN(Date.parse(b.due_at)) ? new Date(b.due_at) : null;
+      let dealId = Number(b.deal_id) || null, contactId = Number(b.contact_id) || null;
+      if (dealId && !contactId) contactId = (await q('select contact_id from deals where id=$1', [dealId])).rows[0]?.contact_id || null;
+      const { rows } = await q(`insert into tasks(title,notes,due_at,priority,assignee,contact_id,deal_id,reg_id,created_by)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,
+        [title, clean(b.notes, 1000) || null, due, b.priority === 'high' ? 'high' : 'normal', assignee, contactId, dealId, Number(b.reg_id) || null, u.email]);
+      return json(res, 200, rows[0]);
+    }
+    const mTask = p.match(/^\/api\/tasks\/(\d+)$/);
+    if (mTask && (req.method === 'PATCH' || req.method === 'DELETE')) {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      const t = (await q('select * from tasks where id=$1', [+mTask[1]])).rows[0];
+      if (!t) return json(res, 404, { error: 'not_found' });
+      if (u.role === 'staff' && t.assignee !== u.email) return json(res, 401, { error: 'not_allowed' });
+      if (req.method === 'DELETE') {
+        if (u.role === 'staff' && t.created_by !== u.email) return json(res, 401, { error: 'not_allowed' });
+        await q('delete from tasks where id=$1', [t.id]); return json(res, 200, { ok: true });
+      }
+      const b = await body(req); const sets = [], vals = [], put = (col, v) => sets.push(`${col}=$${vals.push(v)}`);
+      if (typeof b.done === 'boolean') { put('done_at', b.done ? new Date() : null); put('done_by', b.done ? u.email : null); }
+      if (typeof b.title === 'string' && clean(b.title)) put('title', clean(b.title, 200));
+      if (b.notes !== undefined) put('notes', clean(b.notes, 1000) || null);
+      if (b.due_at !== undefined) put('due_at', b.due_at && !isNaN(Date.parse(b.due_at)) ? new Date(b.due_at) : null);
+      if (b.priority !== undefined) put('priority', b.priority === 'high' ? 'high' : 'normal');
+      if (b.assignee !== undefined && u.role !== 'staff') { const a = clean(b.assignee, 120).toLowerCase() || null; if (!(await isUser(a))) return json(res, 400, { error: 'unknown_assignee' }); put('assignee', a); }
+      if (!sets.length) return json(res, 400, { error: 'nothing_to_update' });
+      const up = (await q(`update tasks set ${sets.join(',')} where id=$${vals.push(t.id)} returning *`, vals)).rows[0];
+      return json(res, 200, up);
+    }
+
+    /* ---- notes: a call, a WhatsApp, a meeting ---- */
+    if (p === '/api/notes' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      const text = clean(b.body, 4000); if (!text) return json(res, 400, { error: 'body_required', fields: ['body'] });
+      let dealId = Number(b.deal_id) || null, contactId = Number(b.contact_id) || null;
+      if (dealId && !contactId) contactId = (await q('select contact_id from deals where id=$1', [dealId])).rows[0]?.contact_id || null;
+      if (!dealId && !contactId) return json(res, 400, { error: 'needs_record' });
+      const { rows } = await q('insert into notes(contact_id,deal_id,kind,body,author) values ($1,$2,$3,$4,$5) returning *',
+        [contactId, dealId, NOTE_KINDS.includes(b.kind) ? b.kind : 'note', text, u.email]);
+      if (contactId && ['call', 'whatsapp', 'meeting', 'email'].includes(rows[0].kind))
+        await q(`update contacts set status=case when status in ('new') then 'contacted' else status end where id=$1`, [contactId]);
+      if (dealId) await q('update deals set updated_at=now() where id=$1', [dealId]);
+      return json(res, 200, rows[0]);
+    }
+    const mNote = p.match(/^\/api\/notes\/(\d+)$/);
+    if (mNote && req.method === 'DELETE') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const n = (await q('select * from notes where id=$1', [+mNote[1]])).rows[0];
+      if (!n) return json(res, 404, { error: 'not_found' });
+      if (n.author !== u.email && u.role !== 'owner') return json(res, 401, { error: 'not_allowed' });
+      await q('delete from notes where id=$1', [n.id]); return json(res, 200, { ok: true });
+    }
+
+    /* ---- one company/person, everything that ever happened ---- */
+    const mRec = p.match(/^\/api\/contacts\/(\d+)\/record$/);
+    if (mRec && req.method === 'GET') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      const c = (await q('select * from contacts where id=$1', [+mRec[1]])).rows[0];
+      if (!c) return json(res, 404, { error: 'not_found' });
+      const em = (c.email || '').toLowerCase(), ph = c.phone || '';
+      const [deals, tasks, notes, regs, sends, mails, leads, devs] = await Promise.all([
+        q('select * from deals where contact_id=$1 order by closed_at nulls first, updated_at desc', [c.id]),
+        q('select * from tasks where contact_id=$1 order by done_at nulls first, due_at nulls last', [c.id]),
+        q('select * from notes where contact_id=$1 order by at desc limit 200', [c.id]),
+        q(`select r.id,r.reference,r.created_at,r.status,r.paid,r.amount,r.currency,r.checked_in_at,i.title from registrations r join items i on i.code=r.item_code
+           where ($1<>'' and lower(r.email)=$1) or ($2<>'' and r.phone=$2) order by r.created_at desc limit 50`, [em, ph]),
+        q(`select s.status,s.sent_at,s.clicked_at,s.skip_reason,cp.name from campaign_sends s join campaigns cp on cp.id=s.campaign_id where s.contact_id=$1`, [c.id]),
+        q(`select subject,kind,status,created_at,sent_at from outbox where $1<>'' and lower(to_email)=$1 order by created_at desc limit 50`, [em]),
+        q(`select id,tier,budget,message,status,created_at from sponsor_leads where $1<>'' and lower(email)=$1`, [em]),
+        q(`select e.*, d.title from deal_events e join deals d on d.id=e.deal_id where d.contact_id=$1 order by e.at desc limit 100`, [c.id])]);
+      const tl = [];
+      notes.rows.forEach(n => tl.push({ at: n.at, type: n.kind, text: n.body, by: n.author, id: n.id }));
+      devs.rows.forEach(e => tl.push({ at: e.at, type: 'deal', text: e.detail === 'created' ? `Deal opened: ${e.title} (${e.to_stage})` : `${e.title}: ${e.from_stage} → ${e.to_stage}${e.detail ? ' · ' + e.detail : ''}`, by: e.by_user, deal_id: e.deal_id }));
+      regs.rows.forEach(r => { tl.push({ at: r.created_at, type: 'registration', text: `Registered for ${r.title} · ${r.reference} · ${r.status}`, reg_id: r.id });
+        if (r.checked_in_at) tl.push({ at: r.checked_in_at, type: 'attended', text: `Attended ${r.title}`, reg_id: r.id }); });
+      sends.rows.forEach(s => { if (s.sent_at) tl.push({ at: s.sent_at, type: 'campaign', text: `Sent: ${s.name}` });
+        if (s.clicked_at) tl.push({ at: s.clicked_at, type: 'click', text: `Opened the link in "${s.name}"` }); });
+      mails.rows.forEach(m => tl.push({ at: m.sent_at || m.created_at, type: 'email', text: `${m.status === 'sent' ? 'Email sent' : 'Email ' + m.status}: ${m.subject}` }));
+      leads.rows.forEach(l => tl.push({ at: l.created_at, type: 'enquiry', text: `Sponsorship enquiry${l.tier ? ' · ' + l.tier : ''}${l.budget ? ' · budget ' + l.budget : ''}${l.message ? ': ' + l.message : ''}` }));
+      tasks.rows.filter(t => t.done_at).forEach(t => tl.push({ at: t.done_at, type: 'task', text: `Done: ${t.title}`, by: t.done_by }));
+      tl.push({ at: c.created_at, type: 'created', text: `Added to contacts${c.source ? ' · ' + c.source : ''}` });
+      tl.sort((a, b) => new Date(b.at) - new Date(a.at));
+      return json(res, 200, { contact: c, deals: deals.rows, tasks: tasks.rows, timeline: tl.slice(0, 300) });
+    }
+    /* a registration or a sponsor enquiry becomes a proper record */
+    const mFromReg = p.match(/^\/api\/contacts\/from-registration\/(\d+)$/);
+    if (mFromReg && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const r = (await q('select * from registrations where id=$1', [+mFromReg[1]])).rows[0];
+      if (!r) return json(res, 404, { error: 'not_found' });
+      let c = r.email ? (await q('select id from contacts where lower(email)=lower($1)', [r.email])).rows[0] : null;
+      if (!c && r.phone) c = (await q('select id from contacts where phone=$1 order by id limit 1', [r.phone])).rows[0];
+      if (!c) c = (await q(`insert into contacts(company,full_name,role,email,phone,sector,country,source,status)
+          values ($1,$2,$3,$4,$5,$6,$7,$8,'new') returning id`,
+        [r.company === 'Not given' ? null : r.company, r.full_name, r.job_title, r.email, r.phone, r.sector, r.country, 'Registration ' + r.reference])).rows[0];
+      return json(res, 200, { id: c.id });
+    }
+    const mFromLead = p.match(/^\/api\/sponsor-leads\/(\d+)\/deal$/);
+    if (mFromLead && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const l = (await q('select * from sponsor_leads where id=$1', [+mFromLead[1]])).rows[0];
+      if (!l) return json(res, 404, { error: 'not_found' });
+      const ex = (await q('select id from deals where sponsor_lead_id=$1', [l.id])).rows[0];
+      if (ex) return json(res, 200, { id: ex.id, existed: true });
+      const id = await inboundDeal({ company: l.company, full_name: l.contact_name, email: l.email, phone: l.phone, kind: 'sponsorship',
+        title: `${l.company} · ${l.tier ? l.tier + ' sponsorship' : 'sponsorship'}`, source: 'Website sponsor enquiry', sponsor_lead_id: l.id, owner: u.email, task: null });
+      return json(res, 200, { id });
+    }
+
+    /* ---- search across the whole back office ---- */
+    if (p === '/api/search' && req.method === 'GET') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      const s = clean(url.searchParams.get('q'), 80); if (s.length < 2) return json(res, 200, { contacts: [], deals: [], registrations: [] });
+      const like = '%' + s.replace(/[%_]/g, '') + '%', digits = s.replace(/\D/g, '').replace(/^0+/, '');
+      const [c, d, r] = await Promise.all([
+        q(`select id,company,full_name,email,phone,sector from contacts where company ilike $1 or full_name ilike $1 or email ilike $1
+           or ($2<>'' and length($2)>=4 and regexp_replace(coalesce(phone,''),'\\D','','g') like '%'||$2||'%') order by company nulls last limit 8`, [like, digits]),
+        q(`select id,title,company,stage,value from deals where title ilike $1 or company ilike $1 order by updated_at desc limit 6`, [like]),
+        q(`select r.id,r.reference,r.company,r.full_name,r.status,i.title from registrations r join items i on i.code=r.item_code
+           where r.reference ilike $1 or r.company ilike $1 or r.full_name ilike $1 or r.email ilike $1
+           or ($2<>'' and length($2)>=4 and regexp_replace(r.phone,'\\D','','g') like '%'||$2||'%') order by r.created_at desc limit 6`, [like, digits])]);
+      return json(res, 200, { contacts: c.rows, deals: d.rows, registrations: r.rows });
+    }
+
+    /* ---- overview for the dashboard ---- */
+    if (p === '/api/overview' && req.method === 'GET') {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      const staff = u.role === 'staff';
+      const [pipe, won, recv, spons, wk, mine, ev, act] = await Promise.all([
+        q(`select stage, count(*)::int n, coalesce(sum(value),0)::float v from deals where stage not in ('won','lost') group by stage`),
+        q(`select count(*)::int n, coalesce(sum(value),0)::float v from deals where stage='won' and closed_at >= date_trunc('month', now())`),
+        q(`select coalesce(sum(amount),0)::float v from registrations where paid and amount>0 and status<>'cancelled' and paid_at >= date_trunc('month', now())`),
+        q(`select coalesce(sum(amount),0)::float v from sponsors where paid and created_at >= date_trunc('month', now())`),
+        q(`select count(*)::int n from registrations where created_at > now() - interval '7 days'`),
+        q(`select count(*) filter (where due_at < date_trunc('day', now()))::int overdue,
+                  count(*) filter (where due_at >= date_trunc('day', now()) and due_at < date_trunc('day', now()) + interval '1 day')::int today,
+                  count(*)::int open
+           from tasks where done_at is null and assignee=$1`, [u.email]),
+        q(`select i.code,i.title,i.starts_at,i.venue,i.capacity,
+             coalesce((select sum(seats) from registrations r where r.item_code=i.code and r.status not in ('cancelled','declined')),0)::int seats,
+             (select count(*)::int from registrations r where r.item_code=i.code and r.status='pending') pending,
+             (select count(*)::int from registrations r where r.item_code=i.code and r.checked_in_at is not null) checked_in
+           from items i where i.kind='event' and i.published and i.starts_at > now() order by i.starts_at limit 1`),
+        staff ? { rows: [] } : q(`(select at, 'note' as type, kind as sub, body as text, author as who, contact_id, deal_id from notes order by at desc limit 12)
+           union all (select e.at, 'deal', e.to_stage, d.title || coalesce(': ' || e.from_stage || ' → ' || e.to_stage, ' opened'), e.by_user, d.contact_id, d.id from deal_events e join deals d on d.id=e.deal_id order by e.at desc limit 12)
+           union all (select r.created_at, 'registration', r.status, r.full_name || ' · ' || i.title, 'website', null, null from registrations r join items i on i.code=r.item_code order by r.created_at desc limit 12)
+           union all (select created_at, 'enquiry', tier, company || ' asked about sponsoring', 'website', null, null from sponsor_leads order by created_at desc limit 6)
+           order by 1 desc limit 15`)]);
+      return json(res, 200, {
+        pipeline: pipe.rows, pipeline_value: pipe.rows.reduce((a, r) => a + r.v, 0), open_deals: pipe.rows.reduce((a, r) => a + r.n, 0),
+        won_month: won.rows[0], received_month: recv.rows[0].v + spons.rows[0].v, regs_week: wk.rows[0].n,
+        my_tasks: mine.rows[0], next_event: ev.rows[0] || null, activity: act.rows });
+    }
+
+    /* ---- reports ---- */
+    if (p === '/api/reports' && req.method === 'GET') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      const from = day(url.searchParams.get('from')) || new Date(Date.now() - 365 * 864e5).toISOString().slice(0, 10);
+      const to = day(url.searchParams.get('to')) || new Date().toISOString().slice(0, 10);
+      const P = [from, to];
+      const rng = col => `${col} >= $1::date and ${col} < ($2::date + 1)`;
+      const [revReg, revSp, wonM, chan, funnel, stages, kinds, winloss, taskStats, items, lostWhy] = await Promise.all([
+        q(`select to_char(date_trunc('month', paid_at),'YYYY-MM') m, sum(amount)::float v, count(*)::int n from registrations
+           where paid and amount>0 and status<>'cancelled' and ${rng('paid_at')} group by 1 order by 1`, P),
+        q(`select to_char(date_trunc('month', created_at),'YYYY-MM') m, sum(amount)::float v, count(*)::int n from sponsors
+           where paid and amount>0 and ${rng('created_at')} group by 1 order by 1`, P),
+        q(`select to_char(date_trunc('month', closed_at),'YYYY-MM') m, kind, sum(value)::float v, count(*)::int n from deals
+           where stage='won' and ${rng('closed_at')} group by 1,2 order by 1`, P),
+        q(`select coalesce(nullif(utm_source,''),'direct') src, count(*)::int n,
+             count(*) filter (where status in ('confirmed','attended') or paid)::int confirmed,
+             count(*) filter (where checked_in_at is not null or status='attended')::int attended,
+             coalesce(sum(amount) filter (where paid),0)::float paid
+           from registrations where ${rng('created_at')} group by 1 order by 2 desc`, P),
+        q(`select count(*)::int registered,
+             count(*) filter (where status in ('confirmed','attended') or (paid and amount>0))::int confirmed,
+             count(*) filter (where checked_in_at is not null or status='attended')::int attended,
+             count(distinct r.id) filter (where exists (select 1 from contacts c join deals d on d.contact_id=c.id and d.stage='won'
+                where (r.email is not null and lower(c.email)=lower(r.email)) or c.phone=r.phone))::int clients
+           from registrations r where ${rng('r.created_at')}`, P),
+        q(`select stage, count(*)::int n, coalesce(sum(value),0)::float v from deals group by stage`),
+        q(`select kind, count(*) filter (where stage not in ('won','lost'))::int open, coalesce(sum(value) filter (where stage not in ('won','lost')),0)::float open_v,
+             count(*) filter (where stage='won')::int won, coalesce(sum(value) filter (where stage='won'),0)::float won_v from deals group by kind`),
+        q(`select count(*) filter (where stage='won')::int won, count(*) filter (where stage='lost')::int lost,
+             coalesce(avg(extract(epoch from closed_at-created_at)/86400) filter (where stage='won'),0)::float days
+           from deals where closed_at is not null and ${rng('closed_at')}`, P),
+        q(`select count(*) filter (where done_at is null)::int open, count(*) filter (where done_at is null and due_at < now())::int overdue,
+             count(*) filter (where ${rng('done_at')})::int done from tasks`, P),
+        q(`select i.code,i.title,i.starts_at,i.capacity,count(r.id)::int regs,coalesce(sum(r.seats),0)::int seats,
+             count(r.id) filter (where r.checked_in_at is not null)::int attended, coalesce(sum(r.amount) filter (where r.paid),0)::float paid
+           from items i left join registrations r on r.item_code=i.code and r.status not in ('cancelled','declined')
+           where i.kind='event' group by i.code,i.title,i.starts_at,i.capacity order by i.starts_at desc nulls last`),
+        q(`select coalesce(nullif(lost_reason,''),'no reason given') why, count(*)::int n from deals where stage='lost' and ${rng('closed_at')} group by 1 order by 2 desc limit 8`, P)]);
+      return json(res, 200, { from, to, revenue_registrations: revReg.rows, revenue_sponsors: revSp.rows, won_by_month: wonM.rows,
+        channels: chan.rows, funnel: funnel.rows[0], stages: stages.rows, kinds: kinds.rows, winloss: winloss.rows[0],
+        tasks: taskStats.rows[0], events: items.rows, lost_reasons: lostWhy.rows });
+    }
+
     /* ---- static admin ---- */
     if (p === '/admin' || p === '/admin/' || (!SITE_DIR && p === '/')) {
       const html = fs.readFileSync(path.join(here, 'public', 'admin.html'));
@@ -1870,6 +2197,25 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     return json(res, 500, { error: 'server_error' }, cors);
   }
 });
+
+/* An inbound lead (sponsor enquiry, Family Desk family) becomes a contact, an open deal and a
+   follow-up task for tomorrow, so nothing sits unanswered in a list. Returns the deal id. */
+async function inboundDeal({ company, full_name, email, phone, kind, title, source, sponsor_lead_id = null, owner = null, task }) {
+  const em = (email || '').toLowerCase() || null;
+  let c = em ? (await q('select id,status from contacts where lower(email)=$1', [em])).rows[0] : null;
+  if (!c) c = (await q(`insert into contacts(company,full_name,email,phone,source,status) values ($1,$2,$3,$4,$5,'new') returning id,status`,
+    [company || null, full_name || null, em, phone || null, source])).rows[0];
+  if (c.status === 'do_not_contact') return null;
+  const open = (await q(`select id from deals where contact_id=$1 and kind=$2 and stage not in ('won','lost')`, [c.id, kind])).rows[0];
+  if (open) return open.id;
+  const d = (await q(`insert into deals(title,contact_id,company,kind,stage,owner,source,sponsor_lead_id,created_by,next_step,next_date)
+      values ($1,$2,$3,$4,'lead',$5,$6,$7,'website',$8,(now() + interval '1 day')::date) returning id`,
+    [title, c.id, company || full_name, kind, owner, source, sponsor_lead_id, task])).rows[0];
+  await q(`insert into deal_events(deal_id,to_stage,detail,by_user) values ($1,'lead','created','website')`, [d.id]);
+  if (task) await q(`insert into tasks(title,due_at,assignee,contact_id,deal_id,created_by,priority)
+      values ($1, date_trunc('day', now()) + interval '1 day 10 hours', $2, $3, $4, 'website', 'high')`, [task, owner, c.id, d.id]);
+  return d.id;
+}
 /* Look up an event once for the mail templates. */
 async function itemForMail(code) {
   const it = (await q('select * from items where code=$1', [code])).rows[0];

@@ -17,18 +17,18 @@ const B='http://127.0.0.1:4199', fs=require('fs');
  // owner: menu, settings, add a person
  c=await ctx(); p=await c.newPage(); p.on('pageerror',e=>errs.push(e.message));
  await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.tap('#lform button'); await p.waitForSelector('#app',{state:'visible'});
- const menuVisible=await p.isVisible('#menubtn'); if(!menuVisible) throw new Error('no menu button on phone'); ok('phone shows a compact Menu button');
- await p.tap('#menubtn'); await p.tap('aside a[data-v="settings"]'); await p.waitForSelector('#u-new'); ok('Menu → Settings');
- await p.tap('#u-new'); await p.fill('#u-name','Joy Anthony Preston'); await p.fill('#u-email','joy@gothamconsult.com'); await p.selectOption('#u-role','owner'); await p.tap('#u-add');
- await p.waitForSelector('#u-pw'); const pw=await p.textContent('#u-pw'); ok('owner added Joy as owner (super admin); first password shown once: '+pw.length+' chars');
+ if(!await p.isVisible('#bnav')) throw new Error('no bottom bar on phone'); if(!await p.isVisible('#hamb')) throw new Error('no menu button'); ok('phone shows the bottom bar and a menu button');
+ await p.tap('#hamb'); await p.waitForTimeout(300); await p.tap('#nav a[data-v="settings"]'); await p.waitForSelector('#u-new'); ok('Menu → Settings');
+ await p.tap('#u-new'); await p.fill('#u-name','Operations Lead'); await p.fill('#u-email','ops'+Date.now()%100000+'@gothamconsult.com'); await p.selectOption('#u-role','owner'); await p.tap('#u-add');
+ await p.waitForSelector('#u-pw'); const pw=await p.textContent('#u-pw'); ok('owner added a new owner (super admin); first password shown once: '+pw.length+' chars');
  await p.screenshot({path:QA+'/team.png',fullPage:true});
- await p.tap('#u-new'); await p.fill('#u-name','Dup'); await p.fill('#u-email','JOY@gothamconsult.com'); await p.tap('#u-add'); await p.waitForTimeout(500);
+ await p.tap('#u-new'); await p.fill('#u-name','Dup'); await p.fill('#u-email','JOY@GOTHAMCONSULT.COM'); await p.tap('#u-add'); await p.waitForTimeout(500);
  if(!/already/.test(await p.textContent('#u-err'))) throw new Error('dup not reported'); ok('adding the same email twice is explained');
  // own password
  await p.fill('#cp-cur','wrong'); await p.fill('#cp-new','Admin2026-qa!!'); await p.fill('#cp-new2','Admin2026-qa!!'); await p.tap('#sp'); await p.waitForTimeout(600);
  if(!/current password/.test(await p.textContent('#cp-err'))) throw new Error('wrong current not shown'); ok('wrong current password explained');
  await p.fill('#cp-cur','Admin2025-qa!'); await p.tap('#sp'); await p.waitForTimeout(800); if(await p.textContent('#cp-err')) throw new Error(await p.textContent('#cp-err')); ok('own password changed from Settings');
- await p.tap('#menubtn'); await p.tap('aside a[data-v="regs"]'); await p.waitForTimeout(800); ok('still signed in after the change (this device keeps working)');
+ await p.tap('#bnav a[data-b="more"]'); await p.waitForTimeout(300); await p.tap('#nav a[data-v="regs"]'); await p.waitForTimeout(800); ok('still signed in after the change (this device keeps working)');
  await p.screenshot({path:QA+'/regs_cards.png'});
  if(errs.length) throw new Error(errs.join('; '));
  await b.close();
