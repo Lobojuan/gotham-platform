@@ -53,7 +53,7 @@ HEAD = '''<!doctype html>
 <meta name="twitter:description" content="{desc}">
 <meta name="twitter:image" content="{site}/{og}">
 <script>/* shown inside gothamconsult.com (WordPress page embed): the back office opens in the whole window */
-if(window.top!==window.self){{addEventListener('click',function(e){{var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var u=new URL(a.getAttribute('href'),location.href);if(u.origin===location.origin&&/^\/admin/.test(u.pathname)){{e.preventDefault();window.top.location.href=u.href}}}},true)}}</script>
+if(window.top!==window.self){{document.documentElement.classList.add('framed');var s=document.createElement('style');s.textContent='.framed .rise,.framed .reveal,.framed .grow .bfill,.framed .grow .fcol div{{animation:none!important;opacity:1!important;transform:none!important}}';document.head.appendChild(s);addEventListener('click',function(e){{var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var u=new URL(a.getAttribute('href'),location.href);if(u.origin===location.origin&&/^\/admin/.test(u.pathname)){{e.preventDefault();window.top.location.href=u.href}}}},true)}}</script>
 </head>
 <body>
 '''
