@@ -17,6 +17,7 @@ const MEDIA = process.env.MEDIA_DIR || path.join(here, 'media');
 const SITE_DIR = process.env.SITE_DIR || '';        // static website, served at / when set
 const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://gothamconsult.com').replace(/\/$/, '');
 const CANON_HOST = new URL(PUBLIC_URL).host;
+const PROXY_KEY = process.env.PROXY_KEY || '';
 const REDIRECT_HOSTS = (process.env.REDIRECT_HOSTS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
 const SITE_URL = (process.env.SITE_URL || process.env.PUBLIC_URL || 'https://gothamconsult.com').replace(/\/$/, '');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -570,7 +571,10 @@ async function withMedia(rows) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
-  const ip = (req.headers['x-real-ip'] || req.socket.remoteAddress || '').toString();
+  /* The WordPress bridge on gothamconsult.com forwards visitors through its own server; it proves
+     itself with PROXY_KEY and passes the visitor's real address, so rate limits stay per person. */
+  const viaBridge = PROXY_KEY && req.headers['x-gc-proxy-key'] === PROXY_KEY;
+  const ip = ((viaBridge && req.headers['x-gc-client-ip']) || req.headers['x-real-ip'] || req.socket.remoteAddress || '').toString().slice(0, 64);
   /* One address for everyone: pages asked for on an old host (www, the sslip test address)
      move to PUBLIC_URL. The API is left alone so older copies of the form keep working. */
   const host = String(req.headers.host || '').toLowerCase().split(':')[0];

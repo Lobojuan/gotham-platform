@@ -15,6 +15,7 @@ services:
       MAIL_FROM: ${MAIL_FROM:-Gotham Consult <info@gothamconsult.com>}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       REDIRECT_HOSTS: ${REDIRECT_HOSTS:-}
+      PROXY_KEY: ${PROXY_KEY:-}
       MEDIA_DIR: /data/media
       SITE_DIR: /data/site
     volumes:
