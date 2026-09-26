@@ -52,6 +52,8 @@ HEAD = '''<!doctype html>
 <meta name="twitter:title" content="{title}">
 <meta name="twitter:description" content="{desc}">
 <meta name="twitter:image" content="{site}/{og}">
+<script>/* shown inside gothamconsult.com (WordPress page embed): the back office opens in the whole window */
+if(window.top!==window.self){{addEventListener('click',function(e){{var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var u=new URL(a.getAttribute('href'),location.href);if(u.origin===location.origin&&/^\/admin/.test(u.pathname)){{e.preventDefault();window.top.location.href=u.href}}}},true)}}</script>
 </head>
 <body>
 '''
