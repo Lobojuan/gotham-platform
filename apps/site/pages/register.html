@@ -98,6 +98,14 @@ footer{border-top:1px solid var(--line);padding:22px 0 34px;color:var(--mute);fo
 .dt-dl a{display:inline-flex;align-items:baseline;gap:7px;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:14px;font-weight:600;color:var(--ink);background:#fff}
 .dt-dl a:hover{border-color:var(--ink)}
 .dt-dl a span{font-weight:400;color:var(--mute);font-size:12.5px}
+
+/* consent: exactly two parts, a real tap-sized box and one block of text.
+   Loose text beside links in a flex row turns each link into its own
+   squeezed column, and the box shrinks to a dot on phones. */
+.consent{display:grid;grid-template-columns:24px 1fr;gap:12px;align-items:start;background:var(--sunk);border-radius:14px;padding:14px 16px;font-size:14.5px;line-height:1.55;color:#3A4453;cursor:pointer}
+.consent input{width:24px;height:24px;margin:1px 0 0;accent-color:var(--ink);cursor:pointer}
+.consent span{min-width:0;overflow-wrap:normal;word-break:normal}
+.consent a{color:var(--ink);text-underline-offset:2px}
 </style>
 
 <div class="kente" aria-hidden="true"></div>
@@ -150,7 +158,7 @@ footer{border-top:1px solid var(--line);padding:22px 0 34px;color:var(--mute);fo
         <div id="payInfo"></div>
       </fieldset>
 
-      <label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--mute)"><input type="checkbox" id="cons" required style="margin-top:4px;accent-color:var(--ink)"> I agree that Gotham Consult and Carlson Capital Ltd may use these details to process my registration and contact me about it, as described in the <a href="/privacy.html" target="_blank" rel="noopener">privacy notice</a>, and I accept the <a href="/terms.html" target="_blank" rel="noopener">terms of service</a>. Ghana Data Protection Act 2012 (Act 843); GDPR standards for EU and UK clients.</label>
+      <label class="consent" for="cons"><input type="checkbox" id="cons" required><span>I agree that Gotham Consult and Carlson Capital Ltd may use these details to process my registration and contact me about it, as described in the <a href="/privacy.html" target="_blank" rel="noopener">privacy notice</a>, and I accept the <a href="/terms.html" target="_blank" rel="noopener">terms of service</a>. Ghana Data Protection Act 2012 (Act 843); GDPR standards for EU and UK clients.</span></label>
       <p class="err" id="err" role="alert"></p>
     </form>
 
