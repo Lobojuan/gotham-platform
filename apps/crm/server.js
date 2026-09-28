@@ -9,7 +9,9 @@ import ExcelJS from 'exceljs';
 
 const PORT = process.env.PORT || 4100;
 const SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
-const ORIGINS = (process.env.ALLOW_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
+// API calls are same-origin by default. Cross-origin use must name each trusted origin;
+// an environment value of "*" is ignored because credentials must never be reflected to every site.
+const ORIGINS = (process.env.ALLOW_ORIGINS || '').split(',').map(s => s.trim()).filter(s => s && s !== '*');
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const q = (t, p) => pool.query(t, p);
 const here = path.dirname(new URL(import.meta.url).pathname);
@@ -19,6 +21,9 @@ const PUBLIC_URL = (process.env.PUBLIC_URL || 'https://gothamconsult.com').repla
 const CANON_HOST = new URL(PUBLIC_URL).host;
 const PROXY_KEY = process.env.PROXY_KEY || '';
 const REDIRECT_HOSTS = (process.env.REDIRECT_HOSTS || '').toLowerCase().split(',').map(s => s.trim()).filter(Boolean);
+/* where uploaded images are fetched from; set it to the server's own address while gothamconsult.com
+   reaches us through the WordPress bridge, so pictures load directly instead of through PHP */
+const MEDIA_URL = (process.env.MEDIA_URL || PUBLIC_URL).replace(/\/$/, '');
 const SITE_URL = (process.env.SITE_URL || process.env.PUBLIC_URL || 'https://gothamconsult.com').replace(/\/$/, '');
 fs.mkdirSync(MEDIA, { recursive: true });
 
@@ -197,8 +202,12 @@ async function init() {
   }
   await q(`update items set approval=true, audiences=$1 where code='F1' and audiences is null`,
     ['SME / business owner,Investor,Government / institution,Partner or sponsor,Media,Other']);
-  for (const [k, v] of [['momo_number', ''], ['momo_name', 'Gotham Consult'], ['whatsapp', '233550416627'], ['pay_link', '']])
+  for (const [k, v] of [['momo_number', '+233550416627'], ['momo_name', 'Gotham Consult'], ['whatsapp', '233550416627'], ['pay_link', '']])
     await q('insert into settings(key,value) values ($1,$2) on conflict (key) do nothing', [k, v]);
+  // The owner confirmed Joy's WhatsApp line is also the MoMo receiving number.
+  // Fill older installs that still have the original empty/default placeholder.
+  await q(`update settings set value='+233550416627' where key='momo_number'
+    and (value='' or value='[Gotham MoMo number]')`);
 }
 
 /* ---------- media ---------- */
@@ -283,11 +292,11 @@ const mediaPublic = row => {
   if (!row) return null;
   if (row.kind === 'doc') return {
     id: row.id, kind: 'doc', label: row.alt || row.original_name, name: row.original_name,
-    kb: Math.round((row.bytes || 0) / 1024), url: `${PUBLIC_URL}/media/${row.variants.file}`
+    kb: Math.round((row.bytes || 0) / 1024), url: `${MEDIA_URL}/media/${row.variants.file}`
   };
   const out = { id: row.id, kind: row.kind, alt: row.alt || '', sizes: {} };
   for (const [k, v] of Object.entries(row.variants || {}))
-    out.sizes[k] = { w: v.w, h: v.h, webp: `${PUBLIC_URL}/media/${v.webp}`, jpg: `${PUBLIC_URL}/media/${v.jpg}` };
+    out.sizes[k] = { w: v.w, h: v.h, webp: `${MEDIA_URL}/media/${v.webp}`, jpg: `${MEDIA_URL}/media/${v.jpg}` };
   return out;
 };
 
@@ -578,7 +587,8 @@ const server = http.createServer(async (req, res) => {
   /* One address for everyone: pages asked for on an old host (www, the sslip test address)
      move to PUBLIC_URL. The API is left alone so older copies of the form keep working. */
   const host = String(req.headers.host || '').toLowerCase().split(':')[0];
-  if ((req.method === 'GET' || req.method === 'HEAD') && REDIRECT_HOSTS.includes(host) && host !== CANON_HOST
+  if ((req.method === 'GET' || req.method === 'HEAD') && REDIRECT_HOSTS.includes(host) && host !== CANON_HOST && !viaBridge
+      && req.headers['sec-fetch-dest'] !== 'iframe'
       && !p.startsWith('/api/') && !p.startsWith('/media/')) {
     res.writeHead(301, { location: PUBLIC_URL + req.url, 'cache-control': 'public, max-age=3600' }); return res.end();
   }
@@ -588,7 +598,7 @@ const server = http.createServer(async (req, res) => {
   const oldKey = p.replace(/\/+$/, '') || '/';
   if ((req.method === 'GET' || req.method === 'HEAD') && OLD[oldKey]) { res.writeHead(301, { location: OLD[oldKey] }); return res.end(); }
   const origin = req.headers.origin;
-  const cors = origin && (ORIGINS.includes(origin) || ORIGINS.includes('*'))
+  const cors = origin && ORIGINS.includes(origin)
     ? { 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', 'vary': 'Origin' } : {};
   if (req.method === 'OPTIONS') {
     res.writeHead(204, { ...cors, 'access-control-allow-methods': 'GET,POST,PATCH,OPTIONS', 'access-control-allow-headers': 'content-type' });
@@ -610,7 +620,10 @@ const server = http.createServer(async (req, res) => {
       if (r && r.active && (r.sv || 0) === (ctok.sv || 0)) sess = { id: r.id, email: r.email, name: r.name, role: r.role, must_change: !!r.must_change };
     }
     /* ---- public ---- */
-    if (p === '/api/health') return json(res, 200, { ok: true });
+    if (p === '/api/health') {
+      await q('select 1');
+      return json(res, 200, { ok: true, database: 'ok' });
+    }
 
     if (p === '/api/items' && req.method === 'GET') {
       const { rows } = await itemsPublic();
@@ -769,20 +782,28 @@ const server = http.createServer(async (req, res) => {
       if (email && !/^\S+@\S+\.\S+$/.test(email)) fields.push('email');
       if (fields.length) return json(res, 400, { error: 'missing_fields', fields }, cors);
       if (b.consent !== true) return json(res, 400, { error: 'consent_required' }, cors);
-      const it = (await q('select * from items where code=$1 and published', [clean(b.item_code, 12)])).rows[0];
-      if (!it) return json(res, 400, { error: 'unknown_item' }, cors);
-      if (it.phase === 'past') return json(res, 409, { error: 'closed' }, cors);
+      let it, category, seats, amount, method, status, reg;
+      const client = await pool.connect();
+      try {
+      await client.query('begin');
+      // Serialize reservations for an event so simultaneous requests cannot take the same last seats.
+      it = (await client.query('select * from items where code=$1 and published for update', [clean(b.item_code, 12)])).rows[0];
+      if (!it) { await client.query('rollback'); return json(res, 400, { error: 'unknown_item' }, cors); }
+      if (it.phase === 'past') { await client.query('rollback'); return json(res, 409, { error: 'closed' }, cors); }
       const categoryIn = clean(b.category, 60);
       // An unrecognised or missing "attending as" no longer blocks anyone; staff see it blank and ask.
-      const category = it.audiences && !it.audiences.split(',').map(x => x.trim()).includes(categoryIn) ? '' : categoryIn;
-      let seats = it.kind === 'event' ? Math.max(1, Math.min(10, parseInt(b.seats) || 1)) : 1;
-      const left = it.capacity === null ? null : (await itemsPublic()).rows.find(r => r.code === it.code)?.seats_left;
-      if (left !== null && left !== undefined && left < seats) return json(res, 409, { error: 'sold_out' }, cors);
-      const amount = Number(it.price) * seats;
-      const method = amount === 0 ? 'free' : (['momo', 'invoice', 'online'].includes(b.payment_method) ? b.payment_method : 'momo');
+      category = it.audiences && !it.audiences.split(',').map(x => x.trim()).includes(categoryIn) ? '' : categoryIn;
+      seats = it.kind === 'event' ? Math.max(1, Math.min(10, parseInt(b.seats) || 1)) : 1;
+      if (it.capacity !== null) {
+        const used = (await client.query(`select coalesce(sum(seats),0)::int n from registrations
+          where item_code=$1 and status<>'cancelled'`, [it.code])).rows[0].n;
+        if (it.capacity - used < seats) { await client.query('rollback'); return json(res, 409, { error: 'sold_out' }, cors); }
+      }
+      amount = Number(it.price) * seats;
+      method = amount === 0 ? 'free' : (['momo', 'invoice', 'online'].includes(b.payment_method) ? b.payment_method : 'momo');
       const r = ref(it.code);
-      const status = it.approval ? 'pending' : (amount === 0 ? 'confirmed' : 'new');
-      const { rows } = await q(`insert into registrations
+      status = it.approval ? 'pending' : (amount === 0 ? 'confirmed' : 'new');
+      const { rows } = await client.query(`insert into registrations
         (reference,item_code,company,reg_no,full_name,job_title,email,phone,country,sector,seats,guests,currency,amount,
          payment_method,paid,status,consent_at,marketing_opt_in,ip,category,utm_source,utm_campaign,
          confirm_token,unsub_token,ticket_code)
@@ -792,8 +813,13 @@ const server = http.createServer(async (req, res) => {
           clean(b.sector, 60), seats, clean(Array.isArray(b.guests) ? b.guests.join('\n') : b.guests, 1000), it.currency, amount,
           method, amount === 0, status, b.marketing_opt_in === true, ip, category, clean(b.utm_source, 60), clean(b.utm_campaign, 60),
           tok(), tok(), ticket()]);
-      const reg = rows[0];
-      await q('insert into activity(reg_id,actor,action,detail) values ($1,$2,$3,$4)', [reg.id, 'website', 'registered', it.title]);
+      reg = rows[0];
+      await client.query('insert into activity(reg_id,actor,action,detail) values ($1,$2,$3,$4)', [reg.id, 'website', 'registered', it.title]);
+      await client.query('commit');
+      } catch (err) {
+        await client.query('rollback').catch(() => {});
+        throw err;
+      } finally { client.release(); }
 
       /* The SMEs at the Centre questions. Optional here on purpose: older copies
          of the form, still out in WhatsApp groups, don't send them. */
@@ -839,6 +865,8 @@ const server = http.createServer(async (req, res) => {
 
       const confirmUrl = BASE + '/confirm/' + reg.confirm_token;
       const unsubUrl = BASE + '/unsubscribe/' + reg.unsub_token;
+      const paymentSettings = Object.fromEntries((await q("select key,value from settings where key in ('momo_number','momo_name')")).rows.map(x => [x.key, x.value]));
+      const paymentDetails = { number: paymentSettings.momo_number || '+233550416627', account_name: paymentSettings.momo_name || 'Gotham Consult' };
       const unsubFoot = `<p style="margin-top:14px;font-size:12px;color:#8A93A0">You are receiving this because you signed up at gothamconsult.com. <a href="${unsubUrl}" style="color:#5A6472">Unsubscribe</a>.</p>`;
 
       if (it.code === 'BRIEF') {
@@ -863,22 +891,48 @@ const server = http.createServer(async (req, res) => {
              <p style="color:#5A6472;font-size:15px"><b style="color:#0F1B2D">${esc(it.title)}</b><br>${it.starts_at ? new Date(it.starts_at).toUTCString().slice(0, 16) : ''} ${esc(it.venue || '')}</p>
              <p style="color:#5A6472;font-size:15px">Reference <b style="color:#0F1B2D">${reg.reference}</b>${paidNow ? '' : ` · amount ${it.currency} ${amount}`}.</p>
              ${paidNow ? `<p style="margin:18px 0"><a href="${BASE}/ticket/${reg.ticket_code}" style="background:#0F1B2D;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;display:inline-block;font-weight:600">Open your ticket</a></p>` :
-               `<p style="color:#5A6472;font-size:15px">Your place is held for 24 hours while payment is confirmed.</p>`}`),
+               `<p style="color:#5A6472;font-size:15px">Your place is held for 24 hours while payment is confirmed.</p>${method === 'momo' ? `<p style="color:#5A6472;font-size:15px">Send ${it.currency} ${amount} by mobile money to <b>${esc(paymentDetails.number)}</b> (${esc(paymentDetails.account_name)}). Use reference <b>${reg.reference}</b>, then send us the transaction ID on WhatsApp. We confirm your place after we verify receipt.</p>` : ''}`}`),
           paidNow ? 'ticket' : 'registration_received', reg.id);
       }
       flushMail().catch(() => {});
       return json(res, 200, { reference: reg.reference, amount, currency: it.currency, paid: amount === 0,
-        status, approval: !!it.approval, double_optin: it.code === 'BRIEF' }, cors);
+        status, approval: !!it.approval, double_optin: it.code === 'BRIEF',
+        payment_details: method === 'momo' && amount > 0 ? {
+          method: 'momo', number: paymentDetails.number,
+          account_name: paymentDetails.account_name, transaction_reference: reg.reference
+        } : null }, cors);
     }
 
     if (p === '/api/payment-reported' && req.method === 'POST') {
       if (rateLimited(ip, 10)) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
-      const r = (await q('select id from registrations where reference=$1', [clean(b.reference, 40).toUpperCase()])).rows[0];
-      if (!r) return json(res, 404, { error: 'unknown_reference' }, cors);
-      await q('update registrations set payment_ref=$1, payment_note=$2, updated_at=now() where id=$3',
-        [clean(b.txn, 60), clean(b.network, 40) + ' ' + clean(b.phone, 40), r.id]);
-      await q('insert into activity(reg_id,actor,action,detail) values ($1,$2,$3,$4)', [r.id, 'customer', 'payment_reported', clean(b.txn, 60)]);
+      const txn = clean(b.txn, 80), network = clean(b.network, 20);
+      if (!/^[A-Za-z0-9._-]{4,80}$/.test(txn)) return json(res, 400, { error: 'transaction_id_required' }, cors);
+      if (!['MTN','Telecel','AirtelTigo'].includes(network)) return json(res, 400, { error: 'invalid_network' }, cors);
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        const r = (await client.query(`select id,amount,paid,status,payment_method from registrations
+          where reference=$1 for update`, [clean(b.reference, 40).toUpperCase()])).rows[0];
+        if (!r) { await client.query('rollback'); return json(res, 404, { error: 'unknown_reference' }, cors); }
+        if (r.payment_method !== 'momo' || Number(r.amount) <= 0)
+          { await client.query('rollback'); return json(res, 409, { error: 'momo_payment_not_applicable' }, cors); }
+        if (r.paid || ['pending','cancelled','declined','attended'].includes(r.status))
+          { await client.query('rollback'); return json(res, 409, { error: 'payment_not_due' }, cors); }
+        const duplicate = await client.query(`select id from registrations where id<>$1 and lower(payment_ref)=lower($2) limit 1`, [r.id, txn]);
+        if (duplicate.rowCount) { await client.query('rollback'); return json(res, 409, { error: 'transaction_already_reported' }, cors); }
+        await client.query('insert into payment_reports(reg_id,network,transaction_id,phone) values ($1,$2,$3,$4)',
+          [r.id, network, txn, phoneGH(clean(b.phone, 40))]);
+        await client.query('update registrations set payment_ref=$1,payment_note=$2,updated_at=now() where id=$3',
+          [txn, network + (b.phone ? ' ' + phoneGH(clean(b.phone, 40)) : ''), r.id]);
+        await client.query('insert into activity(reg_id,actor,action,detail) values ($1,$2,$3,$4)',
+          [r.id, 'customer', 'payment_reported', network + ' · ' + txn]);
+        await client.query('commit');
+      } catch (err) {
+        await client.query('rollback').catch(() => {});
+        if (err.code === '23505') return json(res, 409, { error: 'transaction_already_reported' }, cors);
+        throw err;
+      } finally { client.release(); }
       return json(res, 200, { ok: true }, cors);
     }
 
@@ -1772,8 +1826,40 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (p === '/api/settings' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const b = await body(req);
-      for (const [k, v] of Object.entries(b))
-        await q('insert into settings(key,value) values ($1,$2) on conflict (key) do update set value=excluded.value', [clean(k, 40), clean(String(v), 200)]);
+      const allowed = new Set(['max_seats','momo_number','momo_name','whatsapp','pay_link']);
+      const entries = Object.entries(b);
+      if (!entries.length || entries.some(([k]) => !allowed.has(k))) return json(res, 400, { error: 'invalid_setting' });
+      const values = {};
+      for (const [key, raw] of entries) {
+        const value = clean(String(raw ?? ''), 200);
+        if (key === 'momo_number') {
+          const normalized = phoneGH(value);
+          if (!/^\+233\d{9}$/.test(normalized)) return json(res, 400, { error: 'bad_momo_number', fields: ['momo_number'] });
+          values[key] = normalized;
+        } else if (key === 'momo_name') {
+          if (!value || value.length > 80) return json(res, 400, { error: 'bad_momo_name', fields: ['momo_name'] });
+          values[key] = value;
+        } else if (key === 'whatsapp') {
+          const digits = value.replace(/\D/g, '');
+          if (digits.length < 9 || digits.length > 15) return json(res, 400, { error: 'bad_whatsapp', fields: ['whatsapp'] });
+          values[key] = digits;
+        } else if (key === 'pay_link') {
+          if (value) { let url; try { url = new URL(value); } catch { return json(res, 400, { error: 'bad_pay_link', fields: ['pay_link'] }); }
+            if (url.protocol !== 'https:') return json(res, 400, { error: 'bad_pay_link', fields: ['pay_link'] }); }
+          values[key] = value;
+        } else if (key === 'max_seats') {
+          if (value && (!/^\d+$/.test(value) || +value < 1 || +value > 100000)) return json(res, 400, { error: 'bad_max_seats', fields: ['max_seats'] });
+          values[key] = value;
+        }
+      }
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        for (const [k, v] of Object.entries(values)) await client.query('insert into settings(key,value) values ($1,$2) on conflict (key) do update set value=excluded.value', [k, v]);
+        await client.query('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'settings_save', Object.keys(values).join(', ')]);
+        await client.query('commit');
+      } catch (err) { await client.query('rollback').catch(() => {}); throw err; }
+      finally { client.release(); }
       return json(res, 200, { ok: true });
     }
     if (p === '/api/users' && req.method === 'POST') {
@@ -2152,7 +2238,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     /* ---- static admin ---- */
     if (p === '/admin' || p === '/admin/' || (!SITE_DIR && p === '/')) {
       const html = fs.readFileSync(path.join(here, 'public', 'admin.html'));
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'x-frame-options': 'DENY' });
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'x-frame-options': 'SAMEORIGIN' });
       return res.end(html);
     }
 
@@ -2241,7 +2327,7 @@ async function itemForMail(code) {
   let cover_url = null;
   if (it.cover) {
     const m = (await q('select variants from media where id=$1', [it.cover])).rows[0];
-    if (m && m.variants && m.variants.og) cover_url = `${PUBLIC_URL}/media/${m.variants.og.jpg}`;
+    if (m && m.variants && m.variants.og) cover_url = `${MEDIA_URL}/media/${m.variants.og.jpg}`;
   }
   return { ...it, cover_url };
 }

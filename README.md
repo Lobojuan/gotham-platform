@@ -18,10 +18,11 @@ halves have opposite needs:
 | Who reaches it | Everyone | Signed-in staff, plus a small public API |
 | If it goes down | Nobody can read about you | Nobody can register |
 
-Both are served from one machine on one domain: `/` is the website, `/admin` is
-the back office, and `/api/*` is the API. That means sign-in stays in the same
-tab, the session cookie is first-party, and the browser makes no cross-origin
-requests at all. The site reads events and sponsors from the API on load, so
+Both are served from one origin: `/` is the website, `/admin` is the back office,
+and `/api/*` is the API. Login opens the back office in a full-screen same-origin
+dialog over the current page, keeping the public page and URL in place. The
+session cookie is first-party, and the browser makes no cross-origin API requests.
+The site reads events and sponsors from the API on load, so
 content edited in the back office appears without a redeploy — and falls back to
 the copy baked into the page if the API is unreachable.
 
@@ -37,7 +38,7 @@ gotham-platform/
 │   │   ├── public/      images, legal pages, headers — copied as-is
 │   │   ├── legal/       source for privacy.html and terms.html
 │   │   ├── build.py     wraps pages in full HTML documents -> dist/
-│   │   └── dist/        build output, deployed to Netlify (git-ignored)
+│   │   └── dist/        generated build output (git-ignored)
 │   └── crm/             the back office
 │       ├── server.js    the whole API and admin backend
 │       ├── schema.sql   tables and migrations, safe to re-run
@@ -58,8 +59,8 @@ Needs Docker, Node 22 and Python 3.
 ./scripts/dev.sh
 ```
 
-That starts Postgres in Docker, the CRM on `http://127.0.0.1:4100`
-(sign in as `admin` / `devpassword123`) and the site on `http://127.0.0.1:8080`.
+That starts Postgres in Docker and serves the website, registration, API and back office
+from the same origin at `http://127.0.0.1:4100` (sign in as `admin` / `devpassword123`).
 Stop with Ctrl-C. To wipe the local database: `docker rm -f gotham-dev-db`.
 
 ## Deploy
@@ -70,8 +71,14 @@ Stop with Ctrl-C. To wipe the local database: `docker rm -f gotham-dev-db`.
 ./scripts/rollback-crm.sh    # put the previous CRM release back
 ```
 
-`deploy-crm.sh` snapshots the current release to `~/backups/gotham.prev` on the
-server before touching anything, and never overwrites the server's `.env`.
+`deploy-site.sh` builds the public pages and syncs them to `/srv/gotham-site`.
+`deploy-crm.sh` deploys the API/back office container and checks its server address.
+The current checked-in deploy script notes that `gothamconsult.com` still serves
+WordPress; the platform host is `https://gotham.84-12-73-59.sslip.io`. The
+WordPress bridge must be configured to proxy requests to that host. A successful
+container health check does not prove the public domain bridge works. The CRM
+deploy script snapshots its prior release and does not overwrite the server's
+`.env`.
 
 ---
 
@@ -84,7 +91,7 @@ The CRM reads its settings from the environment. On the server these live in
 |---|---|
 | `DATABASE_URL` | Postgres connection string |
 | `SESSION_SECRET` | Signs the sign-in cookie. Change it and everyone is signed out. |
-| `ALLOW_ORIGINS` | Which websites may call the API. `*` allows any. |
+| `ALLOW_ORIGINS` | Exact comma-separated origins for any required cross-origin API clients. Same-origin is the default; `*` is ignored. |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | Seeds the first owner account on an empty database |
 | `PUBLIC_URL` | The CRM's own address, used in emails, tickets and QR codes |
 | `SITE_URL` | The public website, used in QR targets and posters |
@@ -141,11 +148,43 @@ check-in with contact details hidden.
   can double as artifacts. `build.py` adds the `<head>`. Do not add a doctype
   to the files in `pages/`.
 
+## Backups
+
+Run `scripts/backup-crm.sh` with `DATABASE_URL` and `MEDIA_DIR` set. It creates a
+private, checksummed database and media archive under `.backups/` by default,
+validates both archives, and retains 30 days locally. It requires PostgreSQL
+client tools and `sha256sum`. Schedule it on the server and copy archives to
+encrypted off-site storage; the local script cannot configure either service.
+Restore guidance is included in each archive as `RESTORE.txt`. Test restores in
+a separate database and media directory before touching live data.
+
 ## Domain
 
-The live address is **https://gothamconsult.com** (DNS at Namecheap cPanel: only the apex A record points at
-the Oracle server, 84.12.73.59; `www` is a CNAME to it; mail, webmail and MX stay on Namecheap hosting).
-`REDIRECT_HOSTS` (in `/srv/gotham/.env`) lists old hosts whose page requests 301 to `PUBLIC_URL`
-(`www.gothamconsult.com,gotham.84-12-73-59.sslip.io`); `/api/*` is never redirected so old copies of the form keep posting.
-Old WordPress paths (`/services`, `/contact`, `/faq`, `/wp-admin`…) redirect to their new places.
-The old WordPress files are untouched on the Namecheap server: pointing the A record back to 199.188.201.131 restores it.
+The live address is **https://gothamconsult.com**. Since 28 September 2026 it reaches this server through the
+**Gotham Consult Platform Bridge** WordPress plugin (`integrations/wordpress/gotham-bridge`), installed on the
+Namecheap WordPress site (DNS still points at Namecheap, 199.188.201.131; mail/MX unchanged).
+
+- The plugin forwards every address except WordPress's own (`/wp-admin`, `/wp-login.php`, `/wp-content`…) to
+  `https://gotham.84-12-73-59.sslip.io`, signed with `PROXY_KEY` (same value in `/srv/gotham/.env` and the plugin file;
+  the repo copy says `SET-ME`). Videos redirect straight to the server.
+- `/srv/gotham/.env`: `PUBLIC_URL` and `SITE_URL` = `https://gothamconsult.com`; `MEDIA_URL` = the sslip address, so
+  uploaded images load directly instead of through PHP; `REDIRECT_HOSTS` = the sslip host, so people who open the
+  server address are moved to gothamconsult.com (bridge requests, framed pages, `/api/*` and `/media/*` are exempt).
+- Build the site with `SITE_URL=https://gothamconsult.com`.
+- WordPress admin still works at gothamconsult.com/wp-admin. **Deactivating the plugin restores the old WordPress
+  site** (its Home/Services/Contact/FAQ pages frame the new site as a fallback).
+- Later, for speed: point the A record at 84.12.73.59, add gothamconsult.com to Caddy, set `MEDIA_URL` empty and
+  remove the plugin. Old WordPress paths (`/services`, `/contact`, `/faq`, `/wp-admin`…) already redirect.
+## Quality checks
+
+The API suites use a dedicated Postgres database and recreate it for each suite.
+Use a database name ending in `_test`; the runner refuses other names because it
+drops and recreates the database.
+
+```bash
+TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/run_api.sh
+```
+
+The browser E2E scripts in `tests/ui/` require Chromium and `playwright-core`.
+Their last recorded device sweep is historical; rerun it against the current
+checkout before a public release.

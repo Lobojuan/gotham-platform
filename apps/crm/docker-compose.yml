@@ -12,6 +12,7 @@ services:
       ADMIN_NAME: ${ADMIN_NAME:-Administrator}
       PUBLIC_URL: ${PUBLIC_URL:-https://gothamconsult.com}
       SITE_URL: ${SITE_URL:-https://gothamconsult.com}
+      MEDIA_URL: ${MEDIA_URL:-}
       MAIL_FROM: ${MAIL_FROM:-Gotham Consult <info@gothamconsult.com>}
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       REDIRECT_HOSTS: ${REDIRECT_HOSTS:-}
