@@ -29,7 +29,7 @@ bridge plugin. The repo copy of the plugin says `SET-ME`.
    Passwords are scrypt and cannot be read back, only reset.
 5. **The public API is CORS-exposed.** `/api/items`, `/api/register`,
    `/api/sponsors`, `/api/sponsor-enquiry`, `/media/*`, `/s/*`, `/confirm/*`,
-   `/unsubscribe/*`, `/ticket/*` are reachable by anyone. Everything else must
+   `/unsubscribe/*`, `/ticket/*`, `/api/ask` are reachable by anyone. Everything else must
    call `auth()` or `need('admin')` as its first line. If you add an endpoint,
    decide which it is before you write the body.
 6. **Personal data.** This system holds names, phone numbers and emails of real
@@ -148,3 +148,15 @@ new questions in the page; accept their absence in the API.
 A "Yes" or "Maybe" to the follow-up question creates or tags a contact
 (`forum-lead`, `forum-yes` / `forum-maybe`). Anyone with `unsubscribed_at` set or
 status `do_not_contact` is never re-tagged — check both, every time.
+
+## "Ask Gotham" website chat
+
+`/api/ask` answers the chat on the home page with an OpenAI model. Its knowledge is `apps/crm/assistant.md` plus
+the published upcoming forums. Keep prices in that file in cedis and in step with the site.
+- It is off until `OPENAI_API_KEY` is in `/srv/gotham/.env`. Set keys with `bash scripts/set-secret.sh NAME`, which
+  uses a hidden prompt, never in git and never in chat. Without a key, or on any error, the page falls back to its
+  built-in regex answers.
+- Cost caps: 20 questions per visitor per hour, `ASK_DAILY_CAP` per day (default 400), and answers capped at 900 tokens.
+  Questions are not stored.
+- The model is `OPENAI_MODEL`, default `gpt-5-mini`. Tests use a local mock via `OPENAI_BASE_URL` (`tests/api/13_ask_gotham.py`).
+
