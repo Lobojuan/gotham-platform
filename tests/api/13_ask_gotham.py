@@ -60,6 +60,7 @@ try:
     assert b['model']=='gpt-5-mini' and b['max_completion_tokens']<=1000 and b.get('reasoning_effort')=='minimal'
     ok('bounded answer length, small default model')
     assert 'Ghana cedis' in sysmsg and 'QA Roundtable' in sysmsg and 'Test Hall' in sysmsg and 'GHS 350' in sysmsg
+    assert '+233 55 041 6627' in sysmsg and 'staff can match it in the account' in sysmsg
     assert 'by invitation' in sysmsg and 'Old forum' not in sysmsg and 'Hidden draft' not in sysmsg
     assert 'Investor desk retainer' in sysmsg
     ok('knowledge = assistant.md + upcoming published forums (past and unpublished left out), prices in cedis')

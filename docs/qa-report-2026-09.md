@@ -5,7 +5,7 @@
 The committed release is based on `origin/main` `41ba281` plus the release commit recorded in Git. After rebasing,
 all 14 API suites passed against a disposable local PostgreSQL 16 database: 230 reported checks, including the
 13 upstream suites and the MoMo payment-report suite. The Ask Gotham suite used a local mock provider and verified
-that the selected French locale reaches the `/api/ask` prompt. `node --check apps/crm/server.js` and
+that the selected French locale and the MoMo receiving number/staff verification rule reach the `/api/ask` prompt. `node --check apps/crm/server.js` and
 `git diff --check` also passed. The site build and production deploy scripts are run separately as part of release.
 - Fixed during this review: API suites 02, 03, 04 and 05 no longer depend on a former machine's absolute
   checkout path. Suite 04 now creates its own deterministic workbook instead of requiring a private upload.

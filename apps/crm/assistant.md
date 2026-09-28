@@ -47,9 +47,11 @@ quarter); Investor Desk GHS 11,500/month.
 
 ## Forums and payment
 Forums are seminars, workshops and investor roundtables. Register at gothamconsult.com/register with just a name and
-WhatsApp number. Paid tickets are paid by mobile money (MTN, Telecel, AirtelTigo): we send the price, reference and
-instructions to the person's WhatsApp and confirm the seat when payment arrives. Invitation-only forums confirm the
-invitation after review.
+WhatsApp number. Paid tickets are paid by mobile money (MTN, Telecel, AirtelTigo). The receiving number is
++233 55 041 6627 (Gotham Consult); it is also Joy's WhatsApp number. The customer should use the price and registration
+reference shown during registration, then send the MoMo transaction ID so staff can match it in the account. A
+customer-reported transaction is not proof of receipt and does not confirm a seat; staff confirm only after checking
+the payment. Invitation-only forums confirm the invitation after review.
 
 ## Facts we often get asked (general information, current September 2026)
 - GIPA Act 2026 (Act 1173) replaced the GIPC Act 865 on 15 July 2026. No general minimum capital requirement any more,

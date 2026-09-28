@@ -74,7 +74,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | W-8 | The home page "Next forum" band follows the next event in the back office. | manual |
 | W-9 | Share links (WhatsApp, LinkedIn, copy) contain the full address. | manual |
 | W-10 | Public landing pages have complete English, French and Spanish copy with an accessible language toggle that preserves the current page/section. | landing toggle and static-copy translations implemented; interactive results and CRM event text plus browser QA remain |
-| W-11 | Ask Gotham keeps `/api/ask` history and fallback behavior, follows the selected English/French/Spanish page language, and gives the MoMo destination for payment questions when AI is unavailable. | api/13, local fallback in `pages/index.html`; browser QA pending |
+| W-11 | Ask Gotham keeps `/api/ask` history and fallback behavior, follows the selected English/French/Spanish page language, and gives the MoMo destination plus staff verification instructions for payment questions. | api/13, local fallback in `pages/index.html`; browser QA pending |
 
 ## 6. CRM pipeline and service operations
 
