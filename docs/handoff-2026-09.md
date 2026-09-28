@@ -79,7 +79,8 @@ Never edit files on the server. Never commit `.env` or the real `PROXY_KEY`: the
 - **Ask Gotham chat (AI)**: `/api/ask` plus `apps/crm/assistant.md` (see AGENTS.md). It is live once `OPENAI_API_KEY`
   is set with `scripts/set-secret.sh`; until then, and on any error, it uses the built-in answers. Deployed 28 Sep
   (no key yet). Codex's parallel `/api/support-chat` draft was superseded by this one at Uffe's choice. A test with
-  Uffe's key returned OpenAI HTTP 429: the API project needs credits/billing before AI answers work.
+  Uffe's OpenAI key returned HTTP 429 (no API credit; ChatGPT/Claude/Kimi subscriptions don't include API use), so
+  Uffe chose **Groq** (free tier, `openai/gpt-oss-120b`). The code is provider-neutral (OpenAI-compatible).
 - **Deploy script**: rsync instead of `scp -r` (a local `npm install` made it copy thousands of files).
 
 ## 4. Tests

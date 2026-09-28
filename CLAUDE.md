@@ -169,12 +169,13 @@ status `do_not_contact` is never re-tagged — check both, every time.
 
 ## "Ask Gotham" website chat
 
-`/api/ask` answers the chat on the home page with an OpenAI model. Its knowledge is `apps/crm/assistant.md` plus
-the published upcoming forums. Keep prices in that file in cedis and in step with the site.
-- It is off until `OPENAI_API_KEY` is in `/srv/gotham/.env`. Set keys with `bash scripts/set-secret.sh NAME`, which
-  uses a hidden prompt, never in git and never in chat. Without a key, or on any error, the page falls back to its
-  built-in regex answers.
+`/api/ask` answers the chat on the home page with an AI model. Its knowledge is `apps/crm/assistant.md` plus the
+published upcoming forums. Keep prices in that file in cedis and in step with the site.
+- The provider is anything OpenAI-compatible. Live since 28 Sep 2026: **Groq**, with `OPENAI_BASE_URL=https://api.groq.com/openai/v1`
+  and `OPENAI_MODEL=openai/gpt-oss-120b` in `/srv/gotham/.env`; the Groq key sits in `OPENAI_API_KEY`. Switching back to
+  OpenAI means emptying `OPENAI_BASE_URL` and setting a model; for Kimi, use Moonshot's base URL. No code change either way.
+- Set keys with `bash scripts/set-secret.sh OPENAI_API_KEY`, a hidden prompt: never in git, never in chat. Without a
+  key, or on any provider error (quota, 429, outage), the page falls back to its built-in answers.
 - Cost caps: 20 questions per visitor per hour, `ASK_DAILY_CAP` per day (default 400), and answers capped at 900 tokens.
-  Questions are not stored.
-- The model is `OPENAI_MODEL`, default `gpt-5-mini`. Tests use a local mock via `OPENAI_BASE_URL` (`tests/api/13_ask_gotham.py`).
-
+  Questions are not stored. Reasoning models get low effort (`OPENAI_REASONING` overrides it).
+- Tests use a local mock via `OPENAI_BASE_URL` (`tests/api/13_ask_gotham.py`).

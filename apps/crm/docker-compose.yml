@@ -19,6 +19,8 @@ services:
       PROXY_KEY: ${PROXY_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_REASONING: ${OPENAI_REASONING:-}
       ASK_DAILY_CAP: ${ASK_DAILY_CAP:-400}
       MEDIA_DIR: /data/media
       SITE_DIR: /data/site

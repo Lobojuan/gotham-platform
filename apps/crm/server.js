@@ -575,19 +575,25 @@ async function askKnowledge() {
   return askKnow.text;
 }
 async function askModel(messages) {
-  const call = async extra => fetch(OPENAI_BASE + '/chat/completions', {
-    method: 'POST', signal: AbortSignal.timeout(25e3),
-    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + OPENAI_KEY },
-    body: JSON.stringify({ model: OPENAI_MODEL, messages, max_completion_tokens: 900, ...extra }) });
-  const reasoning = /^(gpt-5|o\d)/.test(OPENAI_MODEL) ? { reasoning_effort: process.env.OPENAI_REASONING || 'minimal' } : {};
-  let r = await call(reasoning);
-  if (r.status === 400 && Object.keys(reasoning).length) {        // a newer model that names effort levels differently
-    const t = await r.text();
-    if (/reasoning/i.test(t)) r = await call({}); else throw new Error('openai 400 ' + t.slice(0, 200));
+  /* Works with any OpenAI-compatible chat API: OpenAI, Groq (OPENAI_BASE_URL=https://api.groq.com/openai/v1), Kimi…
+     Reasoning models get a low effort so answers stay fast; if a provider rejects a parameter we retry without it. */
+  const effort = process.env.OPENAI_REASONING || (/gpt-oss/.test(OPENAI_MODEL) ? 'low' : /^(gpt-5|o\d)/.test(OPENAI_MODEL) ? 'minimal' : '');
+  let opts = { max_completion_tokens: 900, ...(effort ? { reasoning_effort: effort } : {}) };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await fetch(OPENAI_BASE + '/chat/completions', {
+      method: 'POST', signal: AbortSignal.timeout(25e3),
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + OPENAI_KEY },
+      body: JSON.stringify({ model: OPENAI_MODEL, messages, ...opts }) });
+    if (r.ok) {
+      const j = await r.json();
+      return String(j.choices?.[0]?.message?.content || '').trim();
+    }
+    const t = (await r.text()).slice(0, 300);
+    if (r.status === 400 && opts.reasoning_effort && /reasoning/i.test(t)) { const { reasoning_effort, ...rest } = opts; opts = rest; continue; }
+    if (r.status === 400 && opts.max_completion_tokens && /max_completion_tokens/i.test(t)) { const { max_completion_tokens, ...rest } = opts; opts = { ...rest, max_tokens: 900 }; continue; }
+    throw new Error('ai ' + r.status + ' ' + t);
   }
-  if (!r.ok) throw new Error('openai ' + r.status + ' ' + (await r.text()).slice(0, 200));
-  const j = await r.json();
-  return String(j.choices?.[0]?.message?.content || '').trim();
+  throw new Error('ai: parameters rejected');
 }
 
 /* Attach resolved image/doc objects to a list of items in one extra query. */
