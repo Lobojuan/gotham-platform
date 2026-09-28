@@ -92,6 +92,14 @@ Never edit files on the server. Never commit `.env` or the real `PROXY_KEY`: the
   and Ask Gotham with a mocked provider and selected-language prompt.
 - UI (Playwright, phone sizes): `tests/ui/*.js`, seeded by `tests/ui/seed_demo.py` / `seed_crm.py` against a local
   server on :4199. Environment variables: `PLAYWRIGHT`, `CHROMIUM`, `QA_DIR`, `ADMIN_PW`.
+- **Website end-to-end (run before every site deploy):**
+  `PLAYWRIGHT=… CHROMIUM=… TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/e2e/run.sh`.
+  It builds the site, starts the server on a fresh test database with a mock AI provider (`tests/e2e/mock_ai.js`), then
+  `tests/e2e/site_e2e.js` crawls every internal link and #anchor, loads every page on iPhone SE, iPhone 15, Galaxy A,
+  Pixel 7, iPad and desktop (JS errors, failed requests, sideways scrolling, one header/footer, alt text, button names,
+  40 px tap targets, skip link), and walks the journeys: mega menu, phone sheet and dock, carousel, "More about this",
+  FAQ, the AI panel and Ask Gotham chat (question → answer, follow-ups), French/Spanish, free tools, registration,
+  redirects, 404 and sitemap. 2,333 checks passed on 28 Sep.
 - Never point tests at production, and never test with real people's credentials.
 
 ## 5. Open items (ask Uffe before acting on billable or public changes)
@@ -143,5 +151,13 @@ for reduced motion.
   it removes their old top bar and footer and injects the partials plus `assets/v2/chrome.css` (generated from v2.css by
   `apps/site/chrome_css.py`, scoped to `.v2c` so nothing leaks either way).
 - Redirects in `server.js` (`OLD` map): `/v2/*` → new paths, `/contact` and `/faq` → `/about#contact`.
-- Next: move Register, Family Desk and the free tools fully into the new design; practice detail pages (e.g. what AI can do
-  for customers) once Uffe/Joy confirm what each practice delivers; phone QA on real devices.
+- Practice detail pages at `/services/<slug>` (investment-readiness, market-entry, ai, digital, creative-studio,
+  energy-mining, compliance-esg, education, family-support, media-forums): who it is for, what you get, examples,
+  steps, packages/prices, FAQ, an "Ask Gotham · AI" panel (questions open the chat with the practice as context), CTA.
+  Sources `apps/site/pages/services/*.html`; titles/descriptions in `build.py` `PRACTICES`. Linked from the Services
+  page ("More about this"), the home carousel and the menus. Joy/Uffe should read them once for accuracy.
+- `/tools`: the free tools on their own page (built from `/classic` by `build.py`, rest hidden). Menus point here.
+- Register, Family Desk and `/tools` open with the dark hero of the new design (`chrome_css.py` EXTRA).
+- `v2.js` runs only the shared chrome on the older pages (`body.v2-legacy`): their own forms, tabs and counters are
+  left to their own scripts (it used to fill terms' `#events` heading with forum cards and double-send the classic brief form).
+- Next: phone QA on real devices (Uffe/Joy).

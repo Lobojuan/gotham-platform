@@ -53,6 +53,31 @@ footer.v2c.gf { font: 400 15px/1.6 "Hanken Grotesk", system-ui, sans-serif; }
 .v2c { font-family: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 .v2c a { color: inherit; }
 body.v2-legacy .v2c .gh-bar { background: rgba(7,13,24,.97); }
+/* dark hero on the older pages, so every page opens like the new design */
+body.v2-legacy .intro, body.v2-legacy section.hero, body.v2-legacy .tools-hero { position: relative; color: #fff;
+  background: radial-gradient(60% 90% at 100% 0%, rgba(47,181,148,.22), transparent 60%), radial-gradient(50% 80% at 0% 100%, rgba(240,190,90,.16), transparent 60%), #070D18; }
+body.v2-legacy .intro { background: #070D18; isolation: isolate; box-shadow: 0 0 0 100vmax #070D18; clip-path: inset(0 -100vmax); padding: 44px 0 40px; margin-bottom: 32px; }
+body.v2-legacy .intro::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 100vw; transform: translateX(-50%); z-index: -1;
+  background: radial-gradient(60% 90% at 100% 0%, rgba(47,181,148,.22), transparent 60%), radial-gradient(50% 80% at 0% 100%, rgba(240,190,90,.16), transparent 60%); }
+body.v2-legacy .demo, .v2c .mark::after { display: none !important; }
+body.v2-legacy section.hero { padding: 56px 0 56px; }
+body.v2-legacy .tools-hero { padding: 52px 0 44px; }
+body.v2-legacy .intro h1, body.v2-legacy section.hero h1, body.v2-legacy .tools-hero h1 { color: #fff; }
+body.v2-legacy .intro .serif, body.v2-legacy section.hero .serif, body.v2-legacy .tools-hero .serif { color: #F0BE5A; }
+body.v2-legacy .intro .eyebrow, body.v2-legacy section.hero .eyebrow, body.v2-legacy .tools-hero .eyebrow { color: #F0BE5A; }
+body.v2-legacy .intro .lead, body.v2-legacy section.hero .lead, body.v2-legacy section.hero .fine, body.v2-legacy .tools-hero .lead { color: rgba(255,255,255,.74); }
+body.v2-legacy section.hero .btn-dark { background: linear-gradient(135deg, #F0BE5A, #D9A043); color: #1a1205; }
+body.v2-legacy section.hero .btn-line { color: #fff; border-color: rgba(255,255,255,.35); background: transparent; }
+body.v2-legacy section.hero .founding { background: rgba(240,190,90,.14); color: #F0BE5A; }
+body.v2-legacy section.hero .report { color: #0F1B2D; }
+body.v2-legacy .intro .feat { box-shadow: 0 0 0 1px rgba(255,255,255,.1); }
+body.v2-legacy .tools-hero h1 { font-size: clamp(34px, 6vw, 60px); letter-spacing: -.035em; line-height: 1.04; max-width: 16ch; margin: 6px 0 0; }
+body.v2-legacy .tools-hero .lead { max-width: 40em; margin-top: 16px; font-size: clamp(16.5px, 1.6vw, 19px); }
+body.v2-legacy .tools-hero .crumbs { font-size: 13px; color: rgba(255,255,255,.55); margin-bottom: 16px; }
+body.v2-legacy .tools-hero .crumbs a { color: rgba(255,255,255,.8); text-decoration: none; }
+/* /tools: only the tools section of the old one-page site */
+body.tools-only main#top > :not(#tools):not(.tools-hero) { display: none !important; }
+body.tools-only #tools .shead { display: none; }
 @media (max-width: 899px) { body.v2-legacy { padding-bottom: calc(84px + env(safe-area-inset-bottom)); } }
 '''
 

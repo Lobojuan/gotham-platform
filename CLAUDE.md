@@ -68,6 +68,9 @@ Run the API suites (a fresh database per suite; never production):
 TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/run_api.sh
 ```
 
+Before any website deploy, run the end-to-end test too (every page on six screen sizes, every link, menus, AI chat,
+languages, tools, registration): `PLAYWRIGHT=… CHROMIUM=… bash tests/e2e/run.sh` — it must print PASSED.
+
 `tests/api/NN_*.py` are the API suites and `tests/ui/*.js` the Playwright phone-layout and flow tests (see
 `docs/qa-report-2026-09.md`). Add a suite for new behaviour. `docs/srs.md` maps requirements to tests; keep it current.
 

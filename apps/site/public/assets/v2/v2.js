@@ -25,7 +25,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = null, dictReady = null;
   const loadDict = () => dictReady ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = '/assets/v2/i18n.js?v=1';
+    const sc = document.createElement('script'); sc.src = '/assets/v2/i18n.js?v=2';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => { dict = {}; res(); }; document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -139,7 +139,9 @@
   $$('[data-nav]').forEach(a => { if (a.dataset.nav === navKey) { a.tagName === 'A' ? a.setAttribute('aria-current', 'page') : a.classList.add('cur'); } });
 
   /* ---- tabs (packages, country lenses): arrow keys move between tabs ---- */
-  $$('[role="tablist"]').forEach(list => {
+  /* pages that still run their own scripts (register, Family Desk, tools, legal) keep their own forms and tabs: only the shared chrome runs there */
+  const LEG = document.body.classList.contains('v2-legacy');
+  if (!LEG) $$('[role="tablist"]').forEach(list => {
     const tabs = $$('[role="tab"]', list);
     const pick = t => tabs.forEach(x => { const on = x === t; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1; const pnl = document.getElementById(x.getAttribute('aria-controls')); if (pnl) pnl.hidden = !on; });
     tabs.forEach((t, i) => {
@@ -149,7 +151,7 @@
   });
 
   /* ---- forums page: every upcoming event, live from the back office ---- */
-  const evWrap = $('#events');
+  const evWrap = LEG ? null : $('div.events#events');
   if (evWrap) fetch('/api/items').then(r => r.json()).then(d => {
     const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now() - 864e5)
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
@@ -168,7 +170,7 @@
   }).catch(() => {});
 
   /* ---- Ghana Business Brief ---- */
-  const bf = $('#briefF');
+  const bf = LEG ? null : $('#briefF');
   bf?.addEventListener('submit', async e => {
     e.preventDefault();
     const v = id => $('#' + id).value.trim(), note = $('#b-note');
@@ -186,7 +188,7 @@
   });
 
   /* ---- sponsorship enquiry ---- */
-  const sf = $('#sponF');
+  const sf = LEG ? null : $('#sponF');
   sf?.addEventListener('submit', async e => {
     e.preventDefault();
     const b = Object.fromEntries(new FormData(sf).entries()), msg = $('#sponMsg'), btn = $('button', sf);
@@ -200,7 +202,7 @@
   });
 
   /* ---- partner logos ---- */
-  const wall = $('#wall');
+  const wall = LEG ? null : $('#wall');
   if (wall) fetch('/api/sponsors').then(r => r.json()).then(d => {
     const list = d.sponsors || []; if (!list.length) return;
     const L = { headline: 'Headline sponsor', partner: 'Partners', supporting: 'Supporting partners', listing: 'In the directory' }, by = {};
@@ -211,7 +213,7 @@
   }).catch(() => {});
 
   /* ---- contact form: WhatsApp or email, nothing stored ---- */
-  const cf = $('#contactF');
+  const cf = LEG ? null : $('#contactF');
   if (cf) {
     const text = () => `Hello Gotham Consult,\nName: ${$('#c-name').value}${$('#c-co').value ? '\nCompany: ' + $('#c-co').value : ''}\nTopic: ${$('#c-topic').value}\n\n${$('#c-msg').value}`;
     cf.addEventListener('submit', e => { e.preventDefault(); if (!$('#c-name').reportValidity()) return; open('https://wa.me/233550416627?text=' + encodeURIComponent(text()), '_blank', 'noopener'); });
@@ -236,7 +238,7 @@
   }).catch(() => {});
 
   /* ---- counters (decoration; the real number is already in the HTML) ---- */
-  if (!reduce && 'IntersectionObserver' in window) {
+  if (!LEG && !reduce && 'IntersectionObserver' in window) {
     const io = new IntersectionObserver(es => es.forEach(e => {
       if (!e.isIntersecting) return; io.unobserve(e.target);
       const el = e.target, to = +el.dataset.count, pre = el.dataset.prefix || '', suf = el.dataset.suffix || '', t0 = performance.now();
@@ -272,5 +274,10 @@
   const chips = ['Next forum', 'How do I pay?', 'What is GIPA Act 1173?', 'Invest in Ghana'];
   if ($('#chatChips')) $('#chatChips').innerHTML = chips.map(c => `<button type="button">${esc(c)}</button>`).join('');
   $('#chatChips')?.addEventListener('click', e => { if (e.target.tagName === 'BUTTON') ask(e.target.textContent); });
+  /* inline AI panels (service pages): a question opens the chat and asks it there */
+  const askHere = q => { openChat(); ask(q); };
+  $$('[data-ask]').forEach(b => b.addEventListener('click', () => askHere(b.textContent.trim())));
+  $$('[data-ask-form]').forEach(f => f.addEventListener('submit', e => { e.preventDefault(); const i = f.querySelector('input'), v = i.value.trim(); if (!v) return; i.value = '';
+    const topic = f.closest('[data-topic]')?.getAttribute('data-topic'); askHere(topic && !v.toLowerCase().includes(topic.toLowerCase()) ? v + ' (about ' + topic + ')' : v); }));
   $('#chatF')?.addEventListener('submit', e => { e.preventDefault(); const i = $('#chatI'), v = i.value.trim(); if (v) { i.value = ''; ask(v); } });
 })();

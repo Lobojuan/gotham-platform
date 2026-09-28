@@ -60,7 +60,7 @@ input.t,select.t,textarea.t{width:100%;border:1px solid var(--line);border-radiu
 input.t:focus,select.t:focus,textarea.t:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(15,27,45,.08)}
 textarea.t{min-height:78px;resize:vertical}
 .qty{display:flex;align-items:center;gap:10px}
-.qty button{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:18px}
+.qty button{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:18px}
 .qty output{min-width:24px;text-align:center;font-weight:600}
 .pays{display:grid;gap:8px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:13px 22px;font-weight:600;border:1px solid transparent;cursor:pointer;text-decoration:none;font-size:16px}
@@ -210,7 +210,7 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
         <div id="payInfo"></div>
       </fieldset>
 
-      <label class="consent" for="cons"><input type="checkbox" id="cons" required><span>I agree that Gotham Consult and Carlson Capital Ltd may use these details to process my registration and contact me about it, as described in the <a href="/privacy.html" target="_blank" rel="noopener">privacy notice</a>, and I accept the <a href="/terms.html" target="_blank" rel="noopener">terms of service</a>. Ghana Data Protection Act 2012 (Act 843); GDPR standards for EU and UK clients.</span></label>
+      <label class="consent" for="cons"><input type="checkbox" id="cons" required><span>I agree that Gotham Consult and Carlson Capital Ltd may use these details to process my registration and contact me about it, as described in the <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>, and I accept the <a href="/terms" target="_blank" rel="noopener">terms of service</a>. Ghana Data Protection Act 2012 (Act 843); GDPR standards for EU and UK clients.</span></label>
       <p class="err" id="err" role="alert"></p>
     </form>
 
@@ -225,7 +225,7 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
           <button class="btn btn-line" id="goMail" type="button">Register via email</button>
         </div>
         <p class="err" id="err2" role="alert"></p>
-        <p class="fine">Your seat or service is held for 24 hours while payment is confirmed, and for 48 hours once you report a mobile money transaction. Our fees are for preparation and delivery, never for access or approvals. Cancellations and refunds are covered in the <a href="/terms.html" target="_blank" rel="noopener">terms</a>.<br><br><b>Photography:</b> our forums are photographed and filmed for reporting and promotion, so you may appear in that material. Tell us at the desk or by email if you would rather not be.</p>
+        <p class="fine">Your seat or service is held for 24 hours while payment is confirmed, and for 48 hours once you report a mobile money transaction. Our fees are for preparation and delivery, never for access or approvals. Cancellations and refunds are covered in the <a href="/terms" target="_blank" rel="noopener">terms</a>.<br><br><b>Photography:</b> our forums are photographed and filmed for reporting and promotion, so you may appear in that material. Tell us at the desk or by email if you would rather not be.</p>
       </div>
       <div class="ok" id="ok">
         <div class="tick">✓</div>
@@ -238,13 +238,13 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
   </div>
 </main>
 
-<footer><div class="wrap">Gotham Consult · Accra, Ghana · In strategic partnership with Carlson Capital Ltd, registered in Ghana · WhatsApp +233 55 041 6627 · info@gothamconsult.com · <a href="/privacy.html" style="color:var(--mute)">Privacy</a> · <a href="/terms.html" style="color:var(--mute)">Terms</a><br>Investor, mining &amp; international desk: Uffe Carlson, Carlson Capital Ltd · WhatsApp and direct line <a href="tel:+233552395548" style="color:var(--mute)">+233 55 239 5548</a> · <a href="/admin" style="color:var(--mute)">Team login</a></div></footer>
+<footer><div class="wrap">Gotham Consult · Accra, Ghana · In strategic partnership with Carlson Capital Ltd, registered in Ghana · WhatsApp +233 55 041 6627 · info@gothamconsult.com · <a href="/privacy" style="color:var(--mute)">Privacy</a> · <a href="/terms" style="color:var(--mute)">Terms</a><br>Investor, mining &amp; international desk: Uffe Carlson, Carlson Capital Ltd · WhatsApp and direct line <a href="tel:+233552395548" style="color:var(--mute)">+233 55 239 5548</a> · <a href="/admin" style="color:var(--mute)">Team login</a></div></footer>
 
 <script>
 /* ===== Settings Joy/Uffe can change ===== */
 const WA_NUMBER='233550416627';
 const EMAIL='info@gothamconsult.com';
-const SITE_URL='/index.html';   // our own site on the same domain
+const SITE_URL='/';   // our own site on the same domain
 const API='';   // same origin
 let PAYL='';                     // Paystack payment page (set in the CRM under Settings)
 let MOMO='+233550416627';  // Joy's WhatsApp number is also the MoMo receiving number
