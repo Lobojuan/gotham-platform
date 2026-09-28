@@ -3,6 +3,24 @@
 This file is read by Codex, Claude Code, Kimi and similar tools. `CLAUDE.md`
 is a symlink to it. Read `README.md` first for the architecture.
 
+## Git is the single source of truth
+
+Several agents work on this repo (Claude, Codex, sometimes Kimi) and Uffe edits too. **`origin/main` on GitHub
+(`Lobojuan/gotham-platform`) is the only truth.** If something is not committed and pushed, it does not exist.
+
+1. **Start** with `git fetch && git status`. If the tree has uncommitted changes you did not make, another agent is
+   mid-task: do not edit, commit, stash or discard them. Ask Uffe, or work in a separate `git worktree` from origin/main.
+2. **Pull before you work** (`git pull --rebase`), commit in small focused commits, and push when a piece is done and
+   tested. Never force-push `main`.
+3. **Deploy only what is on origin/main.** `scripts/deploy-crm.sh` and `scripts/deploy-site.sh` refuse to run from a
+   folder that is not exactly origin/main with a clean `apps/` and `scripts/` (override: `FORCE_DEPLOY=1`, and explain
+   in the next commit). The server records what is live in `/srv/gotham/DEPLOYED_COMMIT` and
+   `/srv/gotham-site/DEPLOYED_COMMIT`.
+4. **One owner per feature.** Before building something, check `git log`, open branches and `docs/handoff-*.md`, so two
+   agents don't build the same thing. Record what you shipped and what is left in the handoff file, in the same commit.
+5. Secrets (API keys, `PROXY_KEY`, passwords) never go in git, commits, logs or chat. Set them on the server with
+   `bash scripts/set-secret.sh NAME`.
+
 ## Read first: current state
 
 **`docs/handoff-2026-09.md`** describes how the platform runs today and what changed in September 2026: the main

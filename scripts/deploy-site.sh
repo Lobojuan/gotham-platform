@@ -6,12 +6,14 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 HOST="${HOST:-nuru@84.12.73.59}"
 REMOTE="${REMOTE_SITE:-/srv/gotham-site}"
 PUBLIC="${PUBLIC_URL:-https://gothamconsult.com}"
+. "$ROOT/scripts/git-guard.sh"; git_guard "$ROOT"
 
 SITE_URL="$PUBLIC" "$ROOT/scripts/build-site.sh"
 
 echo "-> publishing to $HOST:$REMOTE"
-ssh "$HOST" "sudo mkdir -p $REMOTE && sudo chown -R \$(id -u):\$(id -g) $REMOTE"
+ssh "$HOST" "mkdir -p $REMOTE"
 rsync -a --delete "$ROOT/apps/site/dist/" "$HOST:$REMOTE/"
+ssh "$HOST" "echo $DEPLOY_COMMIT > $REMOTE/DEPLOYED_COMMIT"
 
 echo "-> checking"
 sleep 2

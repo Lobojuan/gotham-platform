@@ -36,17 +36,18 @@ The original pages are kept as drafts 782–785 ("… (backup of old WordPress p
 `apps/site/build.py` adds a small head script for framed pages: no entrance animations, and `/admin` links open in
 the top window.
 
-## 2. Deploying (from the Mac repo)
+## 2. Deploying (only what is on origin/main)
 
 ```bash
-git pull
-SITE_URL=https://gothamconsult.com bash scripts/build-site.sh
-rsync -az apps/site/dist/ nuru@84.12.73.59:/srv/gotham-site/
-bash scripts/deploy-crm.sh     # snapshots /srv/gotham to ~/backups/gotham.prev, rsyncs apps/crm (no node_modules, no .env), rebuilds
+git pull --rebase             # the folder must be exactly origin/main, clean
+bash scripts/deploy-site.sh   # builds with SITE_URL=https://gothamconsult.com, publishes /srv/gotham-site
+bash scripts/deploy-crm.sh    # snapshots /srv/gotham, rsyncs apps/crm (no node_modules, no .env), rebuilds
 ```
+Both scripts refuse a dirty folder or one that is not origin/main (see AGENTS.md "Git is the single source of truth"),
+and write the deployed commit to `DEPLOYED_COMMIT` on the server. If another agent has uncommitted work in the main
+folder, deploy from a worktree: `git worktree add /tmp/gotham-release origin/main`.
 The health check hits the sslip address directly. `scripts/rollback-crm.sh` restores the snapshot.
 Never edit files on the server. Never commit `.env` or the real `PROXY_KEY`: the repo copy of the plugin says `SET-ME`.
-The live plugin zip with the key was uploaded through wp-admin.
 
 ## 3. What changed in September
 
@@ -76,7 +77,9 @@ The live plugin zip with the key was uploaded through wp-admin.
 - **Main domain**: bridge plugin live, `MEDIA_URL`, redirect rules (section 1).
 - **Back office links**: "View website" and the top-bar house icon go to gothamconsult.com.
 - **Ask Gotham chat (AI)**: `/api/ask` plus `apps/crm/assistant.md` (see AGENTS.md). It is live once `OPENAI_API_KEY`
-  is set with `scripts/set-secret.sh`; until then, and on any error, it uses the built-in answers.
+  is set with `scripts/set-secret.sh`; until then, and on any error, it uses the built-in answers. Deployed 28 Sep
+  (no key yet). Codex's parallel `/api/support-chat` draft was superseded by this one at Uffe's choice. A test with
+  Uffe's key returned OpenAI HTTP 429: the API project needs credits/billing before AI answers work.
 - **Deploy script**: rsync instead of `scp -r` (a local `npm install` made it copy thousands of files).
 
 ## 4. Tests
