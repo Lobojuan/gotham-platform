@@ -23,10 +23,10 @@
   };
   /* translations: English is in the HTML; French/Spanish come from i18n.js, loaded only when chosen.
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
-  let dict = null, dictReady = null;
-  const loadDict = () => dictReady ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = '/assets/v2/i18n.js?v=2';
-    sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => { dict = {}; res(); }; document.head.append(sc);
+  let dict = {}; const dictReady = {};
+  const loadDict = l => dictReady[l] ||= new Promise(res => {
+    const sc = document.createElement('script'); sc.src = '/assets/v2/i18n-' + l + '.js?v=1';
+    sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
   const tr = (txt, lang) => { if (lang === 'en' || !dict?.[lang]) return null; const k = txt.replace(/\s+/g, ' ').trim(); return k ? dict[lang][k] ?? null : null; };
@@ -51,18 +51,24 @@
     }
   }
   let observing = false;
-  // pages still on the older styles translate their own content (landing-i18n); here only the shared chrome is ours
-  const legacy = document.body.classList.contains('v2-legacy');
+  // one translator for every page (the older pages' own landing-i18n is no longer loaded; its phrases are in i18n.js)
+  const legacy = false;
   const roots = () => legacy ? $$('.v2c') : [document.body];
   const mine = n => !legacy || (n.nodeType === 1 ? n : n.parentElement)?.closest?.('.v2c');
-  const mo = new MutationObserver(rs => { if (current === 'en') return; for (const r of rs) for (const n of r.addedNodes) if (mine(n)) applyNode(n, current); });
+  const mo = new MutationObserver(rs => { if (current === 'en') return; for (const r of rs) {
+    if (r.type === 'characterData') {   // a page script rewrote a text node: take its new English as the original, unless the change was ours
+      const n = r.target, en = ORIG.get(n), t = en != null ? tr(en, current) : null;
+      if (t != null && n.nodeValue.trim() === t.trim()) continue;
+      ORIG.delete(n); if (mine(n)) applyNode(n, current); continue;
+    }
+    for (const n of r.addedNodes) if (mine(n)) applyNode(n, current); } });
   const setLang = async l => {
     markLang(l); try { localStorage.setItem('gc-language', l); } catch {}
     document.documentElement.lang = l;
-    if (l !== 'en') await loadDict();
-    if (l === 'en' && !dict) { const old = $('#gc-language-switch select'); if (old && old.value !== 'en') { old.value = 'en'; old.dispatchEvent(new Event('change')); } return; }
+    if (l !== 'en') await loadDict(l);
+    if (l === 'en' && !Object.keys(dict).length) { const old = $('#gc-language-switch select'); if (old && old.value !== 'en') { old.value = 'en'; old.dispatchEvent(new Event('change')); } return; }
     roots().forEach(r => applyNode(r, l));
-    if (!observing) { mo.observe(document.body, { childList: true, subtree: true }); observing = true; }
+    if (!observing) { mo.observe(document.body, { childList: true, subtree: true, characterData: true }); observing = true; }
     const old = $('#gc-language-switch select');   // older pages: switch their own translation too
     if (old && old.value !== l) { old.value = l; old.dispatchEvent(new Event('change')); }
   };

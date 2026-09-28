@@ -7,8 +7,8 @@
 
 :root {
   --ink: #0B1322; --navy: #0F1B2D; --night: #070D18; --paper: #FAFAF8; --sunk: #F1F1EC; --surface: #fff;
-  --line: #E3E5E8; --mute: #5A6472; --soft: #8A95A5;
-  --gold: #B8862F; --gold-2: #F0BE5A; --teal: #2FB594; --teal-2: #6EE8C8; --wa: #1FA855;
+  --line: #E3E5E8; --mute: #5A6472; --soft: #646E7E;
+  --gold: #B8862F; --gold-2: #F0BE5A; --teal: #2FB594; --teal-2: #6EE8C8; --wa: #128043;
   --radius: 22px; --radius-s: 14px;
   --max: 1200px; --pad: clamp(18px, 4vw, 40px);
   --shadow: 0 1px 2px rgba(11,19,34,.06), 0 12px 40px -12px rgba(11,19,34,.18);
@@ -30,7 +30,7 @@ button { font: inherit; color: inherit; }
 .wrap { width: 100%; max-width: var(--max); margin: 0 auto;
   padding-left: max(var(--pad), env(safe-area-inset-left)); padding-right: max(var(--pad), env(safe-area-inset-right)); }
 em.s, .serif { font-family: var(--serif); font-style: italic; font-weight: 400; letter-spacing: -.01em; }
-.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 14px; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #8A6116; margin: 0 0 14px; }
 h1, h2, h3 { letter-spacing: -.025em; line-height: 1.05; margin: 0; font-weight: 700; }
 h2 { font-size: clamp(32px, 5.2vw, 56px); }
 h3 { font-size: 20px; line-height: 1.2; letter-spacing: -.01em; }
@@ -185,7 +185,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
   text-decoration: none; display: flex; flex-direction: column; gap: 10px; transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; }
 .card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: #d6dae0; }
 .card .ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: linear-gradient(135deg, #FFF4DC, #F5E3BD); color: #8a5a10; }
-.card .tag { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.card .tag { font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8A6116; }
 .card p { margin: 0; color: var(--mute); font-size: 15px; }
 .card .go { margin-top: auto; padding-top: 8px; font-weight: 600; font-size: 15px; display: inline-flex; gap: 6px; }
 
@@ -250,7 +250,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .steps { display: grid; gap: 14px; counter-reset: s; }
 @media (min-width: 800px) { .steps { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .step { padding: 24px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); counter-increment: s; }
-.step::before { content: "0" counter(s); display: block; font-weight: 800; font-size: 14px; color: var(--gold); margin-bottom: 14px; }
+.step::before { content: "0" counter(s); display: block; font-weight: 800; font-size: 14px; color: #8A6116; margin-bottom: 14px; }
 .step p { color: var(--mute); margin: 8px 0 14px; font-size: 15px; }
 .step a { font-weight: 600; font-size: 15px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; }
 
@@ -489,7 +489,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .event .cov img { width: 100%; height: 100%; object-fit: cover; }
 .event .date { position: absolute; left: 14px; top: 14px; background: #fff; border-radius: 14px; padding: 6px 12px; text-align: center; line-height: 1.1; box-shadow: var(--shadow); }
 .event .date b { display: block; font-size: 22px; }
-.event .date span { font-size: 12px; font-weight: 700; color: var(--gold); text-transform: uppercase; letter-spacing: .08em; }
+.event .date span { font-size: 12px; font-weight: 700; color: #8A6116; text-transform: uppercase; letter-spacing: .08em; }
 .event .body { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
 .event .meta { display: flex; flex-wrap: wrap; gap: 6px; }
 .event .body p { margin: 0; color: var(--mute); font-size: 15px; }
@@ -586,7 +586,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .faq p { margin: 0; padding: 0 18px 18px; color: var(--mute); font-size: 15.5px; }
 .others { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .others a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-decoration: none; font-weight: 600; font-size: 14.5px; }
-.others a:hover { border-color: var(--gold); color: var(--gold); }
+.others a:hover { border-color: var(--gold); color: #8A6116; }
 .aibox { position: relative; overflow: hidden; isolation: isolate; display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr); padding: clamp(22px, 4vw, 40px); border-radius: calc(var(--radius) + 6px); color: #fff;
   background: radial-gradient(70% 90% at 100% 0%, rgba(47,181,148,.30), transparent 60%), radial-gradient(60% 80% at 0% 100%, rgba(240,190,90,.22), transparent 60%), var(--night); }
 .aibox::before { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .35; background-image: linear-gradient(rgba(255,255,255,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.06) 1px, transparent 1px); background-size: 28px 28px; mask-image: radial-gradient(80% 80% at 70% 30%, #000, transparent); -webkit-mask-image: radial-gradient(80% 80% at 70% 30%, #000, transparent); }
@@ -604,6 +604,6 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .ai-f { display: flex; gap: 8px; margin-top: 12px; }
 .ai-f input { flex: 1; min-width: 0; min-height: 50px; padding: 0 16px; border-radius: 14px; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.95); color: var(--ink); font: inherit; font-size: 16px; }
 .ai-f .btn { flex: none; }
-.prac .more { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 8px; font-weight: 700; font-size: 15px; color: var(--gold); text-decoration: none; }
+.prac .more { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 8px; font-weight: 700; font-size: 15px; color: #8A6116; text-decoration: none; }
 .prac .more:hover .arrow { transform: translateX(3px); }
 .prac .more .arrow { transition: transform .2s; }

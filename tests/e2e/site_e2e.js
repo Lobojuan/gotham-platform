@@ -5,7 +5,12 @@
 //     no sideways scrolling, one header and footer, images with alt text, buttons with names, tap targets >= 40px.
 //  3. Journeys: menus (mega menu, phone sheet, dock), carousel, service detail pages, FAQ, the AI panel and the
 //     Ask Gotham chat (questions and answers), languages, free tools, registration, 404 and old-address redirects.
-const { chromium, devices } = require(process.env.PLAYWRIGHT || 'playwright');
+// LIVE=1 runs against the real site read-only (no registrations or signups sent); WEBKIT=1 runs iPhones/iPads in WebKit (Safari's engine).
+const { chromium, webkit, devices } = require(process.env.PLAYWRIGHT || 'playwright');
+const LIVE = process.env.LIVE === '1', WEBKIT = process.env.WEBKIT === '1';
+const isAnswer = t => LIVE ? t.length > 40 && !/answer you personally/.test(t) : /MOCK-AI/.test(t);
+let BROWSERS = {};
+const engineFor = dev => (WEBKIT && /iphone|ipad/i.test(dev) ? BROWSERS.webkit : BROWSERS.chromium);
 const B = process.env.BASE || 'http://127.0.0.1:4199';
 const EXE = process.env.CHROMIUM || undefined;
 let pass = 0; const fails = [];
@@ -58,9 +63,9 @@ async function crawl(req) {
   return pages;
 }
 
-async function sweep(browser, pages) {
+async function sweep(_b, pages) {
   for (const [dev, opt] of DEVICES) {
-    const ctx = await browser.newContext({ ...opt, extraHTTPHeaders: { 'x-real-ip': ip() } });
+    const ctx = await engineFor(dev).newContext({ ...opt, extraHTTPHeaders: { 'x-real-ip': ip() } });
     for (const path of pages) {
       const p = await ctx.newPage(); const errs = [], bad = [];
       p.on('pageerror', e => errs.push(String(e).slice(0, 160)));
@@ -126,13 +131,13 @@ async function journeys(browser) {
     await p.locator('[data-ask]').first().click();
     check('AI panel question opens the chat', await p.isVisible('#chat'));
     check('AI panel question shows in the chat', (await p.textContent('#msgs .m.me')).trim() === q1.trim());
-    check('AI answer arrives', await waitAnswer(p, 2) && /MOCK-AI/.test(await lastBot(p)), await lastBot(p));
+    check('AI answer arrives', await waitAnswer(p, 2) && isAnswer(await lastBot(p)), await lastBot(p));
     await p.fill('#chatI', 'What does the readiness audit cost?'); await p.press('#chatI', 'Enter');
-    check('follow-up question in the chat gets an answer', await waitAnswer(p, 3) && /readiness audit cost/.test(await lastBot(p)), await lastBot(p));
+    check('follow-up question in the chat gets an answer', await waitAnswer(p, 3) && (LIVE ? isAnswer(await lastBot(p)) : /readiness audit cost/.test(await lastBot(p))), await lastBot(p));
     await p.click('#chatX');
     check('chat closes', await p.isHidden('#chat'));
     await p.fill('.ai-f input', 'Can you train my staff?'); await p.click('.ai-f button');
-    check('typed AI panel question is answered with the service as context', await waitAnswer(p, 4) && /train my staff.*about AI in your business/.test(await lastBot(p)), await lastBot(p));
+    check('typed AI panel question is answered with the service as context', await waitAnswer(p, 4) && (LIVE ? isAnswer(await lastBot(p)) : /train my staff.*about AI in your business/.test(await lastBot(p))), await lastBot(p));
     // services page → detail
     await p.goto(B + '/services', { waitUntil: 'networkidle' });
     check('services page links all ten practices', await p.locator('.prac a.more').count() === 10);
@@ -148,7 +153,7 @@ async function journeys(browser) {
     check('carousel cards open the practice pages', hrefs.length === 10 && hrefs.every(h => /^\/services\/[a-z-]+$/.test(h)), hrefs.join(','));
     // home chat via chip
     await p.click('#chatO'); await p.locator('#chatChips button').first().click();
-    check('home chat chip gets an answer', await waitAnswer(p, 2) && /MOCK-AI/.test(await lastBot(p)));
+    check('home chat chip gets an answer', await waitAnswer(p, 2) && isAnswer(await lastBot(p)));
     await p.click('#chatX');
     // language: French, carried to the next page, then back to English
     const h1en = (await p.textContent('h1')).trim();
@@ -177,24 +182,35 @@ async function journeys(browser) {
     check('terms: "Forums, invitations and tickets" heading is intact', /Forums, invitations and tickets/.test(await p.textContent('#events')) && !(await p.$('#events article')));
     await p.goto(B + '/classic', { waitUntil: 'networkidle' });
     let posts = 0; p.on('request', r => { if (r.method() === 'POST' && r.url().endsWith('/api/register')) posts++; });
-    if (await p.$('#briefF')) {
+    if (!LIVE && await p.$('#briefF')) {
       for (const [sel, v] of [['#b-name', 'E2E Brief'], ['#b-co', 'E2E Co'], ['#b-em', 'e2e@example.com'], ['#b-ph', '0241234567']]) if (await p.$(sel)) await p.fill(sel, v);
       await p.evaluate(() => { const f = document.getElementById('briefF'); (f.querySelector('[type=submit]') || f.querySelector('button')).click(); }); await p.waitForTimeout(1500);
       check('classic page: brief form sends one request, not two', posts <= 1, String(posts));
     }
     // redirects and 404
     const req = ctx.request;
-    for (const [from, to] of [['/v2/services', '/services'], ['/wp-login.php', '/admin'], ['/contact', '/about#contact']]) {
+    for (const [from, to] of [['/v2/services', '/services'], ...(LIVE ? [] : [['/wp-login.php', '/admin']]), ['/contact', '/about#contact']]) {
       const r = await req.get(B + from, { maxRedirects: 0 }); check(`${from} redirects to ${to}`, [301, 302, 308].includes(r.status()) && (r.headers().location || '').endsWith(to), r.status() + ' ' + r.headers().location);
     }
     check('unknown page answers 404', (await req.get(B + '/services/does-not-exist')).status() === 404);
     const sm = await (await req.get(B + '/sitemap.xml')).text();
+    // French on every page, including the older ones (register, Family Desk, tools, legal)
+    {
+      const q = await ctx.newPage(); await q.goto(B + '/', { waitUntil: 'networkidle' }); await q.evaluate(() => { try { localStorage.setItem('gc-language', 'fr'); } catch {} });
+      for (const path of ['/register', '/family', '/tools', '/privacy', '/terms', '/teaser', '/services/education']) {
+        await q.goto(B + path, { waitUntil: 'networkidle' }); await q.waitForTimeout(700);
+        const en = await q.evaluate(() => [...document.querySelectorAll('h1, h2, h3, main .lead, main p.lead, summary, button, label, legend')]
+          .filter(e => e.offsetParent !== null).map(e => e.textContent.trim()).filter(t => /\b(the|and|your|what|with|how|who)\b/i.test(t) && !/Gotham Consult|Carlson|SMEs at the Centre/.test(t)));
+        check(`French ${path}: headings, buttons and labels translated`, !en.length, en.slice(0, 3).join(' | '));
+      }
+      await q.evaluate(() => { try { localStorage.setItem('gc-language', 'en'); } catch {} }); await q.close();
+    }
     check('sitemap lists the ten practice pages and /tools', (sm.match(/\/services\/[a-z-]+</g) || []).length === 10 && /\/tools</.test(sm));
     await ctx.close();
   }
   // ---------- phones ----------
   for (const [dev, opt] of [['iphone-15', devices['iPhone 14']], ['pixel-7', devices['Pixel 7']], ['iphone-se', DEVICES[0][1]]]) {
-    const ctx = await browser.newContext({ ...opt, extraHTTPHeaders: { 'x-real-ip': ip() } });
+    const ctx = await engineFor(dev).newContext({ ...opt, extraHTTPHeaders: { 'x-real-ip': ip() } });
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
     await p.goto(B + '/', { waitUntil: 'networkidle' });
     check(`${dev}: brand name and Carlson Capital visible`, await p.isVisible('header.gh .brand b') && await p.isVisible('header.gh .brand small'));
@@ -207,7 +223,7 @@ async function journeys(browser) {
     check(`${dev}: menu → Forums`, /forums$/.test(p.url()));
     await p.goto(B + '/services/digital', { waitUntil: 'networkidle' });
     await p.locator('[data-ask]').nth(2).scrollIntoViewIfNeeded(); await p.locator('[data-ask]').nth(2).tap();
-    check(`${dev}: AI question answered in the chat`, await waitAnswer(p, 2) && /MOCK-AI/.test(await lastBot(p)));
+    check(`${dev}: AI question answered in the chat`, await waitAnswer(p, 2) && isAnswer(await lastBot(p)));
     const chatBox = await p.locator('#chat').boundingBox(); const vw = p.viewportSize().width;
     check(`${dev}: chat fits the screen`, chatBox && chatBox.x >= 0 && chatBox.x + chatBox.width <= vw + 1, JSON.stringify(chatBox));
     const inputFont = await p.$eval('#chatI', e => parseFloat(getComputedStyle(e).fontSize));
@@ -219,8 +235,9 @@ async function journeys(browser) {
     // registration, shortest path
     await p.goto(B + '/register?e=F1', { waitUntil: 'networkidle' });
     await p.fill('#nm', 'E2E Test ' + dev); await p.fill('#ph', '024 412 3456'); await p.locator('#cons').tap();
-    await p.locator('#goSend').tap();
-    check(`${dev}: registration with name + WhatsApp succeeds`, await p.waitForSelector('#ok.on', { timeout: 10000 }).then(() => true, () => false));
+    if (LIVE) check(`${dev}: registration form ready (not sent on the live site)`, await p.isVisible('#goSend') && await p.isChecked('#cons'));
+    else { await p.locator('#goSend').tap();
+      check(`${dev}: registration with name + WhatsApp succeeds`, await p.waitForSelector('#ok.on', { timeout: 10000 }).then(() => true, () => false)); }
     check(`${dev}: no JS errors during the journeys`, !errs.length, errs.slice(0, 2).join(' | '));
     await ctx.close();
   }
@@ -228,12 +245,14 @@ async function journeys(browser) {
 
 (async () => {
   const browser = await chromium.launch({ executablePath: EXE, args: ['--no-sandbox'] });
+  BROWSERS = { chromium: browser, webkit: WEBKIT ? await webkit.launch() : null };
+  console.log(`site ${B}${LIVE ? ' (live, read-only)' : ''}; iPhones in ${WEBKIT ? 'WebKit (Safari engine)' : 'Chromium emulation'}`);
   const req = (await browser.newContext()).request;
   const t0 = Date.now();
   console.log('1. crawl'); const pages = await crawl(req); console.log(`  ${pages.length} pages: ${pages.join(' ')}`);
   console.log('2. every page on six screens'); await sweep(browser, pages);
   console.log('3. journeys'); await journeys(browser);
-  await browser.close();
+  await browser.close(); if (BROWSERS.webkit) await BROWSERS.webkit.close();
   console.log(`\n${pass} checks passed, ${fails.length} failed (${Math.round((Date.now() - t0) / 1000)}s)`);
   if (fails.length) { console.log(fails.slice(0, 60).map(f => ' - ' + f).join('\n')); process.exit(1); }
   console.log('PASSED');

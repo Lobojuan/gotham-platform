@@ -53,6 +53,7 @@ footer.v2c.gf { font: 400 15px/1.6 "Hanken Grotesk", system-ui, sans-serif; }
 .v2c { font-family: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.6; -webkit-font-smoothing: antialiased; }
 .v2c a { color: inherit; }
 body.v2-legacy .v2c .gh-bar { background: rgba(7,13,24,.97); }
+html { scroll-padding-top: 84px; }   /* in-page links land below the sticky header (this file is only on the older pages) */
 /* dark hero on the older pages, so every page opens like the new design */
 body.v2-legacy .intro, body.v2-legacy section.hero, body.v2-legacy .tools-hero { position: relative; color: #fff;
   background: radial-gradient(60% 90% at 100% 0%, rgba(47,181,148,.22), transparent 60%), radial-gradient(50% 80% at 0% 100%, rgba(240,190,90,.16), transparent 60%), #070D18; }

@@ -30,7 +30,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=6">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=7">\n'
   '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
@@ -127,7 +127,7 @@ def main():
     bottom = open(os.path.join(HERE, 'pages', '_partials', '_bottom.html'), encoding='utf-8').read()
     head_add = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
                 '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">\n'
-                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=2">\n')
+                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=3">\n')
     # older scripts look for nav.main (#nav) to fill or to attach the old language switch: keep one, hidden
     keep = '<nav class="main" id="nav" hidden aria-hidden="true" style="display:none!important"><span class="navlog"></span></nav>\n'
     for name in ('classic.html', 'register.html', 'family.html', 'teaser.html', 'privacy.html', 'terms.html'):
@@ -138,6 +138,7 @@ def main():
         h = re.sub(r'<header(?: id="hdr")?><div class="wrap bar">.*?</header>', '', h, count=1, flags=re.S)   # old top bar
         h = re.sub(r'<footer>.*?</footer>', '', h, count=1, flags=re.S)                                    # old footer
         h = re.sub(r'<body([^>]*)>', lambda m: '<body' + (re.sub(r'class="', 'class="v2-legacy ', m.group(1), 1) if 'class="' in m.group(1) else m.group(1) + ' class="v2-legacy"') + '>\n' + keep + top, h, count=1)
+        h = re.sub(r"<script>\s*\(\(\) => \{\s*const script = document.createElement\('script'\);\s*script.src = [^\n]*landing-i18n[^\n]*\n[^\n]*\n\}\)\(\);\s*</script>", '', h)   # i18n.js covers these pages now
         if 'id="main"' not in h:   # target for the shared "Skip to content" link
             h = re.sub(r'<main(?![^>]*\bid=)([^>]*)>', r'<main id="main"\1>', h, count=1) if re.search(r'<main(?![^>]*\bid=)[^>]*>', h) else (h.replace('<main', '<div id="main" tabindex="-1"></div>\n<main', 1) if '<main' in h else h.replace(top, top + '<div id="main" tabindex="-1"></div>\n', 1))
         if 'rel="canonical"' not in h:
@@ -155,6 +156,11 @@ def main():
     h = re.sub(r'(<meta (?:property="og:title"|name="twitter:title") content=")[^"]*"', r'\1Free business tools · Gotham Consult"', h)
     h = h.replace(f'{SITE}/classic"', f'{SITE}/tools"')
     h = h.replace('class="v2-legacy', 'class="v2-legacy tools-only', 1)
+    # links to sections that are hidden on /tools go to their own pages instead
+    for a, b in {'#contact': '/about#contact', '#services': '/services', '#forums': '/forums', '#start': '/services#packages', '#ghana': '/invest',
+                 '#mining': '/mining', '#join': '/services#membership', '#brief': '/forums#brief', '#about': '/about', '#partners': '/about#partners',
+                 '#platform': '/', '#top': '#main'}.items():
+        h = h.replace(f'href="{a}"', f'href="{b}"').replace(f"href='{a}'", f"href='{b}'")
     hero = ('<section class="tools-hero"><div class="wrap"><nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> / <a href="/services">Services</a> / <span>Free tools</span></nav>'
             '<p class="eyebrow">Free tools · for every business in Ghana</p><h1>Know where your business <em class="serif">stands.</em></h1>'
             '<p class="lead">From chop bar to factory: a business health check, a funding finder and the 2026 VAT check. No sign-up, no cost, and your answers stay on your phone.</p></div></section>\n')

@@ -100,7 +100,12 @@ Never edit files on the server. Never commit `.env` or the real `PROXY_KEY`: the
   40 px tap targets, skip link), and walks the journeys: mega menu, phone sheet and dock, carousel, "More about this",
   FAQ, the AI panel and Ask Gotham chat (question → answer, follow-ups), French/Spanish, free tools, registration,
   redirects, 404 and sitemap. 2,333 checks passed on 28 Sep.
-- Never point tests at production, and never test with real people's credentials.
+- **Live read-only run** (sends no registrations or signups, asks the AI a few questions):
+  `LIVE=1 WEBKIT=1 BASE=https://gothamconsult.com PLAYWRIGHT=… node tests/e2e/site_e2e.js` — `WEBKIT=1` runs the
+  iPhone/iPad sizes in WebKit, Safari's engine (needs `npx playwright install webkit`, e.g. on the Mac).
+- Translations: one engine (`v2.js`) for every page; phrases in `public/assets/v2/i18n-fr.js` and `i18n-es.js`
+  (loaded only when chosen). The older `js/landing-i18n.js` is no longer loaded; its phrases were merged in.
+- Never point tests at production, and never test with real people's credentials (the LIVE mode above is read-only).
 
 ## 5. Open items (ask Uffe before acting on billable or public changes)
 
