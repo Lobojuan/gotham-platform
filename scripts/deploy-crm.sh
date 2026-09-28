@@ -11,12 +11,12 @@ echo "→ backing up the current release"
 ssh "$HOST" "rm -rf ~/backups/gotham.prev && mkdir -p ~/backups && cp -a $REMOTE ~/backups/gotham.prev"
 
 echo "→ uploading"
-ssh "$HOST" 'rm -rf /tmp/crmup && mkdir -p /tmp/crmup'
-scp -r "$ROOT/apps/crm/"* "$HOST:/tmp/crmup/"
+# local node_modules are never shipped: the image installs its own (Linux) packages
+rsync -az --exclude node_modules --exclude .env --exclude .media "$ROOT/apps/crm/" "$HOST:$REMOTE/"
 
-echo "→ installing and rebuilding"
-ssh "$HOST" "rsync -a --exclude .env /tmp/crmup/ $REMOTE/ && cd $REMOTE && docker compose -p gotham up -d --build"
+echo "→ rebuilding"
+ssh "$HOST" "cd $REMOTE && docker compose -p gotham up -d --build"
 
 echo "→ health check"
 sleep 8
-curl -fsS "${HEALTH_URL:-https://gotham.84-12-73-59.sslip.io}/api/health" && echo "  OK"   # the server address; gothamconsult.com still serves WordPress
+curl -fsS "${HEALTH_URL:-https://gotham.84-12-73-59.sslip.io}/api/health" && echo "  OK"   # the server itself, not through the WordPress bridge
