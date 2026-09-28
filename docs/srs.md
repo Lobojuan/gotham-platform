@@ -4,9 +4,9 @@ Software requirements for the website, registration and back office at one addre
 (`/` website, `/register`, `/family`, `/admin`, `/api/*`). Each requirement names the test that proves it.
 Tests live in `tests/` (API: `tests/api/*.py`, run with `bash tests/run_api.sh`; phone UI: `tests/ui/*.js`).
 
-The API and UI results below are historical results recorded in the 26 September 2026 QA report,
-except for M-4, M-5 and O-4, which were revalidated on 28 September. They are not a full release
-certification. The repository now contains 12 API suites, including CRM
+All 14 API suites passed on 28 September 2026 (230 reported checks) against a disposable local database.
+Browser E2E and the live domain are not certified by that run; device results in the 26 September QA report
+are historical. The suites include Ask Gotham provider/locale behavior, MoMo payment reporting, and CRM
 pipeline, task, contact record and report coverage. Current execution status is tracked in
 [`qa-report-2026-09.md`](qa-report-2026-09.md).
 
@@ -74,6 +74,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | W-8 | The home page "Next forum" band follows the next event in the back office. | manual |
 | W-9 | Share links (WhatsApp, LinkedIn, copy) contain the full address. | manual |
 | W-10 | Public landing pages have complete English, French and Spanish copy with an accessible language toggle that preserves the current page/section. | landing toggle and static-copy translations implemented; interactive results and CRM event text plus browser QA remain |
+| W-11 | Ask Gotham keeps `/api/ask` history and fallback behavior, follows the selected English/French/Spanish page language, and gives the MoMo destination for payment questions when AI is unavailable. | api/13, local fallback in `pages/index.html`; browser QA pending |
 
 ## 6. CRM pipeline and service operations
 

@@ -739,13 +739,14 @@ const server = http.createServer(async (req, res) => {
       const b = await body(req);
       const question = clean(b.q, 600);
       if (!question) return json(res, 400, { error: 'missing_question' }, cors);
+      const selectedLanguage = ({ en: 'English', fr: 'French', es: 'Spanish' })[b.language] || '';
       const history = (Array.isArray(b.history) ? b.history : []).slice(-6)
         .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
         .map(m => ({ role: m.role, content: m.content.slice(0, 1200) }));
       askDay.n++;
       const system = `You are "Ask Gotham", the assistant on the Gotham Consult website (Accra, Ghana).
 Answer only from the knowledge below. Be warm, clear and brief: at most about 120 words, plain text, no markdown headings.
-Reply in the visitor's language. Ghanaian languages (Twi, Fante, Ga, Ewe, Dagbani, Hausa, Pidgin and others) are welcome:
+Reply in the visitor's language. ${selectedLanguage ? `The selected website language is ${selectedLanguage}; reply in ${selectedLanguage} unless the visitor clearly writes in another language.` : ''} Ghanaian languages (Twi, Fante, Ga, Ewe, Dagbani, Hausa, Pidgin and others) are welcome:
 answer in that language as well as you can, keeping names, dates, prices and links exactly as given, then add one short
 line in simple English with the key facts, because your Ghanaian-language writing may be imperfect. Do not mix up
 Ga and Twi. Plain text only: no markdown, no asterisks. Always state prices in Ghana cedis (GHS), never in another currency; if asked for dollars or euros, give the GHS price and say we invoice in cedis.

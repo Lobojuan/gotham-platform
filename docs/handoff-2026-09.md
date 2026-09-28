@@ -87,8 +87,9 @@ Never edit files on the server. Never commit `.env` or the real `PROXY_KEY`: the
 
 ## 4. Tests
 
-- API: `TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/run_api.sh` runs 12 suites on a
-  fresh database each, about 200 checks. All pass as of 28 Sep. Suite 12 covers the bridge and redirect rules.
+- API: `TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/run_api.sh` runs 14 suites on a
+  fresh database each. All 14 passed on 28 Sep (230 reported checks), including bridge/redirect, MoMo reports,
+  and Ask Gotham with a mocked provider and selected-language prompt.
 - UI (Playwright, phone sizes): `tests/ui/*.js`, seeded by `tests/ui/seed_demo.py` / `seed_crm.py` against a local
   server on :4199. Environment variables: `PLAYWRIGHT`, `CHROMIUM`, `QA_DIR`, `ADMIN_PW`.
 - Never point tests at production, and never test with real people's credentials.

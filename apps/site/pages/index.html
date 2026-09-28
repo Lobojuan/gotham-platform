@@ -1342,7 +1342,7 @@ async function answer(q){
  say(q,'me');
  const t=document.createElement('div');t.className='m bot typing';t.textContent='…';$('#msgs').append(t);$('#msgs').scrollTop=1e6;
  let a='';
- try{const r=await fetch(CRM_API+'/api/ask',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({q,history:HIST.slice(-6)}),signal:AbortSignal.timeout(30000)});
+ try{const r=await fetch(CRM_API+'/api/ask',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({q,language:document.documentElement.lang,history:HIST.slice(-6)}),signal:AbortSignal.timeout(30000)});
   const j=await r.json().catch(()=>({}));
   if(j.answer)a=j.answer;
   else if(r.status===429)a='You have asked a lot of questions in a short time. Please WhatsApp us on +233 55 041 6627 and we will answer you personally.';

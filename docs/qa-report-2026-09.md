@@ -2,12 +2,11 @@
 
 ## Current checkout verification, 28 September 2026
 
-This checkout is based on `5f7c097` (`main`, matching the locally recorded `origin/main` at inspection time), with uncommitted changes listed in the current working tree.
-The remote could not be contacted from this environment, so this does not prove GitHub has no newer commit.
-
-- Passed on 28 September: all 12 API suites, totaling 209 checks, using a disposable local PostgreSQL database;
-  `node --check apps/crm/server.js`; Python compilation of API test files; shell syntax checks for the backup and dev scripts; and `python3 apps/site/build.py`.
-  The site build completes without the previous invalid-escape warning.
+The committed release is based on `origin/main` `41ba281` plus the release commit recorded in Git. After rebasing,
+all 14 API suites passed against a disposable local PostgreSQL 16 database: 230 reported checks, including the
+13 upstream suites and the MoMo payment-report suite. The Ask Gotham suite used a local mock provider and verified
+that the selected French locale reaches the `/api/ask` prompt. `node --check apps/crm/server.js` and
+`git diff --check` also passed. The site build and production deploy scripts are run separately as part of release.
 - Fixed during this review: API suites 02, 03, 04 and 05 no longer depend on a former machine's absolute
   checkout path. Suite 04 now creates its own deterministic workbook instead of requiring a private upload.
 - Hardened during this review: `tests/run_api.sh` refuses database names that do not end in `_test` and
@@ -17,17 +16,16 @@ The remote could not be contacted from this environment, so this does not prove 
 - Payment settings now seed missing MoMo numbers to Joy's WhatsApp line (`+233 55 041 6627`),
   validate changes, and show the same destination and registration reference in the customer flow. Payment
   transaction reports are validated, deduplicated, audited, and remain unverified until staff reconcile them.
-- The home page now leads with the chosen shared audience and action: building partnerships in Ghana. A
-  same-page English/French/Spanish selector remembers the visitor's choice. The translation dictionary covers
-  the published static landing copy; interactive calculator results and CRM-supplied event content still need
-  a browser review before the language requirement can be considered complete.
+- The home page now leads with the chosen shared audience and action: building partnerships in Ghana. The hero
+  video and its controls are removed. A same-page English/French/Spanish selector remembers the visitor's choice.
+  Static landing copy, chat welcome and scripted fallbacks are translated; `/api/ask` receives the selected locale.
+  Interactive calculator results and CRM-supplied event content still need browser review.
 - `tests/api/12_momo_payment_flow.py` passes the MoMo path, duplicate claims, manual verification and concurrent
   capacity reservation checks.
 - `scripts/backup-crm.sh` was exercised against a disposable database and media directory. Its archive checksums
   verified, and both the database row and media file were restored successfully.
-- Not reverified: browser E2E, responsive visuals, live domain and WordPress bridge. Browser access to the
-  local site and outbound DNS/network were unavailable in this environment. The 26 September browser results
-  below are historical, not evidence about the current checkout or live host.
+- Not reverified in this API run: browser E2E, responsive visuals, live domain and WordPress bridge. The
+  26 September browser results below are historical, not evidence about the current release or live host.
 
 ### Product and design assessment
 
@@ -51,15 +49,15 @@ The remote could not be contacted from this environment, so this does not prove 
 ### Next release plan
 
 1. Run the UI E2E suite in an environment with Chromium; capture failures and screenshots, then fix every
-   reproducible regression. The 12 API suites passed locally.
+   reproducible regression. All 14 API suites passed locally.
 2. Do a focused journey review: visitor enquiry and registration, staff triage, task completion, payment
    reconciliation, opt-out, account disable/reset, and event cancellation/refund handling.
 3. Configure scheduled encrypted off-site backups, monitoring/alert route, safe rollback, retention
    and export procedure, and audit-log coverage. The backup script itself passed a local restore rehearsal.
 4. Confirm MoMo merchant instructions and live domain routing, remove misleading demo copy/unused confirmation
    code, and validate the WordPress bridge end to end.
-5. Run accessibility and content review, then focus the home page around the selected primary audience and
-   add reviewed French and Spanish translations with a language toggle.
+5. Run accessibility and content review, then verify every translated landing section and dynamic result in
+   a browser at desktop and phone widths.
 
 The following device sweep and browser flow results were recorded on 26 September, before the current checkout changes:
 iPhone SE (375), iPhone 15 (393), Galaxy A (360), Pixel 7 (412), iPad (820) and desktop (1440). They covered public pages,
