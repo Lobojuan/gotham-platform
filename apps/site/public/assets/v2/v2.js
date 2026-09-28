@@ -131,6 +131,9 @@
   if (car) {
     const stage = $('.car-stage', car), ring = $('.car-ring', car), cards = $$('.car-card', car), N = cards.length, step = 360 / N;
     let idx = 0, rot = 0, timer = null, drag = null, moved = false;
+    // Safari does not start lazy images inside a 3D ring: load them once the carousel comes near the screen
+    const wake = () => cards.forEach(c => { const im = $('img', c); if (im && im.loading === 'lazy') im.loading = 'eager'; });
+    if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { wake(); io.disconnect(); } }, { rootMargin: '600px 0px' }); io.observe(stage); } else wake();
     const render = () => {
       ring.style.setProperty('--rot', rot + 'deg');
       cards.forEach((c, i) => { const d = Math.min((i - idx + N) % N, (idx - i + N) % N); c.classList.toggle('far', d === 2); c.classList.toggle('side', d === 1); c.classList.toggle('back', d > 2); c.tabIndex = d === 0 ? 0 : -1; c.setAttribute('aria-hidden', d > 1); });
