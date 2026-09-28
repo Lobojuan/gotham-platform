@@ -241,8 +241,11 @@ ol.how code{font-family:ui-monospace,Menlo,monospace;font-weight:700;background:
 .chat-h{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
 .msgs{height:280px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
 .m{max-width:86%;padding:9px 12px;border-radius:14px;font-size:14.5px}
-.m.bot{background:var(--sunk)}
+.m.bot{background:var(--sunk);white-space:pre-line}
 .m.me{background:var(--ink);color:var(--paper);align-self:end}
+.chat-note{margin:0;padding:0 14px 8px;font-size:12px;color:var(--mute,#5A6472)}
+.m.typing{opacity:.6;letter-spacing:2px}
+.fabbtn[hidden],.chat[hidden]{display:none}
 .chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
 .chips button{font-size:12.5px;border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:5px 11px;cursor:pointer}
 .chat form{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line)}
@@ -974,7 +977,8 @@ nav.main a{white-space:nowrap}
     <div class="chat-h"><b>Ask Gotham</b><button class="x" id="chatX" aria-label="Close">✕</button></div>
     <div class="msgs" id="msgs" aria-live="polite"></div>
     <div class="chips" id="chips"></div>
-    <form id="chatF"><input id="chatI" placeholder="Ask about services, forums, GIPA…" aria-label="Your question"><button class="btn btn-dark" style="padding:9px 16px">Send</button></form>
+    <p class="chat-note">Automatic answers can be wrong. For your own case, WhatsApp us.</p>
+    <form id="chatF"><input id="chatI" placeholder="Ask about services, forums, GIPA…" maxlength="600" aria-label="Your question"><button class="btn btn-dark" style="padding:9px 16px">Send</button></form>
   </div>
   <button class="fabbtn" id="chatO"><span class="dot"></span>Ask Gotham</button>
 </div>
@@ -1362,7 +1366,7 @@ const TIERS=[
  {t:'Ghana Business Brief',p:'Free',s:'',f:['Weekly brief on WhatsApp','Grant & tender alerts','Forum announcements'],c:'Join free',m:'Please add me to the free Ghana Business Brief on WhatsApp.'},
  {t:'Member',p:'GHS 150',s:'/ month',f:['Everything in Brief','20% off all forums','Monthly online business clinic','Priority grant alerts'],c:'Become a member',m:'I would like to become a Member (GHS 150/month).'},
  {t:'Business Pro',hot:1,p:'GHS 1,200',s:'/ month',f:['Bookkeeping & E-VAT filing','Tax & compliance calendar','Quarterly finance review','Two forum seats per quarter'],c:'Start Business Pro',m:'I would like Business Pro (GHS 1,200/month).'},
- {t:'Investor Desk',p:'GHS 11,500',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Deal pipeline & introductions'],c:'Talk to us',m:'I am interested in the Investor Desk (USD 1,000/month).'}];
+ {t:'Investor Desk',p:'GHS 11,500',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Deal pipeline & introductions'],c:'Talk to us',m:'I am interested in the Investor Desk (GHS 11,500/month).'}];
 $('#tiers').innerHTML=TIERS.map(x=>`<div class="tier reveal ${x.hot?'hot':''}"><h3>${x.t}</h3><div class="price">${x.p} <small>${x.s}</small></div><ul>${x.f.map(i=>`<li>${i}</li>`).join('')}</ul><a class="btn ${x.hot?'btn-dark':'btn-line'}" href="${wa('Hello Gotham Consult. '+x.m)}" target="_blank" rel="noopener">${x.c}</a></div>`).join('');
 
 /* assistant */
@@ -1375,7 +1379,17 @@ const A=[
  [/energy|solar|mining|gold/i,'Our energy, mining and infrastructure practice prepares bankable projects: solar IPPs, PPAs, geology-led due diligence and packaging for development finance.'],
  [/hello|hi|hey/i,'Hello! Ask me about our services, forums, or investing in Ghana.']];
 const say=(t,w)=>{const m=document.createElement('div');m.className='m '+w;m.textContent=t;$('#msgs').append(m);$('#msgs').scrollTop=1e6};
-function answer(q){say(q,'me');const h=A.find(([r])=>r.test(q));setTimeout(()=>say(h?h[1]:'Good question. Our team will answer you personally on WhatsApp during office hours.','bot'),450)}
+const HIST=[];
+const local=q=>{const h=A.find(([r])=>r.test(q));return h?h[1]:'Good question. Our team will answer you personally on WhatsApp during office hours.'};
+async function answer(q){say(q,'me');
+ const t=document.createElement('div');t.className='m bot typing';t.textContent='…';$('#msgs').append(t);$('#msgs').scrollTop=1e6;
+ let a='';
+ try{const r=await fetch(CRM_API+'/api/ask',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({q,history:HIST.slice(-6)}),signal:AbortSignal.timeout(30000)});
+  const j=await r.json().catch(()=>({}));
+  if(j.answer)a=j.answer;else if(r.status===429)a='You have asked a lot of questions in a short time. Please WhatsApp us on +233 55 041 6627 and we will answer you personally.';
+ }catch(e){}
+ if(!a){await new Promise(r=>setTimeout(r,300));a=local(q)}
+ t.remove();say(a,'bot');HIST.push({role:'user',content:q},{role:'assistant',content:a})}
 $('#chips').innerHTML=['What is GIPA Act 1173?','How do I pay?','Next forum','Invest in Ghana'].map(c=>`<button type="button">${c}</button>`).join('')+`<a class="btn btn-wa" style="padding:5px 12px;font-size:12.5px" href="${wa('Hello Gotham Consult, I have a question.')}" target="_blank" rel="noopener">WhatsApp us</a>`;
 $('#chips').addEventListener('click',e=>{if(e.target.tagName==='BUTTON')answer(e.target.textContent)});
 $('#chatF').onsubmit=e=>{e.preventDefault();const v=$('#chatI').value.trim();if(v){answer(v);$('#chatI').value=''}};

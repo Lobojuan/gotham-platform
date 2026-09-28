@@ -17,6 +17,9 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY:-}
       REDIRECT_HOSTS: ${REDIRECT_HOSTS:-}
       PROXY_KEY: ${PROXY_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5-mini}
+      ASK_DAILY_CAP: ${ASK_DAILY_CAP:-400}
       MEDIA_DIR: /data/media
       SITE_DIR: /data/site
     volumes:

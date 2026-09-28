@@ -75,6 +75,8 @@ The live plugin zip with the key was uploaded through wp-admin.
   See `docs/qa-report-2026-09.md` (21 defects fixed) and `docs/srs.md` (requirement → test map).
 - **Main domain**: bridge plugin live, `MEDIA_URL`, redirect rules (section 1).
 - **Back office links**: "View website" and the top-bar house icon go to gothamconsult.com.
+- **Ask Gotham chat (AI)**: `/api/ask` plus `apps/crm/assistant.md` (see AGENTS.md). It is live once `OPENAI_API_KEY`
+  is set with `scripts/set-secret.sh`; until then, and on any error, it uses the built-in answers.
 - **Deploy script**: rsync instead of `scp -r` (a local `npm install` made it copy thousands of files).
 
 ## 4. Tests

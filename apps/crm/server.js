@@ -550,6 +550,46 @@ const ITEM_COLS = `i.code,i.kind,i.title,i.subtitle,i.venue,i.starts_at,i.ends_a
       select sum(r.seats) from registrations r where r.item_code=i.code and r.status<>'cancelled'),0),0) end as seats_left`;
 const itemsPublic = () => q(`select ${ITEM_COLS} from items i where i.published order by i.sort, i.starts_at`);
 
+/* ---- "Ask Gotham": the website chat, answered by an OpenAI model ----
+   Off until OPENAI_API_KEY is set on the server; the page then falls back to its built-in answers.
+   Knowledge = assistant.md (edit in plain English) + the published forums from the database.
+   Nothing the visitor types is stored. Per-visitor and per-day caps keep the bill bounded. */
+const OPENAI_KEY = process.env.OPENAI_API_KEY || '';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5-mini';
+const OPENAI_BASE = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
+const ASK_DAILY_CAP = +(process.env.ASK_DAILY_CAP || 400);
+const askDay = { day: '', n: 0 };
+let askKnow = { at: 0, text: '' };
+async function askKnowledge() {
+  if (Date.now() - askKnow.at < 5 * 60e3 && askKnow.text) return askKnow.text;
+  let base = '';
+  try { base = fs.readFileSync(path.join(here, 'assistant.md'), 'utf8'); } catch {}
+  const { rows } = await itemsPublic();
+  const when = d => d ? new Date(d).toLocaleString('en-GB', { timeZone: 'Africa/Accra', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'date to be announced';
+  const up = rows.filter(r => r.phase !== 'past' && (!r.starts_at || new Date(r.starts_at) > Date.now() - 864e5));
+  const forums = up.map(r => `- ${r.title}${r.subtitle ? ' — ' + r.subtitle : ''} (${r.code}): ${when(r.starts_at)} Accra time` +
+    `${r.venue ? ', ' + r.venue : ''}; ${+r.price > 0 ? 'GHS ' + (+r.price).toLocaleString('en-GH') : 'free'}` +
+    `${r.approval ? ', by invitation (apply on the registration page)' : ''}` +
+    `${r.seats_left === 0 ? ', fully booked' : ''}. Register: gothamconsult.com/register?e=${r.code}`).join('\n');
+  askKnow = { at: Date.now(), text: base + '\n\n## Upcoming forums and products (live from the back office)\n' + (forums || '- None published right now.') };
+  return askKnow.text;
+}
+async function askModel(messages) {
+  const call = async extra => fetch(OPENAI_BASE + '/chat/completions', {
+    method: 'POST', signal: AbortSignal.timeout(25e3),
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + OPENAI_KEY },
+    body: JSON.stringify({ model: OPENAI_MODEL, messages, max_completion_tokens: 900, ...extra }) });
+  const reasoning = /^(gpt-5|o\d)/.test(OPENAI_MODEL) ? { reasoning_effort: process.env.OPENAI_REASONING || 'minimal' } : {};
+  let r = await call(reasoning);
+  if (r.status === 400 && Object.keys(reasoning).length) {        // a newer model that names effort levels differently
+    const t = await r.text();
+    if (/reasoning/i.test(t)) r = await call({}); else throw new Error('openai 400 ' + t.slice(0, 200));
+  }
+  if (!r.ok) throw new Error('openai ' + r.status + ' ' + (await r.text()).slice(0, 200));
+  const j = await r.json();
+  return String(j.choices?.[0]?.message?.content || '').trim();
+}
+
 /* Attach resolved image/doc objects to a list of items in one extra query. */
 async function withMedia(rows) {
   const ids = new Set();
@@ -673,6 +713,38 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* ---- someone wants to sponsor us ---- */
+    if (p === '/api/ask' && req.method === 'POST') {
+      if (!OPENAI_KEY) return json(res, 200, { fallback: true }, cors);
+      if (rateLimited(ip, 20, 3600e3, 'ask')) return json(res, 429, { error: 'too_many' }, cors);
+      const today = new Date().toISOString().slice(0, 10);
+      if (askDay.day !== today) { askDay.day = today; askDay.n = 0; }
+      if (askDay.n >= ASK_DAILY_CAP) return json(res, 200, { fallback: true, reason: 'daily_cap' }, cors);
+      const b = await body(req);
+      const question = clean(b.q, 600);
+      if (!question) return json(res, 400, { error: 'missing_question' }, cors);
+      const history = (Array.isArray(b.history) ? b.history : []).slice(-6)
+        .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+        .map(m => ({ role: m.role, content: m.content.slice(0, 1200) }));
+      askDay.n++;
+      const system = `You are "Ask Gotham", the assistant on the Gotham Consult website (Accra, Ghana).
+Answer only from the knowledge below. Be warm, clear and brief: at most about 120 words, plain text, no markdown headings.
+Reply in the visitor's language. Always state prices in Ghana cedis (GHS), never in another currency.
+Do not invent prices, dates, people or services; if the answer is not below, say our team will answer on WhatsApp (+233 55 041 6627).
+You give general information, not legal, tax or investment advice; for their specific case, suggest a call or WhatsApp.
+Do not ask for or collect personal details in the chat; to register, point to gothamconsult.com/register.
+Stay on Gotham Consult, doing business and investing in Ghana; politely decline anything else.
+
+${await askKnowledge()}`;
+      try {
+        const answer = await askModel([{ role: 'system', content: system }, ...history, { role: 'user', content: question }]);
+        if (!answer) return json(res, 200, { fallback: true }, cors);
+        return json(res, 200, { answer: answer.slice(0, 2000) }, cors);
+      } catch (e) {
+        console.error('ask failed:', String(e.message || e).slice(0, 300));
+        return json(res, 200, { fallback: true }, cors);
+      }
+    }
+
     if (p === '/api/sponsor-enquiry' && req.method === 'POST') {
       if (rateLimited(ip, 6, 300e3, 'sponsor')) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
