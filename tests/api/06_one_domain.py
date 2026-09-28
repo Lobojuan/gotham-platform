@@ -103,13 +103,29 @@ assert st==200 and b'items' in b; ok('/api/items reachable at the same host')
 st,b,_=get('/api/sponsors'); assert st==200; ok('/api/sponsors reachable')
 
 # site pages must call the API with no absolute host
-site=open(ROOT+'/apps/site/dist/index.html',encoding='utf-8').read()
+site=open(ROOT+'/apps/site/dist/classic.html',encoding='utf-8').read()   # the older one-page site (free tools)
 assert 'netlify' not in site and 'sslip.io' not in site.replace('gotham.84-12-73-59.sslip.io/img','').replace('https://gotham.84-12-73-59.sslip.io','META')
 assert "const CRM_API = ''" in site
 ok('site calls the API relatively, no cross-origin requests left')
-assert 'href="/admin"' in site and 'target="_blank"' not in site.split('navlog')[1][:200]
+assert 'href="/admin"' in site
 assert 'gc-backoffice' in site and 'Back office' in site
 ok('Login opens the back office in an in-page, same-origin dialog')
 
+# the new design is the home page; its sections are real pages; old /v2 addresses and WordPress paths redirect
+st,b,_=get('/'); assert st==200 and b'data-car' in b and b'globe.js' in b, b[:200]
+for pth in ['/services','/invest','/mining','/forums','/about']:
+    st,b,_=get(pth); assert st==200 and b'class="gh v2c"' in b, (pth, st)
+ok('new design at / with /services, /invest, /mining, /forums, /about')
+for pth in ['/register','/family','/classic','/privacy','/terms']:
+    st,b,_=get(pth); assert st==200 and b'class="gh v2c"' in b and b'/assets/v2/chrome.css' in b and b'/assets/v2/v2.js' in b, (pth, st)
+ok('register, Family Desk, free tools and legal pages carry the same header, menu, dock and footer')
+class _NR(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,*a,**k): return None
+_op=urllib.request.build_opener(_NR)
+for src,dst in [('/v2','/'),('/v2/services','/services'),('/v2/about','/about'),('/contact','/about#contact'),('/faq','/about#contact')]:
+    try: _op.open(B+src,timeout=10); code=None; loc=None
+    except urllib.error.HTTPError as e: code=e.code; loc=e.headers.get('location')
+    assert code==301 and loc==dst,(src,code,loc)
+ok('old /v2 and WordPress addresses redirect to the new pages')
 srv.send_signal(signal.SIGTERM); time.sleep(0.5)
 print('\nALL ONE-DOMAIN TESTS PASSED')

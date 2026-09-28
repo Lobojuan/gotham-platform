@@ -1,9 +1,8 @@
-// Every v2 page on iPhone SE/15, Galaxy A, Pixel 7, iPad and desktop: no sideways scroll, 12 px+ text, 40 px+ taps,
-// 16 px inputs, scroll-in content visible, no console errors or broken requests; plus tabs, brief and sponsor forms.
-// Needs a local server on :4199 (BRIEF item present). PLAYWRIGHT=... CHROMIUM=... node tests/ui/v2_pages_sweep.js
+// Every page (new design and older pages with the shared chrome) on iPhone SE/15, Galaxy A, Pixel 7, iPad and desktop.
+// Needs a local server on :4199 with the BRIEF item. PLAYWRIGHT=... CHROMIUM=... node tests/ui/v2_pages_sweep.js
 const { chromium, devices } = require(process.env.PLAYWRIGHT);
 const B = 'http://127.0.0.1:4199';
-const PAGES = ['/v2', '/v2/services', '/v2/invest', '/v2/mining', '/v2/forums', '/v2/about'];
+const PAGES = ['/', '/services', '/invest', '/mining', '/forums', '/about', '/register', '/family', '/classic', '/teaser', '/privacy', '/terms'];
 const sizes = [['iphone-se', { viewport: { width: 320, height: 640 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, userAgent: devices['iPhone SE'].userAgent }],
   ['iphone-15', devices['iPhone 14']], ['galaxy-a', { viewport: { width: 360, height: 800 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, userAgent: devices['Galaxy S9+'].userAgent }],
   ['pixel-7', devices['Pixel 7']], ['ipad', devices['iPad (gen 7)']], ['desktop', { viewport: { width: 1440, height: 900 } }]];
@@ -38,19 +37,27 @@ const sizes = [['iphone-se', { viewport: { width: 320, height: 640 }, deviceScal
       r.errs = errs.slice(0, 3); r.bad = bad.slice(0, 3);
       if (dev === 'iphone-15' || dev === 'desktop') {
         await p.emulateMedia({ reducedMotion: 'reduce' });
-        await p.screenshot({ path: `/tmp/qa/pg-${dev}-${path.split('/').pop() || 'v2'}.png`, fullPage: true });
+        await p.screenshot({ path: `/tmp/qa/pg-${dev}-${path.split('/').pop() || 'home'}.png`, fullPage: true });
         await p.emulateMedia({ reducedMotion: 'no-preference' });
       }
-      if (path === '/v2/services' && dev === 'iphone-15') {
+      if (path === '/services' && dev === 'iphone-15') {
         await p.click('#t-inv'); r.tab = await p.evaluate(() => !document.getElementById('p-inv').hidden && document.getElementById('p-biz').hidden);
       }
-      if (path === '/v2/forums' && dev === 'desktop') {
+      if (path === '/forums' && dev === 'desktop') {
         r.events = await p.evaluate(() => document.querySelectorAll('#events .event').length);
         await p.fill('#b-name', 'QA Test'); await p.fill('#b-co', 'QA Co'); await p.fill('#b-em', 'qa@example.com'); await p.fill('#b-ph', '0241234567');
         await p.click('#briefF button'); await p.waitForTimeout(1500); r.brief = await p.evaluate(() => (document.querySelector('#briefF .ok') || document.getElementById('b-note') || {}).textContent);
         await p.fill('#sponF [name=company]', 'QA Sponsor'); await p.fill('#sponF [name=email]', 'sp@example.com'); await p.click('#sponF button'); await p.waitForTimeout(1500);
         r.spon = await p.evaluate(() => document.getElementById('sponMsg').textContent);
       }
+      // the shared chrome works on every page: menu on phones, services panel on desktop, chat everywhere
+      r.chrome = await p.evaluate(async () => {
+        const phone = innerWidth < 900, out = {};
+        if (phone) { document.querySelector('.dock [data-open-pane="root"]').click(); await new Promise(r => setTimeout(r, 350)); out.menu = document.getElementById('sheet').open; document.querySelector('#sheet [data-close]').click(); await new Promise(r => setTimeout(r, 150)); out.closed = !document.getElementById('sheet').open; }
+        else if (innerWidth >= 1080) { document.querySelector('.nav button.nb').click(); await new Promise(r => setTimeout(r, 200)); out.mega = !document.getElementById('mega-services').hidden; document.body.click(); }
+        const hdr = document.querySelector('header.gh').getBoundingClientRect(); out.hdrTop = Math.round(hdr.top); out.hdrH = Math.round(hdr.height);
+        out.headers = document.querySelectorAll('header.gh').length; out.footers = document.querySelectorAll('footer.gf').length; out.dup = ['chatO','chat','msgs','sheet'].filter(id => document.querySelectorAll('#' + id).length > 1);
+        return out; });
       res[dev + ' ' + path] = r; await p.close();
     }
     await ctx.close();

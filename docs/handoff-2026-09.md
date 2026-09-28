@@ -132,3 +132,16 @@ Files: `apps/site/pages/v2.html`, `apps/site/public/assets/v2/{v2.css,v2.js,glob
 16 px inputs, content visible with and without scroll animations, menu/mega/chat open and close).
 The globe is dependency-free Canvas 2D (no WebGL), half density on phones, paused off screen, still frame
 for reduced motion.
+
+### Live since 28 September 2026 (evening)
+- The new design **is the website**: `/` (was `/v2`), `/services`, `/invest`, `/mining`, `/forums`, `/about`.
+  Sources: `apps/site/pages/{index,services,invest,mining,forums,about}.html`; shared header/menu/dock/chat/footer in
+  `apps/site/pages/_partials/_top.html` and `_bottom.html`; styles `public/assets/v2/v2.css`; behaviour `v2.js`;
+  translations `i18n.js`; globe `globe.js`.
+- The older one-page site lives on at `/classic` (noindex) only for the free tools. Register, Family Desk, teaser,
+  privacy and terms keep their own styles, but `build.py` gives them the same header, menus, dock, chat and footer:
+  it removes their old top bar and footer and injects the partials plus `assets/v2/chrome.css` (generated from v2.css by
+  `apps/site/chrome_css.py`, scoped to `.v2c` so nothing leaks either way).
+- Redirects in `server.js` (`OLD` map): `/v2/*` → new paths, `/contact` and `/faq` → `/about#contact`.
+- Next: move Register, Family Desk and the free tools fully into the new design; practice detail pages (e.g. what AI can do
+  for customers) once Uffe/Joy confirm what each practice delivers; phone QA on real devices.

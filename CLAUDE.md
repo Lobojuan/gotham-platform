@@ -81,7 +81,7 @@ TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/run_api.
 | Image resizing, uploads | `storeImage`, `storeLogo`, `storeDoc` in `server.js` |
 | Scheduled work | `runJobs()` at the bottom of `server.js`, every 15 minutes |
 | Email bodies | `queueMail` / `wrapMail` / `flushMail` in `server.js` |
-| The public website | `apps/site/pages/*.html` |
+| The public website | `apps/site/pages/*.html` (new design: index, services, invest, mining, forums, about; shared chrome in `pages/_partials/`; older pages get the chrome at build time) |
 | Page `<head>`, meta, sitemap | `apps/site/build.py` |
 | Privacy and terms wording | `apps/site/legal/` then rebuild into `public/` |
 

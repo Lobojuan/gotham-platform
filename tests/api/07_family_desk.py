@@ -46,8 +46,8 @@ ok=lambda m: print('  ok',m)
 st,b,h=call('/family.html',raw=True)
 assert st==200 and b'Family Desk' in b and b'<!doctype html>' in b.lower()
 ok('/family.html served as a full document')
-st,b,_=call('/sitemap.xml',raw=True); assert b'family.html' in b; ok('in the sitemap')
-st,b,_=call('/',raw=True); assert b'/family.html' in b and b'Join the founding families' in b; ok('homepage links to it')
+st,b,_=call('/sitemap.xml',raw=True); assert b'/family<' in b; ok('in the sitemap')
+st,b,_=call('/',raw=True); assert b'href="/family"' in b and b'Family Desk' in b; ok('homepage links to it')
 st,b,_=call('/privacy.html',raw=True); assert b'Family Desk interest form' in b; ok('privacy notice covers the form')
 
 good={'full_name':'Akua Mensah','email':'akua@example.co.uk','country':'United Kingdom','dial':'+44',

@@ -650,7 +650,10 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(301, { location: PUBLIC_URL + req.url, 'cache-control': 'public, max-age=3600' }); return res.end();
   }
   /* addresses from the old WordPress site */
-  const OLD = { '/services': '/#services', '/contact': '/#contact', '/faq': '/#contact', '/about': '/#about', '/hello-world': '/',
+  /* the new design moved out of /v2 onto the main paths on 28 September 2026 */
+  const OLD = { '/contact': '/about#contact', '/faq': '/about#contact', '/hello-world': '/',
+    '/v2': '/', '/v2/services': '/services', '/v2/invest': '/invest', '/v2/mining': '/mining', '/v2/forums': '/forums', '/v2/about': '/about',
+    '/index': '/',
     '/wp-admin': '/admin', '/wp-login.php': '/admin', '/feed': '/', '/wp-sitemap.xml': '/sitemap.xml', '/sample-page': '/' };
   const oldKey = p.replace(/\/+$/, '') || '/';
   if ((req.method === 'GET' || req.method === 'HEAD') && OLD[oldKey]) { res.writeHead(301, { location: OLD[oldKey] }); return res.end(); }

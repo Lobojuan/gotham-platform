@@ -5,14 +5,16 @@ The pages in pages/ are written as page bodies so they can also be published
 as artifacts. This wraps each one in a complete HTML document with the meta
 tags a real website needs, and copies public/ over the top.
 """
-import os, shutil, sys
+import os, re, shutil, sys
+import chrome_css
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
 SITE = os.environ.get('SITE_URL', 'https://gothamconsult.com').rstrip('/')
 
 META = {
- 'index.html': dict(
+ 'classic.html': dict(   # the previous one-page site, kept for the free tools until they move
+   extra='<meta name="robots" content="noindex">',
    title='Gotham Consult · business, investment and compliance in Ghana',
    desc='Gotham Consult with Carlson Capital Ltd builds partnerships among businesses, investors, public institutions and international partners in Ghana.',
    og='img/boot2.webp'),
@@ -26,20 +28,19 @@ META = {
    og='img/forum.webp'),
 }
 
-V2_EXTRA = ('<meta name="robots" content="noindex,nofollow">\n'
-  '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=4">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=5">\n'
   '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
   '<meta name="theme-color" content="#070D18">')
-# The new design (preview until it replaces the home page). Shared header/footer come from pages/v2/_top.html and _bottom.html.
+# The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 V2 = {
- 'v2.html': ('Gotham Consult · build partnerships in Ghana', 'Business development, investment and compliance in Ghana, with Carlson Capital Ltd.', 'img/boot2.webp'),
- 'v2/services.html': ('Services and prices · Gotham Consult', 'Ten practices with fixed prices in Ghana cedis: investment readiness, market entry, mining, AI, compliance, education and family support.', 'img/real-airportcity.webp'),
- 'v2/invest.html': ('Invest in Ghana · Gotham Consult', 'Ghana in numbers, sectors to watch and what the GIPA Act 2026 means for investors from Germany, the Nordics, the UK and beyond.', 'img/real-bog.webp'),
- 'v2/mining.html': ('Mining and critical minerals · Gotham Consult', 'Geology-led concession screening, due diligence and licensing in Ghana, with TERRA field data and the Afri-MINEX platform.', 'img/solar.webp'),
- 'v2/forums.html': ('Forums and seminars · Gotham Consult', 'Forums, roundtables and the free weekly Ghana Business Brief. Register in a minute, pay by mobile money.', 'img/forum.webp'),
- 'v2/about.html': ('About and contact · Gotham Consult', 'An Accra-based business development and international projects consultancy, with strategic partner Carlson Capital Ltd.', 'img/joy.webp'),
+ 'index.html': ('Gotham Consult · build partnerships in Ghana', 'Business development, investment and compliance in Ghana, with Carlson Capital Ltd.', 'img/boot2.webp'),
+ 'services.html': ('Services and prices · Gotham Consult', 'Ten practices with fixed prices in Ghana cedis: investment readiness, market entry, mining, AI, compliance, education and family support.', 'img/real-airportcity.webp'),
+ 'invest.html': ('Invest in Ghana · Gotham Consult', 'Ghana in numbers, sectors to watch and what the GIPA Act 2026 means for investors from Germany, the Nordics, the UK and beyond.', 'img/real-bog.webp'),
+ 'mining.html': ('Mining and critical minerals · Gotham Consult', 'Geology-led concession screening, due diligence and licensing in Ghana, with TERRA field data and the Afri-MINEX platform.', 'img/solar.webp'),
+ 'forums.html': ('Forums and seminars · Gotham Consult', 'Forums, roundtables and the free weekly Ghana Business Brief. Register in a minute, pay by mobile money.', 'img/forum.webp'),
+ 'about.html': ('About and contact · Gotham Consult', 'An Accra-based business development and international projects consultancy, with strategic partner Carlson Capital Ltd.', 'img/joy.webp'),
 }
 for _n, (_t, _d, _o) in V2.items():
     META[_n] = dict(title=_t, desc=_d, og=_o, extra=V2_EXTRA)
@@ -97,16 +98,38 @@ def main():
         body = open(os.path.join(HERE, 'pages', name), encoding='utf-8').read()
         for part in ('top', 'bottom'):   # shared header/footer of the new design
             if f'<!--#{part}-->' in body:
-                body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', 'v2', f'_{part}.html'), encoding='utf-8').read())
+                body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
         os.makedirs(os.path.dirname(os.path.join(DIST, name)), exist_ok=True)
         out = body if body.lstrip().lower().startswith('<!doctype') else \
-              HEAD.format(site=SITE, path=name, **{'extra': '', **m}) + body + '\n</body>\n</html>'
+              HEAD.format(site=SITE, path=('' if name == 'index.html' else name[:-5] if name.endswith('.html') else name), **{'extra': '', **m}) + body + '\n</body>\n</html>'
         open(os.path.join(DIST, name), 'w', encoding='utf-8').write(out)
         print(f'  {name}')
 
+
+    # the new design's shared chrome (header, menus, dock, chat, footer) on the pages that still use older styles
+    chrome_css.build(os.path.join(HERE, 'public', 'assets', 'v2', 'v2.css'), os.path.join(DIST, 'assets', 'v2', 'chrome.css'))
+    top = open(os.path.join(HERE, 'pages', '_partials', '_top.html'), encoding='utf-8').read()
+    bottom = open(os.path.join(HERE, 'pages', '_partials', '_bottom.html'), encoding='utf-8').read()
+    head_add = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+                '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">\n'
+                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=1">\n')
+    # older scripts look for nav.main (#nav) to fill or to attach the old language switch: keep one, hidden
+    keep = '<nav class="main" id="nav" hidden aria-hidden="true" style="display:none!important"><span class="navlog"></span></nav>\n'
+    for name in ('classic.html', 'register.html', 'family.html', 'teaser.html', 'privacy.html', 'terms.html'):
+        path = os.path.join(DIST, name)
+        if not os.path.exists(path): continue
+        h = open(path, encoding='utf-8').read()
+        h = h.replace('</head>', head_add + '</head>', 1)
+        h = re.sub(r'<header(?: id="hdr")?><div class="wrap bar">.*?</header>', '', h, count=1, flags=re.S)   # old top bar
+        h = re.sub(r'<footer>.*?</footer>', '', h, count=1, flags=re.S)                                    # old footer
+        h = re.sub(r'<body([^>]*)>', lambda m: '<body' + (re.sub(r'class="', 'class="v2-legacy ', m.group(1), 1) if 'class="' in m.group(1) else m.group(1) + ' class="v2-legacy"') + '>\n' + keep + top, h, count=1)
+        h = h.replace('</body>', bottom + '\n</body>', 1) if '</body>' in h else h + bottom
+        open(path, 'w', encoding='utf-8').write(h)
+        print(f'  {name}: new header and footer')
+
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n')
-    pages = ['', 'family.html', 'register.html', 'teaser.html', 'privacy.html', 'terms.html']
+    pages = ['', 'services', 'invest', 'mining', 'forums', 'about', 'family', 'register', 'teaser', 'privacy', 'terms']
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc></url>\n' for p in pages)
     open(os.path.join(DIST, 'sitemap.xml'), 'w').write(
         '<?xml version="1.0" encoding="UTF-8"?>\n'

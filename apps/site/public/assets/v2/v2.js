@@ -51,14 +51,20 @@
     }
   }
   let observing = false;
-  const mo = new MutationObserver(rs => { if (current === 'en') return; for (const r of rs) for (const n of r.addedNodes) applyNode(n, current); });
+  // pages still on the older styles translate their own content (landing-i18n); here only the shared chrome is ours
+  const legacy = document.body.classList.contains('v2-legacy');
+  const roots = () => legacy ? $$('.v2c') : [document.body];
+  const mine = n => !legacy || (n.nodeType === 1 ? n : n.parentElement)?.closest?.('.v2c');
+  const mo = new MutationObserver(rs => { if (current === 'en') return; for (const r of rs) for (const n of r.addedNodes) if (mine(n)) applyNode(n, current); });
   const setLang = async l => {
     markLang(l); try { localStorage.setItem('gc-language', l); } catch {}
     document.documentElement.lang = l;
     if (l !== 'en') await loadDict();
-    if (l === 'en' && !dict) return;
-    applyNode(document.body, l);
+    if (l === 'en' && !dict) { const old = $('#gc-language-switch select'); if (old && old.value !== 'en') { old.value = 'en'; old.dispatchEvent(new Event('change')); } return; }
+    roots().forEach(r => applyNode(r, l));
     if (!observing) { mo.observe(document.body, { childList: true, subtree: true }); observing = true; }
+    const old = $('#gc-language-switch select');   // older pages: switch their own translation too
+    if (old && old.value !== l) { old.value = l; old.dispatchEvent(new Event('change')); }
   };
   $$('[data-lang]').forEach(b => b.addEventListener('click', () => { setLang(b.dataset.lang); closeLang(); }));
   markLang(current); if (current !== 'en') setLang(current);
@@ -128,8 +134,8 @@
 
   /* ---- current page in the menu ---- */
   const here = location.pathname.replace(/\/$/, '');
-  const navKey = here.startsWith('/v2/services') || here.startsWith('/v2/mining') ? 'services' : here.startsWith('/v2/invest') ? 'invest'
-    : here.startsWith('/v2/forums') ? 'forums' : here.startsWith('/v2/about') ? (location.hash === '#contact' ? 'contact' : 'about') : '';
+  const navKey = /^\/(services|mining)/.test(here) ? 'services' : here.startsWith('/invest') ? 'invest'
+    : here.startsWith('/forums') ? 'forums' : here.startsWith('/about') ? (location.hash === '#contact' ? 'contact' : 'about') : '';
   $$('[data-nav]').forEach(a => { if (a.dataset.nav === navKey) { a.tagName === 'A' ? a.setAttribute('aria-current', 'page') : a.classList.add('cur'); } });
 
   /* ---- tabs (packages, country lenses): arrow keys move between tabs ---- */
