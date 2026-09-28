@@ -153,6 +153,14 @@ async function journeys(browser) {
     await p.goto(B + '/', NAV); await settle(p);
     const t0 = await p.textContent('[data-car-title]'); await p.click('[data-car-next]'); await p.waitForTimeout(500);
     check('carousel next moves to another practice', (await p.textContent('[data-car-title]')) !== t0);
+    {  // mouse: moving across the cards turns the ring without clicking, then the nearest card settles in front
+      const sb = await p.locator('.car-stage').boundingBox(), y = sb.y + sb.height * .4, before = await p.textContent('[data-car-title]');
+      await p.mouse.move(sb.x + sb.width * .45, y); for (let i = 1; i <= 10; i++) await p.mouse.move(sb.x + sb.width * (.45 + i * .035), y, { steps: 2 });
+      await p.waitForTimeout(1100);
+      check('carousel turns when the mouse moves across it (no click)', (await p.textContent('[data-car-title]')) !== before);
+      check('carousel settles with one card in front', await p.$$eval('.car-card.front', a => a.length) === 1);
+      await p.mouse.move(5, 5); await p.waitForTimeout(400);
+    }
     const hrefs = await p.$$eval('.car-card', a => a.map(x => x.getAttribute('href')));
     check('carousel cards open the practice pages', hrefs.length === 10 && hrefs.every(h => /^\/services\/[a-z-]+$/.test(h)), hrefs.join(','));
     // home chat via chip

@@ -543,11 +543,11 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
   background: radial-gradient(40% 50% at 50% 60%, rgba(47,181,148,.18), transparent 70%), radial-gradient(30% 40% at 15% 10%, rgba(240,190,90,.14), transparent 70%); }
 .car-sec .lead { color: rgba(255,255,255,.7); }
 .car { --w: clamp(220px, 62vw, 300px); --h: calc(var(--w) * 1.32); --r: calc(var(--w) * 1.62); position: relative; }
-.car-stage { height: calc(var(--h) + 80px); perspective: 1500px; perspective-origin: 50% 40%; display: grid; place-items: center; overflow: hidden;
+.car-stage { position: relative; height: calc(var(--h) + 96px); perspective: 1400px; perspective-origin: 50% 38%; display: grid; place-items: center; overflow: hidden;
   touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
 .car-stage.drag { cursor: grabbing; }
 .car-ring { position: relative; width: var(--w); height: var(--h); transform-style: preserve-3d;
-  transform: translateZ(calc(var(--r) * -1)) rotateY(var(--rot, 0deg)); transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+  transform: translateZ(calc(var(--r) * -1)) rotateX(var(--tilt, 0deg)) rotateY(var(--rot, 0deg)); will-change: transform; }
 .car-stage.drag .car-ring { transition: none; }
 .car-card { position: absolute; inset: 0; border-radius: 24px; overflow: hidden; text-decoration: none; color: #fff;
   transform: rotateY(calc(var(--i) * 36deg)) translateZ(var(--r)); backface-visibility: hidden; -webkit-backface-visibility: hidden;
@@ -568,6 +568,21 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .car-card.back { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .3s ease, visibility 0s .3s; }   /* never let a card seen from behind show through (Safari) */
 .car-card * { -webkit-backface-visibility: visible; backface-visibility: visible; }   /* Safari hides the images and gradients inside a card otherwise */
 .car-card.side { opacity: .8; }
+/* the card in front: gold edge, soft glow, light that follows the mouse, photo drifts a little */
+.car-card { transition: opacity .5s ease, box-shadow .5s ease, border-color .5s ease; }
+.car-card.front { border-color: rgba(240,190,90,.55); box-shadow: 0 40px 80px -24px rgba(0,0,0,.8), 0 0 0 1px rgba(240,190,90,.25), 0 0 60px -10px rgba(240,190,90,.35); }
+.car-card.front::after { opacity: 1; background: radial-gradient(420px circle at var(--mx, 30%) var(--my, 20%), rgba(255,255,255,.22), transparent 45%), linear-gradient(135deg, rgba(255,255,255,.12), transparent 35%); }
+.car-card img { transition: transform 1.2s cubic-bezier(.2,.8,.2,1), opacity .6s ease; }
+.car-card.front img { opacity: .72; transform: scale(1.08) translate(calc((var(--mx, 50%) - 50%) * -.04), calc((var(--my, 50%) - 50%) * -.04)); }
+.car-card.front .cc-go .arrow { display: inline-block; animation: nudge 1.6s ease-in-out infinite; }
+@keyframes nudge { 50% { transform: translateX(4px); } }
+/* a glowing floor under the ring */
+.car-stage::after { content: ""; position: absolute; left: 50%; bottom: 14px; width: min(620px, 86vw); height: 70px; transform: translateX(-50%); pointer-events: none;
+  background: radial-gradient(closest-side, rgba(240,190,90,.32), rgba(47,181,148,.14) 55%, transparent); filter: blur(10px); }
+.car-hint { margin: 10px 0 0; text-align: center; font-size: 13px; color: rgba(255,255,255,.55); }
+.car-hint .touch { display: none; }
+@media (hover: none), (pointer: coarse) { .car-hint .mouse { display: none; } .car-hint .touch { display: inline; } }
+@media (prefers-reduced-motion: reduce) { .car-card.front .cc-go .arrow { animation: none; } .car-card img { transition: none; } }
 .car-ctl { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: -24px; position: relative; z-index: 2; }
 .car-b { flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff; cursor: pointer; }
 .car-b:hover { background: rgba(255,255,255,.16); }

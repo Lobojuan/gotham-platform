@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=2';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=3';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -134,31 +134,67 @@
     // Safari does not start lazy images inside a 3D ring: load them once the carousel comes near the screen
     const wake = () => cards.forEach(c => { const im = $('img', c); if (im && im.loading === 'lazy') im.loading = 'eager'; });
     if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { wake(); io.disconnect(); } }, { rootMargin: '600px 0px' }); io.observe(stage); } else wake();
-    const render = () => {
-      ring.style.setProperty('--rot', rot + 'deg');
-      cards.forEach((c, i) => { const d = Math.min((i - idx + N) % N, (idx - i + N) % N); c.classList.toggle('far', d === 2); c.classList.toggle('side', d === 1); c.classList.toggle('back', d > 2); c.tabIndex = d === 0 ? 0 : -1; c.setAttribute('aria-hidden', d > 1); });
-      $('[data-car-num]', car).textContent = String(idx + 1).padStart(2, '0');
-      $('[data-car-title]', car).textContent = $('b', cards[idx]).textContent;
+    /* one animation loop drives the ring: buttons, auto-play, drag, mouse and trackpad all just set a target angle */
+    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    let cur = 0, tilt = 0, tiltT = 0, raf = 0, shown = -1, scrub = null, idle = 0;
+    const nearest = r => ((Math.round(-r / step) % N) + N) % N;
+    const faces = n => {
+      cards.forEach((c, i) => { const d = Math.min((i - n + N) % N, (n - i + N) % N);
+        c.classList.toggle('front', d === 0); c.classList.toggle('side', d === 1); c.classList.toggle('far', d === 2); c.classList.toggle('back', d > 2);
+        c.tabIndex = d === 0 ? 0 : -1; c.setAttribute('aria-hidden', d > 1); });
+      $('[data-car-num]', car).textContent = String(n + 1).padStart(2, '0');
+      $('[data-car-title]', car).textContent = $('b', cards[n]).textContent;
     };
-    const go = n => { const diff = ((n - idx) % N + N + N / 2) % N - N / 2; idx = (idx + diff + N) % N; rot -= diff * step; render(); };
+    const loop = () => {
+      const k = reduce ? 1 : .13;
+      cur += (rot - cur) * k; tilt += (tiltT - tilt) * (reduce ? 1 : .09);
+      ring.style.setProperty('--rot', cur.toFixed(3) + 'deg'); ring.style.setProperty('--tilt', tilt.toFixed(3) + 'deg');
+      const n = nearest(cur); if (n !== shown) { shown = n; faces(n); }
+      raf = (Math.abs(rot - cur) > .02 || Math.abs(tiltT - tilt) > .02) ? requestAnimationFrame(loop) : 0;
+      if (!raf) { cur = rot; tilt = tiltT; ring.style.setProperty('--rot', cur + 'deg'); }
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+    const render = () => kick();
+    // after the mouse or trackpad rests, the nearest card glides to the front
+    const settle = (ms = 260) => { clearTimeout(idle); idle = setTimeout(() => { rot = Math.round(rot / step) * step; idx = nearest(rot); scrub = null; kick(); }, ms); };
+    const go = n => { const diff = ((n - idx) % N + N + N / 2) % N - N / 2; idx = (idx + diff + N) % N; rot = Math.round(rot / step) * step - diff * step; scrub = null; render(); };
     const auto = on => { clearInterval(timer); if (on && !reduce) timer = setInterval(() => go(idx + 1), 3800); };
     $('[data-car-prev]', car).addEventListener('click', () => { go(idx - 1); auto(false); });
     $('[data-car-next]', car).addEventListener('click', () => { go(idx + 1); auto(false); });
     car.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { go(idx + 1); auto(false); } if (e.key === 'ArrowLeft') { go(idx - 1); auto(false); } });
     ['mouseenter', 'focusin'].forEach(ev => car.addEventListener(ev, () => auto(false)));
     car.addEventListener('mouseleave', () => auto(true));
+    // mouse: move across the cards to turn the ring (no click), tilt with height, spotlight on the front card
+    if (fine && !reduce) {
+      stage.addEventListener('pointermove', e => {
+        if (e.pointerType !== 'mouse' || drag?.active || e.buttons) return;
+        const r = stage.getBoundingClientRect();
+        if (!scrub) scrub = { x: e.clientX, rot };
+        rot = scrub.rot + (e.clientX - scrub.x) / r.width * 360 * .5;
+        tiltT = ((e.clientY - r.top) / r.height - .5) * -9;
+        const fc = cards[shown] || cards[idx], fr = fc.getBoundingClientRect();
+        const pc = (v, a, l) => Math.max(0, Math.min(100, (v - a) / l * 100)).toFixed(1) + '%';
+        fc.style.setProperty('--mx', pc(e.clientX, fr.left, fr.width)); fc.style.setProperty('--my', pc(e.clientY, fr.top, fr.height));
+        kick(); settle();
+      });
+      stage.addEventListener('pointerleave', () => { tiltT = 0; settle(0); });
+    }
+    // trackpad: a sideways two-finger swipe turns the ring; up/down still scrolls the page
+    stage.addEventListener('wheel', e => {
+      if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.2) return;
+      e.preventDefault(); auto(false); scrub = null; rot -= e.deltaX * .22; kick(); settle(180);
+    }, { passive: false });
     // drag / swipe: horizontal moves turn the ring, vertical swipes still scroll the page
-    stage.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, rot, idx, active: false }; moved = false; auto(false); });
+    stage.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, rot, idx, active: false }; moved = false; auto(false); clearTimeout(idle); });
     stage.addEventListener('pointermove', e => {
       if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (!drag.active) { if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return; drag.active = true; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); }
-      moved = true; rot = drag.rot + dx / (stage.clientWidth / 1.4) * step * 2; ring.style.setProperty('--rot', rot + 'deg');
-      const near = ((Math.round(-rot / step) % N) + N) % N; cards.forEach((c, i) => c.classList.toggle('back', Math.min((i - near + N) % N, (near - i + N) % N) > 2));
+      moved = true; rot = drag.rot + dx / (stage.clientWidth / 1.4) * step * 2; kick();
     });
     const end = () => { if (!drag) return; const was = drag; drag = null; stage.classList.remove('drag'); if (!was.active) return;
-      const turned = Math.round((rot - was.rot) / step); idx = was.idx; rot = was.rot; go(idx - turned); };
+      rot = Math.round(rot / step) * step; idx = nearest(rot); scrub = null; kick(); };
     stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
-    cards.forEach((c, i) => c.addEventListener('click', e => { if (moved) { e.preventDefault(); moved = false; return; } if (i !== idx) { e.preventDefault(); go(i); } }));
+    cards.forEach((c, i) => c.addEventListener('click', e => { if (moved) { e.preventDefault(); moved = false; return; } if (i !== nearest(cur)) { e.preventDefault(); idx = nearest(cur); go(i); } }));
     if ('IntersectionObserver' in window) new IntersectionObserver(es => auto(es[0].isIntersecting)).observe(car); else auto(true);
     render();
   }
@@ -311,4 +347,17 @@
   $$('[data-ask-form]').forEach(f => f.addEventListener('submit', e => { e.preventDefault(); const i = f.querySelector('input'), v = i.value.trim(); if (!v) return; i.value = '';
     const topic = f.closest('[data-topic]')?.getAttribute('data-topic'); askHere(topic && !v.toLowerCase().includes(topic.toLowerCase()) ? v + ' (about ' + topic + ')' : v); }));
   $('#chatF')?.addEventListener('submit', e => { e.preventDefault(); const i = $('#chatI'), v = i.value.trim(); if (v) { i.value = ''; ask(v); } });
+
+  /* the next page opens faster: Chrome prepares a page as soon as you point at its link; other browsers fetch it ahead */
+  if (HTMLScriptElement.supports?.('speculationrules')) {
+    const sr = document.createElement('script'); sr.type = 'speculationrules';
+    sr.textContent = JSON.stringify({ prerender: [{ where: { and: [{ href_matches: '/*' }, { not: { href_matches: '/admin*' } }, { not: { href_matches: '/api/*' } }, { not: { selector_matches: '[target=_blank], [download]' } }] }, eagerness: 'moderate' }] });
+    document.head.append(sr);
+  } else {
+    const warmed = new Set();
+    const warm = e => { const a = e.target.closest?.('a[href]'); if (!a || a.target === '_blank') return;
+      const u = new URL(a.href, location.href); if (u.origin !== location.origin || /^\/(admin|api)\b/.test(u.pathname) || u.pathname === location.pathname || warmed.has(u.pathname)) return;
+      warmed.add(u.pathname); fetch(u.pathname + u.search, { credentials: 'same-origin', priority: 'low' }).catch(() => {}); };
+    document.addEventListener('pointerover', warm, { passive: true }); document.addEventListener('touchstart', warm, { passive: true });
+  }
 })();
