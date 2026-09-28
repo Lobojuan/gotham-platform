@@ -111,3 +111,18 @@ Never edit files on the server. Never commit `.env` or the real `PROXY_KEY`: the
 7. Event details still to confirm: Tang Palace capacity, speakers.
 8. The Mac repo has uncommitted local changes to `.env.example`, `.gitignore` and `apps/crm/package-lock.json` that
    were not made by these agents. Check with Uffe before committing or discarding them.
+
+## 6. Redesign in progress (owner: Claude) — please don't edit these files in parallel
+
+Uffe asked for a new "2030" look: an uncluttered menu, 3D graphics, and flawless behaviour on iPhone and Android.
+Agreed plan, in phases, previewed at **gothamconsult.com/v2** (noindex) before it replaces the live home page:
+1. Design system, new header (Services mega-menu, Invest in Ghana, Forums, About, Contact, language, Log in,
+   Register; full-screen menu on phones), canvas 3D globe hero with partnership arcs from Accra, short home page. **Done.**
+2. Separate pages: Services, Invest in Ghana, Mining, Forums, About/Contact (content moved from the long index.html).
+3. Translations (EN/FR/ES through `landing-i18n.js`), phone QA on real devices, speed check, then switch `/` to v2.
+
+Files: `apps/site/pages/v2.html`, `apps/site/public/assets/v2/{v2.css,v2.js,globe.js}`, `build.py` (per-page
+`extra` head). Phone checks: `/tmp`-style Playwright sweep at 320–1440 px (no sideways scroll, 44 px taps,
+16 px inputs, content visible with and without scroll animations, menu/mega/chat open and close).
+The globe is dependency-free Canvas 2D (no WebGL), half density on phones, paused off screen, still frame
+for reduced motion.
