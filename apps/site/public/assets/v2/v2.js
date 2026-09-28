@@ -41,14 +41,30 @@
   document.addEventListener('click', () => { setMega(false); closeLang(); });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!mega?.hidden) { setMega(false); nb.focus(); } closeLang(); } });
 
-  /* ---- mobile menu sheet ---- */
-  const sheet = $('#sheet'), menub = $('.gh-act .menub');
-  menub?.addEventListener('click', () => { sheet.showModal ? sheet.showModal() : sheet.setAttribute('open', ''); document.documentElement.style.overflow = 'hidden'; });
-  const closeSheet = () => { sheet.close ? sheet.close() : sheet.removeAttribute('open'); };
+  /* ---- phone menu: full-screen sheet with a sliding Services pane ---- */
+  const sheet = $('#sheet'), panes = $('.panes', sheet), p0 = $('.p0', sheet), p1 = $('.p1', sheet);
+  const setPane = (name, focus = true) => {
+    const sub = name === 'services';
+    panes.dataset.level = sub ? '1' : '0';
+    p0.inert = sub; p1.inert = !sub;
+    if (focus) setTimeout(() => (sub ? $('.back', p1) : $('[data-pane="services"]', p0))?.focus({ preventScroll: true }), 60);
+  };
+  const openSheet = (name = 'root') => {
+    setPane(name, false);
+    sheet.showModal ? sheet.showModal() : sheet.setAttribute('open', '');
+    document.documentElement.style.overflow = 'hidden';
+    if (name === 'services') setTimeout(() => $('.back', p1)?.focus({ preventScroll: true }), 60);
+  };
+  const closeSheet = () => { sheet.close ? sheet.close() : sheet.removeAttribute('open'); document.documentElement.style.overflow = ''; };
+  $('.gh-act .menub')?.addEventListener('click', () => openSheet('root'));
   sheet?.addEventListener('close', () => { document.documentElement.style.overflow = ''; });
   $$('[data-close]', sheet).forEach(b => b.addEventListener('click', closeSheet));
+  $$('[data-pane]', sheet).forEach(b => b.addEventListener('click', () => setPane(b.dataset.pane)));
   $$('a', sheet).forEach(a => a.addEventListener('click', closeSheet));
   addEventListener('resize', () => { if (innerWidth >= 1080 && sheet?.open) closeSheet(); });
+  /* dock */
+  $$('[data-open-pane]').forEach(b => b.addEventListener('click', () => openSheet(b.dataset.openPane)));
+  $$('[data-open-chat]').forEach(b => b.addEventListener('click', () => openChat()));
 
   /* ---- next forum, live from the back office ---- */
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -82,12 +98,12 @@
   /* ---- Ask Gotham ---- */
   const chat = $('#chat'), chatO = $('#chatO'), msgs = $('#msgs'), HIST = [];
   const say = (t, who) => { const m = document.createElement('div'); m.className = 'm ' + who; m.textContent = t; msgs.append(m); msgs.scrollTop = msgs.scrollHeight; return m; };
-  const openChat = () => {
+  function openChat() {
     chat.hidden = false; chatO.hidden = true; chatO.setAttribute('aria-expanded', 'true');
     if (!msgs.children.length) say('Hi, welcome to Gotham Consult. Ask me about our services, forums, prices or investing in Ghana.', 'bot');
     if (innerWidth > 520) $('#chatI').focus();
-  };
-  const closeChat = () => { chat.hidden = true; chatO.hidden = false; chatO.setAttribute('aria-expanded', 'false'); chatO.focus(); };
+  }
+  const closeChat = () => { chat.hidden = true; chatO.hidden = false; chatO.setAttribute('aria-expanded', 'false'); if (getComputedStyle(chatO).display !== 'none') chatO.focus(); };
   chatO?.addEventListener('click', openChat);
   $('#chatX')?.addEventListener('click', closeChat);
   const FALLBACK = 'Good question. Our team will answer you personally on WhatsApp: +233 55 041 6627.';

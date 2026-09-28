@@ -1,5 +1,5 @@
-// v2 preview sweep: iPhone SE/15, Galaxy A, Pixel 7, iPad, desktop. Run against a local server on :4199:
-//   PLAYWRIGHT=... CHROMIUM=... node tests/ui/v2_phone_sweep.js  (screenshots go to /tmp/qa)
+// v2 sweep: iPhone SE/15, Galaxy A, Pixel 7, iPad, desktop, against a local server on :4199 (screenshots in /tmp/qa):
+//   PLAYWRIGHT=... CHROMIUM=... node tests/ui/v2_phone_sweep.js
 const { chromium, devices } = require(process.env.PLAYWRIGHT);
 const B = 'http://127.0.0.1:4199';
 const sizes = [
@@ -25,7 +25,7 @@ const sizes = [
         if (rc.right > vw + 1 && !el.closest('.ticker')) bad.push(el.tagName + '.' + el.className + ' ' + Math.round(rc.right));
         const own = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
         if (own && parseFloat(cs.fontSize) < 12) small.push(el.tagName + '.' + el.className + ' ' + cs.fontSize + ' ' + el.textContent.trim().slice(0, 30));
-        if ((el.tagName === 'BUTTON' || (el.tagName === 'A' && !el.closest('p'))) && (rc.height < 40 || rc.width < 40) && !el.closest('.gf'))
+        if ((el.tagName === 'BUTTON' || (el.tagName === 'A' && !el.closest('p'))) && (rc.height < 40 || rc.width < 40) && !el.closest('.gf') && !el.closest('dialog'))
           taps.push(el.tagName + ' ' + (el.textContent.trim() || el.getAttribute('aria-label')).slice(0, 24) + ' ' + Math.round(rc.width) + 'x' + Math.round(rc.height));
         if (el.matches('input,select,textarea') && parseFloat(cs.fontSize) < 16) inputs.push(el.id + ' ' + cs.fontSize);
       }
@@ -35,12 +35,22 @@ const sizes = [
         globeLit: lit, h: document.documentElement.scrollHeight, forum: document.querySelector('[data-forum-title]').textContent };
     });
     // interactions
-    if (opt.isMobile || (opt.viewport && opt.viewport.width < 1080) || name === 'ipad') {
-      await p.click('.gh-act .menub'); await p.waitForTimeout(300);
+    const phone = await p.evaluate(() => innerWidth < 900);
+    if (phone) {
+      await p.click('.dock [data-open-pane="root"]'); await p.waitForTimeout(400);
       r.sheetOpen = await p.evaluate(() => document.getElementById('sheet').open);
       await p.screenshot({ path: `/tmp/qa/v2-${name}-menu.png` });
+      await p.click('#sheet [data-pane="services"]'); await p.waitForTimeout(450);
+      r.servicesPane = await p.evaluate(() => { const r = document.querySelector('#pane-services').getBoundingClientRect(); return document.querySelector('.panes').dataset.level === '1' && Math.abs(r.left) < 2 && document.activeElement.classList.contains('back'); });
+      await p.screenshot({ path: `/tmp/qa/v2-${name}-menu-services.png` });
+      await p.click('#pane-services .back'); await p.waitForTimeout(450);
+      r.backToRoot = await p.evaluate(() => document.querySelector('.panes').dataset.level === '0');
       await p.click('#sheet [data-close]'); await p.waitForTimeout(200);
       r.sheetClosed = await p.evaluate(() => !document.getElementById('sheet').open && document.documentElement.style.overflow === '');
+      await p.click('.dock [data-open-pane="services"]'); await p.waitForTimeout(450);
+      r.dockServices = await p.evaluate(() => document.getElementById('sheet').open && document.querySelector('.panes').dataset.level === '1');
+      await p.click('#sheet [data-close]'); await p.waitForTimeout(200);
+      r.dock = await p.evaluate(() => { const d = document.querySelector('.dock').getBoundingClientRect(); return [Math.round(d.left), Math.round(d.right), Math.round(innerHeight - d.bottom), [...document.querySelectorAll('.dock > *')].map(e => Math.round(e.getBoundingClientRect().height)).join(',')]; });
     } else {
       await p.click('.nav button.nb'); await p.waitForTimeout(250);
       r.megaOpen = await p.evaluate(() => !document.getElementById('mega-services').hidden);
@@ -54,7 +64,7 @@ const sizes = [
     await p.screenshot({ path: `/tmp/qa/v2-${name}-full.png`, fullPage: true });
     await p.emulateMedia({ reducedMotion: 'no-preference' });
     // chat
-    await p.click('#chatO'); await p.fill('#chatI', 'hi'); await p.press('#chatI', 'Enter');
+    await (phone ? p.click('.dock [data-open-chat]') : p.click('#chatO')); await p.fill('#chatI', 'hi'); await p.press('#chatI', 'Enter');
     await p.waitForFunction(() => document.querySelectorAll('#msgs .m.bot:not(.typing)').length >= 2, null, { timeout: 30000 }).catch(() => {});
     r.chat = await p.evaluate(() => { const c = document.getElementById('chat').getBoundingClientRect(); return [Math.round(c.left), Math.round(c.right), innerWidth, document.querySelectorAll('#msgs .m').length]; });
     await p.screenshot({ path: `/tmp/qa/v2-${name}-chat.png` });

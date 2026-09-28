@@ -2,6 +2,11 @@
 <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
 <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></symbol>
 <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></symbol>
+<symbol id="i-next" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/><path d="M8.5 11h.01M12 11h.01M15.5 11h.01"/></symbol>
+<symbol id="i-ticket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z"/></symbol>
 <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 <symbol id="i-rocket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.9A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/></symbol>
 <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 6-6"/></symbol>
@@ -24,7 +29,7 @@
     <div class="wrap gh-in">
       <a class="brand" href="/v2" aria-label="Gotham Consult home">
         <span class="mark" aria-hidden="true">G</span>
-        <span><b>Gotham Consult</b><small>with Carlson Capital Ltd</small></span>
+        <span><b>Gotham Consult</b><small><em>with</em> Carlson Capital Ltd</small></span>
       </a>
       <nav class="nav" aria-label="Main">
         <ul>
@@ -67,28 +72,38 @@
 
 <dialog class="sheet" id="sheet" aria-label="Menu">
   <div class="sheet-top">
-    <a class="brand" href="/v2"><span class="mark" aria-hidden="true">G</span><span><b>Gotham Consult</b></span></a>
+    <a class="brand" href="/v2"><span class="mark" aria-hidden="true">G</span><span><b>Gotham Consult</b><small><em>with</em> Carlson Capital Ltd</small></span></a>
     <button class="menub" type="button" data-close aria-label="Close menu"><svg class="icon"><use href="#i-x"/></svg></button>
   </div>
   <div class="sheet-body">
-    <details><summary>Services <svg class="icon chev"><use href="#i-chev"/></svg></summary>
-      <div class="sub">
-        <a href="/#services">Investment readiness &amp; GIPA</a><a href="/#services">Market entry</a><a href="/#mining">Mining &amp; energy</a>
-        <a href="/#services">AI &amp; digital</a><a href="/#services">Compliance &amp; ESG</a><a href="/family">Family Desk</a>
-        <a href="/#tools">Free tools</a><a href="/#join">Membership</a>
+    <div class="panes" data-level="0">
+      <div class="pane p0">
+        <button class="row" type="button" data-pane="services" aria-controls="pane-services"><span>Services</span><svg class="icon"><use href="#i-next"/></svg></button>
+        <a class="row" href="/#ghana"><span>Invest in Ghana</span><span class="arrow">→</span></a>
+        <a class="row" href="/#forums"><span>Forums</span><span class="arrow">→</span></a>
+        <a class="row" href="/#about"><span>About</span><span class="arrow">→</span></a>
+        <a class="row" href="/#contact"><span>Contact</span><span class="arrow">→</span></a>
+        <div class="sheet-langs" role="group" aria-label="Language">
+          <button type="button" data-lang="en">English</button><button type="button" data-lang="fr">Français</button><button type="button" data-lang="es">Español</button>
+        </div>
+        <div class="sheet-cta">
+          <a class="btn btn-gold" href="/register">Register for a forum</a>
+          <a class="btn btn-wa" href="https://wa.me/233550416627" target="_blank" rel="noopener"><svg class="icon"><use href="#i-wa"/></svg>WhatsApp us</a>
+          <a class="btn btn-ghost" href="/admin">Log in</a>
+        </div>
       </div>
-    </details>
-    <a href="/#ghana">Invest in Ghana <span class="arrow">→</span></a>
-    <a href="/#forums">Forums <span class="arrow">→</span></a>
-    <a href="/#about">About <span class="arrow">→</span></a>
-    <a href="/#contact">Contact <span class="arrow">→</span></a>
-    <div class="sheet-langs" role="group" aria-label="Language">
-      <button type="button" data-lang="en">English</button><button type="button" data-lang="fr">Français</button><button type="button" data-lang="es">Español</button>
-    </div>
-    <div class="sheet-cta">
-      <a class="btn btn-gold" href="/register">Register for a forum</a>
-      <a class="btn btn-wa" href="https://wa.me/233550416627" target="_blank" rel="noopener"><svg class="icon"><use href="#i-wa"/></svg>WhatsApp us</a>
-      <a class="btn btn-ghost" href="/admin">Log in</a>
+      <div class="pane p1" id="pane-services" inert>
+        <button class="back" type="button" data-pane="root"><svg class="icon"><use href="#i-back"/></svg>Menu</button>
+        <p class="pane-h">Services</p>
+        <a class="svc" href="/#services"><i><svg class="icon"><use href="#i-rocket"/></svg></i><span><b>Investment readiness &amp; GIPA</b><span>Registration, business plans, pitch decks</span></span></a>
+        <a class="svc" href="/#services"><i><svg class="icon"><use href="#i-plane"/></svg></i><span><b>Market entry</b><span>Enter Ghana or expand abroad</span></span></a>
+        <a class="svc" href="/#mining"><i><svg class="icon"><use href="#i-pick"/></svg></i><span><b>Mining &amp; energy</b><span>Concessions, solar IPPs, due diligence</span></span></a>
+        <a class="svc" href="/#services"><i><svg class="icon"><use href="#i-chip"/></svg></i><span><b>AI &amp; digital</b><span>AI at work, websites that take MoMo</span></span></a>
+        <a class="svc" href="/#services"><i><svg class="icon"><use href="#i-shield"/></svg></i><span><b>Compliance &amp; ESG</b><span>AML/KYC, data protection, IFC standards</span></span></a>
+        <a class="svc" href="/family"><i><svg class="icon"><use href="#i-home"/></svg></i><span><b>Family Desk</b><span>Care and paperwork for parents in Ghana</span></span></a>
+        <a class="svc" href="/#tools"><i><svg class="icon"><use href="#i-chart"/></svg></i><span><b>Free tools</b><span>Health check, funding finder, VAT check</span></span></a>
+        <a class="svc" href="/#join"><i><svg class="icon"><use href="#i-users"/></svg></i><span><b>Membership</b><span>Free weekly brief, Member, Business Pro</span></span></a>
+      </div>
     </div>
   </div>
 </dialog>
@@ -97,7 +112,8 @@
   <section class="hero" aria-labelledby="h1">
     <div class="wrap hero-in">
       <div>
-        <p class="eyebrow">Business development · International projects · Accra</p>
+        <p class="partner"><span class="pm" aria-hidden="true">G</span><b>Gotham Consult</b><span class="x" aria-hidden="true">×</span><b class="cc">Carlson Capital Ltd</b></p>
+        <p class="eyebrow long">Business development · International projects · Accra</p>
         <h1 id="h1">Build partnerships in <span class="serif">Ghana.</span></h1>
         <p class="lead">Gotham Consult brings businesses, investors, public institutions and international partners together through advisory, technology, forums and introductions.</p>
         <div class="hero-cta">
@@ -246,7 +262,7 @@
   <div class="wrap">
     <div class="gf-top">
       <div>
-        <a class="brand" href="/v2" style="color:#fff"><span class="mark" aria-hidden="true">G</span><span><b>Gotham Consult</b><small>with Carlson Capital Ltd</small></span></a>
+        <a class="brand" href="/v2" style="color:#fff"><span class="mark" aria-hidden="true">G</span><span><b>Gotham Consult</b><small><em>with</em> Carlson Capital Ltd</small></span></a>
         <p style="margin:16px 0 0;max-width:36ch">An Accra-based business development and international projects consultancy, founded in 2018.</p>
       </div>
       <div><h4>Services</h4><ul><li><a href="/#services">All practices</a></li><li><a href="/#mining">Mining &amp; energy</a></li><li><a href="/family">Family Desk</a></li><li><a href="/#tools">Free tools</a></li></ul></div>
@@ -257,6 +273,15 @@
     <div class="gf-bot"><span>© 2026 Gotham Consult · Strategic partner: Carlson Capital Ltd</span><span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></div>
   </div>
 </footer>
+
+
+<nav class="dock" aria-label="Quick menu">
+  <button type="button" data-open-pane="services"><svg class="icon"><use href="#i-grid"/></svg><span>Services</span></button>
+  <a href="/#forums"><svg class="icon"><use href="#i-cal"/></svg><span>Forums</span></a>
+  <a class="reg" href="/register"><svg class="icon"><use href="#i-ticket"/></svg><span>Register</span></a>
+  <button type="button" data-open-chat><svg class="icon"><use href="#i-chat"/></svg><span>Ask</span></button>
+  <button type="button" data-open-pane="root"><svg class="icon"><use href="#i-menu"/></svg><span>Menu</span></button>
+</nav>
 
 <div class="fab">
   <section class="chat" id="chat" hidden aria-label="Ask Gotham">
