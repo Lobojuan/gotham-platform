@@ -586,7 +586,10 @@ async function askModel(messages) {
       body: JSON.stringify({ model: OPENAI_MODEL, messages, ...opts }) });
     if (r.ok) {
       const j = await r.json();
-      return String(j.choices?.[0]?.message?.content || '').trim();
+      /* the chat shows plain text: drop markdown marks the model may add anyway */
+      return String(j.choices?.[0]?.message?.content || '')
+        .replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').replace(/^#{1,6}\s+/gm, '')
+        .replace(/^\s*[*]\s+/gm, '• ').replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '$1 ($2)').trim();
     }
     const t = (await r.text()).slice(0, 300);
     if (r.status === 400 && opts.reasoning_effort && /reasoning/i.test(t)) { const { reasoning_effort, ...rest } = opts; opts = rest; continue; }
@@ -734,7 +737,7 @@ const server = http.createServer(async (req, res) => {
       askDay.n++;
       const system = `You are "Ask Gotham", the assistant on the Gotham Consult website (Accra, Ghana).
 Answer only from the knowledge below. Be warm, clear and brief: at most about 120 words, plain text, no markdown headings.
-Reply in the visitor's language. Always state prices in Ghana cedis (GHS), never in another currency.
+Reply in the visitor's language. Plain text only: no markdown, no asterisks. Always state prices in Ghana cedis (GHS), never in another currency; if asked for dollars or euros, give the GHS price and say we invoice in cedis.
 Do not invent prices, dates, people or services; if the answer is not below, say our team will answer on WhatsApp (+233 55 041 6627).
 You give general information, not legal, tax or investment advice; for their specific case, suggest a call or WhatsApp.
 Do not ask for or collect personal details in the chat; to register, point to gothamconsult.com/register.
