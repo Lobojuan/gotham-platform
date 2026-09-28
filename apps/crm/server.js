@@ -646,7 +646,7 @@ const server = http.createServer(async (req, res) => {
   const host = String(req.headers.host || '').toLowerCase().split(':')[0];
   if ((req.method === 'GET' || req.method === 'HEAD') && REDIRECT_HOSTS.includes(host) && host !== CANON_HOST && !viaBridge
       && req.headers['sec-fetch-dest'] !== 'iframe'
-      && !p.startsWith('/api/') && !p.startsWith('/media/')) {
+      && !p.startsWith('/api/') && !p.startsWith('/media/') && !/^\/(assets|img|js)\//.test(p)) {   // static files are served here directly, faster than through the bridge
     res.writeHead(301, { location: PUBLIC_URL + req.url, 'cache-control': 'public, max-age=3600' }); return res.end();
   }
   /* addresses from the old WordPress site */
@@ -2377,6 +2377,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           return res.end(req.method === 'HEAD' ? undefined : buf.subarray(start, end + 1));
         }
         res.writeHead(200, {
+          ...(ext !== '.html' ? { 'access-control-allow-origin': '*', 'timing-allow-origin': '*' } : {}),
           'accept-ranges': 'bytes',
           'content-type': TYPES[ext] || 'application/octet-stream',
           'content-length': buf.length, etag,

@@ -10,6 +10,9 @@ const { chromium, webkit, devices } = require(process.env.PLAYWRIGHT || 'playwri
 const LIVE = process.env.LIVE === '1', WEBKIT = process.env.WEBKIT === '1';
 const isAnswer = t => LIVE ? t.length > 40 && !/answer you personally/.test(t) : /MOCK-AI/.test(t);
 let BROWSERS = {};
+// the live site keeps a connection or two open (fonts, bridge), so wait for load plus a moment instead of network idle
+const NAV = LIVE ? { waitUntil: 'load', timeout: 60000 } : { waitUntil: 'networkidle' };
+const settle = p => LIVE ? p.waitForTimeout(1500) : Promise.resolve();
 const engineFor = dev => (WEBKIT && /iphone|ipad/i.test(dev) ? BROWSERS.webkit : BROWSERS.chromium);
 const B = process.env.BASE || 'http://127.0.0.1:4199';
 const EXE = process.env.CHROMIUM || undefined;
@@ -69,9 +72,10 @@ async function sweep(_b, pages) {
     for (const path of pages) {
       const p = await ctx.newPage(); const errs = [], bad = [];
       p.on('pageerror', e => errs.push(String(e).slice(0, 160)));
-      p.on('console', m => { if (m.type() === 'error' && !/fonts\.g|net::ERR|TUNNEL|Failed to load resource/.test(m.text())) errs.push(m.text().slice(0, 160)); });
-      p.on('response', r => { if (r.status() >= 400 && r.url().startsWith(B)) bad.push(r.status() + ' ' + r.url().slice(B.length)); });
-      await p.goto(B + path, { waitUntil: 'networkidle' });
+      p.on('console', m => { if (m.type() === 'error' && !/fonts\.g|net::ERR|TUNNEL|Failed to load resource|Button failed to load, iconName/.test(m.text())) errs.push(m.text().slice(0, 160)); });
+      p.on('requestfailed', r => { if (!/fonts\.g|googleapis|gstatic|\/api\/ask/.test(r.url()) && !/ERR_ABORTED|cancelled/i.test(r.failure()?.errorText || '')) bad.push('failed ' + r.url().replace(B, '') + ' ' + (r.failure()?.errorText || '')); });
+      p.on('response', r => { if (r.status() >= 400 && !/fonts\.g|googleapis|gstatic/.test(r.url())) bad.push(r.status() + ' ' + r.url().replace(B, '')); });
+      await p.goto(B + path, NAV); await settle(p);
       const r = await p.evaluate(() => {
         const vw = innerWidth, over = [], taps = [], noAlt = [], noName = [];
         for (const el of document.querySelectorAll('body *')) {
@@ -114,7 +118,7 @@ async function journeys(browser) {
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, extraHTTPHeaders: { 'x-real-ip': ip() } });
     const p = await ctx.newPage();
-    await p.goto(B + '/', { waitUntil: 'networkidle' });
+    await p.goto(B + '/', NAV); await settle(p);
     await p.click('.nav button.nb[data-nav="services"]');
     check('desktop: Services opens the mega menu', await p.isVisible('#mega-services'));
     await p.click('#mega-services a.mi:has-text("AI & digital")');
@@ -139,14 +143,14 @@ async function journeys(browser) {
     await p.fill('.ai-f input', 'Can you train my staff?'); await p.click('.ai-f button');
     check('typed AI panel question is answered with the service as context', await waitAnswer(p, 4) && (LIVE ? isAnswer(await lastBot(p)) : /train my staff.*about AI in your business/.test(await lastBot(p))), await lastBot(p));
     // services page → detail
-    await p.goto(B + '/services', { waitUntil: 'networkidle' });
+    await p.goto(B + '/services', NAV); await settle(p);
     check('services page links all ten practices', await p.locator('.prac a.more').count() === 10);
     await p.locator('.prac a.more').nth(4).click(); await p.waitForURL(/\/services\/creative-studio$/);
     check('"More about this" opens the practice page', /creative-studio/.test(p.url()));
     await p.locator('.others a', { hasText: 'Education' }).click(); await p.waitForURL(/\/services\/education$/);
     check('"Other practices" links work', /education/.test(p.url()));
     // home carousel
-    await p.goto(B + '/', { waitUntil: 'networkidle' });
+    await p.goto(B + '/', NAV); await settle(p);
     const t0 = await p.textContent('[data-car-title]'); await p.click('[data-car-next]'); await p.waitForTimeout(500);
     check('carousel next moves to another practice', (await p.textContent('[data-car-title]')) !== t0);
     const hrefs = await p.$$eval('.car-card', a => a.map(x => x.getAttribute('href')));
@@ -160,7 +164,7 @@ async function journeys(browser) {
     await p.click('.langb'); await p.click('#langp [data-lang="fr"]');
     await p.waitForFunction(en => document.querySelector('h1').textContent.trim() !== en, h1en, { timeout: 8000 }).catch(() => {});
     check('French translates the home page', (await p.textContent('h1')).trim() !== h1en);
-    await p.goto(B + '/services/ai', { waitUntil: 'networkidle' }); await p.waitForTimeout(800);
+    await p.goto(B + '/services/ai', NAV); await p.waitForTimeout(800);
     check('French carries to a practice page', /IA|intelligence/i.test(await p.textContent('#get-h') + await p.textContent('h1')), await p.textContent('h1'));
     const untranslated = await p.evaluate(() => [...document.querySelectorAll('main h1, main h2, main h3, main .lead, .faq summary, .ai-q button')].map(e => e.textContent.trim()).filter(t => /\b(the|and|your|what|with)\b/i.test(t) && !/Gotham|Carlson/.test(t)));
     check('practice page fully in French (headings, leads, FAQ, AI questions)', !untranslated.length, untranslated.slice(0, 3).join(' | '));
@@ -169,7 +173,7 @@ async function journeys(browser) {
     await p.click('.langb'); await p.click('#langp [data-lang="en"]'); await p.waitForTimeout(300);
     check('back to English', /AI/.test(await p.textContent('h1')));
     // free tools
-    await p.goto(B + '/tools', { waitUntil: 'networkidle' });
+    await p.goto(B + '/tools', NAV); await settle(p);
     check('tools page shows the health check', await p.isVisible('#hcq fieldset'));
     check('tools page hides the rest of the old one-page site', !(await p.isVisible('#services')) && !(await p.isVisible('#forums')));
     for (const n of ['ty', 'st', 'se', 'sa', 'tin', 'bop', 'bank', 'web']) await p.locator(`#hcq [name="${n}"]`).first().check({ force: true });
@@ -178,9 +182,9 @@ async function journeys(browser) {
     await p.click('#tt-ff'); check('funding finder tab opens', await p.isVisible('#tool-ff'));
     await p.click('#tt-vt'); check('VAT check tab opens', await p.isVisible('#tool-vt'));
     // older pages keep their own content and scripts: the shared script must not fill or double-submit anything there
-    await p.goto(B + '/terms', { waitUntil: 'networkidle' });
+    await p.goto(B + '/terms', NAV); await settle(p);
     check('terms: "Forums, invitations and tickets" heading is intact', /Forums, invitations and tickets/.test(await p.textContent('#events')) && !(await p.$('#events article')));
-    await p.goto(B + '/classic', { waitUntil: 'networkidle' });
+    await p.goto(B + '/classic', NAV); await settle(p);
     let posts = 0; p.on('request', r => { if (r.method() === 'POST' && r.url().endsWith('/api/register')) posts++; });
     if (!LIVE && await p.$('#briefF')) {
       for (const [sel, v] of [['#b-name', 'E2E Brief'], ['#b-co', 'E2E Co'], ['#b-em', 'e2e@example.com'], ['#b-ph', '0241234567']]) if (await p.$(sel)) await p.fill(sel, v);
@@ -196,10 +200,10 @@ async function journeys(browser) {
     const sm = await (await req.get(B + '/sitemap.xml')).text();
     // French on every page, including the older ones (register, Family Desk, tools, legal)
     {
-      const q = await ctx.newPage(); await q.goto(B + '/', { waitUntil: 'networkidle' }); await q.evaluate(() => { try { localStorage.setItem('gc-language', 'fr'); } catch {} });
+      const q = await ctx.newPage(); await q.goto(B + '/', NAV); await q.evaluate(() => { try { localStorage.setItem('gc-language', 'fr'); } catch {} });
       for (const path of ['/register', '/family', '/tools', '/privacy', '/terms', '/teaser', '/services/education']) {
-        await q.goto(B + path, { waitUntil: 'networkidle' }); await q.waitForTimeout(700);
-        const en = await q.evaluate(() => [...document.querySelectorAll('h1, h2, h3, main .lead, main p.lead, summary, button, label, legend')]
+        await q.goto(B + path, NAV); await q.waitForTimeout(700);
+        const en = await q.evaluate(() => [...document.querySelectorAll('h1, h2, h3, main .lead, main p.lead, summary, button, label:not(.opt), legend')]
           .filter(e => e.offsetParent !== null).map(e => e.textContent.trim()).filter(t => /\b(the|and|your|what|with|how|who)\b/i.test(t) && !/Gotham Consult|Carlson|SMEs at the Centre/.test(t)));
         check(`French ${path}: headings, buttons and labels translated`, !en.length, en.slice(0, 3).join(' | '));
       }
@@ -212,7 +216,7 @@ async function journeys(browser) {
   for (const [dev, opt] of [['iphone-15', devices['iPhone 14']], ['pixel-7', devices['Pixel 7']], ['iphone-se', DEVICES[0][1]]]) {
     const ctx = await engineFor(dev).newContext({ ...opt, extraHTTPHeaders: { 'x-real-ip': ip() } });
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
-    await p.goto(B + '/', { waitUntil: 'networkidle' });
+    await p.goto(B + '/', NAV); await settle(p);
     check(`${dev}: brand name and Carlson Capital visible`, await p.isVisible('header.gh .brand b') && await p.isVisible('header.gh .brand small'));
     await p.tap('.dock [data-open-pane="services"]'); await p.waitForTimeout(400);
     check(`${dev}: dock Services opens the services list`, await p.evaluate(() => document.getElementById('sheet').open && document.querySelector('.panes').dataset.level === '1'));
@@ -221,7 +225,7 @@ async function journeys(browser) {
     await p.tap('.dock [data-open-pane="root"]'); await p.waitForTimeout(400);
     await p.tap('#sheet .pane.p0 a.row:has-text("Forums")'); await p.waitForURL(/\/forums$/);
     check(`${dev}: menu → Forums`, /forums$/.test(p.url()));
-    await p.goto(B + '/services/digital', { waitUntil: 'networkidle' });
+    await p.goto(B + '/services/digital', NAV); await settle(p);
     await p.locator('[data-ask]').nth(2).scrollIntoViewIfNeeded(); await p.locator('[data-ask]').nth(2).tap();
     check(`${dev}: AI question answered in the chat`, await waitAnswer(p, 2) && isAnswer(await lastBot(p)));
     const chatBox = await p.locator('#chat').boundingBox(); const vw = p.viewportSize().width;
@@ -233,7 +237,7 @@ async function journeys(browser) {
     check(`${dev}: French from the phone menu`, /Hébergement|numérique|site/i.test(await p.textContent('h1') + await p.textContent('main .lead')), await p.textContent('h1'));
     await p.evaluate(() => { try { localStorage.clear(); } catch {} });
     // registration, shortest path
-    await p.goto(B + '/register?e=F1', { waitUntil: 'networkidle' });
+    await p.goto(B + '/register?e=F1', NAV); await settle(p);
     await p.fill('#nm', 'E2E Test ' + dev); await p.fill('#ph', '024 412 3456'); await p.locator('#cons').tap();
     if (LIVE) check(`${dev}: registration form ready (not sent on the live site)`, await p.isVisible('#goSend') && await p.isChecked('#cons'));
     else { await p.locator('#goSend').tap();

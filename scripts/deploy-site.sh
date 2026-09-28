@@ -8,7 +8,8 @@ REMOTE="${REMOTE_SITE:-/srv/gotham-site}"
 PUBLIC="${PUBLIC_URL:-https://gothamconsult.com}"
 . "$ROOT/scripts/git-guard.sh"; git_guard "$ROOT"
 
-SITE_URL="$PUBLIC" "$ROOT/scripts/build-site.sh"
+# css, js and images straight from our server (same files, no WordPress hop); pages still come through gothamconsult.com
+ASSET_URL="${ASSET_URL:-https://gotham.84-12-73-59.sslip.io}" SITE_URL="$PUBLIC" "$ROOT/scripts/build-site.sh"
 
 echo "-> publishing to $HOST:$REMOTE"
 ssh "$HOST" "mkdir -p $REMOTE"

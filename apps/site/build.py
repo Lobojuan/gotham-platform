@@ -30,7 +30,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=7">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=8">\n'
   '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
@@ -168,6 +168,17 @@ def main():
     h = h.replace('<section id="tools"', hero + '<section id="tools"', 1)
     open(os.path.join(DIST, 'tools.html'), 'w', encoding='utf-8').write(h)
     print('  tools.html (from classic)')
+
+    # static files (css, js, images) from ASSET_URL when set: the page itself comes through the WordPress bridge, which is slow per request
+    asset = os.environ.get('ASSET_URL', '').rstrip('/')
+    if asset:
+        for dirpath, _, files in os.walk(DIST):
+            for fn in files:
+                if not fn.endswith('.html'): continue
+                fp = os.path.join(dirpath, fn); h = open(fp, encoding='utf-8').read()
+                h2 = re.sub(r'(?<=["\'(])/(assets|img|js)/', asset + r'/\1/', h)
+                if h2 != h: open(fp, 'w', encoding='utf-8').write(h2)
+        print(f'  static files from {asset}')
 
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n')

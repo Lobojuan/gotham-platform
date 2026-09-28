@@ -3,6 +3,9 @@
 (() => {
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* static files may come from a faster host than the page (see build.py ASSET_URL); API calls stay on the page's own address */
+  const ASSET = (() => { try { return new URL(document.currentScript.src).origin; } catch { return ''; } })();
+  let itemsP = null; const items = () => itemsP ||= fetch('/api/items').then(r => r.json());
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   /* ---- desktop mega panel ---- */
@@ -25,11 +28,29 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = '/assets/v2/i18n-' + l + '.js?v=1';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=2';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
-  const tr = (txt, lang) => { if (lang === 'en' || !dict?.[lang]) return null; const k = txt.replace(/\s+/g, ' ').trim(); return k ? dict[lang][k] ?? null : null; };
+  /* text the back office fills in (dates, seats left, "a · b · c" lines) is translated by pattern or piece by piece */
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const pat = (k, lang) => {
+    let m;
+    if ((m = k.match(/^(\d+) of (\d+) seats (left|still open)$/))) return lang === 'fr' ? `${m[1]} places ${m[3] === 'left' ? 'restantes' : 'encore disponibles'} sur ${m[2]}` : `${m[1]} de ${m[2]} plazas ${m[3] === 'left' ? 'disponibles' : 'aún disponibles'}`;
+    if ((m = k.match(/^(\d+) seats left(\.?)$/))) return (lang === 'fr' ? `${m[1]} places restantes` : `Quedan ${m[1]} plazas`) + m[2];
+    if ((m = k.match(/^(?:(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),? )?(\d{1,2}) (January|February|March|April|May|June|July|August|September|October|November|December) (\d{4})$/))) {
+      const d = new Date(Date.UTC(+m[4], MONTHS.indexOf(m[3]), +m[2], 12));
+      return d.toLocaleDateString(lang, { ...(m[1] ? { weekday: 'long' } : {}), day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+    }
+    return null;
+  };
+  const tr = (txt, lang) => {
+    if (lang === 'en' || !dict?.[lang]) return null; const k = txt.replace(/\s+/g, ' ').trim(); if (!k) return null;
+    const one = x => dict[lang][x] ?? pat(x, lang);
+    const t = one(k); if (t != null) return t;
+    if (k.includes(' · ')) { const parts = k.split(' · '), out = parts.map(x => one(x.trim()) ?? x); return out.some((x, i) => x !== parts[i]) ? out.join(' · ') : null; }
+    return null;
+  };
   function applyNode(node, lang) {
     if (node.nodeType === 3) {
       const p = node.parentElement; if (!p || p.closest('script,style,svg,noscript,[data-no-tr]')) return;
@@ -112,7 +133,7 @@
     let idx = 0, rot = 0, timer = null, drag = null, moved = false;
     const render = () => {
       ring.style.setProperty('--rot', rot + 'deg');
-      cards.forEach((c, i) => { const d = Math.min((i - idx + N) % N, (idx - i + N) % N); c.classList.toggle('far', d > 1); c.classList.toggle('side', d === 1); c.tabIndex = d === 0 ? 0 : -1; c.setAttribute('aria-hidden', d > 1); });
+      cards.forEach((c, i) => { const d = Math.min((i - idx + N) % N, (idx - i + N) % N); c.classList.toggle('far', d === 2); c.classList.toggle('side', d === 1); c.classList.toggle('back', d > 2); c.tabIndex = d === 0 ? 0 : -1; c.setAttribute('aria-hidden', d > 1); });
       $('[data-car-num]', car).textContent = String(idx + 1).padStart(2, '0');
       $('[data-car-title]', car).textContent = $('b', cards[idx]).textContent;
     };
@@ -129,6 +150,7 @@
       if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (!drag.active) { if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return; drag.active = true; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); }
       moved = true; rot = drag.rot + dx / (stage.clientWidth / 1.4) * step * 2; ring.style.setProperty('--rot', rot + 'deg');
+      const near = ((Math.round(-rot / step) % N) + N) % N; cards.forEach((c, i) => c.classList.toggle('back', Math.min((i - near + N) % N, (near - i + N) % N) > 2));
     });
     const end = () => { if (!drag) return; const was = drag; drag = null; stage.classList.remove('drag'); if (!was.active) return;
       const turned = Math.round((rot - was.rot) / step); idx = was.idx; rot = was.rot; go(idx - turned); };
@@ -158,13 +180,13 @@
 
   /* ---- forums page: every upcoming event, live from the back office ---- */
   const evWrap = LEG ? null : $('div.events#events');
-  if (evWrap) fetch('/api/items').then(r => r.json()).then(d => {
+  if (evWrap) items().then(d => {
     const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now() - 864e5)
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
     if (!ev.length) return;
     const tz = { timeZone: 'Africa/Accra' };
     evWrap.innerHTML = ev.map(i => {
-      const t = new Date(i.starts_at), img = i.cover_image?.sizes?.md?.webp || i.cover_image?.sizes?.lg?.webp || '/img/forum.webp';
+      const t = new Date(i.starts_at), img = i.cover_image?.sizes?.md?.webp || i.cover_image?.sizes?.lg?.webp || ASSET + '/img/forum.webp';
       const price = Number(i.price) ? 'GHS ' + Number(i.price).toLocaleString('en-GH') : 'Free';
       const time = t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...tz });
       const day = t.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', ...tz });
@@ -227,7 +249,7 @@
   }
 
   /* ---- next forum, live from the back office ---- */
-  fetch('/api/items').then(r => r.json()).then(d => {
+  items().then(d => {
     const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now())
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
     const nx = ev[0]; if (!nx) return;

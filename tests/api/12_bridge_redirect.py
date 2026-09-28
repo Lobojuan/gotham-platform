@@ -40,6 +40,9 @@ try:
     for p in ('/api/health','/media/nothing.jpg'):
         st,_=get(p); assert st!=301,(p,st)
     ok('API and media are never redirected (old forms keep working)')
+    st,h=get('/assets/v2/v2.css'); assert st==200 and h.get('access-control-allow-origin')=='*',(st,dict(h))
+    st,_=get('/img/forum.webp'); assert st==200,st
+    ok('css, js and images are served straight from the server address (faster than the bridge), usable from gothamconsult.com')
     print('PASSED')
 finally:
     srv.terminate()
