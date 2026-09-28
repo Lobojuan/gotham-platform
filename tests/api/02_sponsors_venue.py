@@ -1,14 +1,20 @@
-import subprocess, time, json, os, base64, urllib.request, urllib.error, signal, sys
+import subprocess, time, json, os, base64, urllib.request, urllib.error, signal, sys, atexit
 import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
-ROOT='/tmp/claude-0/-home-claude/43a0af51-801d-544d-9a00-cf399fbd2ff6/scratchpad/gotham-platform/apps/crm'
-os.chdir(ROOT)
+ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
+os.chdir(os.path.join(ROOT,'apps','crm'))
 env=dict(os.environ); env.update({
  'DATABASE_URL':DB,'SESSION_SECRET':'t','ALLOW_ORIGINS':'*','PORT':'4199',
  'ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123','ADMIN_NAME':'Admin',
  'MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4199','SITE_URL':'http://127.0.0.1:8777'})
 os.makedirs('/tmp/mediatest',exist_ok=True)
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+def _cleanup_server():
+    if srv.poll() is None:
+        srv.terminate()
+        try: srv.wait(timeout=3)
+        except subprocess.TimeoutExpired: srv.kill()
+atexit.register(_cleanup_server)
 B='http://127.0.0.1:4199'
 def call(path,data=None,method=None,cookie=None,raw=False):
     req=urllib.request.Request(B+path,data=json.dumps(data).encode() if data is not None else None,

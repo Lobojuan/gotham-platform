@@ -1,15 +1,31 @@
-import subprocess, time, json, os, base64, urllib.request, urllib.error, signal, sys
+import subprocess, time, json, os, base64, urllib.request, urllib.error, signal, sys, atexit
 import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
-ROOT='/tmp/claude-0/-home-claude/43a0af51-801d-544d-9a00-cf399fbd2ff6/scratchpad/gotham-platform/apps/crm'
-XLS='/root/.claude/uploads/43a0af51-801d-544d-9a00-cf399fbd2ff6/7cf2274f-Ghana_Mining_Sponsor_Outreach_TopGuide_2026.xlsx'
-os.chdir(ROOT)
+ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
+os.chdir(os.path.join(ROOT,'apps','crm'))
+XLS='/tmp/gotham-import-fixture.xlsx'
+subprocess.run(['node','--input-type=module','-e',"""
+import ExcelJS from 'exceljs';
+const w=new ExcelJS.Workbook();
+let s=w.addWorksheet('Mining Companies');
+s.addRow(['Company (Ghana entity)','Ghana MD / CEO','Official email','Priority','Suggested package']);
+for(let i=1;i<=14;i++) s.addRow([i===1?'Gold Fields Ghana':`Mining Co ${i}`,i===1?'Elliot Twum – Managing Director':`Person ${i} – Director`,i===1?'TO FIND':`person${i}@example.org`,`Tier ${i===1?1:2}`,i===1?'Signature package':'Standard package']);
+let t=w.addWorksheet('Institutions'); t.addRow(['Institution','Contact','Official email','Priority']);
+for(let i=1;i<=4;i++) t.addRow([`Institution ${i}`,`Contact ${i}`,`institution${i}@example.org`,'Tier 2']);
+await w.xlsx.writeFile('/tmp/gotham-import-fixture.xlsx');
+"""],check=True)
 env=dict(os.environ); env.update({
  'DATABASE_URL':DB,'SESSION_SECRET':'t','ALLOW_ORIGINS':'*','PORT':'4199',
  'ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123','ADMIN_NAME':'Admin',
  'MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4199','SITE_URL':'http://example.org'})
 os.makedirs('/tmp/mediatest',exist_ok=True)
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+def _cleanup_server():
+    if srv.poll() is None:
+        srv.terminate()
+        try: srv.wait(timeout=3)
+        except subprocess.TimeoutExpired: srv.kill()
+atexit.register(_cleanup_server)
 B='http://127.0.0.1:4199'
 def call(path,data=None,method=None,cookie=None):
     req=urllib.request.Request(B+path,data=json.dumps(data).encode() if data is not None else None,
@@ -97,7 +113,7 @@ ok('institutions imported as %d more contacts'%r3['added'])
 # a contact gets an email later -> update, still no duplicate
 st,c3,_=call('/api/contacts',cookie=ck)
 before=len(c3['rows'])
-st,r4,_=call('/api/contacts/import',{'text':'Company;Name;Email\nGold Fields Ghana Ltd;Elliot Twum;elliot@goldfields.example',
+st,r4,_=call('/api/contacts/import',{'text':'Company;Name;Email\nGold Fields Ghana;Elliot Twum;elliot@goldfields.example',
   'source':'follow-up call'},cookie=ck)
 st,c4,_=call('/api/contacts',cookie=ck)
 gf2=[x for x in c4['rows'] if 'Gold Fields' in (x['company'] or '')]

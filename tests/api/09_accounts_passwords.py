@@ -1,3 +1,4 @@
+import atexit
 # Accounts: first-password change, own password change, owner adds/resets/disables/removes people
 import subprocess, time, json, os, urllib.request, urllib.error, signal, sys, itertools
 import os
@@ -7,6 +8,12 @@ os.chdir(ROOT+'/apps/crm')
 env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'t','PORT':'4199',
  'ADMIN_EMAIL':'Admin','ADMIN_PASSWORD':'Admin2025','ADMIN_NAME':'Admin','MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4199'})
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+def _cleanup_server():
+    if srv.poll() is None:
+        srv.terminate()
+        try: srv.wait(timeout=3)
+        except subprocess.TimeoutExpired: srv.kill()
+atexit.register(_cleanup_server)
 B='http://127.0.0.1:4199'; _ip=itertools.count(10)
 def call(path,data=None,method=None,cookie=None):
     req=urllib.request.Request(B+path,data=json.dumps(data).encode() if data is not None else None,method=method or ('POST' if data is not None else 'GET'))

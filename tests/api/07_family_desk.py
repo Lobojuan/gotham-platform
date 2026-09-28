@@ -1,4 +1,4 @@
-import subprocess, time, json, os, urllib.request, urllib.error, signal, sys
+import subprocess, time, json, os, urllib.request, urllib.error, signal, sys, atexit
 import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
@@ -10,6 +10,12 @@ env=dict(os.environ); env.update({
  'SITE_DIR':ROOT+'/apps/site/dist'})
 os.makedirs('/tmp/mediatest',exist_ok=True)
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+def _cleanup_server():
+    if srv.poll() is None:
+        srv.terminate()
+        try: srv.wait(timeout=3)
+        except subprocess.TimeoutExpired: srv.kill()
+atexit.register(_cleanup_server)
 B='http://127.0.0.1:4199'
 import itertools
 _ip=itertools.count(10)

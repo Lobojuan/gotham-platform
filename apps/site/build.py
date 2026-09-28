@@ -14,7 +14,7 @@ SITE = os.environ.get('SITE_URL', 'https://gothamconsult.com').rstrip('/')
 META = {
  'index.html': dict(
    title='Gotham Consult · business, investment and compliance in Ghana',
-   desc='Gotham Consult with Carlson Capital Ltd: free tools, a weekly brief, forums and advisory services for SMEs and investors in Ghana.',
+   desc='Gotham Consult with Carlson Capital Ltd builds partnerships among businesses, investors, public institutions and international partners in Ghana.',
    og='img/boot2.webp'),
  'register.html': dict(
    title='Register · Gotham Consult',
@@ -52,8 +52,10 @@ HEAD = '''<!doctype html>
 <meta name="twitter:title" content="{title}">
 <meta name="twitter:description" content="{desc}">
 <meta name="twitter:image" content="{site}/{og}">
-<script>/* shown inside gothamconsult.com (WordPress page embed): the back office opens in the whole window */
-if(window.top!==window.self){{document.documentElement.classList.add('framed');var s=document.createElement('style');s.textContent='.framed .rise,.framed .reveal,.framed .grow .bfill,.framed .grow .fcol div{{animation:none!important;opacity:1!important;transform:none!important}}';document.head.appendChild(s);addEventListener('click',function(e){{var a=e.target.closest&&e.target.closest('a[href]');if(!a)return;var u=new URL(a.getAttribute('href'),location.href);if(u.origin===location.origin&&/^\/admin/.test(u.pathname)){{e.preventDefault();window.top.location.href=u.href}}}},true)}}</script>
+<script>/* Keep the public page in place while the same-origin back office fills a modal. */
+if(window.top!==window.self){{document.documentElement.classList.add('framed');var s=document.createElement('style');s.textContent='.framed .rise,.framed .reveal,.framed .grow .bfill,.framed .grow .fcol div{{animation:none!important;opacity:1!important;transform:none!important}}';document.head.appendChild(s)}}
+document.addEventListener('click',function(e){{if(e.defaultPrevented||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;var a=e.target.closest&&e.target.closest('a[href]');if(!a||a.target==='_blank')return;var u=new URL(a.getAttribute('href'),location.href);if(u.origin!==location.origin||!(u.pathname==='/admin'||u.pathname==='/admin/'))return;if(!HTMLDialogElement.prototype.showModal)return;e.preventDefault();var d=document.getElementById('gc-backoffice');if(!d){{d=document.createElement('dialog');d.id='gc-backoffice';d.setAttribute('aria-label','Gotham Consult back office');d.style.cssText='position:fixed;inset:0;margin:0;padding:0;border:0;width:100vw;max-width:none;height:100vh;height:100dvh;max-height:none;background:#fff;color:#0f1b2d';var b=document.createElement('div');b.style.cssText='height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#0f1b2d;color:#fff;font:600 15px system-ui,sans-serif';var t=document.createElement('span');t.textContent='Gotham Consult · Back office';var x=document.createElement('button');x.type='button';x.textContent='Close';x.setAttribute('aria-label','Close back office and return to the website');x.style.cssText='border:1px solid #738097;border-radius:8px;background:transparent;color:white;padding:7px 12px;font:inherit;cursor:pointer';b.append(t,x);var f=document.createElement('iframe');f.title='Gotham Consult back office';f.src='/admin';f.style.cssText='display:block;width:100%;height:calc(100vh - 48px);height:calc(100dvh - 48px);border:0;background:white';d.append(b,f);x.addEventListener('click',function(){{d.close()}});d.addEventListener('click',function(ev){{if(ev.target===d)d.close()}});document.body.appendChild(d)}}d.showModal();d.querySelector('iframe').focus()}},true);
+</script>
 </head>
 <body>
 '''

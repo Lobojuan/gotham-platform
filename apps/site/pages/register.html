@@ -247,8 +247,8 @@ const EMAIL='info@gothamconsult.com';
 const SITE_URL='/index.html';   // our own site on the same domain
 const API='';   // same origin
 let PAYL='';                     // Paystack payment page (set in the CRM under Settings)
-let MOMO='[Gotham MoMo number]';  // MoMo number (set in the CRM under Settings)
-const MOMO_NAME='Gotham Consult';
+let MOMO='+233550416627';  // Joy's WhatsApp number is also the MoMo receiving number
+let MOMO_NAME='Gotham Consult';
 /* ======================================== */
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const QS=new URLSearchParams(location.search);
@@ -363,10 +363,12 @@ function done(extra){$('#refOk').textContent=ref;$('#sumBody').hidden=true;$('#o
  const box=$('#okExtra'); box.innerHTML=extra||'';
  if($('#rpSend'))$('#rpSend').onclick=async()=>{
    const t=$('#rpTxn').value.trim(); if(!t)return;
-   try{ await fetch(API+'/api/payment-reported',{method:'POST',mode:'cors',headers:{'content-type':'application/json'},
+   try{ const r=await fetch(API+'/api/payment-reported',{method:'POST',mode:'cors',headers:{'content-type':'application/json'},
      body:JSON.stringify({reference:ref,txn:t,phone:$('#ph').value.trim(),network:$('#rpNet').value})});
-     $('#rpOut').textContent='Thank you. We confirm as soon as the payment is matched.';
-   }catch{ $('#rpOut').textContent='Could not send. Please message us on WhatsApp with the transaction ID.'; }};
+     const data=await r.json().catch(()=>({}));
+     if(!r.ok)throw new Error(data.error||'report_failed');
+     $('#rpOut').textContent='Thank you. We confirm after matching the payment in the MoMo account.';
+   }catch(e){ $('#rpOut').textContent=e.message==='transaction_id_required'?'Enter the transaction ID from your MoMo receipt.':e.message==='transaction_already_reported'?'That transaction ID was already reported. Please check it or message us on WhatsApp.':'Could not send. Please message us on WhatsApp with the transaction ID.'; }};
  $('#ok').scrollIntoView({behavior:'smooth',block:'center'})}
 
 function payload(){const g=$('#gs').value.trim();
@@ -388,6 +390,7 @@ $('#goSend').onclick=async()=>{
   const d=await r.json().catch(()=>({}));
   if(!r.ok){const e=new Error(d.error||'failed');e.fields=d.fields||[];throw e}
   ref=d.reference;
+  if(d.payment_details){MOMO=d.payment_details.number;MOMO_NAME=d.payment_details.account_name}
   let extra='';
   if(d.status==='pending'){
    extra=`<p class="note" style="margin-top:6px">We review every application so the room stays the right mix of SMEs, stakeholders and investors. You get your invitation on WhatsApp or by email, usually the same day.</p>`;

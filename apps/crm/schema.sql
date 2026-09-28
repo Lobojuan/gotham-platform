@@ -33,6 +33,19 @@ create table if not exists registrations (
   source text default 'website', ip text,
   created_at timestamptz default now(), updated_at timestamptz default now()
 );
+-- Customer reports are claims for staff reconciliation, never proof of payment.
+-- Keep every report for audit and prevent the same network transaction being claimed twice.
+create table if not exists payment_reports (
+  id bigserial primary key,
+  reg_id int not null references registrations(id) on delete cascade,
+  network text not null check (network in ('MTN','Telecel','AirtelTigo')),
+  transaction_id text not null,
+  phone text,
+  reported_at timestamptz not null default now()
+);
+create unique index if not exists payment_reports_txn_uq
+  on payment_reports (lower(network), lower(transaction_id));
+create index if not exists payment_reports_reg_idx on payment_reports(reg_id, reported_at desc);
 create index if not exists reg_item on registrations(item_code);
 create index if not exists reg_created on registrations(created_at desc);
 create table if not exists users (

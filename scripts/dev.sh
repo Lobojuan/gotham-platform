@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run everything locally: Postgres in Docker, the CRM, and the site.
-#   ./scripts/dev.sh          CRM on :4100, site on :8080
+#   ./scripts/dev.sh          site + API + back office on :4100
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
@@ -14,18 +14,15 @@ fi
 cd "$ROOT/apps/crm"
 [ -d node_modules ] || npm install
 export DATABASE_URL="postgres://gotham:dev@127.0.0.1:5433/gotham"
-export SESSION_SECRET=dev-secret ALLOW_ORIGINS='*' PORT=4100
+export SESSION_SECRET=dev-secret PORT=4100
 export ADMIN_EMAIL=admin ADMIN_PASSWORD=devpassword123 ADMIN_NAME=Admin
-export MEDIA_DIR="$ROOT/apps/crm/.media" PUBLIC_URL=http://127.0.0.1:4100 SITE_URL=http://127.0.0.1:8080
+export MEDIA_DIR="$ROOT/apps/crm/.media" PUBLIC_URL=http://127.0.0.1:4100 SITE_URL=http://127.0.0.1:4100
+export SITE_DIR="$ROOT/apps/site/dist"
 mkdir -p "$MEDIA_DIR"
-node server.js &
-CRM=$!
-trap 'kill $CRM 2>/dev/null' EXIT
-
 "$ROOT/scripts/build-site.sh"
-cd "$ROOT/apps/site/dist"
+
 echo
-echo "  CRM   http://127.0.0.1:4100   (admin / devpassword123)"
-echo "  Site  http://127.0.0.1:8080"
+echo "  Site + back office   http://127.0.0.1:4100"
+echo "  Sign in as admin / devpassword123, then change the first password."
 echo
-python3 -m http.server 8080
+node server.js

@@ -1,9 +1,70 @@
-# QA sweep, 26 September 2026
+# QA sweep, 28 September 2026
 
-The full site and back office were tested on iPhone SE (375), iPhone 15 (393), Galaxy A (360), Pixel 7 (412), iPad (820)
-and desktop (1440): every public page and every back office tab, with drawers and the event editor open. Checks
-covered sideways scrolling, clipped text, text under 12 px, iPhone input zoom, tap target size, broken images,
-console errors and failed requests. The flows were then tested end to end, both through the API and in a phone browser.
+## Current checkout verification, 28 September 2026
+
+This checkout is based on `5f7c097` (`main`, matching the locally recorded `origin/main` at inspection time), with uncommitted changes listed in the current working tree.
+The remote could not be contacted from this environment, so this does not prove GitHub has no newer commit.
+
+- Passed on 28 September: all 12 API suites, totaling 209 checks, using a disposable local PostgreSQL database;
+  `node --check apps/crm/server.js`; Python compilation of API test files; shell syntax checks for the backup and dev scripts; and `python3 apps/site/build.py`.
+  The site build completes without the previous invalid-escape warning.
+- Fixed during this review: API suites 02, 03, 04 and 05 no longer depend on a former machine's absolute
+  checkout path. Suite 04 now creates its own deterministic workbook instead of requiring a private upload.
+- Hardened during this review: `tests/run_api.sh` refuses database names that do not end in `_test` and
+  no longer broadly kills every process named `node server.js`.
+- Login now opens the back office in a same-origin full-screen dialog over the current public page. The
+  back-office response allows same-origin framing only; the cross-origin framing block is retained.
+- Payment settings now seed missing MoMo numbers to Joy's WhatsApp line (`+233 55 041 6627`),
+  validate changes, and show the same destination and registration reference in the customer flow. Payment
+  transaction reports are validated, deduplicated, audited, and remain unverified until staff reconcile them.
+- The home page now leads with the chosen shared audience and action: building partnerships in Ghana. A
+  same-page English/French/Spanish selector remembers the visitor's choice. The translation dictionary covers
+  the published static landing copy; interactive calculator results and CRM-supplied event content still need
+  a browser review before the language requirement can be considered complete.
+- `tests/api/12_momo_payment_flow.py` passes the MoMo path, duplicate claims, manual verification and concurrent
+  capacity reservation checks.
+- `scripts/backup-crm.sh` was exercised against a disposable database and media directory. Its archive checksums
+  verified, and both the database row and media file were restored successfully.
+- Not reverified: browser E2E, responsive visuals, live domain and WordPress bridge. Browser access to the
+  local site and outbound DNS/network were unavailable in this environment. The 26 September browser results
+  below are historical, not evidence about the current checkout or live host.
+
+### Product and design assessment
+
+- The concept offers useful entry points for events, investor/mining enquiries, membership, Family Desk and
+  a weekly brief. The site has a coherent visual palette, strong event imagery, clear calls to action and
+  mobile-specific layout work.
+- The public proposition is broad: business consulting, events, investor services, mining, membership,
+  newsletter and family care compete for attention on a very long home page. Joy has identified startups, CEOs,
+  business owners, government representatives, investors and venture capitalists as the intended audiences.
+  The primary audience, offer and call to action still need to be chosen before rewriting or translating the page.
+- The back office includes accounts/roles, events, registrations, sponsors, media, outreach, contacts,
+  a deal pipeline, tasks, notes, search, reports, QR/poster tools and audit events. That is a strong demo
+  foundation; scheduled off-site backups, alerting, data-retention workflows, and verified payment
+  reconciliation still need setup or evidence before it can be called dependable for day-to-day service.
+- Payment status is still manually reconciled by staff; the website does not claim that a customer-submitted
+  transaction ID proves money was received. Automated provider confirmation would require an official payment
+  integration and credentials.
+- The README now describes the single-origin development topology, CRM host and WordPress bridge checks. Live
+  routing still needs an external check because this environment could not reach the public host.
+
+### Next release plan
+
+1. Run the UI E2E suite in an environment with Chromium; capture failures and screenshots, then fix every
+   reproducible regression. The 12 API suites passed locally.
+2. Do a focused journey review: visitor enquiry and registration, staff triage, task completion, payment
+   reconciliation, opt-out, account disable/reset, and event cancellation/refund handling.
+3. Configure scheduled encrypted off-site backups, monitoring/alert route, safe rollback, retention
+   and export procedure, and audit-log coverage. The backup script itself passed a local restore rehearsal.
+4. Confirm MoMo merchant instructions and live domain routing, remove misleading demo copy/unused confirmation
+   code, and validate the WordPress bridge end to end.
+5. Run accessibility and content review, then focus the home page around the selected primary audience and
+   add reviewed French and Spanish translations with a language toggle.
+
+The following device sweep and browser flow results were recorded on 26 September, before the current checkout changes:
+iPhone SE (375), iPhone 15 (393), Galaxy A (360), Pixel 7 (412), iPad (820) and desktop (1440). They covered public pages,
+back-office tabs, drawers, layout, text size, tap targets, images, console errors and phone flows. Treat them as historical;
+this checkout has not had browser E2E revalidation in the current environment.
 
 ## Defects found and fixed
 

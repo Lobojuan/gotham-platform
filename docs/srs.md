@@ -4,8 +4,11 @@ Software requirements for the website, registration and back office at one addre
 (`/` website, `/register`, `/family`, `/admin`, `/api/*`). Each requirement names the test that proves it.
 Tests live in `tests/` (API: `tests/api/*.py`, run with `bash tests/run_api.sh`; phone UI: `tests/ui/*.js`).
 
-Status as of 26 September 2026: all 10 API suites pass (170 checks); the phone UI tests pass on iPhone SE,
-iPhone 15, Galaxy A and Pixel 7 sizes.
+The API and UI results below are historical results recorded in the 26 September 2026 QA report,
+except for M-4, M-5 and O-4, which were revalidated on 28 September. They are not a full release
+certification. The repository now contains 12 API suites, including CRM
+pipeline, task, contact record and report coverage. Current execution status is tracked in
+[`qa-report-2026-09.md`](qa-report-2026-09.md).
 
 ## 1. Registration (public)
 
@@ -29,6 +32,8 @@ iPhone 15, Galaxy A and Pixel 7 sizes.
 | M-1 | Every price is shown and stored in **Ghana cedis** (Bank of Ghana rule). The back office cannot save another currency. | api/10 |
 | M-2 | Earlier USD items (M3, B1, B2) are converted to cedis on start-up if nobody has repriced them. | boot migration |
 | M-3 | "Received" counts only money actually paid, never free seats. | api/10 |
+| M-4 | A paid registration returns the configured MoMo destination and registration reference; existing blank settings are seeded to Joy’s confirmed WhatsApp/MoMo number. | api/12 |
+| M-5 | A customer transaction report requires a valid ID/network, applies only to an unpaid MoMo registration, cannot be claimed twice, and never marks itself paid. Staff reconcile it in the back office. | api/12 |
 
 ## 3. Accounts and sign-in (back office)
 
@@ -59,7 +64,7 @@ iPhone 15, Galaxy A and Pixel 7 sizes.
 
 | ID | Requirement | Test |
 |---|---|---|
-| W-1 | One address serves website, registration, Family Desk and back office; Login opens in the same tab. | api/06 |
+| W-1 | One address serves website, registration, Family Desk and back office; Login opens the same-origin back office in a full-screen dialog without leaving the current page. | api/06 |
 | W-2 | No page scrolls sideways on 360–1440 px wide screens. | ui/layout_sweep |
 | W-3 | Text inputs are 16 px on phones and touch screens, so iPhones do not zoom in when typing. | ui/layout_sweep |
 | W-4 | No text below 12 px. | ui/layout_sweep |
@@ -68,6 +73,33 @@ iPhone 15, Galaxy A and Pixel 7 sizes.
 | W-7 | Event dates and times show in Accra time for visitors abroad. | manual |
 | W-8 | The home page "Next forum" band follows the next event in the back office. | manual |
 | W-9 | Share links (WhatsApp, LinkedIn, copy) contain the full address. | manual |
+| W-10 | Public landing pages have complete English, French and Spanish copy with an accessible language toggle that preserves the current page/section. | landing toggle and static-copy translations implemented; interactive results and CRM event text plus browser QA remain |
+
+## 6. CRM pipeline and service operations
+
+| ID | Requirement | Test |
+|---|---|---|
+| P-1 | Website enquiries create a contact, an open deal and a dated follow-up task so enquiries enter a working queue. | api/11 |
+| P-2 | Deals have stage, value, source, owner, next action and contact history; stage changes and deletion are recorded. | api/11 |
+| P-3 | Tasks can be assigned, prioritised, due-dated and completed; staff can only complete or edit tasks allowed by their role. | api/11, manual permissions review |
+| P-4 | Contact records combine deals, registrations, campaign activity, notes and tasks in a searchable timeline. | api/11 |
+| P-5 | Reports reconcile deal pipeline, won/lost reasons, event registrations, payments and task completion against source records. | api/11, manual reconciliation |
+| P-6 | Search and reports are restricted to signed-in staff and hide contact details from roles without contact access. | api/11, api/09 |
+
+## 7. Operational readiness requirements (not yet certified)
+
+These are release requirements for operating the back office reliably. The current repository does not
+yet provide evidence for all of them; see the current QA findings before using the system with real users.
+
+| ID | Requirement | Evidence needed |
+|---|---|---|
+| O-1 | Database and uploaded media are backed up on a schedule, encrypted, retained, and restored in a rehearsal. | backup script and local restore rehearsal verified; schedule and off-site encryption still require host setup |
+| O-2 | Health checks cover database availability, disk space and email delivery; failures alert an owner. | deployed monitoring check |
+| O-3 | A release can be rolled back without losing registrations or media uploaded after the release. | deployment/restore rehearsal |
+| O-4 | Public forms show a reference and next step only after the server confirms storage; payment instructions never imply payment is verified automatically. | api/12 passed; browser E2E still needed |
+| O-5 | Data retention, export, correction and deletion workflows are defined for contacts, registrations and campaign consent. | approved retention policy and tested operations |
+| O-6 | Every admin action affecting accounts, money, contacts, campaigns and deals is attributable and reviewable. | audit-log coverage review |
+| O-7 | Public pages meet keyboard, screen reader, contrast and reduced-motion expectations as well as responsive layout checks. | accessibility audit with automated and manual evidence |
 
 ## Known limits
 

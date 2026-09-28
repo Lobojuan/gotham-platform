@@ -1720,8 +1720,8 @@ async function settings(){
   <p class="note">The largest number of seats any single event may be set to. It stops a room that holds 40 being sold as 120.</p>
   <div class="f2"><div><label class="l">Maximum seats per event</label><input class="t" id="s-max" type="number" inputmode="numeric" min="1" value="${esc(SET.max_seats||'')}" placeholder="40"></div><div></div></div>
   <button class="btn btn-dark" id="s-maxb" style="margin-top:12px">Save venue limit</button></div>
- <div class="card"><h3>Payment details shown to customers</h3>
-  <div class="f2"><div><label class="l">MoMo number</label><input class="t" id="s-momo" inputmode="tel" value="${esc(SET.momo_number||'')}" placeholder="024 000 0000"></div>
+ <div class="card"><h3>Payment details shown to customers</h3><p class="note">Customers send money to Joy’s MoMo account. This is the same number as her WhatsApp line. The site shows it after registration; staff still verify payment before marking a place paid.</p>
+  <div class="f2"><div><label class="l">Joy’s MoMo number</label><input class="t" id="s-momo" inputmode="tel" value="${esc(SET.momo_number||'+233550416627')}" placeholder="+233 55 041 6627"></div>
   <div><label class="l">MoMo account name</label><input class="t" id="s-name" value="${esc(SET.momo_name||'')}"></div></div>
   <div class="f2"><div><label class="l">WhatsApp number</label><input class="t" id="s-wa" inputmode="tel" value="${esc(SET.whatsapp||'')}"></div>
   <div><label class="l">Online payment link (Paystack)</label><input class="t" id="s-pay" inputmode="url" value="${esc(SET.pay_link||'')}" placeholder="https://paystack.com/pay/..."></div></div>

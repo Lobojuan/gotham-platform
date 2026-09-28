@@ -1,4 +1,4 @@
-import subprocess, time, json, os, urllib.request, urllib.error, signal, sys
+import subprocess, time, json, os, urllib.request, urllib.error, signal, sys, atexit
 import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
@@ -10,6 +10,12 @@ env=dict(os.environ); env.update({
  'SITE_DIR':ROOT+'/apps/site/dist'})
 os.makedirs('/tmp/mediatest',exist_ok=True)
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
+def _cleanup_server():
+    if srv.poll() is None:
+        srv.terminate()
+        try: srv.wait(timeout=3)
+        except subprocess.TimeoutExpired: srv.kill()
+atexit.register(_cleanup_server)
 B='http://127.0.0.1:4199'
 def get(path,cookie=None,raw=True):
     req=urllib.request.Request(B+path)
@@ -44,7 +50,7 @@ ok('/ serves the website')
 
 st,b,h=get('/admin')
 assert st==200 and b'Gotham CRM' in b, (st,b[:120])
-assert h.get('x-frame-options')=='DENY'
+assert h.get('x-frame-options')=='SAMEORIGIN'
 ok('/admin serves the back office')
 
 for path,needle in [('/register.html',b'Register'),('/teaser.html',b''),('/privacy.html',b'Privacy'),
@@ -102,7 +108,8 @@ assert 'netlify' not in site and 'sslip.io' not in site.replace('gotham.84-12-73
 assert "const CRM_API = ''" in site
 ok('site calls the API relatively, no cross-origin requests left')
 assert 'href="/admin"' in site and 'target="_blank"' not in site.split('navlog')[1][:200]
-ok('Login link is same-tab and points at /admin')
+assert 'gc-backoffice' in site and 'Back office' in site
+ok('Login opens the back office in an in-page, same-origin dialog')
 
 srv.send_signal(signal.SIGTERM); time.sleep(0.5)
 print('\nALL ONE-DOMAIN TESTS PASSED')

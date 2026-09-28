@@ -81,6 +81,8 @@ Never edit files on the server. Never commit `.env` or the real `PROXY_KEY`: the
   (no key yet). Codex's parallel `/api/support-chat` draft was superseded by this one at Uffe's choice. A test with
   Uffe's OpenAI key returned HTTP 429 (no API credit; ChatGPT/Claude/Kimi subscriptions don't include API use), so
   Uffe chose **Groq** (free tier, `openai/gpt-oss-120b`). The code is provider-neutral (OpenAI-compatible).
+- **Landing page and languages**: the hero video and presenter controls are removed; the headline is "Build partnerships in Ghana". `apps/site/public/js/landing-i18n.js` adds the English/French/Spanish selector and translates the published landing copy. The Ask Gotham widget keeps the `/api/ask` history and local fallback flow, with localized welcome/fallback answers and Joy's MoMo destination in payment answers.
+- **MoMo reports**: customer registrations show Joy's WhatsApp/MoMo number and can submit a transaction ID for staff reconciliation. Reports are audited and deduplicated; they do not mark a registration paid automatically.
 - **Deploy script**: rsync instead of `scp -r` (a local `npm install` made it copy thousands of files).
 
 ## 4. Tests
