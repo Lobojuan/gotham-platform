@@ -536,3 +536,40 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .cline i { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.08); flex: none; color: var(--gold-2); }
 .cline small { display: block; font-size: 12.5px; color: rgba(255,255,255,.55); }
 .cline b { font-size: 16px; }
+
+/* ---------- 3D services carousel (CSS 3D, works on iPhone and Android; drag, swipe, arrows, keys) ---------- */
+.car-sec { background: var(--night); color: #fff; position: relative; overflow: hidden; isolation: isolate; }
+.car-sec::before { content: ""; position: absolute; inset: 0; z-index: -1;
+  background: radial-gradient(40% 50% at 50% 60%, rgba(47,181,148,.18), transparent 70%), radial-gradient(30% 40% at 15% 10%, rgba(240,190,90,.14), transparent 70%); }
+.car-sec .lead { color: rgba(255,255,255,.7); }
+.car { --w: clamp(220px, 62vw, 300px); --h: calc(var(--w) * 1.32); --r: calc(var(--w) * 1.62); position: relative; }
+.car-stage { height: calc(var(--h) + 80px); perspective: 1500px; perspective-origin: 50% 40%; display: grid; place-items: center; overflow: hidden;
+  touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+.car-stage.drag { cursor: grabbing; }
+.car-ring { position: relative; width: var(--w); height: var(--h); transform-style: preserve-3d;
+  transform: translateZ(calc(var(--r) * -1)) rotateY(var(--rot, 0deg)); transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+.car-stage.drag .car-ring { transition: none; }
+.car-card { position: absolute; inset: 0; border-radius: 24px; overflow: hidden; text-decoration: none; color: #fff;
+  transform: rotateY(calc(var(--i) * 36deg)) translateZ(var(--r)); backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: var(--navy); border: 1px solid rgba(255,255,255,.14); box-shadow: 0 30px 60px -20px rgba(0,0,0,.7);
+  transition: opacity .5s ease, filter .5s ease; -webkit-user-drag: none; }
+.car-card img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55; pointer-events: none; }
+.car-card::before { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(7,13,24,.96) 30%, rgba(7,13,24,.2) 75%, rgba(7,13,24,.05)); }
+.car-card::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,.18), transparent 35%); opacity: .6; }
+.cc-in { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; padding: 20px; z-index: 1; }
+.cc-top { position: absolute; top: 18px; left: 18px; right: 18px; display: flex; justify-content: space-between; align-items: center; }
+.cc-top i { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: #1a1205; background: linear-gradient(135deg, #F4C66A, #C8963E); }
+.cc-n { font-weight: 800; font-size: 14px; color: rgba(255,255,255,.7); }
+.car-card b { font-size: clamp(19px, 2.2vw, 23px); line-height: 1.15; letter-spacing: -.015em; }
+.cc-p { font-size: 14.5px; color: rgba(255,255,255,.78); line-height: 1.4; }
+.cc-go { margin-top: 4px; font-weight: 700; font-size: 14px; color: var(--gold-2); display: inline-flex; gap: 6px; }
+.car-card.far { opacity: .35; filter: saturate(.6) brightness(.7); pointer-events: none; }
+.car-card.side { opacity: .8; }
+.car-ctl { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: -24px; position: relative; z-index: 2; }
+.car-b { flex: none; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.08); color: #fff; cursor: pointer; }
+.car-b:hover { background: rgba(255,255,255,.16); }
+.car-now { margin: 0; min-width: 0; text-align: center; font-size: 14px; color: rgba(255,255,255,.65); max-width: 60vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.car-now b { color: #fff; font-weight: 600; }
+.car-sec .more-link { margin-top: 30px; }
+@media (max-width: 520px) { .car-now { font-size: 13px; } }

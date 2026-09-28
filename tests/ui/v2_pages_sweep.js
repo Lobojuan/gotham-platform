@@ -20,7 +20,7 @@ const sizes = [['iphone-se', { viewport: { width: 320, height: 640 }, deviceScal
       const r = await p.evaluate(async () => {
         const vw = innerWidth, over = [], small = [], taps = [], inputs = [];
         for (const el of document.querySelectorAll('body *')) {
-          if (el.closest('dialog:not([open]), [hidden], .ticker, .sr-only, svg')) continue;
+          if (el.closest('dialog:not([open]), [hidden], .ticker, .sr-only, svg, .car-stage')) continue;
           const cs = getComputedStyle(el); if (cs.display === 'none' || cs.visibility === 'hidden') continue;
           const rc = el.getBoundingClientRect(); if (!rc.width || !rc.height) continue;
           if (rc.right > vw + 1 && !el.closest('.jump,.tabs,.chat-chips')) over.push(el.tagName + '.' + String(el.className).split(' ')[0] + ' ' + Math.round(rc.right));

@@ -21,20 +21,44 @@
     current = l; $$('[data-lang-code]').forEach(e => e.textContent = l.toUpperCase());
     $$('[data-lang]').forEach(b => b.setAttribute('aria-current', b.dataset.lang === l));
   };
-  let i18nReady = null;
-  const loadI18n = () => i18nReady ||= new Promise(res => {
-    // the translation script attaches its switch to nav.main; give it a hidden one and drive it from our buttons
-    const host = document.createElement('nav'); host.className = 'main'; host.hidden = true;
-    host.innerHTML = '<span class="navlog"></span>'; document.body.append(host);
-    const s = document.createElement('script'); s.src = '/js/landing-i18n.js?v=20260928'; s.onload = res; s.onerror = res; document.body.append(s);
+  /* translations: English is in the HTML; French/Spanish come from i18n.js, loaded only when chosen.
+     Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
+  let dict = null, dictReady = null;
+  const loadDict = () => dictReady ||= new Promise(res => {
+    const sc = document.createElement('script'); sc.src = '/assets/v2/i18n.js?v=1';
+    sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => { dict = {}; res(); }; document.head.append(sc);
   });
+  const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
+  const tr = (txt, lang) => { if (lang === 'en' || !dict?.[lang]) return null; const k = txt.replace(/\s+/g, ' ').trim(); return k ? dict[lang][k] ?? null : null; };
+  function applyNode(node, lang) {
+    if (node.nodeType === 3) {
+      const p = node.parentElement; if (!p || p.closest('script,style,svg,noscript,[data-no-tr]')) return;
+      if (!ORIG.has(node)) ORIG.set(node, node.nodeValue);
+      const en = ORIG.get(node), t = tr(en, lang);
+      const want = t == null ? en : en.match(/^\s*/)[0] + t + en.match(/\s*$/)[0];
+      if (node.nodeValue !== want) node.nodeValue = want;
+    } else if (node.nodeType === 1) {
+      if (node.closest('script,style,svg,noscript,[data-no-tr]')) return;
+      for (const at of ATTR) if (node.hasAttribute(at)) {
+        const key = 'data-en-' + at; if (!node.hasAttribute(key)) node.setAttribute(key, node.getAttribute(at));
+        const en = node.getAttribute(key), t = tr(en, lang); node.setAttribute(at, t ?? en);
+      }
+      const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+      for (let n = w.nextNode(); n; n = w.nextNode()) {
+        if (n.nodeType === 3) applyNode(n, lang);
+        else for (const at of ATTR) if (n.hasAttribute(at)) { const key = 'data-en-' + at; if (!n.hasAttribute(key)) n.setAttribute(key, n.getAttribute(at)); const en = n.getAttribute(key), t = tr(en, lang); n.setAttribute(at, t ?? en); }
+      }
+    }
+  }
+  let observing = false;
+  const mo = new MutationObserver(rs => { if (current === 'en') return; for (const r of rs) for (const n of r.addedNodes) applyNode(n, current); });
   const setLang = async l => {
     markLang(l); try { localStorage.setItem('gc-language', l); } catch {}
-    if (l === 'en' && !i18nReady) return;
-    await loadI18n();
-    const sel = $('#gc-language-switch select');
-    if (sel && sel.value !== l) { sel.value = l; sel.dispatchEvent(new Event('change')); }
-    document.title = 'Gotham Consult';
+    document.documentElement.lang = l;
+    if (l !== 'en') await loadDict();
+    if (l === 'en' && !dict) return;
+    applyNode(document.body, l);
+    if (!observing) { mo.observe(document.body, { childList: true, subtree: true }); observing = true; }
   };
   $$('[data-lang]').forEach(b => b.addEventListener('click', () => { setLang(b.dataset.lang); closeLang(); }));
   markLang(current); if (current !== 'en') setLang(current);
@@ -67,6 +91,40 @@
   $$('[data-open-pane]').forEach(b => b.addEventListener('click', () => openSheet(b.dataset.openPane)));
   $$('[data-open-chat]').forEach(b => b.addEventListener('click', () => openChat()));
 
+
+
+  /* ---- 3D services carousel ---- */
+  const car = $('[data-car]');
+  if (car) {
+    const stage = $('.car-stage', car), ring = $('.car-ring', car), cards = $$('.car-card', car), N = cards.length, step = 360 / N;
+    let idx = 0, rot = 0, timer = null, drag = null, moved = false;
+    const render = () => {
+      ring.style.setProperty('--rot', rot + 'deg');
+      cards.forEach((c, i) => { const d = Math.min((i - idx + N) % N, (idx - i + N) % N); c.classList.toggle('far', d > 1); c.classList.toggle('side', d === 1); c.tabIndex = d === 0 ? 0 : -1; c.setAttribute('aria-hidden', d > 1); });
+      $('[data-car-num]', car).textContent = String(idx + 1).padStart(2, '0');
+      $('[data-car-title]', car).textContent = $('b', cards[idx]).textContent;
+    };
+    const go = n => { const diff = ((n - idx) % N + N + N / 2) % N - N / 2; idx = (idx + diff + N) % N; rot -= diff * step; render(); };
+    const auto = on => { clearInterval(timer); if (on && !reduce) timer = setInterval(() => go(idx + 1), 3800); };
+    $('[data-car-prev]', car).addEventListener('click', () => { go(idx - 1); auto(false); });
+    $('[data-car-next]', car).addEventListener('click', () => { go(idx + 1); auto(false); });
+    car.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { go(idx + 1); auto(false); } if (e.key === 'ArrowLeft') { go(idx - 1); auto(false); } });
+    ['mouseenter', 'focusin'].forEach(ev => car.addEventListener(ev, () => auto(false)));
+    car.addEventListener('mouseleave', () => auto(true));
+    // drag / swipe: horizontal moves turn the ring, vertical swipes still scroll the page
+    stage.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, rot, idx, active: false }; moved = false; auto(false); });
+    stage.addEventListener('pointermove', e => {
+      if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+      if (!drag.active) { if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return; drag.active = true; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId); }
+      moved = true; rot = drag.rot + dx / (stage.clientWidth / 1.4) * step * 2; ring.style.setProperty('--rot', rot + 'deg');
+    });
+    const end = () => { if (!drag) return; const was = drag; drag = null; stage.classList.remove('drag'); if (!was.active) return;
+      const turned = Math.round((rot - was.rot) / step); idx = was.idx; rot = was.rot; go(idx - turned); };
+    stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
+    cards.forEach((c, i) => c.addEventListener('click', e => { if (moved) { e.preventDefault(); moved = false; return; } if (i !== idx) { e.preventDefault(); go(i); } }));
+    if ('IntersectionObserver' in window) new IntersectionObserver(es => auto(es[0].isIntersecting)).observe(car); else auto(true);
+    render();
+  }
 
   /* ---- current page in the menu ---- */
   const here = location.pathname.replace(/\/$/, '');

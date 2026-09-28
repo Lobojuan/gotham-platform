@@ -122,7 +122,10 @@ Agreed plan, in phases, previewed at **gothamconsult.com/v2** (noindex) before i
    `/v2/services|invest|mining|forums|about` (`pages/v2/*.html`, shared header/footer in `pages/v2/_top.html` and
    `_bottom.html`, included by `build.py`). Forums list, brief signup, sponsor enquiry and partner logos are live from the API.
    Free tools still live on the old page (`/#tools`) until they are moved.
-3. Translations (EN/FR/ES through `landing-i18n.js`), phone QA on real devices, speed check, then switch `/` to v2.
+3. Translations: **done** for all v2 pages — `public/assets/v2/i18n.js` (English text → French/Spanish, loaded only when
+   chosen; the choice is shared with the old pages via `gc-language`). Home services area is now a 3D carousel.
+   Still to do: v2 versions of Register, Family Desk, Free tools and the legal pages; phone QA on real devices; speed check;
+   then switch `/` to v2 and move `/v2/*` to root paths.
 
 Files: `apps/site/pages/v2.html`, `apps/site/public/assets/v2/{v2.css,v2.js,globe.js}`, `build.py` (per-page
 `extra` head). Phone checks: `/tmp`-style Playwright sweep at 320–1440 px (no sideways scroll, 44 px taps,
