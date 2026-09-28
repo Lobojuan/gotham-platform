@@ -118,7 +118,10 @@ Uffe asked for a new "2030" look: an uncluttered menu, 3D graphics, and flawless
 Agreed plan, in phases, previewed at **gothamconsult.com/v2** (noindex) before it replaces the live home page:
 1. Design system, new header (Services mega-menu, Invest in Ghana, Forums, About, Contact, language, Log in,
    Register; full-screen menu on phones), canvas 3D globe hero with partnership arcs from Accra, short home page. **Done.**
-2. Separate pages: Services, Invest in Ghana, Mining, Forums, About/Contact (content moved from the long index.html).
+2. Separate pages: Services, Invest in Ghana, Mining, Forums, About/Contact (content moved from the long index.html). **Done:**
+   `/v2/services|invest|mining|forums|about` (`pages/v2/*.html`, shared header/footer in `pages/v2/_top.html` and
+   `_bottom.html`, included by `build.py`). Forums list, brief signup, sponsor enquiry and partner logos are live from the API.
+   Free tools still live on the old page (`/#tools`) until they are moved.
 3. Translations (EN/FR/ES through `landing-i18n.js`), phone QA on real devices, speed check, then switch `/` to v2.
 
 Files: `apps/site/pages/v2.html`, `apps/site/public/assets/v2/{v2.css,v2.js,globe.js}`, `build.py` (per-page

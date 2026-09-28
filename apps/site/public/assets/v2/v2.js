@@ -3,6 +3,7 @@
 (() => {
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   /* ---- desktop mega panel ---- */
   const nb = $('.nav button.nb'), mega = $('#mega-services');
@@ -66,8 +67,94 @@
   $$('[data-open-pane]').forEach(b => b.addEventListener('click', () => openSheet(b.dataset.openPane)));
   $$('[data-open-chat]').forEach(b => b.addEventListener('click', () => openChat()));
 
+
+  /* ---- current page in the menu ---- */
+  const here = location.pathname.replace(/\/$/, '');
+  const navKey = here.startsWith('/v2/services') || here.startsWith('/v2/mining') ? 'services' : here.startsWith('/v2/invest') ? 'invest'
+    : here.startsWith('/v2/forums') ? 'forums' : here.startsWith('/v2/about') ? (location.hash === '#contact' ? 'contact' : 'about') : '';
+  $$('[data-nav]').forEach(a => { if (a.dataset.nav === navKey) { a.tagName === 'A' ? a.setAttribute('aria-current', 'page') : a.classList.add('cur'); } });
+
+  /* ---- tabs (packages, country lenses): arrow keys move between tabs ---- */
+  $$('[role="tablist"]').forEach(list => {
+    const tabs = $$('[role="tab"]', list);
+    const pick = t => tabs.forEach(x => { const on = x === t; x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1; const pnl = document.getElementById(x.getAttribute('aria-controls')); if (pnl) pnl.hidden = !on; });
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => pick(t));
+      t.addEventListener('keydown', e => { const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0; if (!d) return; e.preventDefault(); const n = tabs[(i + d + tabs.length) % tabs.length]; pick(n); n.focus(); });
+    });
+  });
+
+  /* ---- forums page: every upcoming event, live from the back office ---- */
+  const evWrap = $('#events');
+  if (evWrap) fetch('/api/items').then(r => r.json()).then(d => {
+    const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now() - 864e5)
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+    if (!ev.length) return;
+    const tz = { timeZone: 'Africa/Accra' };
+    evWrap.innerHTML = ev.map(i => {
+      const t = new Date(i.starts_at), img = i.cover_image?.sizes?.md?.webp || i.cover_image?.sizes?.lg?.webp || '/img/forum.webp';
+      const price = Number(i.price) ? 'GHS ' + Number(i.price).toLocaleString('en-GH') : 'Free';
+      const time = t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...tz });
+      const day = t.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', ...tz });
+      return `<article class="event"><div class="cov" style="background-image:url('${esc(img)}')"><div class="date"><b>${t.toLocaleDateString('en-GB', { day: 'numeric', ...tz })}</b><span>${t.toLocaleDateString('en-GB', { month: 'short', ...tz })}</span></div></div>
+        <div class="body"><h3>${esc(i.title)}</h3><div class="meta">${i.approval ? '<span class="pill">By invitation</span>' : ''}<span class="pill teal">${esc(price)}</span><span class="pill gray">${esc(day)} · ${esc(time)}</span>${i.venue ? `<span class="pill gray">${esc(i.venue)}</span>` : ''}${i.seats_left != null ? `<span class="pill gray">${esc(i.seats_left)} seats left</span>` : ''}</div>
+        ${(i.summary || i.subtitle) ? `<p>${esc(i.summary || i.subtitle)}</p>` : ''}
+        <a class="btn btn-gold" href="/register?e=${encodeURIComponent(i.code)}">${i.approval ? 'Request your invitation' : 'Reserve your seat'} <span class="arrow">→</span></a></div></article>`;
+    }).join('');
+  }).catch(() => {});
+
+  /* ---- Ghana Business Brief ---- */
+  const bf = $('#briefF');
+  bf?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const v = id => $('#' + id).value.trim(), note = $('#b-note');
+    if (!v('b-name') || !v('b-co') || !v('b-ph') || !/^\S+@\S+\.\S+$/.test(v('b-em'))) { note.textContent = 'Please fill in your name, company, a valid email and your WhatsApp number.'; return; }
+    const btn = $('button', bf); btn.disabled = true; btn.textContent = 'Sending…';
+    try {
+      const r = await fetch('/api/register', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ item_code: 'BRIEF', company: v('b-co'), full_name: v('b-name'), email: v('b-em'), phone: v('b-ph'), sector: v('b-sec'), consent: true, marketing_opt_in: true, utm_source: 'website', utm_campaign: 'brief' }) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'failed');
+      bf.innerHTML = `<div class="ok"><b>You are on the list.</b> The first brief reaches you on the next send. Reference ${esc(d.reference)}.</div>`;
+    } catch {
+      note.innerHTML = 'That did not go through. <a href="https://wa.me/233550416627?text=' + encodeURIComponent('Hello Gotham Consult, please add me to the Ghana Business Brief.') + '" target="_blank" rel="noopener" style="color:inherit">Send it on WhatsApp instead →</a>';
+      btn.disabled = false; btn.textContent = 'Send me the brief';
+    }
+  });
+
+  /* ---- sponsorship enquiry ---- */
+  const sf = $('#sponF');
+  sf?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const b = Object.fromEntries(new FormData(sf).entries()), msg = $('#sponMsg'), btn = $('button', sf);
+    if (!b.company?.trim() || !/^\S+@\S+\.\S+$/.test(b.email || '')) { msg.textContent = 'Please give your company and a valid email.'; return; }
+    b.utm_source = 'website'; b.utm_campaign = 'sponsorship'; btn.disabled = true; msg.textContent = 'Sending…';
+    try {
+      const r = await fetch('/api/sponsor-enquiry', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) });
+      if (!r.ok) throw new Error(); sf.reset(); msg.textContent = 'Thank you. We will come back to you within two working days.';
+    } catch { msg.innerHTML = 'That did not go through. WhatsApp us on <a href="https://wa.me/233552395548" target="_blank" rel="noopener">+233 55 239 5548</a>.'; }
+    btn.disabled = false;
+  });
+
+  /* ---- partner logos ---- */
+  const wall = $('#wall');
+  if (wall) fetch('/api/sponsors').then(r => r.json()).then(d => {
+    const list = d.sponsors || []; if (!list.length) return;
+    const L = { headline: 'Headline sponsor', partner: 'Partners', supporting: 'Supporting partners', listing: 'In the directory' }, by = {};
+    list.forEach(s => (by[s.tier] ||= []).push(s));
+    wall.innerHTML = Object.keys(L).filter(t => by[t]).map(t => `<div><h4>${L[t]}</h4><div class="logos">${by[t].map(s => {
+      const inner = (s.logo ? `<img src="${esc(s.logo.sizes?.lg?.webp || s.logo.url || '')}" alt="${esc(s.name)}" loading="lazy">` : `<b>${esc(s.name)}</b>`) + (s.blurb ? `<span>${esc(s.blurb)}</span>` : '');
+      return s.url ? `<a class="logo" href="${esc(s.url)}" target="_blank" rel="noopener sponsored">${inner}</a>` : `<div class="logo">${inner}</div>`; }).join('')}</div></div>`).join('');
+  }).catch(() => {});
+
+  /* ---- contact form: WhatsApp or email, nothing stored ---- */
+  const cf = $('#contactF');
+  if (cf) {
+    const text = () => `Hello Gotham Consult,\nName: ${$('#c-name').value}${$('#c-co').value ? '\nCompany: ' + $('#c-co').value : ''}\nTopic: ${$('#c-topic').value}\n\n${$('#c-msg').value}`;
+    cf.addEventListener('submit', e => { e.preventDefault(); if (!$('#c-name').reportValidity()) return; open('https://wa.me/233550416627?text=' + encodeURIComponent(text()), '_blank', 'noopener'); });
+    $('#c-mail')?.addEventListener('click', () => { if (!$('#c-name').reportValidity()) return; location.href = `mailto:info@gothamconsult.com?subject=${encodeURIComponent('Enquiry: ' + $('#c-topic').value)}&body=${encodeURIComponent(text())}`; });
+  }
+
   /* ---- next forum, live from the back office ---- */
-  const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   fetch('/api/items').then(r => r.json()).then(d => {
     const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now())
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));

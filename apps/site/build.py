@@ -24,21 +24,32 @@ META = {
    title='Family Desk · care and paperwork for your parents in Ghana · Gotham Consult',
    desc='Renewals, visits, property watch and appointments for older parents in Ghana, with a written report after every visit. For families abroad.',
    og='img/forum.webp'),
- 'v2.html': dict(
-   title='Gotham Consult · build partnerships in Ghana (preview)',
-   desc='Preview of the new Gotham Consult website.',
-   og='img/boot2.webp',
-   extra='<meta name="robots" content="noindex,nofollow">\n'
-         '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
-         '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">\n'
-         '<link rel="stylesheet" href="/assets/v2/v2.css?v=1">\n'
-         '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
-         '<meta name="theme-color" content="#070D18">'),
+}
+
+V2_EXTRA = ('<meta name="robots" content="noindex,nofollow">\n'
+  '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+  '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=3">\n'
+  '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
+  '<meta name="theme-color" content="#070D18">')
+# The new design (preview until it replaces the home page). Shared header/footer come from pages/v2/_top.html and _bottom.html.
+V2 = {
+ 'v2.html': ('Gotham Consult · build partnerships in Ghana', 'Business development, investment and compliance in Ghana, with Carlson Capital Ltd.', 'img/boot2.webp'),
+ 'v2/services.html': ('Services and prices · Gotham Consult', 'Ten practices with fixed prices in Ghana cedis: investment readiness, market entry, mining, AI, compliance, education and family support.', 'img/real-airportcity.webp'),
+ 'v2/invest.html': ('Invest in Ghana · Gotham Consult', 'Ghana in numbers, sectors to watch and what the GIPA Act 2026 means for investors from Germany, the Nordics, the UK and beyond.', 'img/real-bog.webp'),
+ 'v2/mining.html': ('Mining and critical minerals · Gotham Consult', 'Geology-led concession screening, due diligence and licensing in Ghana, with TERRA field data and the Afri-MINEX platform.', 'img/solar.webp'),
+ 'v2/forums.html': ('Forums and seminars · Gotham Consult', 'Forums, roundtables and the free weekly Ghana Business Brief. Register in a minute, pay by mobile money.', 'img/forum.webp'),
+ 'v2/about.html': ('About and contact · Gotham Consult', 'An Accra-based business development and international projects consultancy, with strategic partner Carlson Capital Ltd.', 'img/joy.webp'),
+}
+for _n, (_t, _d, _o) in V2.items():
+    META[_n] = dict(title=_t, desc=_d, og=_o, extra=V2_EXTRA)
+META_REST = {
  'teaser.html': dict(
    title='SMEs at the Centre · 24 October 2026 · Gotham Consult',
    desc='A working forum at Tang Palace Hotel, Accra. By invitation, free for SMEs, stakeholders and investors.',
    og='img/boot2.webp'),
 }
+META.update(META_REST)
 
 HEAD = '''<!doctype html>
 <html lang="en">
@@ -84,6 +95,10 @@ def main():
     # page bodies -> complete documents
     for name, m in META.items():
         body = open(os.path.join(HERE, 'pages', name), encoding='utf-8').read()
+        for part in ('top', 'bottom'):   # shared header/footer of the new design
+            if f'<!--#{part}-->' in body:
+                body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', 'v2', f'_{part}.html'), encoding='utf-8').read())
+        os.makedirs(os.path.dirname(os.path.join(DIST, name)), exist_ok=True)
         out = body if body.lstrip().lower().startswith('<!doctype') else \
               HEAD.format(site=SITE, path=name, **{'extra': '', **m}) + body + '\n</body>\n</html>'
         open(os.path.join(DIST, name), 'w', encoding='utf-8').write(out)
