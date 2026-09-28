@@ -4,12 +4,14 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 os.chdir(ROOT+'/apps/crm')
-SEEN=[]; MODE={'reject_reasoning':False,'fail':False,'reject_mct':False}
+SEEN=[]; MODE={'reject_reasoning':False,'fail':False,'reject_mct':False,'busy':set()}
 class Mock(BaseHTTPRequestHandler):
     def log_message(self,*a): pass
     def do_POST(self):
         b=json.loads(self.rfile.read(int(self.headers['content-length'])))
         SEEN.append({'auth':self.headers.get('authorization'),'body':b,'path':self.path})
+        if b.get('model') in MODE['busy']:
+            self.send_response(429); self.end_headers(); self.wfile.write(b'{"error":{"message":"Rate limit reached (TPM)"}}'); return
         if MODE['fail']: self.send_response(500); self.end_headers(); self.wfile.write(b'boom'); return
         if MODE['reject_reasoning'] and 'reasoning_effort' in b:
             self.send_response(400); self.end_headers(); self.wfile.write(b'{"error":{"message":"Unsupported value: reasoning_effort"}}'); return
@@ -88,11 +90,23 @@ try:
     ok('nothing the visitor typed is stored')
 finally:
     srv.terminate(); srv.wait()
-srv=start({'OPENAI_API_KEY':'gsk-test','OPENAI_BASE_URL':'http://127.0.0.1:4299','OPENAI_MODEL':'openai/gpt-oss-120b'})
+srv=start({'OPENAI_API_KEY':'gsk-test','OPENAI_BASE_URL':'http://127.0.0.1:4299','OPENAI_MODEL':'openai/gpt-oss-120b, openai/gpt-oss-20b ,llama-3.3-70b-versatile'})
 try:
     st,d=ask({'q':'Groq?'},ip='5.5.5.5')
     b=SEEN[-1]['body']; assert st==200 and b['model']=='openai/gpt-oss-120b' and b['reasoning_effort']=='low',b
     ok('Groq-style setup: same code, model from OPENAI_MODEL, low reasoning effort for gpt-oss')
+    MODE['busy']={'openai/gpt-oss-120b'}
+    st,d=ask({'q':'burst'},ip='5.5.5.6'); b=SEEN[-1]['body']
+    assert st==200 and 'answer' in d and b['model']=='openai/gpt-oss-20b',b['model']
+    MODE['busy']={'openai/gpt-oss-120b','openai/gpt-oss-20b'}
+    st,d=ask({'q':'burst2'},ip='5.5.5.7'); b=SEEN[-1]['body']
+    assert st==200 and 'answer' in d and b['model']=='llama-3.3-70b-versatile' and 'reasoning_effort' not in b,b
+    MODE['busy']={'openai/gpt-oss-120b','openai/gpt-oss-20b','llama-3.3-70b-versatile'}
+    st,d=ask({'q':'burst3'},ip='5.5.5.8'); MODE['busy']=set()
+    assert st==200 and d.get('fallback') is True
+    ok('a rate-limited model hands over to the next one; all busy falls back to built-in answers')
+    assert 'Ghanaian languages' in SEEN[-1]['body']['messages'][0]['content']
+    ok('Ghanaian languages answered with an English summary line')
     print('PASSED')
 finally:
     srv.terminate(); mock.shutdown()

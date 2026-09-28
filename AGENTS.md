@@ -172,7 +172,8 @@ status `do_not_contact` is never re-tagged — check both, every time.
 `/api/ask` answers the chat on the home page with an AI model. Its knowledge is `apps/crm/assistant.md` plus the
 published upcoming forums. Keep prices in that file in cedis and in step with the site.
 - The provider is anything OpenAI-compatible. Live since 28 Sep 2026: **Groq**, with `OPENAI_BASE_URL=https://api.groq.com/openai/v1`
-  and `OPENAI_MODEL=openai/gpt-oss-120b` in `/srv/gotham/.env`; the Groq key sits in `OPENAI_API_KEY`. Switching back to
+  and `OPENAI_MODEL=openai/gpt-oss-120b,openai/gpt-oss-20b,llama-3.3-70b-versatile` in `/srv/gotham/.env`. The list is tried
+  in order when a model is rate-limited (Groq's free tier allows about 8,000 tokens a minute per model, and one question is about 2,000); the Groq key sits in `OPENAI_API_KEY`. Switching back to
   OpenAI means emptying `OPENAI_BASE_URL` and setting a model; for Kimi, use Moonshot's base URL. No code change either way.
 - Set keys with `bash scripts/set-secret.sh OPENAI_API_KEY`, a hidden prompt: never in git, never in chat. Without a
   key, or on any provider error (quota, 429, outage), the page falls back to its built-in answers.

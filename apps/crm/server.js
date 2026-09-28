@@ -576,27 +576,35 @@ async function askKnowledge() {
 }
 async function askModel(messages) {
   /* Works with any OpenAI-compatible chat API: OpenAI, Groq (OPENAI_BASE_URL=https://api.groq.com/openai/v1), Kimi…
-     Reasoning models get a low effort so answers stay fast; if a provider rejects a parameter we retry without it. */
-  const effort = process.env.OPENAI_REASONING || (/gpt-oss/.test(OPENAI_MODEL) ? 'low' : /^(gpt-5|o\d)/.test(OPENAI_MODEL) ? 'minimal' : '');
-  let opts = { max_completion_tokens: 900, ...(effort ? { reasoning_effort: effort } : {}) };
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const r = await fetch(OPENAI_BASE + '/chat/completions', {
-      method: 'POST', signal: AbortSignal.timeout(25e3),
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + OPENAI_KEY },
-      body: JSON.stringify({ model: OPENAI_MODEL, messages, ...opts }) });
-    if (r.ok) {
-      const j = await r.json();
-      /* the chat shows plain text: drop markdown marks the model may add anyway */
-      return String(j.choices?.[0]?.message?.content || '')
-        .replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').replace(/^#{1,6}\s+/gm, '')
-        .replace(/^\s*[*]\s+/gm, '• ').replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '$1 ($2)').trim();
+     OPENAI_MODEL may list several models, comma-separated: when one is rate-limited (429) or down (5xx), the next is
+     tried. On Groq's free tier each model has its own per-minute allowance, so this keeps answers flowing in bursts.
+     Reasoning models get a low effort so answers stay fast; a rejected parameter is dropped and retried. */
+  const models = OPENAI_MODEL.split(',').map(m => m.trim()).filter(Boolean);
+  let last = '';
+  for (const model of models) {
+    const effort = process.env.OPENAI_REASONING || (/gpt-oss/.test(model) ? 'low' : /^(gpt-5|o\d)/.test(model) ? 'minimal' : '');
+    let opts = { max_completion_tokens: 900, ...(effort ? { reasoning_effort: effort } : {}) };
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const r = await fetch(OPENAI_BASE + '/chat/completions', {
+        method: 'POST', signal: AbortSignal.timeout(25e3),
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + OPENAI_KEY },
+        body: JSON.stringify({ model, messages, ...opts }) });
+      if (r.ok) {
+        const j = await r.json();
+        /* the chat shows plain text: drop markdown marks the model may add anyway */
+        return String(j.choices?.[0]?.message?.content || '')
+          .replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').replace(/^#{1,6}\s+/gm, '')
+          .replace(/^\s*[*]\s+/gm, '• ').replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g, '$1 ($2)').trim();
+      }
+      const t = (await r.text()).slice(0, 300);
+      if (r.status === 400 && opts.reasoning_effort && /reasoning/i.test(t)) { const { reasoning_effort, ...rest } = opts; opts = rest; continue; }
+      if (r.status === 400 && opts.max_completion_tokens && /max_completion_tokens/i.test(t)) { const { max_completion_tokens, ...rest } = opts; opts = { ...rest, max_tokens: 900 }; continue; }
+      last = 'ai ' + model + ' ' + r.status + ' ' + t;
+      if (r.status === 429 || r.status >= 500) break;              // try the next model
+      throw new Error(last);
     }
-    const t = (await r.text()).slice(0, 300);
-    if (r.status === 400 && opts.reasoning_effort && /reasoning/i.test(t)) { const { reasoning_effort, ...rest } = opts; opts = rest; continue; }
-    if (r.status === 400 && opts.max_completion_tokens && /max_completion_tokens/i.test(t)) { const { max_completion_tokens, ...rest } = opts; opts = { ...rest, max_tokens: 900 }; continue; }
-    throw new Error('ai ' + r.status + ' ' + t);
   }
-  throw new Error('ai: parameters rejected');
+  throw new Error(last || 'ai: no model answered');
 }
 
 /* Attach resolved image/doc objects to a list of items in one extra query. */
@@ -737,7 +745,10 @@ const server = http.createServer(async (req, res) => {
       askDay.n++;
       const system = `You are "Ask Gotham", the assistant on the Gotham Consult website (Accra, Ghana).
 Answer only from the knowledge below. Be warm, clear and brief: at most about 120 words, plain text, no markdown headings.
-Reply in the visitor's language. Plain text only: no markdown, no asterisks. Always state prices in Ghana cedis (GHS), never in another currency; if asked for dollars or euros, give the GHS price and say we invoice in cedis.
+Reply in the visitor's language. Ghanaian languages (Twi, Fante, Ga, Ewe, Dagbani, Hausa, Pidgin and others) are welcome:
+answer in that language as well as you can, keeping names, dates, prices and links exactly as given, then add one short
+line in simple English with the key facts, because your Ghanaian-language writing may be imperfect. Do not mix up
+Ga and Twi. Plain text only: no markdown, no asterisks. Always state prices in Ghana cedis (GHS), never in another currency; if asked for dollars or euros, give the GHS price and say we invoice in cedis.
 Do not invent prices, dates, people or services; if the answer is not below, say our team will answer on WhatsApp (+233 55 041 6627).
 You give general information, not legal, tax or investment advice; for their specific case, suggest a call or WhatsApp.
 Do not ask for or collect personal details in the chat; to register, point to gothamconsult.com/register.
