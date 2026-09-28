@@ -3,6 +3,15 @@
 This file is read by Codex, Claude Code, Kimi and similar tools. `CLAUDE.md`
 is a symlink to it. Read `README.md` first for the architecture.
 
+## Read first: current state
+
+**`docs/handoff-2026-09.md`** describes how the platform runs today and what changed in September 2026: the main
+domain goes through the WordPress bridge plugin, CRM v2, account rules and cedis-only prices. It also lists the
+open items. Update that file, or add a newer handoff, when you change how things run.
+
+Secrets never go in git. `/srv/gotham/.env` holds them, including `PROXY_KEY`, which is shared with the WordPress
+bridge plugin. The repo copy of the plugin says `SET-ME`.
+
 ## Ground rules
 
 1. **No build step for the app code.** `server.js` is plain Node 22 ESM.
@@ -35,8 +44,14 @@ node --check apps/crm/server.js
 ./scripts/dev.sh          # then exercise the thing you changed
 ```
 
-There is no test suite yet. If you add one, put it in `apps/crm/test/` and run
-it against a throwaway Postgres, never the production database.
+Run the API suites (a fresh database per suite; never production):
+
+```bash
+TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/run_api.sh
+```
+
+`tests/api/NN_*.py` are the API suites and `tests/ui/*.js` the Playwright phone-layout and flow tests (see
+`docs/qa-report-2026-09.md`). Add a suite for new behaviour. `docs/srs.md` maps requirements to tests; keep it current.
 
 ## Where things are
 
@@ -69,9 +84,16 @@ it against a throwaway Postgres, never the production database.
 
 ## Deploying
 
-`./scripts/deploy-crm.sh` and `./scripts/deploy-site.sh`. The CRM deploy
-snapshots the previous release first; `./scripts/rollback-crm.sh` restores it.
-Never edit files directly on the server — the next deploy overwrites them.
+From Uffe's Mac repo (`~/Documents/CRM/gotham-repo`):
+
+```bash
+SITE_URL=https://gothamconsult.com bash scripts/build-site.sh
+rsync -az apps/site/dist/ nuru@84.12.73.59:/srv/gotham-site/
+bash scripts/deploy-crm.sh
+```
+
+The CRM deploy snapshots the previous release first; `./scripts/rollback-crm.sh` restores it. The deploy never ships
+`node_modules` or `.env`. Never edit files directly on the server: the next deploy overwrites them.
 
 ## Importing lists
 
@@ -107,6 +129,8 @@ is often the most valuable thing in the sheet.
   in front of Caddy — Cloudflare, a load balancer — that value becomes the proxy's
   address and every visitor shares one limit. Update the Caddy block to use the
   forwarded client address before doing that.
+  The WordPress bridge is the one sanctioned exception. It sends `X-GC-Client-IP`, and the server trusts that header
+  only when `X-GC-Proxy-Key` matches `PROXY_KEY`.
 - **Rate limits are per form** (`rateLimited(ip, max, window, bucket)`), so signing
   in never uses up someone's allowance for a public form.
 - **Money:** Ghanaian law prohibits pricing, advertising or charging for services
