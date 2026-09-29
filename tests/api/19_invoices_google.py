@@ -20,7 +20,7 @@ class Mock(BaseHTTPRequestHandler):
             assert self.headers['authorization'] == 'Bearer ' + PSK
             t = TX.get(ref); return self.out(200 if t else 404, {'status': bool(t), 'data': t or {}})
         if self.path.startswith('/fx/'):
-            return self.out(200, {'rates': {'GHS': 16.2345678}})
+            return self.out(200, {'rates': {'GHS': 15.5, 'EUR': 0.9, 'GBP': 0.78}, 'time_last_update_utc': 'Tue, 29 Sep 2026 00:02:31 +0000'})
         self.out(404, {})
     def do_POST(self):
         raw = self.rfile.read(int(self.headers['content-length'] or 0))
@@ -114,7 +114,8 @@ inv_eur = d['id']
 st, d = call('/api/invoices', {'bill_to': {'name': 'John Carter', 'residency': 'expatriate', 'email': 'john@carter.test'}, 'currency': 'USD', 'fx_rate': 15, 'lines': [{'description': 'Advisory', 'qty': 1, 'unit': 1000}]}, cookie=ck)
 assert st == 200 and d['totals']['total'] == 1200 and d['totals']['total_ghs'] == 18000 and d['totals']['tax_ghs'] == 3000, d
 inv_usd = d['id']
-st, fx = call('/api/fx?c=EUR', cookie=ck); assert st == 200 and fx['rate'] == 16.2346 and 'Bank of Ghana' in fx['source'], fx
+st, fx = call('/api/fx?c=EUR', cookie=ck); assert st == 200 and fx['rate'] == 17.2222 and 'Bank of Ghana' in fx['source'] and fx['date'] == '2026-09-29', fx
+st, R = call('/api/rates'); assert st == 200 and R['rates'] == {'USD': 15.5, 'EUR': 17.2222, 'GBP': 19.8718} and R['updated'].startswith('2026-09-29'), R
 st, e = call('/api/fx?c=JPY', cookie=ck); assert st == 400, e
 ok('EUR/USD only for non-residents or expatriates and only with an exchange rate; cedi value and cedi tax recorded; rate suggestion works')
 
@@ -194,7 +195,7 @@ ok('void needs a reason, keeps the number (no gaps), blocks payments and shows V
 # ---------- VAT CSV ----------
 req = urllib.request.Request(B + '/api/invoices/vat.csv?month=' + time.strftime('%Y-%m')); req.add_header('cookie', ck)
 csv = urllib.request.urlopen(req).read().decode('utf-8-sig').splitlines()
-assert csv[0].startswith('number,issue_date,client') and len(csv) == 3, csv
+assert csv[0].startswith('number,type,credit_for,issue_date,client') and len(csv) == 3, csv
 assert csv[1].startswith('INV-%s-0001' % Y) and ',585.00,' in csv[1] or ',585,' in csv[1], csv[1]
 assert 'INV-%s-0002' % Y in csv[2] and '35000' in csv[2], csv[2]
 ok('VAT return CSV per month in cedis (void invoices and quotes left out)')

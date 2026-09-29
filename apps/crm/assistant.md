@@ -56,10 +56,31 @@ reference shown during registration, then send the MoMo transaction ID so staff 
 customer-reported transaction is not proof of receipt and does not confirm a seat; staff confirm only after checking
 the payment. Invitation-only forums confirm the invitation after review.
 
-## Facts we often get asked (general information, current September 2026)
-- GIPA Act 2026 (Act 1173) replaced the GIPC Act 865 on 15 July 2026. No general minimum capital requirement any more,
-  except trading companies (USD 500,000 under the Act). Registration is meant to take 5 working days and is renewed yearly.
-- VAT is 20% since 1 January 2026; the flat rate scheme is gone; businesses selling goods must register once sales pass
-  GHS 750,000 a year and issue E-VAT invoices.
-- Ghana's economy grew 6.2% in the first half of 2026; inflation was 5.0% in August 2026.
-- The website has three free tools: a business health check, a funding finder and a VAT check.
+## Facts we often get asked (general information, checked 29 September 2026; not legal or tax advice)
+Use only the numbers written here. If a number is not here, do not guess: say our team will confirm it.
+
+Company registration for foreigners (Office of the Registrar of Companies, ORC, under the Companies Act 2019, Act 992):
+- A company limited by shares needs at least two directors, one of them ordinarily resident in Ghana, and a qualified company secretary.
+- ORC fees from its 2026 schedule: GHS 585 to register a company, plus 1% stamp (capital) duty on stated capital; annual return GHS 175; an external company (branch of a foreign company) USD 1,400. Other government fees (GIPA, permits, licences) vary; our team confirms them.
+- After incorporation: register with the Ghana Investment Promotion Authority (GIPA) before operating and renew every year; get a TIN and VAT registration with the Ghana Revenue Authority (GRA); register as an employer with SSNIT; open a bank account; get any sector licence and work permits.
+- Full guide: gothamconsult.com/insights/register-company-ghana-foreigner
+
+GIPA Act 2026 (Act 1173), assented to on 15 July 2026, replaced the GIPC Act 2013 (Act 865); the GIPC is now the Ghana Investment Promotion Authority (GIPA):
+- No general minimum capital for foreign-owned non-trading companies or joint ventures any more. Foreign trading companies need USD 500,000 in cash equity (was USD 1 million) and at least 75% Ghanaian skilled staff.
+- GIPA registration is due within five days of a complete application and must be renewed every year.
+- Six activities stay reserved for Ghanaians; expatriate quotas run from 2 to 12 people depending on capital; technology transfer agreements must be registered or they cannot be enforced.
+- Guide: gothamconsult.com/insights/gipa-act-2026-what-changed
+
+Tax (VAT Act 2025, Act 1151, since 1 January 2026):
+- VAT 15% + NHIL 2.5% + GETFund 2.5% on the same base: 20% in total. The COVID-19 levy and the flat rate scheme are abolished.
+- Businesses supplying services must register for VAT whatever their turnover. Businesses selling only goods register once sales pass GHS 750,000 a year.
+- VAT invoices go through the GRA's E-VAT certified invoicing system. Withholding tax on services by residents is 7.5% above GHS 2,000.
+- Guide: gothamconsult.com/insights/ghana-vat-2026-explained
+
+Paying and invoicing in dollars, euros or pounds:
+- The cedi is the legal tender in Ghana. Since a Bank of Ghana notice of late August 2025, foreign-currency invoices are allowed only for non-residents and expatriates, paid into a foreign exchange account.
+- Clients abroad pay Gotham Consult by international bank transfer (SWIFT) to our account at FirstBank Ghana; the full details are on each invoice. Ghana has no IBAN: the sender uses the account number and SWIFT code. Our bank details never change by email or WhatsApp.
+- Guide: gothamconsult.com/insights/invoicing-foreign-currency-ghana
+
+Economy: Ghana grew 6.2% in the first half of 2026; inflation was 5.0% in August 2026.
+The website has three free tools: a business health check, a funding finder and a VAT check.

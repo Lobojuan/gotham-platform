@@ -236,3 +236,19 @@ for reduced motion.
   stored as settings key `inv_bank` (JSON; never in git, never on public pages). The client page shows Mobile Money, bank transfer in Ghana and
   international transfer (SWIFT) with the intermediary bank for the currency, copy buttons, no-IBAN note and a fraud warning. `/api/invoices/preview?c=GHS|USD|EUR|GBP`
   (admin) renders a sample. GBP added. A registration with "Invoice & bank transfer" now creates a draft invoice + task.
+
+## Safety net, two-step sign-in, credit notes, receipts, recurring invoices, accountant pack, live rates (30 Sep 2026)
+- **Backups**: `apps/crm/backup.sh` (deployed to /srv/gotham/backup.sh; cron 02:17): DB dump (custom) + media volume `gotham_gotham_media`,
+  restore test into `gotham_restore_test`, checksums, 30 days kept, result in settings `backup_status`. Off-site: `scripts/mac-backup-install.sh`
+  (LaunchAgent on Uffe's Mac, 09:40 + at log-in) pulls to ~/Documents/Gotham backups and writes `backup_offsite`.
+- **Watchdog** (hourly in runJobs): backup failed/old, off-site copy > 4 days, > 5 failed emails/24 h, certificate < 14 days → email (Settings → Safety net
+  recipients, default owners) and WhatsApp once connected; once per 12 h per problem. `GET/POST /api/safety`. External uptime: `.github/workflows/uptime.yml`.
+- **Two-step sign-in** (TOTP): users.totp_* (secret AES-GCM with key from SESSION_SECRET, recovery codes hashed). `/api/login` → `{need_code, ticket}` →
+  `/api/login/code`. `/api/2fa`, `/setup`, `/enable`, `/disable`; owner `PATCH /api/users/:email {reset_2fa:true}`. Google sign-in does not ask for the code.
+- **Credit notes** CRN-YYYY-NNNN (`POST /api/invoices/:id/credit {reason, lines?}`), status `credited`; balances, reminders, Paystack and VAT CSV subtract them.
+  **Receipts** RCT-YYYY-NNNN on every payment (manual and Paystack), page `/i/<token>/receipt/<pid>`, emailed when the client has an email.
+- **Recurring invoices**: table `invoice_schedules` (template snapshot, every month/quarter/year, next_date, until, auto_send); `{month}` placeholder;
+  GHS issued (and emailed), foreign currency → draft + task. `/api/invoice-schedules`.
+- **Accountant**: `/api/invoices/pack.xlsx|xero.csv|quickbooks.csv?month=YYYY-MM` (Invoices → For the accountant).
+- **Live rates**: `/api/rates` (open.er-api, cached hourly in settings `fx_cache`), shown in the home ticker and on /invest; the chatbot knows them.
+- **Chatbot**: English questions answered in English; checked fact sheet in assistant.md; only numbers from the knowledge; temperature 0.2.

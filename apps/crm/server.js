@@ -1,4 +1,5 @@
 import http from 'node:http';
+import tls from 'node:tls';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -56,6 +57,27 @@ function readToken(tok) {
   if (sign(p) !== s) return null;
   try { const d = JSON.parse(unb64(p)); return d.exp > Date.now() ? d : null; } catch { return null; }
 }
+/* ---------- two-step sign-in (TOTP, RFC 6238): Google Authenticator, Microsoft Authenticator, 1Password… ----------
+   The secret is stored encrypted with a key derived from SESSION_SECRET; recovery codes are stored hashed. */
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+const b32enc = buf => { let bits = '', out = ''; for (const x of buf) bits += x.toString(2).padStart(8, '0'); for (let i = 0; i < bits.length; i += 5) out += B32[parseInt(bits.slice(i, i + 5).padEnd(5, '0'), 2)]; return out; };
+const b32dec = str => { let bits = ''; for (const c of String(str).toUpperCase().replace(/[^A-Z2-7]/g, '')) bits += B32.indexOf(c).toString(2).padStart(5, '0'); const out = []; for (let i = 0; i + 8 <= bits.length; i += 8) out.push(parseInt(bits.slice(i, i + 8), 2)); return Buffer.from(out); };
+const totpKey = () => crypto.createHash('sha256').update('totp:' + SECRET).digest();
+const totpSeal = plain => { const iv = crypto.randomBytes(12), c = crypto.createCipheriv('aes-256-gcm', totpKey(), iv); const ct = Buffer.concat([c.update(plain, 'utf8'), c.final()]); return [iv, c.getAuthTag(), ct].map(x => x.toString('base64')).join('.'); };
+const totpOpen = sealed => { try { const [iv, tag, ct] = String(sealed).split('.').map(x => Buffer.from(x, 'base64')); const d = crypto.createDecipheriv('aes-256-gcm', totpKey(), iv); d.setAuthTag(tag); return Buffer.concat([d.update(ct), d.final()]).toString('utf8'); } catch { return null; } };
+function hotp(secretB32, counter) {
+  const buf = Buffer.alloc(8); buf.writeBigUInt64BE(BigInt(counter));
+  const h = crypto.createHmac('sha1', b32dec(secretB32)).update(buf).digest(), o = h[h.length - 1] & 15;
+  return String((h.readUInt32BE(o) & 0x7fffffff) % 1e6).padStart(6, '0');
+}
+/* returns the time step that matched (so a code cannot be used twice), or 0 */
+function totpCheck(secretB32, code, lastStep = 0, now = Date.now()) {
+  const c = String(code || '').replace(/\D/g, ''); if (c.length !== 6) return 0;
+  const step = Math.floor(now / 30e3);
+  for (const d of [0, -1, 1]) { const s = step + d; if (s > lastStep && crypto.timingSafeEqual(Buffer.from(hotp(secretB32, s)), Buffer.from(c))) return s; }
+  return 0;
+}
+const recHash = c => crypto.createHash('sha256').update('rec:' + String(c).toUpperCase().replace(/[^A-Z0-9]/g, '')).digest('hex');
 const cookies = req => Object.fromEntries((req.headers.cookie || '').split(';').map(c => c.trim().split('=')).filter(a => a[0]));
 const hash = (pw, salt) => crypto.scryptSync(pw, salt, 64).toString('hex');
 const newSalt = () => crypto.randomBytes(16).toString('hex');
@@ -1287,6 +1309,24 @@ const OPENAI_BASE = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
 const ASK_DAILY_CAP = +(process.env.ASK_DAILY_CAP || 400);
 const askDay = { day: '', n: 0 };
 let askKnow = { at: 0, text: '' };
+/* Live exchange rates for the website and the invoice "Suggest rate" button. One source (open.er-api.com, updated
+   daily from central-bank and market feeds), fetched at most once an hour and kept in settings, so a restart or an
+   outage still shows the last good rates with their date. The page says it is a market rate, not the BoG rate. */
+let fxMem = null;
+async function liveRates(force = false) {
+  if (!fxMem) { try { fxMem = JSON.parse((await q("select value from settings where key='fx_cache'")).rows[0]?.value || 'null'); } catch { fxMem = null; } }
+  if (!force && fxMem && Date.now() - fxMem.fetched < 3600e3) return fxMem;
+  try {
+    const r = await fetch(`${process.env.FX_API || 'https://open.er-api.com/v6/latest'}/USD`, { signal: AbortSignal.timeout(8000) }); const j = await r.json();
+    const g = +(j && j.rates && j.rates.GHS); if (!(g > 1) || !(+j.rates.EUR > 0) || !(+j.rates.GBP > 0)) throw new Error('bad rates');
+    const r4 = n => Math.round(n * 10000) / 10000;
+    fxMem = { base: 'GHS', rates: { USD: r4(g), EUR: r4(g / j.rates.EUR), GBP: r4(g / j.rates.GBP) },
+      updated: j.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString(), fetched: Date.now(),
+      source: 'Market mid-rate (open.er-api.com). Official reference: Bank of Ghana.' };
+    await q(`insert into settings(key,value) values ('fx_cache',$1) on conflict (key) do update set value=excluded.value`, [JSON.stringify(fxMem)]);
+  } catch (e) { console.error('fx', e.message); if (fxMem) fxMem.fetched = Date.now() - 3000e3; }   // try again in ~10 minutes
+  return fxMem;
+}
 async function askKnowledge() {
   if (Date.now() - askKnow.at < 5 * 60e3 && askKnow.text) return askKnow.text;
   let base = '';
@@ -1298,7 +1338,10 @@ async function askKnowledge() {
     `${r.venue ? ', ' + r.venue : ''}; ${+r.price > 0 ? 'GHS ' + (+r.price).toLocaleString('en-GH') : 'free'}` +
     `${r.approval ? ', by invitation (apply on the registration page)' : ''}` +
     `${r.seats_left === 0 ? ', fully booked' : ''}. Register: gothamconsult.com/register?e=${r.code}`).join('\n');
-  askKnow = { at: Date.now(), text: base + '\n\n## Upcoming forums and products (live from the back office)\n' + (forums || '- None published right now.') };
+  const fx = await liveRates().catch(() => null);
+  const fxLine = fx ? `\n\n## Exchange rates (market mid-rate, updated ${String(fx.updated).slice(0, 10)}; the Bank of Ghana reference rate is the official one)\n` +
+    Object.entries(fx.rates).map(([c, v]) => `- 1 ${c} = GHS ${v}`).join('\n') : '';
+  askKnow = { at: Date.now(), text: base + fxLine + '\n\n## Upcoming forums and products (live from the back office)\n' + (forums || '- None published right now.') };
   return askKnow.text;
 }
 async function askModel(messages, opt = {}) {
@@ -1310,7 +1353,7 @@ async function askModel(messages, opt = {}) {
   let last = '';
   for (const model of models) {
     const effort = process.env.OPENAI_REASONING || (/gpt-oss/.test(model) ? 'low' : /^(gpt-5|o\d)/.test(model) ? 'minimal' : '');
-    let opts = { max_completion_tokens: opt.max || 900, ...(effort ? { reasoning_effort: effort } : {}), ...(opt.json && !/gpt-oss/.test(model) ? { response_format: { type: 'json_object' } } : {}) };
+    let opts = { ...(opt.temperature != null ? { temperature: opt.temperature } : {}), max_completion_tokens: opt.max || 900, ...(effort ? { reasoning_effort: effort } : {}), ...(opt.json && !/gpt-oss/.test(model) ? { response_format: { type: 'json_object' } } : {}) };
     for (let attempt = 0; attempt < 3; attempt++) {
       const r = await fetch(OPENAI_BASE + '/chat/completions', {
         method: 'POST', signal: AbortSignal.timeout(25e3),
@@ -1486,6 +1529,12 @@ const server = http.createServer(async (req, res) => {
       return res.end(body);
     }
 
+    if (p === '/api/rates' && req.method === 'GET') {
+      const fx = await liveRates();
+      if (!fx) { res.setHeader('cache-control', 'public, max-age=300'); return json(res, 200, { rates: null, unavailable: true }, cors); }   // the page simply hides the rates
+      res.setHeader('cache-control', 'public, max-age=900');
+      return json(res, 200, { base: fx.base, rates: fx.rates, updated: fx.updated, source: fx.source }, cors);
+    }
     if (p === '/api/items' && req.method === 'GET') {
       const { rows } = await itemsPublic();
       const full = await withMedia(rows);
@@ -1550,11 +1599,13 @@ const server = http.createServer(async (req, res) => {
       askDay.n++;
       const system = `You are "Ask Gotham", the assistant on the Gotham Consult website (Accra, Ghana).
 Answer only from the knowledge below. Be warm, clear and brief: at most about 120 words, plain text, no markdown headings.
-Reply in the visitor's language. ${selectedLanguage ? `The selected website language is ${selectedLanguage}; reply in ${selectedLanguage} unless the visitor clearly writes in another language.` : ''} Ghanaian languages (Twi, Fante, Ga, Ewe, Dagbani, Hausa, Pidgin and others) are welcome:
+Language: reply in the language of the visitor's last message. A question written in English always gets an answer in English only. ${selectedLanguage && selectedLanguage !== 'English' ? `The selected website language is ${selectedLanguage}; if the message could be either, use ${selectedLanguage}. ` : ''}If the visitor writes in a Ghanaian language (Twi, Fante, Ga, Ewe, Dagbani, Hausa, Pidgin and others),
 answer in that language as well as you can, keeping names, dates, prices and links exactly as given, then add one short
 line in simple English with the key facts, because your Ghanaian-language writing may be imperfect. Do not mix up
-Ga and Twi. Plain text only: no markdown, no asterisks. Always state prices in Ghana cedis (GHS), never in another currency; if asked for dollars or euros, give the GHS price and say we invoice in cedis.
+Ga and Twi. Plain text only: no markdown, no asterisks. Always state our prices in Ghana cedis (GHS); if asked for dollars or euros, give the GHS price and say clients abroad can be invoiced in dollars, euros or pounds and pay by bank transfer.
+Numbers: only use prices, fees, dates, rates and durations that appear word for word in the knowledge below. Never estimate or round a fee.
 Do not invent prices, dates, people or services; if the answer is not below, say our team will answer on WhatsApp (+233 55 041 6627).
+When one of our guides (gothamconsult.com/insights/...) covers the question, mention it at the end.
 You give general information, not legal, tax or investment advice; for their specific case, suggest a call or WhatsApp.
 Never ask the visitor to type personal details (name, phone, email) in the chat.
 At the very end of your reply you may add ONE tag on its own line, and the page turns it into a button (never mention the tag):
@@ -1565,7 +1616,7 @@ Stay on Gotham Consult, doing business and investing in Ghana; politely decline 
 
 ${await askKnowledge()}`;
       try {
-        const answer = await askModel([{ role: 'system', content: system }, ...history, { role: 'user', content: question }]);
+        const answer = await askModel([{ role: 'system', content: system }, ...history, { role: 'user', content: question }], { temperature: 0.2 });
         if (!answer) return json(res, 200, { fallback: true, actions: [{ type: 'person' }] }, cors);
         const { text, actions } = await chatActions(answer);
         return json(res, 200, { answer: text.slice(0, 2000), actions }, cors);
@@ -1952,9 +2003,68 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       const u = (await q('select * from users where email=$1 and coalesce(active,true)', [clean(b.email).toLowerCase()])).rows[0];
       const ok = u && crypto.timingSafeEqual(Buffer.from(hash(String(b.password || ''), u.pw_salt)), Buffer.from(u.pw_hash));
       if (!ok) return json(res, 401, { error: 'bad_login' });
+      if (u.totp_on) {   // second step: a short-lived ticket, no session yet
+        const t = b64(JSON.stringify({ id: u.id, sv: u.sv || 0, kind: 'totp', exp: Date.now() + 5 * 60e3 }));
+        return json(res, 200, { need_code: true, ticket: t + '.' + sign(t) });
+      }
       await q('update users set last_login=now() where id=$1', [u.id]);
       return json(res, 200, { name: u.name, email: u.email, role: u.role, must_change: u.must_change },
         { 'set-cookie': `gc_session=${makeToken(u)}; HttpOnly; Path=/; Max-Age=43200; SameSite=Lax; Secure` });
+    }
+    if (p === '/api/login/code' && req.method === 'POST') {
+      if (rateLimited(ip, 10, 300e3, 'login_code')) return json(res, 429, { error: 'too_many' });
+      const b = await body(req), t = readToken(String(b.ticket || ''));
+      if (!t || t.kind !== 'totp') return json(res, 401, { error: 'expired' });
+      const u = (await q('select * from users where id=$1 and coalesce(active,true)', [t.id])).rows[0];
+      if (!u || !u.totp_on || (u.sv || 0) !== (t.sv || 0)) return json(res, 401, { error: 'expired' });
+      const secret = totpOpen(u.totp_secret); let okc = false;
+      const step = secret ? totpCheck(secret, b.code, +u.totp_last || 0) : 0;
+      if (step) { okc = true; await q('update users set totp_last=$2 where id=$1', [u.id, step]); }
+      else if (/[A-Za-z]/.test(String(b.code || ''))) {   // a recovery code: works once
+        const h = recHash(b.code), list = Array.isArray(u.totp_recovery) ? u.totp_recovery : [];
+        if (list.includes(h)) { okc = true; await q('update users set totp_recovery=$2 where id=$1', [u.id, JSON.stringify(list.filter(x => x !== h))]);
+          await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'login_recovery_code', `${list.length - 1} recovery codes left`]); }
+      }
+      if (!okc) return json(res, 401, { error: 'bad_code' });
+      await q('update users set last_login=now() where id=$1', [u.id]);
+      return json(res, 200, { name: u.name, email: u.email, role: u.role, must_change: u.must_change },
+        { 'set-cookie': `gc_session=${makeToken(u)}; HttpOnly; Path=/; Max-Age=43200; SameSite=Lax; Secure` });
+    }
+    /* setting up two-step sign-in for yourself */
+    if (p === '/api/2fa' && req.method === 'GET') {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      const r = (await q('select totp_on, totp_recovery from users where id=$1', [u.id])).rows[0];
+      return json(res, 200, { on: !!r.totp_on, recovery_left: Array.isArray(r.totp_recovery) ? r.totp_recovery.length : 0 });
+    }
+    if (p === '/api/2fa/setup' && req.method === 'POST') {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      const r = (await q('select totp_on from users where id=$1', [u.id])).rows[0]; if (r.totp_on) return json(res, 400, { error: 'already_on' });
+      const secret = b32enc(crypto.randomBytes(20));
+      await q('update users set totp_secret=$2 where id=$1', [u.id, totpSeal(secret)]);
+      const uri = `otpauth://totp/${encodeURIComponent('Gotham CRM:' + u.email)}?secret=${secret}&issuer=${encodeURIComponent('Gotham CRM')}&algorithm=SHA1&digits=6&period=30`;
+      return json(res, 200, { secret, uri, qr: await qrSvg(uri) });
+    }
+    if (p === '/api/2fa/enable' && req.method === 'POST') {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      if (rateLimited(ip, 10, 300e3, '2fa')) return json(res, 429, { error: 'too_many' });
+      const b = await body(req), r = (await q('select totp_secret, totp_on from users where id=$1', [u.id])).rows[0];
+      const secret = r && totpOpen(r.totp_secret); if (!secret || r.totp_on) return json(res, 400, { error: 'start_again' });
+      const step = totpCheck(secret, b.code); if (!step) return json(res, 400, { error: 'bad_code' });
+      const codes = Array.from({ length: 8 }, () => crypto.randomBytes(5).toString('hex').toUpperCase().replace(/(.{5})(.{5})/, '$1-$2'));
+      await q('update users set totp_on=true, totp_last=$2, totp_recovery=$3 where id=$1', [u.id, step, JSON.stringify(codes.map(recHash))]);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, '2fa_on', 'two-step sign-in turned on']);
+      return json(res, 200, { ok: true, recovery_codes: codes });
+    }
+    if (p === '/api/2fa/disable' && req.method === 'POST') {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      if (rateLimited(ip, 10, 300e3, '2fa')) return json(res, 429, { error: 'too_many' });
+      const b = await body(req), r = (await q('select * from users where id=$1', [u.id])).rows[0];
+      const pwOk = crypto.timingSafeEqual(Buffer.from(hash(String(b.password || ''), r.pw_salt)), Buffer.from(r.pw_hash));
+      const secret = totpOpen(r.totp_secret);
+      if (!pwOk || !secret || !totpCheck(secret, b.code, +r.totp_last || 0)) return json(res, 400, { error: 'bad_code' });
+      await q('update users set totp_on=false, totp_secret=null, totp_recovery=null, totp_last=null where id=$1', [u.id]);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, '2fa_off', 'two-step sign-in turned off']);
+      return json(res, 200, { ok: true });
     }
     if (p === '/api/logout') return json(res, 200, { ok: true }, { 'set-cookie': 'gc_session=; Path=/; Max-Age=0' });
     if (p === '/api/me') { const u = authAny(); return u ? json(res, 200, u) : json(res, 401, { error: 'no_session' }); }
@@ -2952,7 +3062,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
     if (p === '/api/users' && req.method === 'GET') {
       if (!auth()) return json(res, 401, { error: 'no_session' });
-      const { rows } = await q('select email,name,role,last_login,coalesce(active,true) as active,must_change from users order by id');
+      const { rows } = await q('select email,name,role,last_login,coalesce(active,true) as active,must_change,totp_on from users order by id');
       return json(res, 200, { rows });
     }
 
@@ -2975,6 +3085,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         if (isOwner && owners < 1) return json(res, 400, { error: 'last_owner' });
       }
       if (typeof b.name === 'string' && b.name.trim()) sets.push(`name=$${vals.push(clean(b.name, 80))}`);
+      if (b.reset_2fa === true) sets.push('totp_on=false', 'totp_secret=null', 'totp_recovery=null', 'totp_last=null', 'sv=coalesce(sv,0)+1');
       if (!sets.length) return json(res, 400, { error: 'nothing_to_update' });
       await q(`update users set ${sets.join(',')} where email=$${vals.push(email)}`, vals);
       await q('insert into jobs_log(job,detail) values ($1,$2)', ['user_updated', email + ' ' + JSON.stringify(b) + ' by ' + u.email]);
@@ -3140,6 +3251,26 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
 
 
+    /* ---- safety net ---- */
+    if (p === '/api/safety' && (req.method === 'GET' || req.method === 'POST')) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (req.method === 'POST') {
+        const b = await body(req);
+        if (b.alert_emails !== undefined) {
+          const list = String(b.alert_emails || '').split(/[,;\s]+/).filter(Boolean);
+          if (list.some(e => !/^\S+@\S+\.\S+$/.test(e)) || list.length > 5) return json(res, 400, { error: 'bad_email', fields: ['alert_emails'] });
+          await setSetting('alert_emails', list.join(', '));
+        }
+        if (b.alert_whatsapp !== undefined) {
+          const w = String(b.alert_whatsapp || '').replace(/[^\d+]/g, '');
+          if (w && !/^\+?\d{9,15}$/.test(w)) return json(res, 400, { error: 'bad_phone', fields: ['alert_whatsapp'] });
+          await setSetting('alert_whatsapp', w);
+        }
+        if (b.test) { const n = await alertTeam('Gotham platform: test alert', ['This is a test of the safety-net alerts. Nothing is wrong.']); return json(res, 200, { ok: true, sent_to: n }); }
+      }
+      return json(res, 200, await safetyReport());
+    }
+
     /* ---- quotes and invoices ---- */
     if (p === '/api/invoice-settings' && (req.method === 'GET' || req.method === 'POST')) {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -3177,22 +3308,23 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (p === '/api/fx' && req.method === 'GET') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const c = String(url.searchParams.get('c') || '').toUpperCase(); if (!['EUR', 'USD', 'GBP'].includes(c)) return json(res, 400, { error: 'bad_currency' });
-      try {
-        const r = await fetch(`${process.env.FX_API || 'https://open.er-api.com/v6/latest'}/${c}`, { signal: AbortSignal.timeout(8000) }); const j = await r.json();
-        const rate = j && j.rates && +j.rates.GHS; if (!rate) throw new Error('no rate');
-        return json(res, 200, { currency: c, rate: Math.round(rate * 10000) / 10000, source: 'market mid-rate (check against the Bank of Ghana reference rate)', date: new Date().toISOString().slice(0, 10) });
-      } catch { return json(res, 502, { error: 'fx_unavailable' }); }
+      const fx = await liveRates();
+      if (!fx || !fx.rates[c]) return json(res, 502, { error: 'fx_unavailable' });
+      return json(res, 200, { currency: c, rate: fx.rates[c], source: 'market mid-rate (check against the Bank of Ghana reference rate)', date: String(fx.updated).slice(0, 10) });
     }
     if (p === '/api/invoices' && req.method === 'GET') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
-      const { rows } = await q(`select i.*, coalesce((select sum(amount+wht) from invoice_payments x where x.invoice_id=i.id),0) as paid from invoices i order by coalesce(i.issue_date, i.created_at::date) desc, i.id desc limit 500`);
+      const { rows } = await q(`select i.*, coalesce((select sum(amount+wht) from invoice_payments x where x.invoice_id=i.id),0) as paid,
+          coalesce((select sum(c.total) from invoices c where c.credit_for=i.id and c.kind='credit' and c.status<>'void'),0) as credited,
+          (select number from invoices o where o.id=i.credit_for) as credit_for_number
+        from invoices i order by coalesce(i.issue_date, i.created_at::date) desc, i.id desc limit 1000`);
       const today = new Date().toISOString().slice(0, 10), m = today.slice(0, 7);
-      const out = rows.map(r => ({ ...r, balance: r2(+r.total - +r.paid), overdue: r.kind === 'invoice' && ['sent', 'part_paid'].includes(r.status) && r.due_date && ymdOf(r.due_date) < today }));
+      const out = rows.map(r => ({ ...r, balance: r.kind === 'credit' ? 0 : r2(+r.total - +r.paid - +r.credited), overdue: r.kind === 'invoice' && ['sent', 'part_paid'].includes(r.status) && r.due_date && ymdOf(r.due_date) < today }));
       const owed = {}; out.filter(r => r.kind === 'invoice' && ['sent', 'part_paid'].includes(r.status)).forEach(r => owed[r.currency] = r2((owed[r.currency] || 0) + r.balance));
-      const monthTax = out.filter(r => r.kind === 'invoice' && r.number && r.status !== 'void' && r.issue_date && ymdOf(r.issue_date).startsWith(m)).reduce((s, r) => s + (+r.tax_ghs), 0);
+      const monthTax = out.filter(r => ['invoice', 'credit'].includes(r.kind) && r.number && r.status !== 'void' && r.issue_date && ymdOf(r.issue_date).startsWith(m)).reduce((s, r) => s + (r.kind === 'credit' ? -1 : 1) * (+r.tax_ghs), 0);
       return json(res, 200, { rows: out, summary: { owed, overdue: out.filter(r => r.overdue).length, tax_this_month_ghs: r2(monthTax) } });
     }
-    const mInv = p.match(/^\/api\/invoices\/(\d+)(?:\/(issue|send|payment|void|convert|remind))?(?:\/(\d+))?$/);
+    const mInv = p.match(/^\/api\/invoices\/(\d+)(?:\/(issue|send|payment|void|convert|remind|credit|receipt))?(?:\/(\d+))?$/);
     if ((p === '/api/invoices' && req.method === 'POST') || (mInv && !mInv[2] && req.method === 'POST')) {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const b = await body(req), st = await invSettings();
@@ -3241,7 +3373,9 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const inv = (await q('select * from invoices where id=$1', [+mInv[1]])).rows[0]; if (!inv) return json(res, 404, { error: 'not_found' });
       const pays = (await q('select * from invoice_payments where invoice_id=$1 order by paid_on, id', [inv.id])).rows;
-      return json(res, 200, { ...inv, payments: pays, link: `${PUBLIC_URL}/i/${inv.token}` });
+      const credits = (await q("select id, number, total, issue_date, notes, status from invoices where credit_for=$1 and kind='credit' order by id", [inv.id])).rows;
+      const orig = inv.credit_for ? (await q('select id, number from invoices where id=$1', [inv.credit_for])).rows[0] : null;
+      return json(res, 200, { ...inv, payments: pays, credits, credit_for_number: orig ? orig.number : null, link: `${PUBLIC_URL}/i/${inv.token}` });
     }
     if (mInv && req.method === 'DELETE' && !mInv[2]) {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -3255,31 +3389,12 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       if (inv.status === 'void' && act !== 'convert') return json(res, 400, { error: 'void' });
       if (act === 'issue' || act === 'send' || act === 'remind') {
         if (!inv.number) {
-          const err = invoiceRules({ ...inv, fx_rate: inv.fx_rate }, st); if (err) return json(res, 400, { error: err });
-          if (!(inv.lines || []).length || !(+inv.total > 0)) return json(res, 400, { error: 'empty' });
-          const today = new Date().toISOString().slice(0, 10), issue = inv.issue_date ? ymdOf(inv.issue_date) : today;
-          const due = inv.due_date ? ymdOf(inv.due_date) : ymdOf(new Date(Date.parse(issue) + st.terms * 864e5));
-          const valid = inv.valid_until ? ymdOf(inv.valid_until) : ymdOf(new Date(Date.parse(issue) + 30 * 864e5));
-          inv = (await q(`update invoices set number=$2, status='sent', issue_date=$3, due_date=$4, valid_until=$5, sent_at=now(), updated_at=now() where id=$1 returning *`,
-            [inv.id, await nextNumber(inv.kind), issue, inv.kind === 'invoice' ? due : null, inv.kind === 'quote' ? valid : null])).rows[0];
-          await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_issue', `${inv.number} ${inv.currency} ${inv.total}`]);
+          const r = await issueInvoice(inv, st, u.email); if (r.error) return json(res, 400, { error: r.error }); inv = r.inv;
         }
         if (act === 'send' || act === 'remind') {
           const to = clean(b.to || inv.bill_to.email, 160).toLowerCase();
           if (!/^\S+@\S+\.\S+$/.test(to)) return json(res, 400, { error: 'no_email' });
-          const isQ = inv.kind === 'quote', link = `${PUBLIC_URL}/i/${inv.token}`, who = inv.bill_to.name || inv.bill_to.company || '';
-          const paid = +(await q('select coalesce(sum(amount+wht),0) s from invoice_payments where invoice_id=$1', [inv.id])).rows[0].s;
-          const subject = act === 'remind' ? `Reminder: invoice ${inv.number} from ${st.co_name}` : `${isQ ? 'Quotation' : 'Invoice'} ${inv.number} from ${st.co_name}`;
-          await queueMail(to, who, subject, wrapMail(isQ ? 'Your quotation' : act === 'remind' ? 'A friendly reminder' : 'Your invoice',
-            `<p style="color:#5A6472;font-size:15px">${who ? 'Dear ' + esc(firstName(who)) + ',' : 'Hello,'}</p>
-             <p style="color:#5A6472;font-size:15px">${isQ ? `Please find our quotation ${esc(inv.number)} for ${esc(money2(inv.total, inv.currency))}, valid until ${esc(ymdOf(inv.valid_until))}.`
-               : act === 'remind' ? `Invoice ${esc(inv.number)} has ${esc(money2(Math.max(0, +inv.total - paid), inv.currency))} outstanding${inv.due_date ? ', due ' + esc(ymdOf(inv.due_date)) : ''}.`
-               : `Please find invoice ${esc(inv.number)} for ${esc(money2(inv.total, inv.currency))}${inv.due_date ? ', due ' + esc(ymdOf(inv.due_date)) : ''}.`}</p>
-             <p style="margin:18px 0"><a href="${link}" style="background:#0F1B2D;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;display:inline-block;font-weight:600">${isQ ? 'View the quotation' : 'View and pay'}</a></p>
-             <p style="color:#5A6472;font-size:13px">You can print it or save it as a PDF from that page.</p>`), isQ ? 'quote' : 'invoice', null);
-          await q('update invoices set sent_at=now() where id=$1', [inv.id]);
-          await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_' + act, `${inv.number} → ${to}`]);
-          flushMail(3).catch(() => {});
+          await mailInvoice(inv, to, act, st, u.email);
         }
         return json(res, 200, { ok: true, number: inv.number, link: `${PUBLIC_URL}/i/${inv.token}` });
       }
@@ -3288,12 +3403,40 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         if (mInv[3]) { await q('delete from invoice_payments where id=$1 and invoice_id=$2', [+mInv[3], inv.id]); const x = await invoicePaid(inv.id); return json(res, 200, { ok: true, status: x.status }); }
         const amount = r2(+b.amount || 0), wht = r2(+b.wht || 0);
         if (!(amount > 0 || wht > 0)) return json(res, 400, { error: 'amount_required' });
-        await q(`insert into invoice_payments(invoice_id, paid_on, amount, wht, wht_cert, method, reference, fx_rate, note, recorded_by) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        const pid = (await q(`insert into invoice_payments(invoice_id, paid_on, amount, wht, wht_cert, method, reference, fx_rate, note, recorded_by, receipt_no) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) returning id`,
           [inv.id, /^\d{4}-\d{2}-\d{2}$/.test(b.paid_on || '') ? b.paid_on : new Date().toISOString().slice(0, 10), amount, wht, b.wht_cert === true,
-            ['momo', 'bank', 'card', 'cash', 'cheque', 'other'].includes(b.method) ? b.method : 'bank', clean(b.reference, 120) || null, +b.fx_rate > 0 ? +b.fx_rate : null, clean(b.note, 300) || null, u.email]);
+            ['momo', 'bank', 'card', 'cash', 'cheque', 'other'].includes(b.method) ? b.method : 'bank', clean(b.reference, 120) || null, +b.fx_rate > 0 ? +b.fx_rate : null, clean(b.note, 300) || null, u.email,
+            await nextNumber('receipt')])).rows[0].id;
         const x = await invoicePaid(inv.id);
+        if (b.send_receipt !== false && inv.bill_to.email) await sendReceipt(pid).catch(e => console.error('receipt', e.message));
         await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_payment', `${inv.number} ${inv.currency} ${amount}${wht ? ' + WHT ' + wht : ''}`]);
         return json(res, 200, { ok: true, status: x.status });
+      }
+      if (act === 'receipt') {
+        const pay = mInv[3] && (await q('select id from invoice_payments where id=$1 and invoice_id=$2', [+mInv[3], inv.id])).rows[0];
+        if (!pay) return json(res, 404, { error: 'not_found' });
+        if (!inv.bill_to.email && !b.to) return json(res, 400, { error: 'no_email' });
+        await sendReceipt(pay.id, b.to); return json(res, 200, { ok: true });
+      }
+      if (act === 'credit') {
+        if (inv.kind !== 'invoice' || !inv.number) return json(res, 400, { error: 'issue_first' });
+        const reason = clean(b.reason, 300); if (!reason) return json(res, 400, { error: 'reason_required' });
+        const done = +(await q("select coalesce(sum(total),0) c from invoices where credit_for=$1 and kind='credit' and status<>'void'", [inv.id])).rows[0].c;
+        const lines = b.lines ? cleanLines(b.lines) : inv.lines;
+        const cn = { kind: 'credit', currency: inv.currency, fx_rate: inv.fx_rate, tax_mode: inv.tax_mode, lines };
+        const t = invoiceTotals(cn, inv.rates || st.rates);
+        if (!(t.total > 0)) return json(res, 400, { error: 'empty' });
+        if (t.total > r2(+inv.total - done) + 0.005) return json(res, 400, { error: 'credit_too_big', left: r2(+inv.total - done) });
+        const number = await nextNumber('credit');
+        const nid = (await q(`insert into invoices(kind, number, status, contact_id, deal_id, credit_for, bill_to, currency, fx_rate, fx_date, tax_mode, tax_note, rates, lines,
+            subtotal, discount, taxable, vat, nhil, getfund, total, total_ghs, tax_ghs, issue_date, notes, evat_ref, created_by, token, sent_at)
+          values ('credit',$1,'sent',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,current_date,$22,$23,$24,$25,now()) returning id`,
+          [number, inv.contact_id, inv.deal_id, inv.id, JSON.stringify(inv.bill_to), inv.currency, inv.fx_rate, inv.fx_date, inv.tax_mode, inv.tax_note, JSON.stringify(inv.rates || st.rates),
+           JSON.stringify(lines), t.subtotal, t.discount, t.taxable, t.vat, t.nhil, t.getfund, t.total, t.total_ghs, t.tax_ghs, reason, clean(b.evat_ref, 120) || null, u.email,
+           crypto.randomBytes(18).toString('base64url')])).rows[0].id;
+        const x = await invoicePaid(inv.id);
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'credit_note', `${number} for ${inv.number}: ${inv.currency} ${t.total} (${reason})`]);
+        return json(res, 200, { ok: true, id: nid, number, status: x.status });
       }
       if (act === 'void') {
         const reason = clean(b.reason, 300); if (!reason) return json(res, 400, { error: 'reason_required' });
@@ -3315,17 +3458,84 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (p === '/api/invoices/vat.csv' && req.method === 'GET') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const m = /^\d{4}-\d{2}$/.test(url.searchParams.get('month') || '') ? url.searchParams.get('month') : new Date().toISOString().slice(0, 7);
-      const { rows } = await q(`select * from invoices where kind='invoice' and number is not null and status <> 'void' and to_char(issue_date,'YYYY-MM')=$1 order by number`, [m]);
-      const cols = ['number', 'issue_date', 'client', 'client_tax_id', 'residency', 'tax_treatment', 'currency', 'fx_rate', 'taxable', 'vat', 'nhil', 'getfund', 'total', 'taxable_ghs', 'vat_ghs', 'nhil_ghs', 'getfund_ghs', 'total_ghs', 'evat_ref'];
+      const { rows } = await q(`select i.*, (select number from invoices o where o.id=i.credit_for) as credit_for_number from invoices i
+        where i.kind in ('invoice','credit') and i.number is not null and i.status <> 'void' and to_char(i.issue_date,'YYYY-MM')=$1 order by i.number`, [m]);
+      const cols = ['number', 'type', 'credit_for', 'issue_date', 'client', 'client_tax_id', 'residency', 'tax_treatment', 'currency', 'fx_rate', 'taxable', 'vat', 'nhil', 'getfund', 'total', 'taxable_ghs', 'vat_ghs', 'nhil_ghs', 'getfund_ghs', 'total_ghs', 'evat_ref'];
       const csvq = v => /[",\n]/.test(String(v ?? '')) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v ?? '');
-      const lines = [cols.join(',')].concat(rows.map(r => { const fx = r.currency === 'GHS' ? 1 : +r.fx_rate;
-        return [r.number, ymdOf(r.issue_date), r.bill_to.company || r.bill_to.name, r.bill_to.tax_id, r.bill_to.residency, r.tax_mode, r.currency, r.currency === 'GHS' ? '' : r.fx_rate,
-          r.taxable, r.vat, r.nhil, r.getfund, r.total, r2(r.taxable * fx), r2(r.vat * fx), r2(r.nhil * fx), r2(r.getfund * fx), r.total_ghs, r.evat_ref].map(csvq).join(','); }));
+      const lines = [cols.join(',')].concat(rows.map(r => { const fx = r.currency === 'GHS' ? 1 : +r.fx_rate, sg = r.kind === 'credit' ? -1 : 1, n = v => r2(sg * +v);
+        return [r.number, r.kind === 'credit' ? 'credit note' : 'invoice', r.credit_for_number || '', ymdOf(r.issue_date), r.bill_to.company || r.bill_to.name, r.bill_to.tax_id, r.bill_to.residency, r.tax_mode, r.currency, r.currency === 'GHS' ? '' : r.fx_rate,
+          n(r.taxable), n(r.vat), n(r.nhil), n(r.getfund), n(r.total), n(r.taxable * fx), n(r.vat * fx), n(r.nhil * fx), n(r.getfund * fx), n(r.total_ghs), r.evat_ref].map(csvq).join(','); }));
       res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="vat-${m}.csv"` });
       return res.end('﻿' + lines.join('\r\n'));
     }
 
+    /* ---- for the accountant: a monthly pack (Excel) and import files for Xero and QuickBooks ---- */
+    const mAcc = p.match(/^\/api\/invoices\/(pack\.xlsx|xero\.csv|quickbooks\.csv)$/);
+    if (mAcc && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const m = /^\d{4}-\d{2}$/.test(url.searchParams.get('month') || '') ? url.searchParams.get('month') : new Date().toISOString().slice(0, 7);
+      const P = await accountantPack(m);
+      if (mAcc[1] === 'pack.xlsx') {
+        const buf = await packWorkbook(P);
+        res.writeHead(200, { 'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'content-disposition': `attachment; filename="gotham-accounts-${m}.xlsx"` });
+        return res.end(Buffer.from(buf));
+      }
+      const rows = mAcc[1] === 'xero.csv' ? P.xero : P.qb;
+      const csvq = v => /[",\n]/.test(String(v ?? '')) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v ?? '');
+      res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="${mAcc[1].replace('.csv', '')}-invoices-${m}.csv"` });
+      return res.end('\ufeff' + [rows.cols.join(','), ...rows.rows.map(r => r.map(csvq).join(','))].join('\r\n'));
+    }
+
+    /* ---- recurring invoices ---- */
+    if (p === '/api/invoice-schedules' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const st = await invSettings();
+      const rows = (await q('select s.*, (select number from invoices i where i.id=s.last_invoice_id) as last_number from invoice_schedules s order by active desc, next_date')).rows
+        .map(r => ({ ...r, amount: invoiceTotals({ ...r.template, fx_rate: null, tax_mode: r.template.tax_mode === 'standard' && !st.vat_registered ? 'none' : r.template.tax_mode }, st.rates).total }));
+      return json(res, 200, { rows });
+    }
+    const mSch = p.match(/^\/api\/invoice-schedules(?:\/(\d+))?$/);
+    if (mSch && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req), ymd = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : null;
+      const every = ['month', 'quarter', 'year'].includes(b.every) ? b.every : null;
+      if (!mSch[1]) {
+        const src = (await q("select * from invoices where id=$1 and kind='invoice'", [+b.from_invoice_id])).rows[0];
+        if (!src) return json(res, 404, { error: 'not_found' });
+        if (!every || !ymd(b.next_date)) return json(res, 400, { error: 'every_and_date_required' });
+        if (ymd(b.next_date) < new Date().toISOString().slice(0, 10)) return json(res, 400, { error: 'date_in_past' });
+        const T = { contact_id: src.contact_id, deal_id: src.deal_id, bill_to: src.bill_to, currency: src.currency, tax_mode: src.tax_mode, tax_note: src.tax_note,
+          lines: b.lines ? cleanLines(b.lines) : src.lines, notes: src.notes, wht_rate: src.wht_rate };
+        const id = (await q(`insert into invoice_schedules(template, every, next_date, until, auto_send, created_by, source_invoice_id) values ($1,$2,$3,$4,$5,$6,$7) returning id`,
+          [JSON.stringify(T), every, ymd(b.next_date), ymd(b.until), b.auto_send === true, u.email, src.id])).rows[0].id;
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'schedule_create', `from ${src.number || 'draft ' + src.id}, every ${every} from ${b.next_date}`]);
+        return json(res, 200, { ok: true, id });
+      }
+      const sets = [], vals = [];
+      if (typeof b.active === 'boolean') sets.push(`active=$${vals.push(b.active)}`);
+      if (typeof b.auto_send === 'boolean') sets.push(`auto_send=$${vals.push(b.auto_send)}`);
+      if (every) sets.push(`every=$${vals.push(every)}`);
+      if (ymd(b.next_date)) sets.push(`next_date=$${vals.push(ymd(b.next_date))}`);
+      if (b.until !== undefined) sets.push(`until=$${vals.push(ymd(b.until))}`);
+      if (!sets.length) return json(res, 400, { error: 'nothing_to_update' });
+      const r = await q(`update invoice_schedules set ${sets.join(',')}, updated_at=now() where id=$${vals.push(+mSch[1])}`, vals);
+      return r.rowCount ? json(res, 200, { ok: true }) : json(res, 404, { error: 'not_found' });
+    }
+    if (mSch && mSch[1] && req.method === 'DELETE') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      await q('delete from invoice_schedules where id=$1', [+mSch[1]]); return json(res, 200, { ok: true });
+    }
+
     /* ---- the client's page: view, print, pay, accept a quotation ---- */
+    const mRcpt = p.match(/^\/i\/([A-Za-z0-9_-]{20,40})\/receipt\/(\d+)$/);
+    if (mRcpt && req.method === 'GET') {
+      const inv = (await q('select id from invoices where token=$1 and number is not null', [mRcpt[1]])).rows[0];
+      const pay = inv && (await q('select id from invoice_payments where id=$1 and invoice_id=$2', [+mRcpt[2], inv.id])).rows[0];
+      if (!pay) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
+      const d = await receiptData(pay.id);
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'referrer-policy': 'no-referrer' });
+      return res.end(receiptPage(d, await invSettings()));
+    }
     const mPub = p.match(/^\/i\/([A-Za-z0-9_-]{20,40})(?:\/(pay|accept))?$/);
     if (mPub) {
       const inv = (await q('select * from invoices where token=$1 and number is not null', [mPub[1]])).rows[0];
@@ -3333,8 +3543,10 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const st = await invSettings();
       if (mPub[2] === 'pay' && req.method === 'POST') {
         if (rateLimited(ip, 10, 600e3, 'pay')) { res.writeHead(429); return res.end('Too many tries'); }
-        if (!paystackOn(inv.currency) || inv.kind !== 'invoice' || ['paid', 'void'].includes(inv.status)) { res.writeHead(303, { location: `/i/${inv.token}` }); return res.end(); }
-        const paid = +(await q('select coalesce(sum(amount+wht),0) s from invoice_payments where invoice_id=$1', [inv.id])).rows[0].s, due = r2(+inv.total - paid);
+        if (!paystackOn(inv.currency) || inv.kind !== 'invoice' || ['paid', 'void', 'credited'].includes(inv.status)) { res.writeHead(303, { location: `/i/${inv.token}` }); return res.end(); }
+        const paid = +(await q('select coalesce(sum(amount+wht),0) s from invoice_payments where invoice_id=$1', [inv.id])).rows[0].s;
+        const cr = +(await q("select coalesce(sum(total),0) c from invoices where credit_for=$1 and kind='credit' and status<>'void'", [inv.id])).rows[0].c, due = r2(+inv.total - paid - cr);
+        if (!(due > 0)) { res.writeHead(303, { location: `/i/${inv.token}` }); return res.end(); }
         try {
           const r = await fetch(`${PAYSTACK}/transaction/initialize`, { method: 'POST', signal: AbortSignal.timeout(15e3),
             headers: { authorization: 'Bearer ' + PAYSTACK_KEY, 'content-type': 'application/json' },
@@ -3360,7 +3572,9 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       if (url.searchParams.get('accepted')) msg = 'Thank you. The quotation is accepted; we will send the invoice.';
       const pays = (await q('select * from invoice_payments where invoice_id=$1', [inv.id])).rows;
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'referrer-policy': 'no-referrer' });
-      return res.end(invoicePage(fresh, pays, st, { msg, payUrl: paystackOn(fresh.currency) ? `/i/${fresh.token}/pay` : null }));
+      const credits = (await q("select number, total from invoices where credit_for=$1 and kind='credit' and status<>'void' order by id", [inv.id])).rows;
+      const origNumber = inv.credit_for ? (await q('select number from invoices where id=$1', [inv.credit_for])).rows[0]?.number : null;
+      return res.end(invoicePage(fresh, pays, st, { msg, credits, origNumber, payUrl: paystackOn(fresh.currency) ? `/i/${fresh.token}/pay` : null }));
     }
     if (p === '/api/hooks/paystack' && req.method === 'POST') {
       const raw = await rawBody(req, 1e6);
@@ -3946,12 +4160,14 @@ function invoiceRules(inv, st) {
 async function nextNumber(kind) {
   const y = new Date().getFullYear();
   const n = (await q(`insert into invoice_seq(kind, year, n) values ($1,$2,1) on conflict (kind, year) do update set n = invoice_seq.n + 1 returning n`, [kind, y])).rows[0].n;
-  return `${kind === 'quote' ? 'QUO' : 'INV'}-${y}-${String(n).padStart(4, '0')}`;
+  return `${({ quote: 'QUO', credit: 'CRN', receipt: 'RCT' })[kind] || 'INV'}-${y}-${String(n).padStart(4, '0')}`;
 }
 async function invoicePaid(id) {
   const inv = (await q('select * from invoices where id=$1', [id])).rows[0]; if (!inv || inv.kind !== 'invoice' || inv.status === 'void') return inv;
   const p = (await q('select coalesce(sum(amount + wht),0) as got from invoice_payments where invoice_id=$1', [id])).rows[0].got;
-  const status = +p >= +inv.total - 0.005 && +inv.total > 0 ? 'paid' : +p > 0 ? 'part_paid' : (inv.sent_at ? 'sent' : 'draft');
+  const cr = +(await q("select coalesce(sum(total),0) as c from invoices where credit_for=$1 and kind='credit' and status<>'void'", [id])).rows[0].c;
+  const status = cr >= +inv.total - 0.005 && +inv.total > 0 ? 'credited'
+    : +p + cr >= +inv.total - 0.005 && +inv.total > 0 ? 'paid' : +p > 0 ? 'part_paid' : (inv.sent_at ? 'sent' : 'draft');
   if (status !== inv.status) {
     await q(`update invoices set status=$2, paid_at=case when $2='paid' then coalesce(paid_at, now()) else null end, updated_at=now() where id=$1`, [id, status]);
     if (status === 'paid' && inv.deal_id) await q("insert into notes(deal_id, contact_id, kind, body, author) values ($1,$2,'note',$3,'invoices')", [inv.deal_id, inv.contact_id, `Invoice ${inv.number} paid in full (${inv.currency} ${(+inv.total).toFixed(2)}).`]);
@@ -3962,14 +4178,15 @@ const money2 = (n, cur) => `${cur} ${(+n || 0).toLocaleString('en-GB', { minimum
 
 /* The page the client sees at /i/<token>: print it or save it as PDF from the browser. */
 function invoicePage(inv, pays, st, opts = {}) {
-  const b = inv.bill_to || {}, isQ = inv.kind === 'quote', cur = inv.currency, rates = inv.rates || st.rates;
-  const paid = pays.reduce((s, x) => s + (+x.amount) + (+x.wht), 0), balance = r2(+inv.total - paid);
+  const b = inv.bill_to || {}, isQ = inv.kind === 'quote', isC = inv.kind === 'credit', cur = inv.currency, rates = inv.rates || st.rates;
+  const credits = opts.credits || [], creditTotal = credits.reduce((s, c) => s + (+c.total), 0);
+  const paid = pays.reduce((s, x) => s + (+x.amount) + (+x.wht), 0), balance = isC ? 0 : r2(+inv.total - paid - creditTotal);
   const d = x => x ? new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
   const legacy = cur === 'GHS' ? st.inv_bank_ghs : cur === 'USD' ? st.inv_bank_usd : cur === 'EUR' ? st.inv_bank_eur : '';
   const taxRows = inv.tax_mode === 'standard'
     ? `<tr><td>VAT ${rates.vat}%</td><td>${money2(inv.vat, cur)}</td></tr><tr><td>NHIL ${rates.nhil}%</td><td>${money2(inv.nhil, cur)}</td></tr><tr><td>GETFund levy ${rates.getfund}%</td><td>${money2(inv.getfund, cur)}</td></tr>`
     : `<tr><td>${inv.tax_mode === 'zero' ? 'VAT zero-rated' : inv.tax_mode === 'exempt' ? 'VAT exempt' : 'No VAT charged'}${inv.tax_note ? ` <small>(${esc(inv.tax_note)})</small>` : ''}</td><td>${money2(0, cur)}</td></tr>`;
-  const stamp = inv.status === 'paid' ? 'PAID' : inv.status === 'void' ? 'VOID' : inv.status === 'accepted' ? 'ACCEPTED' : '';
+  const stamp = inv.status === 'paid' ? 'PAID' : inv.status === 'void' ? 'VOID' : inv.status === 'accepted' ? 'ACCEPTED' : inv.status === 'credited' ? 'CREDITED' : '';
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>${esc((isQ ? 'Quotation ' : 'Invoice ') + (inv.number || 'draft'))} · ${esc(st.co_name)}</title>
 <style>
@@ -4001,17 +4218,17 @@ table.items td{border-bottom:1px solid #E2E4E7;padding:9px 6px;vertical-align:to
 </style></head><body>
 ${opts.msg ? `<div class="msg">${esc(opts.msg)}</div>` : ''}
 <div class="bar"><button class="btn line" onclick="print()">Print or save as PDF</button>
-${!isQ && opts.payUrl && balance > 0 && inv.status !== 'void' ? `<form method="post" action="${opts.payUrl}" style="margin:0"><button class="btn gold">Pay ${esc(money2(balance, cur))} online</button></form>` : ''}
+${!isQ && !isC && opts.payUrl && balance > 0 && !['void', 'credited'].includes(inv.status) ? `<form method="post" action="${opts.payUrl}" style="margin:0"><button class="btn gold">Pay ${esc(money2(balance, cur))} online</button></form>` : ''}
 ${isQ && inv.status === 'sent' ? `<form method="post" action="/i/${inv.token}/accept" style="margin:0"><button class="btn dark">Accept this quotation</button></form>` : ''}</div>
 <div class="sheet"><div class="kente"></div>${stamp ? `<div class="stamp ${stamp === 'VOID' ? 'void' : ''}">${stamp}</div>` : ''}
 <div class="top"><div class="co"><b>${esc(st.co_name)}</b><div>${esc(st.inv_co_address || 'Accra, Ghana')}</div>
 ${st.inv_tin ? `<div>TIN: ${esc(st.inv_tin)}</div>` : ''}${st.vat_registered && st.inv_vat_number ? `<div>VAT registration: ${esc(st.inv_vat_number)}</div>` : ''}
 <div>${esc(st.inv_email || 'info@gothamconsult.com')} · +233 55 041 6627</div></div>
-<div class="meta"><h1>${isQ ? 'QUOTATION' : inv.tax_mode === 'standard' ? 'TAX INVOICE' : 'INVOICE'}</h1>
+<div class="meta"><h1>${isQ ? 'QUOTATION' : isC ? 'CREDIT NOTE' : inv.tax_mode === 'standard' ? 'TAX INVOICE' : 'INVOICE'}</h1>${isC && opts.origNumber ? `<div>Credit against invoice <b>${esc(opts.origNumber)}</b></div>` : ''}
 <div><b>${esc(inv.number || 'Draft')}</b></div><div>Date: ${d(inv.issue_date)}</div>
 ${isQ ? (inv.valid_until ? `<div>Valid until: ${d(inv.valid_until)}</div>` : '') : (inv.due_date ? `<div>Due: ${d(inv.due_date)}</div>` : '')}
 ${inv.evat_ref ? `<div>E-VAT ref: ${esc(inv.evat_ref)}</div>` : ''}</div></div>
-<div class="to"><div><div class="lab">${isQ ? 'Prepared for' : 'Bill to'}</div><b>${esc(b.company || b.name || '')}</b>${b.company && b.name ? `<div>${esc(b.name)}</div>` : ''}
+<div class="to"><div><div class="lab">${isQ ? 'Prepared for' : isC ? 'Credited to' : 'Bill to'}</div><b>${esc(b.company || b.name || '')}</b>${b.company && b.name ? `<div>${esc(b.name)}</div>` : ''}
 ${b.address ? `<div style="white-space:pre-wrap">${esc(b.address)}</div>` : ''}${b.country ? `<div>${esc(b.country)}</div>` : ''}${b.tax_id ? `<div>Tax / VAT no.: ${esc(b.tax_id)}</div>` : ''}${b.email ? `<div>${esc(b.email)}</div>` : ''}</div>
 <div><div class="lab">Currency</div><b>${cur}</b>${cur !== 'GHS' ? `<div>Exchange rate: 1 ${cur} = GHS ${(+inv.fx_rate).toFixed(4)} (${d(inv.fx_date || inv.issue_date)})</div>` : ''}</div></div>
 <table class="items"><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead><tbody>
@@ -4021,8 +4238,9 @@ ${(inv.lines || []).map(l => { const g = r2(l.qty * l.unit), off = r2(g * (l.dis
 <table class="sum"><tr><td>Subtotal${+inv.discount ? ' after discounts' : ''}</td><td>${money2(inv.taxable, cur)}</td></tr>${taxRows}
 <tr class="tot"><td>Total</td><td>${money2(inv.total, cur)}</td></tr>
 ${cur !== 'GHS' ? `<tr><td><small>Total in cedis (for VAT)</small></td><td><small>${money2(inv.total_ghs, 'GHS')}</small></td></tr>${inv.tax_mode === 'standard' ? `<tr><td><small>Tax in cedis</small></td><td><small>${money2(inv.tax_ghs, 'GHS')}</small></td></tr>` : ''}` : ''}
-${!isQ && paid > 0 ? `<tr><td>Paid</td><td>${money2(paid, cur)}</td></tr><tr><td><b>Balance due</b></td><td><b>${money2(Math.max(0, balance), cur)}</b></td></tr>` : ''}</table>
-${!isQ && inv.status !== 'void' && inv.status !== 'paid' ? payBlocks(inv, st, legacy, Math.max(0, balance)) : ''}
+${!isQ && !isC ? credits.map(c => `<tr><td>Credit note ${esc(c.number)}</td><td>− ${money2(c.total, cur)}</td></tr>`).join('') : ''}
+${!isQ && !isC && (paid > 0 || credits.length) ? `${paid > 0 ? `<tr><td>Paid</td><td>${money2(paid, cur)}</td></tr>` : ''}<tr><td><b>Balance due</b></td><td><b>${money2(Math.max(0, balance), cur)}</b></td></tr>` : ''}</table>
+${!isQ && !isC && !['void', 'paid', 'credited'].includes(inv.status) && balance > 0 ? payBlocks(inv, st, legacy, Math.max(0, balance)) : ''}
 ${inv.notes ? `<div class="box">${esc(inv.notes)}</div>` : ''}
 <div class="foot">${esc(st.inv_footer || `${st.co_name} · Accra, Ghana · gothamconsult.com`)}${cur !== 'GHS' ? ` · Foreign-currency invoices are issued only to non-residents or expatriates${st.bank && st.bank.fx[cur] ? ', payable into our foreign exchange account' : ''} (Bank of Ghana rules).` : ''}</div>
 </div></body></html>`;
@@ -4079,6 +4297,178 @@ ${+inv.wht_rate ? `<p style="font-size:13px;color:#5A6472;margin:8px 0 0">If you
 <div class="safe">Our bank details never change by email or WhatsApp. If a message tells you otherwise, call +233 55 041 6627 before you pay.</div></div>
 <script>document.addEventListener('click',function(e){var b=e.target.closest('.cp');if(!b)return;navigator.clipboard&&navigator.clipboard.writeText(b.dataset.c).then(function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1500)})})</script>`;
 }
+/* Receipts: every payment gets a number (RCT-YYYY-NNNN), a printable page and, when the client has an email, an email. */
+async function receiptData(pid) {
+  const pay = (await q('select * from invoice_payments where id=$1', [pid])).rows[0]; if (!pay) return null;
+  const inv = (await q('select * from invoices where id=$1', [pay.invoice_id])).rows[0];
+  if (!pay.receipt_no) { pay.receipt_no = await nextNumber('receipt'); await q('update invoice_payments set receipt_no=$2 where id=$1', [pay.id, pay.receipt_no]); }
+  const got = +(await q('select coalesce(sum(amount+wht),0) s from invoice_payments where invoice_id=$1 and (paid_on < $2 or (paid_on = $2 and id <= $3))', [inv.id, pay.paid_on, pay.id])).rows[0].s;
+  const cr = +(await q("select coalesce(sum(total),0) c from invoices where credit_for=$1 and kind='credit' and status<>'void'", [inv.id])).rows[0].c;
+  return { pay, inv, balance: Math.max(0, r2(+inv.total - got - cr)) };
+}
+async function sendReceipt(pid, to) {
+  const d = await receiptData(pid); if (!d) return;
+  const st = await invSettings(), email = clean(to || d.inv.bill_to.email, 160).toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(email)) return;
+  const link = `${PUBLIC_URL}/i/${d.inv.token}/receipt/${d.pay.id}`, who = d.inv.bill_to.name || d.inv.bill_to.company || '';
+  await queueMail(email, who, `Receipt ${d.pay.receipt_no} from ${st.co_name}`, wrapMail('Thank you, payment received',
+    `<p style="color:#5A6472;font-size:15px">${who ? 'Dear ' + esc(firstName(who)) + ',' : 'Hello,'}</p>
+     <p style="color:#5A6472;font-size:15px">We received ${esc(money2(d.pay.amount, d.inv.currency))}${+d.pay.wht ? ` and a withholding tax deduction of ${esc(money2(d.pay.wht, d.inv.currency))}` : ''} for invoice ${esc(d.inv.number)}. ${d.balance > 0 ? `The balance is ${esc(money2(d.balance, d.inv.currency))}.` : 'The invoice is now paid in full.'}</p>
+     <p style="margin:18px 0"><a href="${link}" style="background:#0F1B2D;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;display:inline-block;font-weight:600">View the receipt</a></p>`), 'receipt', null);
+  await q('update invoice_payments set receipt_sent_at=now() where id=$1', [pid]);
+  flushMail(3).catch(() => {});
+}
+function receiptPage(d, st) {
+  const { pay, inv, balance } = d, cur = inv.currency, b = inv.bill_to || {};
+  const day = x => new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const M = { momo: 'Mobile Money', bank: 'Bank transfer', card: 'Card', cash: 'Cash', cheque: 'Cheque', paystack: 'Online payment (Paystack)', other: 'Other' };
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Receipt ${esc(pay.receipt_no)} · ${esc(st.co_name)}</title><style>
+*{box-sizing:border-box}body{margin:0;background:#EDEDE8;font:15px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:#0F1B2D}
+.bar{max-width:150mm;margin:16px auto;display:flex;justify-content:flex-end;padding:0 12px}.btn{border:1px solid #D9DCE1;background:#fff;border-radius:999px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
+.sheet{max-width:150mm;margin:0 auto 24px;background:#fff;padding:14mm;box-shadow:0 10px 40px rgba(0,0,0,.08)}.kente{height:6px;margin:-14mm -14mm 10mm;background:linear-gradient(90deg,#A9761F 0 25%,#0F1B2D 25% 50%,#1F6B4E 50% 75%,#C9A24B 75%)}
+h1{margin:0 0 4px;font-size:24px}.mut{color:#5A6472;font-size:13.5px}table{width:100%;border-collapse:collapse;margin-top:18px}td{padding:9px 4px;border-bottom:1px solid #E2E4E7}td:last-child{text-align:right;font-weight:600}
+.big td{font-size:18px;font-weight:800;border-bottom:2px solid #0F1B2D}.foot{margin-top:18px;font-size:12px;color:#8A93A0}
+@media print{body{background:#fff}.bar{display:none}.sheet{box-shadow:none;margin:0}}@media(max-width:600px){.sheet{padding:18px 16px}.kente{margin:-18px -16px 16px}}
+</style></head><body><div class="bar"><button class="btn" onclick="print()">Print or save as PDF</button></div><div class="sheet"><div class="kente"></div>
+<h1>RECEIPT</h1><div class="mut"><b style="color:#0F1B2D">${esc(pay.receipt_no)}</b> · ${day(pay.paid_on)}</div>
+<p style="margin:16px 0 0"><b>${esc(st.co_name)}</b><br><span class="mut">${esc(st.inv_co_address || 'Accra, Ghana')}${st.inv_tin ? ' · TIN ' + esc(st.inv_tin) : ''}</span></p>
+<p style="margin:14px 0 0"><span class="mut">Received from</span><br><b>${esc(b.company || b.name || '')}</b>${b.company && b.name ? '<br>' + esc(b.name) : ''}</p>
+<table><tr><td>For invoice</td><td>${esc(inv.number)}</td></tr><tr><td>Method</td><td>${esc(M[pay.method] || pay.method)}${pay.reference ? ' · ' + esc(pay.reference) : ''}</td></tr>
+<tr class="big"><td>Amount received</td><td>${money2(pay.amount, cur)}</td></tr>
+${+pay.wht ? `<tr><td>Withholding tax deducted by you${pay.wht_cert ? ' (certificate received)' : ''}</td><td>${money2(pay.wht, cur)}</td></tr>` : ''}
+<tr><td>Balance on the invoice after this payment</td><td>${money2(balance, cur)}</td></tr></table>
+<div class="foot">${esc(st.inv_footer || `${st.co_name} · Accra, Ghana · gothamconsult.com`)}</div></div></body></html>`;
+}
+/* Issue a draft (number, dates, locked) and email a document: used by the buttons and by recurring invoices. */
+async function issueInvoice(inv, st, actor) {
+  const err = invoiceRules({ ...inv, fx_rate: inv.fx_rate }, st); if (err) return { error: err };
+  if (!(inv.lines || []).length || !(+inv.total > 0)) return { error: 'empty' };
+  const today = new Date().toISOString().slice(0, 10), issue = inv.issue_date ? ymdOf(inv.issue_date) : today;
+  const due = inv.due_date ? ymdOf(inv.due_date) : ymdOf(new Date(Date.parse(issue) + st.terms * 864e5));
+  const valid = inv.valid_until ? ymdOf(inv.valid_until) : ymdOf(new Date(Date.parse(issue) + 30 * 864e5));
+  const row = (await q(`update invoices set number=$2, status='sent', issue_date=$3, due_date=$4, valid_until=$5, sent_at=now(), updated_at=now() where id=$1 and number is null returning *`,
+    [inv.id, await nextNumber(inv.kind), issue, inv.kind === 'invoice' ? due : null, inv.kind === 'quote' ? valid : null])).rows[0];
+  if (!row) return { inv: (await q('select * from invoices where id=$1', [inv.id])).rows[0] };
+  await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [actor, 'invoice_issue', `${row.number} ${row.currency} ${row.total}`]);
+  return { inv: row };
+}
+async function mailInvoice(inv, to, act, st, actor) {
+  const isQ = inv.kind === 'quote', isC = inv.kind === 'credit', link = `${PUBLIC_URL}/i/${inv.token}`, who = inv.bill_to.name || inv.bill_to.company || '';
+  const paid = +(await q('select coalesce(sum(amount+wht),0) s from invoice_payments where invoice_id=$1', [inv.id])).rows[0].s
+    + +(await q("select coalesce(sum(total),0) c from invoices where credit_for=$1 and kind='credit' and status<>'void'", [inv.id])).rows[0].c;
+  const subject = act === 'remind' ? `Reminder: invoice ${inv.number} from ${st.co_name}` : `${isQ ? 'Quotation' : isC ? 'Credit note' : 'Invoice'} ${inv.number} from ${st.co_name}`;
+  await queueMail(to, who, subject, wrapMail(isQ ? 'Your quotation' : isC ? 'Your credit note' : act === 'remind' ? 'A friendly reminder' : 'Your invoice',
+    `<p style="color:#5A6472;font-size:15px">${who ? 'Dear ' + esc(firstName(who)) + ',' : 'Hello,'}</p>
+     <p style="color:#5A6472;font-size:15px">${isC ? `Please find credit note ${esc(inv.number)} for ${esc(money2(inv.total, inv.currency))}. It reduces what you owe on the invoice it refers to.` : isQ ? `Please find our quotation ${esc(inv.number)} for ${esc(money2(inv.total, inv.currency))}, valid until ${esc(ymdOf(inv.valid_until))}.`
+       : act === 'remind' ? `Invoice ${esc(inv.number)} has ${esc(money2(Math.max(0, +inv.total - paid), inv.currency))} outstanding${inv.due_date ? ', due ' + esc(ymdOf(inv.due_date)) : ''}.`
+       : `Please find invoice ${esc(inv.number)} for ${esc(money2(inv.total, inv.currency))}${inv.due_date ? ', due ' + esc(ymdOf(inv.due_date)) : ''}.`}</p>
+     <p style="margin:18px 0"><a href="${link}" style="background:#0F1B2D;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;display:inline-block;font-weight:600">${isQ ? 'View the quotation' : isC ? 'View the credit note' : 'View and pay'}</a></p>
+     <p style="color:#5A6472;font-size:13px">You can print it or save it as a PDF from that page.</p>`), isQ ? 'quote' : 'invoice', null);
+  await q('update invoices set sent_at=now() where id=$1', [inv.id]);
+  await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [actor, 'invoice_' + act, `${inv.number} → ${to}`]);
+  flushMail(3).catch(() => {});
+}
+
+/* Recurring invoices (retainers, memberships): a schedule keeps a copy of the invoice and makes a new one on
+   each date. Cedi invoices are issued (and emailed when asked); dollar/euro/pound ones wait as drafts with a
+   task, because each needs that day's exchange rate. "{month}" in a line becomes e.g. "October 2026". */
+const addPeriod = (ymd, every) => { const [y, m, d] = ymd.split('-').map(Number), add = { month: 1, quarter: 3, year: 12 }[every] || 1;
+  const t = new Date(Date.UTC(y, m - 1 + add, 1)), last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+  return ymdOf(new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), Math.min(d, last)))); };
+async function runSchedules() {
+  const today = new Date().toISOString().slice(0, 10), st = await invSettings();
+  for (const sc of (await q("select * from invoice_schedules where active and next_date <= $1 and (until is null or next_date <= until) order by id", [today])).rows) {
+    const T = sc.template, day = ymdOf(sc.next_date);
+    const month = new Date(day + 'T00:00:00Z').toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const lines = (T.lines || []).map(l => ({ ...l, description: String(l.description || '').replace(/\{month\}/g, month) }));
+    const inv = { kind: 'invoice', currency: T.currency, fx_rate: null, tax_mode: T.tax_mode, lines };
+    if (inv.tax_mode === 'standard' && !st.vat_registered) inv.tax_mode = 'none';
+    const t = invoiceTotals(inv, st.rates);
+    const row = (await q(`insert into invoices(kind, contact_id, deal_id, bill_to, currency, tax_mode, tax_note, rates, lines, subtotal, discount, taxable, vat, nhil, getfund, total, total_ghs, tax_ghs,
+        issue_date, notes, wht_rate, created_by, token) values ('invoice',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,'schedule',$21) returning *`,
+      [T.contact_id || null, T.deal_id || null, JSON.stringify(T.bill_to), inv.currency, inv.tax_mode, T.tax_note || null, JSON.stringify(st.rates), JSON.stringify(lines),
+       t.subtotal, t.discount, t.taxable, t.vat, t.nhil, t.getfund, t.total, inv.currency === 'GHS' ? t.total : null, inv.currency === 'GHS' ? t.tax_ghs : null,
+       day, T.notes || null, +T.wht_rate || 0, crypto.randomBytes(18).toString('base64url')])).rows[0];
+    let note = '';
+    if (inv.currency === 'GHS') {
+      const r = await issueInvoice(row, st, 'schedule');
+      if (r.error) note = `could not issue (${r.error})`;
+      else if (sc.auto_send && /^\S+@\S+\.\S+$/.test(r.inv.bill_to.email || '')) { await mailInvoice(r.inv, r.inv.bill_to.email, 'send', st, 'schedule'); note = `${r.inv.number} issued and emailed`; }
+      else note = `${r.inv.number} issued`;
+    }
+    if (inv.currency !== 'GHS' || /could not/.test(note)) {
+      await q(`insert into tasks(title, due_at, contact_id, deal_id, created_by, priority) values ($1, now(), $2, $3, 'schedule', 'high')`,
+        [`Recurring invoice for ${T.bill_to.company || T.bill_to.name} is ready as a draft: ${inv.currency !== 'GHS' ? 'add today\'s exchange rate and ' : ''}issue it`, T.contact_id || null, T.deal_id || null]);
+      note = note || 'draft waiting for the exchange rate';
+    }
+    await q('update invoice_schedules set next_date=$2, last_invoice_id=$3, runs=runs+1, updated_at=now() where id=$1', [sc.id, addPeriod(day, sc.every), row.id]);
+    await q('insert into jobs_log(job,detail) values ($1,$2)', ['recurring_invoice', `${T.bill_to.company || T.bill_to.name}: ${note}`]);
+  }
+}
+/* ---------- the accountant's monthly pack ---------- */
+async function accountantPack(m) {
+  const st = await invSettings();
+  const docs = (await q(`select i.*, (select number from invoices o where o.id=i.credit_for) as credit_for_number from invoices i
+    where i.kind in ('invoice','credit') and i.number is not null and i.status<>'void' and to_char(i.issue_date,'YYYY-MM')=$1 order by i.issue_date, i.number`, [m])).rows;
+  const pays = (await q(`select p.*, i.number, i.currency, i.fx_rate as inv_fx, i.bill_to from invoice_payments p join invoices i on i.id=p.invoice_id
+    where to_char(p.paid_on,'YYYY-MM')=$1 order by p.paid_on, p.id`, [m])).rows;
+  const owing = (await q(`select i.number, i.issue_date, i.due_date, i.currency, i.total, i.fx_rate, i.bill_to,
+      i.total - coalesce((select sum(amount+wht) from invoice_payments x where x.invoice_id=i.id and x.paid_on <= (date_trunc('month', $1::date) + interval '1 month - 1 day')),0)
+        - coalesce((select sum(c.total) from invoices c where c.credit_for=i.id and c.kind='credit' and c.status<>'void' and c.issue_date <= (date_trunc('month', $1::date) + interval '1 month - 1 day')),0) as balance
+    from invoices i where i.kind='invoice' and i.number is not null and i.status<>'void' and i.issue_date <= (date_trunc('month', $1::date) + interval '1 month - 1 day') order by i.issue_date`, [m + '-01'])).rows
+    .filter(r => +r.balance > 0.004);
+  const fxOf = r => r.currency === 'GHS' ? 1 : +r.fx_rate || 0, sg = r => r.kind === 'credit' ? -1 : 1, d = x => x ? ymdOf(x) : '';
+  const client = b => (b && (b.company || b.name)) || '';
+  const sum = f => r2(docs.reduce((a, r) => a + sg(r) * f(r), 0));
+  const summary = [
+    ['Period', m], ['Company', st.co_name], ['TIN', st.inv_tin || ''], ['VAT registered', st.vat_registered ? 'yes' : 'no'],
+    ['Invoices issued', docs.filter(r => r.kind === 'invoice').length], ['Credit notes issued', docs.filter(r => r.kind === 'credit').length],
+    ['Sales before tax (GHS)', sum(r => +r.taxable * fxOf(r))], ['VAT 15% (GHS)', sum(r => +r.vat * fxOf(r))], ['NHIL 2.5% (GHS)', sum(r => +r.nhil * fxOf(r))],
+    ['GETFund 2.5% (GHS)', sum(r => +r.getfund * fxOf(r))], ['Total tax charged (GHS)', sum(r => (+r.vat + +r.nhil + +r.getfund) * fxOf(r))], ['Total invoiced incl. tax (GHS)', sum(r => +r.total * fxOf(r))],
+    ['Money received (GHS equivalent)', r2(pays.reduce((a, p) => a + +p.amount * (p.currency === 'GHS' ? 1 : +p.fx_rate || +p.inv_fx || 0), 0))],
+    ['Withholding tax deducted by clients (GHS equivalent)', r2(pays.reduce((a, p) => a + +p.wht * (p.currency === 'GHS' ? 1 : +p.fx_rate || +p.inv_fx || 0), 0))],
+    ['WHT certificates missing', pays.filter(p => +p.wht > 0 && !p.wht_cert).length],
+    ['Owed to us at month end (GHS equivalent)', r2(owing.reduce((a, r) => a + +r.balance * fxOf(r), 0))]];
+  const docRows = docs.map(r => [r.number, r.kind === 'credit' ? 'Credit note' : 'Invoice', r.credit_for_number || '', d(r.issue_date), d(r.due_date), client(r.bill_to), r.bill_to.tax_id || '', r.bill_to.residency || '',
+    r.tax_mode, r.currency, r.currency === 'GHS' ? '' : +r.fx_rate, ...[r.taxable, r.vat, r.nhil, r.getfund, r.total].map(v => r2(sg(r) * +v)), r2(sg(r) * +r.total * fxOf(r)), r.evat_ref || '']);
+  const payRows = pays.map(p => [d(p.paid_on), p.receipt_no || '', p.number, client(p.bill_to), p.method, p.reference || '', p.currency, +p.amount, +p.wht, +p.wht > 0 ? (p.wht_cert ? 'yes' : 'missing') : '',
+    r2((+p.amount + +p.wht) * (p.currency === 'GHS' ? 1 : +p.fx_rate || +p.inv_fx || 0))]);
+  const dmy = x => { const [y, mo, da] = ymdOf(x).split('-'); return `${da}/${mo}/${y}`; };
+  const xero = { cols: ['*ContactName', 'EmailAddress', 'POAddressLine1', 'POCountry', '*InvoiceNumber', 'Reference', '*InvoiceDate', '*DueDate', 'Description', '*Quantity', '*UnitAmount', 'Discount', '*AccountCode', '*TaxType', 'Currency'], rows: [] };
+  const qb = { cols: ['InvoiceNo', 'Customer', 'InvoiceDate', 'DueDate', 'Memo', 'Item(Product/Service)', 'ItemDescription', 'ItemQuantity', 'ItemRate', 'ItemAmount', 'ItemTaxCode', 'Currency'], rows: [] };
+  for (const r of docs) for (const l of r.lines || []) {
+    const q2 = sg(r) * (+l.qty || 0);
+    xero.rows.push([client(r.bill_to), r.bill_to.email || '', (r.bill_to.address || '').split('\n')[0], r.bill_to.country || '', r.number, r.credit_for_number ? 'Credit for ' + r.credit_for_number : '',
+      dmy(r.issue_date), dmy(r.due_date || r.issue_date), l.description, q2, +l.unit, +l.discount || '', '200', r.tax_mode === 'standard' ? 'VAT + NHIL + GETFund 20%' : r.tax_mode === 'zero' ? 'Zero rated' : 'Exempt / no VAT', r.currency]);
+    if (r.kind === 'invoice') qb.rows.push([r.number, client(r.bill_to), d(r.issue_date), d(r.due_date || r.issue_date), r.notes || '', 'Services', l.description, +l.qty || 0, +l.unit,
+      r2((+l.qty || 0) * +l.unit * (1 - (+l.discount || 0) / 100)), r.tax_mode === 'standard' ? 'VAT 20%' : r.tax_mode === 'zero' ? 'Zero-rated' : 'Exempt', r.currency]);
+  }
+  return { m, st, summary, docRows, payRows, owing, xero, qb, creditsForQb: docs.filter(r => r.kind === 'credit') };
+}
+async function packWorkbook(P) {
+  const wb = new ExcelJS.Workbook(); wb.creator = 'Gotham CRM'; wb.created = new Date();
+  const sheet = (name, cols, rows, widths) => {
+    const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 1 }] });
+    ws.addRow(cols).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1B2D' } };
+    rows.forEach(r => ws.addRow(r));
+    ws.columns.forEach((c, i) => { c.width = (widths && widths[i]) || Math.min(40, Math.max(12, String(cols[i]).length + 2)); });
+    return ws;
+  };
+  const S = sheet('Summary', ['Item', 'Value'], P.summary, [48, 22]);
+  S.addRow([]); S.addRow(['Notes']).font = { bold: true };
+  ['Amounts in foreign currency are converted at the exchange rate recorded on each invoice (or on the payment when given).',
+   'Credit notes are negative. Void invoices are left out; their numbers stay in the back office so there are no gaps.',
+   'Withholding tax deducted by clients is a tax credit for Gotham: keep the certificates (see Payments).',
+   'The Xero and QuickBooks sheets are ready to import; check the account code and tax rate names against your file on the first import.'].forEach(t => S.addRow([t]));
+  sheet('Invoices & credit notes', ['Number', 'Type', 'Credit for', 'Date', 'Due', 'Client', 'Client TIN', 'Residency', 'Tax treatment', 'Currency', 'Exchange rate', 'Before tax', 'VAT', 'NHIL', 'GETFund', 'Total', 'Total in GHS', 'E-VAT ref'], P.docRows);
+  sheet('Payments & WHT', ['Date', 'Receipt', 'Invoice', 'Client', 'Method', 'Reference', 'Currency', 'Amount received', 'WHT deducted', 'WHT certificate', 'Settled in GHS'], P.payRows);
+  sheet('Owed at month end', ['Invoice', 'Date', 'Due', 'Client', 'Currency', 'Balance'], P.owing.map(r => [r.number, ymdOf(r.issue_date), r.due_date ? ymdOf(r.due_date) : '', (r.bill_to.company || r.bill_to.name), r.currency, r2(+r.balance)]));
+  sheet('Xero import', P.xero.cols, P.xero.rows);
+  const Q = sheet('QuickBooks import', P.qb.cols, P.qb.rows);
+  if (P.creditsForQb.length) { Q.addRow([]); Q.addRow(['Credit notes this month (enter in QuickBooks as credit memos): ' + P.creditsForQb.map(c => `${c.number} (${c.currency} ${c.total}, for ${c.credit_for_number})`).join('; ')]); }
+  return wb.xlsx.writeBuffer();
+}
 /* Paystack: pay by card or mobile money. GHS and USD; EUR is paid by bank transfer. */
 const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY || '';
 const PAYSTACK = (process.env.PAYSTACK_API_BASE || 'https://api.paystack.co').replace(/\/$/, '');
@@ -4089,8 +4479,12 @@ async function paystackRecord(ref) {
   if (!r.ok || t.status !== 'success') return null;
   const id = +(t.metadata && t.metadata.invoice_id); const inv = id && (await q('select * from invoices where id=$1', [id])).rows[0];
   if (!inv || String(t.currency).toUpperCase() !== inv.currency) return null;
-  await q(`insert into invoice_payments(invoice_id, paid_on, amount, method, reference, note, recorded_by) values ($1, current_date, $2, 'paystack', $3, $4, 'paystack')
-    on conflict (method, reference) where reference is not null and method = 'paystack' do nothing`, [inv.id, r2(t.amount / 100), ref, `Paystack ${t.channel || ''}`.trim()]);
+  const ins = await q(`insert into invoice_payments(invoice_id, paid_on, amount, method, reference, note, recorded_by) values ($1, current_date, $2, 'paystack', $3, $4, 'paystack')
+    on conflict (method, reference) where reference is not null and method = 'paystack' do nothing returning id`, [inv.id, r2(t.amount / 100), ref, `Paystack ${t.channel || ''}`.trim()]);
+  if (ins.rows[0]) {
+    await q('update invoice_payments set receipt_no=$2 where id=$1', [ins.rows[0].id, await nextNumber('receipt')]);
+    if (inv.bill_to && inv.bill_to.email) await sendReceipt(ins.rows[0].id).catch(e => console.error('receipt', e.message));
+  }
   return invoicePaid(inv.id);
 }
 
@@ -4298,10 +4692,66 @@ async function runJobs() {
     await flushMail(60);
     await flushMessages(200);
   } catch (e) { console.error('jobs', e); }
+  await runSchedules().catch(e => console.error('schedules', e.message));
+  await watchdog().catch(e => console.error('watchdog', e.message));
+}
+
+/* ---------- safety net: backups, email delivery, certificate, off-site copies ----------
+   backup.sh (cron on the server) writes backup_status; the Mac job writes backup_offsite. Every hour the
+   watchdog looks at them and warns the people in Settings → Safety net (email, and WhatsApp once connected),
+   at most once every 12 hours per problem. */
+const getSetting = async k => (await q('select value from settings where key=$1', [k])).rows[0]?.value;
+const setSetting = (k, v) => q('insert into settings(key,value) values ($1,$2) on conflict (key) do update set value=excluded.value', [k, v]);
+const jparse = (t, d = null) => { try { return JSON.parse(t); } catch { return d; } };
+function certDays(host) {
+  return new Promise(res => {
+    const sock = tls.connect({ host, port: 443, servername: host, timeout: 8000 }, () => {
+      const c = sock.getPeerCertificate(); sock.end();
+      res(c && c.valid_to ? Math.floor((Date.parse(c.valid_to) - Date.now()) / 864e5) : null);
+    });
+    sock.on('error', () => res(null)); sock.on('timeout', () => { sock.destroy(); res(null); });
+  });
+}
+async function safetyReport() {
+  const bs = jparse(await getSetting('backup_status')), off = jparse(await getSetting('backup_offsite'));
+  const hrs = t => t ? (Date.now() - Date.parse(t)) / 36e5 : Infinity;
+  const failed = +(await q("select count(*) n from outbox where status='failed' and created_at > now() - interval '24 hours'")).rows[0].n;
+  const host = new URL(PUBLIC_URL).hostname;
+  const days = /^(127\.|localhost)/.test(host) ? null : await certDays(host);
+  const problems = [];
+  if (!bs) problems.push(['backup', 'No backup has been recorded yet.']);
+  else if (!bs.ok) problems.push(['backup', `The last backup failed: ${bs.detail}`]);
+  else if (hrs(bs.at) > 36) problems.push(['backup', `The last good backup is ${Math.round(hrs(bs.at))} hours old.`]);
+  if (off && hrs(off.at) > 24 * 4) problems.push(['offsite', `The last off-site copy is ${Math.round(hrs(off.at) / 24)} days old. Is the Mac switched on?`]);
+  if (failed > 5) problems.push(['mail', `${failed} emails failed to send in the last 24 hours.`]);
+  if (days != null && days < 14) problems.push(['cert', `The security certificate for ${host} expires in ${days} days.`]);
+  return { backup: bs, offsite: off, mail_failed_24h: failed, cert_days: days, host, problems,
+    alert_emails: (await getSetting('alert_emails')) || '', alert_whatsapp: (await getSetting('alert_whatsapp')) || '' };
+}
+async function alertTeam(subject, lines) {
+  let to = String((await getSetting('alert_emails')) || '').split(/[,;\s]+/).filter(e => /^\S+@\S+\.\S+$/.test(e));
+  if (!to.length) to = (await q("select email from users where role='owner' and coalesce(active,true)")).rows.map(r => r.email).filter(e => /@/.test(e));
+  for (const e of to.slice(0, 5)) await queueMail(e, '', subject, wrapMail(subject, lines.map(l => `<p style="color:#5A6472;font-size:15px">${esc(l)}</p>`).join('')), 'alert', null);
+  const wa = await getSetting('alert_whatsapp');
+  if (wa && process.env.WHATSAPP_TOKEN) await sendWhatsAppText(wa, subject + '\n' + lines.join('\n')).catch(() => {});
+  flushMail(5).catch(() => {});
+  return to.length;
+}
+async function watchdog() {
+  const last = +(await getSetting('watchdog_at') || 0); if (Date.now() - last < 55 * 60e3) return;
+  await setSetting('watchdog_at', String(Date.now()));
+  const r = await safetyReport();
+  for (const [kind, text] of r.problems) {
+    const k = 'alert_last_' + kind, prev = +(await getSetting(k) || 0);
+    if (Date.now() - prev < 12 * 36e5) continue;
+    await setSetting(k, String(Date.now()));
+    await alertTeam('Gotham platform: please check', [text, 'Open the back office → Settings → Safety net for details.']);
+    await q('insert into jobs_log(job,detail) values ($1,$2)', ['watchdog', text.slice(0, 300)]);
+  }
 }
 
 init().then(() => {
   server.listen(PORT, () => console.log('CRM on', PORT));
   runJobs();
-  setInterval(runJobs, 15 * 60 * 1000);      // every 15 minutes
+  setInterval(runJobs, +process.env.JOBS_EVERY_MS || 15 * 60 * 1000);      // every 15 minutes (tests use less)
 }).catch(e => { console.error(e); process.exit(1); });

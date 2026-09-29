@@ -752,3 +752,10 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .chat-lead .cl-ok input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--gold); }
 .chat-lead .cl-msg { margin: 0; font-size: 13px; color: #A1322B; }
 .chat-lead .cl-msg:empty { display: none; }
+
+/* the cedi today (live rates on /invest) */
+.fx-live { margin: 22px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 15px; color: rgba(255,255,255,.72); }
+.fx-live .fx-l { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold-2, #E0AE55); font-weight: 700; }
+.fx-live b { color: #fff; font-weight: 600; font-variant-numeric: tabular-nums; }
+.fx-live .fx-s { flex-basis: 100%; font-size: 12.5px; color: rgba(255,255,255,.45); }
+.fx-live .fx-s a { color: rgba(255,255,255,.7); display: inline-flex; min-height: 40px; align-items: center; }

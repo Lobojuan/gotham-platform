@@ -492,4 +492,22 @@
       warmed.add(u.pathname); fetch(u.pathname + u.search, { credentials: 'same-origin', priority: 'low' }).catch(() => {}); };
     document.addEventListener('pointerover', warm, { passive: true }); document.addEventListener('touchstart', warm, { passive: true });
   }
+  /* ---- the cedi today: live exchange rates (server caches them hourly) in the home ticker and on /invest ---- */
+  const tick = $('.ticker ul'), fxBox = $('#fx-live');
+  if (tick || fxBox) fetch('/api/rates').then(r => r.ok ? r.json() : null).then(d => {
+    if (!d || !d.rates) return;
+    const f = n => Number(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const pairs = ['USD', 'EUR', 'GBP'].filter(c => d.rates[c]);
+    const day = new Date(d.updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+    if (tick) {
+      const li = hid => pairs.map(c => `<li${hid ? ' aria-hidden="true"' : ''}>${c}/GHS <b>${f(d.rates[c])}</b></li>`).join('');
+      const first = [...tick.children].findIndex(x => x.getAttribute('aria-hidden') === 'true');
+      tick.insertAdjacentHTML('afterbegin', li(false));
+      if (first > -1) tick.children[first + pairs.length].insertAdjacentHTML('beforebegin', li(true));
+    }
+    if (fxBox) {
+      fxBox.innerHTML = `<span class="fx-l">The cedi today</span>${pairs.map(c => `<b>1 ${c} = GHS ${f(d.rates[c])}</b>`).join('')}<span class="fx-s"><span>Market mid-rate, updated</span> <time datetime="${esc(d.updated)}">${esc(day)}</time>. <a href="https://www.bog.gov.gh/" target="_blank" rel="noopener">Bank of Ghana reference rate</a></span>`;
+      fxBox.hidden = false;
+    }
+  }).catch(() => {});
 })();

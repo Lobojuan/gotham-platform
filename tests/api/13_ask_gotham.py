@@ -107,8 +107,12 @@ try:
     st,d=ask({'q':'burst3'},ip='5.5.5.8'); MODE['busy']=set()
     assert st==200 and d.get('fallback') is True
     ok('a rate-limited model hands over to the next one; all busy falls back to built-in answers')
-    assert 'Ghanaian languages' in SEEN[-1]['body']['messages'][0]['content']
-    ok('Ghanaian languages answered with an English summary line')
+    sysmsg = SEEN[-1]['body']['messages'][0]['content']
+    assert 'Ghanaian language' in sysmsg and 'simple English' in sysmsg
+    assert 'A question written in English always gets an answer in English only' in sysmsg
+    assert 'only use prices, fees, dates, rates and durations that appear word for word' in sysmsg
+    assert SEEN[-1]['body'].get('temperature') == 0.2
+    ok('English questions get English answers; Ghanaian languages answered with an English summary line; no invented numbers; low temperature')
     print('PASSED')
 finally:
     srv.terminate(); mock.shutdown()

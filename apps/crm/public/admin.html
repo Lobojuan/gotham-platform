@@ -447,6 +447,8 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 .inv-sum{margin:10px 0 0 auto;min-width:300px;border-collapse:collapse}.inv-sum td{padding:5px 6px;border:0}.inv-sum td:last-child{text-align:right;white-space:nowrap}.inv-sum .tot td{border-top:2px solid #0F1B2D;font-weight:800;font-size:17px}
 .bk-c{display:grid;grid-template-columns:100px 1.3fr 120px 1.3fr 1fr;gap:8px;margin-bottom:8px}.t.bad{border-color:var(--red,#A1322B);background:#FFF3F2}
 @media(max-width:700px){.bk-c{grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;padding:10px}.bk-c [data-k=bank],.bk-c [data-k=city]{grid-column:1/-1}}
+.rep{margin:14px 0;border:1px solid var(--line);border-radius:12px;padding:10px 14px}.rep summary{cursor:pointer;min-height:36px;display:flex;align-items:center;gap:8px}
+.tf-qr svg{width:200px;height:200px;margin:8px 0}.tf-rc{background:#F6F4EE;border-radius:12px;padding:12px 16px;font:600 15px/1.8 ui-monospace,Menlo,monospace;columns:2;max-width:360px}
 .inv-f{display:block;margin:0}.inv-f span{display:none}.inv-f .t{width:100%}
 .inv-warn{background:#FFF7E8;border-color:#F0D9A8}td.num,th.num{text-align:right}
 @media(max-width:700px){.inv-lh{display:none}.inv-l{grid-template-columns:1fr 1fr 1fr 36px;border:1px solid var(--line);border-radius:12px;padding:10px}.inv-l textarea{grid-column:1/-1}.inv-f span{display:block;font-size:12px;color:#5A6472;margin-bottom:2px}.inv-amt{grid-column:1/4;padding-top:6px}.inv-l>.iconbtn{align-self:end}.inv-sum{min-width:0;width:100%}}
@@ -457,8 +459,10 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
   <div style="display:flex;gap:12px;align-items:center"><div class="mark">G</div><div><b>Gotham CRM</b><div class="note">Gotham Consult back office</div></div></div>
   <label for="e">Email or username</label><input class="t" id="e" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
   <label for="pw">Password</label><input class="t" id="pw" type="password" autocomplete="current-password" required>
+  <div id="codewrap" hidden><label for="lcode">6-digit code from your authenticator app</label><input class="t" id="lcode" inputmode="numeric" autocomplete="one-time-code" maxlength="11" placeholder="123 456">
+   <p class="note" style="margin:4px 0 0">Lost your phone? Type one of your recovery codes instead.</p></div>
   <p class="err" id="lerr"></p>
-  <button class="btn btn-dark" style="width:100%;justify-content:center;margin-top:6px">Sign in</button>
+  <button class="btn btn-dark" id="lbtn" style="width:100%;justify-content:center;margin-top:6px">Sign in</button>
   <div id="gwrap" hidden><div class="or"><span>or</span></div>
    <a class="btn btn-line gbtn" id="gbtn" href="/auth/google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</a></div>
   <p class="note" style="margin:14px 0 0;text-align:center">Forgotten your password? Ask an owner to reset it under Settings → Team.</p>
@@ -552,9 +556,15 @@ const SITEBASE=location.origin;
 const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2200)};
 
 /* login */
+let LTICKET=null;
 $('#lform').onsubmit=async e=>{e.preventDefault();$('#lerr').textContent='';
- try{ME=await api('/api/login',{method:'POST',body:JSON.stringify({email:$('#e').value,password:$('#pw').value})});start()}
- catch(err){$('#lerr').textContent=err.message==='bad_login'?'Wrong username or password.':err.message==='too_many'?'Too many attempts. Wait 5 minutes.':'Could not sign in.'}};
+ try{
+  if(LTICKET){ME=await api('/api/login/code',{method:'POST',body:JSON.stringify({ticket:LTICKET,code:$('#lcode').value})});LTICKET=null;return start()}
+  const r=await api('/api/login',{method:'POST',body:JSON.stringify({email:$('#e').value,password:$('#pw').value})});
+  if(r.need_code){LTICKET=r.ticket;$('#codewrap').hidden=false;$('#lbtn').textContent='Continue';$('#lcode').focus();return}
+  ME=r;start()}
+ catch(err){if(err.message==='expired'){LTICKET=null;$('#codewrap').hidden=true;$('#lbtn').textContent='Sign in'}
+  $('#lerr').textContent={bad_login:'Wrong username or password.',too_many:'Too many attempts. Wait 5 minutes.',bad_code:'That code is not right. Codes change every 30 seconds.',expired:'That took too long. Enter your password again.'}[err.message]||'Could not sign in.'}};
 $('#out').onclick=async()=>{await fetch('/api/logout',{credentials:'same-origin'});location.reload()};
 
 async function start(){
@@ -641,7 +651,7 @@ function render(){
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
   contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>',
-  inv:`<a class="btn btn-line" id="inv-csv" href="/api/invoices/vat.csv" title="This month's invoices in cedis for the VAT return">VAT report (CSV)</a><button class="btn btn-line" data-new="quote">New quotation</button><button class="btn btn-dark" data-new="invoice">New invoice</button>`};
+  inv:`<button class="btn btn-line" data-new="acct">For the accountant</button><button class="btn btn-line" data-new="quote">New quotation</button><button class="btn btn-dark" data-new="invoice">New invoice</button>`};
  pageActions(acts[V]||'');
  const f=m[V];if(!f)return;const r=f();if(typeof r==='string')$('#view').innerHTML=r;
 }
@@ -662,7 +672,7 @@ document.addEventListener('keydown',e=>{
 $('#newb').onclick=e=>{e.stopPropagation();$('#newm').classList.toggle('on')};
 document.addEventListener('click',e=>{if(!e.target.closest('.newbtn'))$('#newm').classList.remove('on');if(!e.target.closest('#gs'))$('#sres').classList.remove('on');
  const n=e.target.closest('[data-new]');if(!n)return;$('#newm').classList.remove('on');
- ({task:()=>taskForm({}),deal:()=>dealForm({}),contact:()=>contactForm(null),event:()=>go('events'),quote:()=>invNew('quote'),invoice:()=>invNew('invoice')})[n.dataset.new]?.()});
+ ({task:()=>taskForm({}),deal:()=>dealForm({}),contact:()=>contactForm(null),event:()=>go('events'),quote:()=>invNew('quote'),invoice:()=>invNew('invoice'),acct:acctPanel})[n.dataset.new]?.()});
 /* global search */
 let sT=0,sItems=[],sHl=-1;
 $('#gq').addEventListener('input',()=>{clearTimeout(sT);const s=$('#gq').value.trim();if(s.length<2){$('#sres').classList.remove('on');return}sT=setTimeout(()=>doSearch(s),170)});
@@ -2264,10 +2274,11 @@ async function settings(){
   <div class="pwgrid">${pwField('cp-cur','Current password','current-password')}${pwField('cp-new','New password · 10 characters or more','new-password')}${pwField('cp-new2','New password again','new-password')}</div>
   <p class="err" id="cp-err"></p>
   <button class="btn btn-dark" id="sp">Change password</button></div>
+ <div class="card" id="tfa"><p class="note">Loading…</p></div>
  ${isAdmin()?`<div class="card" id="wa-ai"><div class="ch"><h3>WhatsApp: AI replies</h3><label class="cal-mine"><input type="checkbox" id="wa-on"> On</label></div>
   <p class="note" style="margin-top:0">When someone writes to the Gotham WhatsApp, the AI answers from the same knowledge as the website chat, in their language. Complaints, requests for a person, voice notes and pictures go to the team as a task instead. Every message is saved on the client's record.</p>
   <div id="wa-st" class="note"></div><div id="wa-list"></div></div>`:''}
- ${isAdmin()?'<div class="card" id="inv-set"><p class="note">Loading…</p></div>':''}
+ ${isAdmin()?'<div class="card" id="safety"><p class="note">Loading…</p></div><div class="card" id="inv-set"><p class="note">Loading…</p></div>':''}
  <div class="card"><h3>Venue and seats</h3>
   <p class="note">The largest number of seats any single event may be set to. It stops a room that holds 40 being sold as 120.</p>
   <div class="f2"><div><label class="l">Maximum seats per event</label><input class="t" id="s-max" type="number" inputmode="numeric" min="1" value="${esc(SET.max_seats||'')}" placeholder="40"></div><div></div></div>
@@ -2284,9 +2295,9 @@ async function settings(){
   <div class="team">${users.rows.map(u=>{const me=u.email===ME.email;return `<div class="tm">
    <div class="tm-a"><span class="av">${esc((u.name||u.email).trim()[0]||'?').toUpperCase()}</span>
     <div><b>${esc(u.name||u.email)}</b>${me?' <span class="tag t-free">you</span>':''}<div class="note">${esc(u.email)} · last sign-in ${u.last_login?dt(u.last_login):'never'}</div>
-    <div style="margin-top:4px">${u.active===false?'<span class="tag t-canc">access off</span>':'<span class="tag t-paid">active</span>'} ${u.must_change?'<span class="tag t-due">has not chosen a password yet</span>':''}</div></div></div>
+    <div style="margin-top:4px">${u.active===false?'<span class="tag t-canc">access off</span>':'<span class="tag t-paid">active</span>'} ${u.must_change?'<span class="tag t-due">has not chosen a password yet</span>':''} ${u.totp_on?'<span class="tag t-paid">two-step on</span>':''}</div></div></div>
    <div class="tm-b">${owner&&!me?`<select class="t" data-role="${esc(u.email)}" aria-label="Role for ${esc(u.email)}">${['owner','admin','staff'].map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${ROLE_NAME[r]}</option>`).join('')}</select>
-     <div class="acts" style="margin:8px 0 0"><button class="btn btn-line" data-reset="${esc(u.email)}">Reset password</button>
+     <div class="acts" style="margin:8px 0 0"><button class="btn btn-line" data-reset="${esc(u.email)}">Reset password</button>${u.totp_on?`<button class="btn btn-line" data-r2fa="${esc(u.email)}">Reset two-step</button>`:''}
      <button class="btn btn-line" data-toggle="${esc(u.email)}" data-on="${u.active===false?'1':'0'}">${u.active===false?'Turn access on':'Turn access off'}</button>
      <button class="btn btn-line danger" data-del="${esc(u.email)}">Remove</button></div>`:`<span class="note">${ROLE_NAME[u.role]}</span>`}</div></div>`}).join('')}</div>
   <p class="note" style="margin-top:14px"><b>Owner (super admin)</b> everything, including this team list. <b>Admin</b> registrations, payments, events, outreach and settings. <b>Staff</b> view and door check-in only, with contact details hidden.</p></div>`;
@@ -2321,13 +2332,16 @@ async function settings(){
   if(!confirm('Give '+b.dataset.reset+' a new first password? Their current one stops working at once.'))return;
   const r=await api('/api/users/'+encodeURIComponent(b.dataset.reset)+'/reset',{method:'POST'});
   showPw({...r,name:b.dataset.reset},'New password');toast('Password reset')});
+ document.querySelectorAll('[data-r2fa]').forEach(b=>b.onclick=async()=>{
+  if(!confirm('Turn off two-step sign-in for '+b.dataset.r2fa+'? Use this when they lost their phone. They are signed out and can set it up again.'))return;
+  await api('/api/users/'+encodeURIComponent(b.dataset.r2fa),{method:'PATCH',body:JSON.stringify({reset_2fa:true})});toast('Two-step sign-in reset');settings()});
  document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{
   await api('/api/users/'+encodeURIComponent(b.dataset.toggle),{method:'PATCH',body:JSON.stringify({active:b.dataset.on==='1'})});
   toast(b.dataset.on==='1'?'Access turned on':'Access turned off');settings()});
  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
   if(!confirm('Remove '+b.dataset.del+' permanently? Their sign-in stops working immediately.'))return;
   await api('/api/users/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});toast('Removed');settings()});
- invoiceSettingsCard();
+ invoiceSettingsCard();safetyCard();tfaCard();
  if($('#wa-on')){const drawWa=w=>{$('#wa-on').checked=w.on;
    $('#wa-st').innerHTML=!w.connected?'<span class="chip red">WhatsApp Business is not connected yet</span> Replies start once it is connected (Meta setup).':!w.ai?'<span class="chip red">AI is off on the server</span>':`<span class="chip ${w.on?'green':''}">${w.on?'Answering automatically':'Off: messages wait for the team'}</span>`;
    $('#wa-list').innerHTML=w.recent.length?`<h4 class="sec">Latest messages</h4>${w.recent.slice(0,12).map(m=>`<div class="wa-row"><span class="dir ${m.direction}">${m.direction==='in'?'In':'Sent'}</span><div><b>${m.contact_id?`<a href="#rec/${m.contact_id}">${esc(m.company||m.full_name||m.phone)}</a>`:esc(m.phone)}</b> <span class="note">${dt(m.at)}${m.kind==='handover'?' · passed to the team':m.kind==='ai'?' · AI':''}</span><div>${esc(String(m.body||'').slice(0,240))}</div></div></div>`).join('')}`:'<p class="note">No WhatsApp messages yet.</p>'};
@@ -2336,15 +2350,16 @@ async function settings(){
 }
 
 /* ===================== quotes & invoices ===================== */
-const INV_ST={draft:'Draft',sent:'Sent',accepted:'Accepted',declined:'Declined',part_paid:'Part paid',paid:'Paid',void:'Void'};
-const INV_CHIP={draft:'',sent:'blue',accepted:'green',declined:'red',part_paid:'gold',paid:'green',void:'red'};
+const INV_ST={draft:'Draft',sent:'Sent',accepted:'Accepted',declined:'Declined',part_paid:'Part paid',paid:'Paid',credited:'Credited',void:'Void'};
+const INV_CHIP={draft:'',sent:'blue',accepted:'green',declined:'red',part_paid:'gold',paid:'green',credited:'',void:'red'};
+const KINDN={invoice:'Invoice',quote:'Quotation',credit:'Credit note'};
 const RESID={resident:'Resident in Ghana',non_resident:'Non-resident (abroad)',expatriate:'Expatriate in Ghana'};
 const TAXM={standard:'VAT + NHIL + GETFund (20%)',zero:'Zero-rated (give the reason)',exempt:'Exempt (give the reason)',none:'No VAT (not VAT-registered)'};
 const INVERR={fx_needs_nonresident:'Euro and dollar invoices are only for non-residents or expatriates (Bank of Ghana rule). Set the client as non-resident or expatriate, or bill in cedis.',
  fx_rate_required:'Add the exchange rate to cedis (press “Suggest rate”, then check it against the Bank of Ghana rate).',not_vat_registered:'Gotham is not marked as VAT-registered. Turn it on in Settings → Company & invoicing, or choose “No VAT”.',
  zero_needs_reason:'Say why it is zero-rated (for example: export of services to a non-resident).',exempt_needs_reason:'Say why it is exempt.',bill_to_required:'Add the client’s name or company.',
  empty:'Add at least one line with a price.',no_email:'Add the client’s email address first.',issued_cannot_delete:'An issued invoice cannot be deleted. Void it instead.',reason_required:'Give a reason.',
- amount_required:'Enter the amount received.',issue_first:'Issue the invoice first.',void:'This one is void.',not_a_quote:'Only a quotation can be turned into an invoice.',bad_rate:'Tax rates must be between 0 and 50%.',bad_bank:'A bank detail looks wrong: SWIFT codes are 8 or 11 letters and numbers, account numbers only letters, numbers and dashes. The wrong boxes are marked red.',bad_terms:'Payment terms must be 0 to 180 days.'};
+ amount_required:'Enter the amount received.',credit_too_big:'That is more than is left to credit on this invoice.',issue_first:'Issue the invoice first.',void:'This one is void.',not_a_quote:'Only a quotation can be turned into an invoice.',bad_rate:'Tax rates must be between 0 and 50%.',bad_bank:'A bank detail looks wrong: SWIFT codes are 8 or 11 letters and numbers, account numbers only letters, numbers and dashes. The wrong boxes are marked red.',bad_terms:'Payment terms must be 0 to 180 days.'};
 const invErr=e=>INVERR[e&&e.message]||'Could not save. Please try again.';
 const ir2=n=>Math.round((+n+Number.EPSILON)*100)/100;
 const imoney=(n,c)=>(c||'GHS')+' '+Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2364,16 +2379,24 @@ async function invoicesView(){
   ${kp('Overdue',s.overdue,s.overdue?'<b style="color:var(--red);display:inline;font-size:13px">send a reminder</b>':'none late')}
   ${kp('Tax this month',imoney(s.tax_this_month_ghs,'GHS'),'VAT + NHIL + GETFund, in cedis')}
   ${kp('Drafts',r.rows.filter(x=>!x.number).length,'not yet issued')}</div>
-  <div class="filters"><div class="seg" id="if-k">${[['all','All'],['invoice','Invoices'],['quote','Quotations'],['unpaid','Unpaid'],['draft','Drafts']].map(([k,l])=>`<button data-k="${k}" class="${INVF.k===k?'on':''}">${l}</button>`).join('')}</div>
+  <div class="filters"><div class="seg" id="if-k">${[['all','All'],['invoice','Invoices'],['quote','Quotations'],['credit','Credit notes'],['unpaid','Unpaid'],['draft','Drafts'],['rec','Recurring']].map(([k,l])=>`<button data-k="${k}" class="${INVF.k===k?'on':''}">${l}</button>`).join('')}</div>
   <input class="t" id="if-q" placeholder="Search number or client" style="max-width:260px"></div>
   <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Number</th><th>Client</th><th>Date</th><th>Due / valid</th><th class="num">Total</th><th class="num">Balance</th><th>Status</th></tr></thead><tbody id="if-tb"></tbody></table></div></div>`;
- const draw=()=>{const f=($('#if-q').value||'').toLowerCase();
-  const L=r.rows.filter(x=>({all:1,invoice:x.kind==='invoice',quote:x.kind==='quote',unpaid:x.kind==='invoice'&&['sent','part_paid'].includes(x.status),draft:!x.number})[INVF.k])
+ const draw=async()=>{const f=($('#if-q').value||'').toLowerCase();
+  const TH=$('#if-tb').closest('table').querySelector('thead');
+  TH.innerHTML=INVF.k==='rec'?'<tr><th>Client</th><th>What</th><th>Next</th><th>Ends</th><th class="num">Amount</th><th>Made</th><th></th></tr>':'<tr><th>Number</th><th>Client</th><th>Date</th><th>Due / valid</th><th class="num">Total</th><th class="num">Balance</th><th>Status</th></tr>';
+  if(INVF.k==='rec'){const S=(await api('/api/invoice-schedules')).rows.filter(x=>!f||[x.template.bill_to.company,x.template.bill_to.name].join(' ').toLowerCase().includes(f));if(V!=='inv')return;
+   $('#if-tb').innerHTML=S.map(x=>`<tr><td><b>${esc(x.template.bill_to.company||x.template.bill_to.name)}</b><div class="note">every ${x.every}${x.auto_send?' · emailed automatically':''}</div></td><td class="note">${esc((x.template.lines[0]||{}).description||'')}</td>
+    <td class="note">next ${dshort(x.next_date)}</td><td class="note">${x.until?'until '+dshort(x.until):'no end date'}</td><td class="num">${imoney(x.amount,x.template.currency)}</td><td class="note">${x.runs} made${x.last_number?' · last '+esc(x.last_number):''}</td>
+    <td><button class="btn btn-line" data-sch="${x.id}" data-on="${x.active?0:1}">${x.active?'Pause':'Resume'}</button> <button class="btn btn-line danger" data-schx="${x.id}">Stop</button></td></tr>`).join('')||'<tr><td colspan="7"><div class="empty"><b>No recurring invoices.</b>Open an invoice and choose “Repeat this invoice”.</div></td></tr>';
+   document.querySelectorAll('[data-sch]').forEach(t=>t.onclick=async()=>{await api('/api/invoice-schedules/'+t.dataset.sch,{method:'POST',body:JSON.stringify({active:t.dataset.on==='1'})});toast(t.dataset.on==='1'?'Resumed':'Paused');draw()});
+   document.querySelectorAll('[data-schx]').forEach(t=>t.onclick=async()=>{if(!confirm('Stop this recurring invoice? Invoices already made stay.'))return;await api('/api/invoice-schedules/'+t.dataset.schx,{method:'DELETE'});toast('Stopped');draw()});return}
+  const L=r.rows.filter(x=>({all:1,invoice:x.kind==='invoice',quote:x.kind==='quote',credit:x.kind==='credit',unpaid:x.kind==='invoice'&&['sent','part_paid'].includes(x.status),draft:!x.number})[INVF.k])
    .filter(x=>!f||[x.number,x.bill_to.company,x.bill_to.name,x.bill_to.email].join(' ').toLowerCase().includes(f));
-  $('#if-tb').innerHTML=L.map(x=>`<tr class="r" data-inv="${x.id}"><td><b>${esc(x.number||'Draft')}</b><div class="note">${x.kind==='quote'?'Quotation':'Invoice'}</div></td><td>${esc(x.bill_to.company||x.bill_to.name)}${x.bill_to.company&&x.bill_to.name?`<div class="note">${esc(x.bill_to.name)}</div>`:''}</td>
+  $('#if-tb').innerHTML=L.map(x=>`<tr class="r" data-inv="${x.id}"><td><b>${esc(x.number||'Draft')}</b><div class="note">${KINDN[x.kind]}${x.credit_for_number?' for '+esc(x.credit_for_number):''}</div></td><td>${esc(x.bill_to.company||x.bill_to.name)}${x.bill_to.company&&x.bill_to.name?`<div class="note">${esc(x.bill_to.name)}</div>`:''}</td>
    <td class="note">${x.issue_date?dshort(x.issue_date):'—'}</td><td class="note">${x.kind==='quote'?(x.valid_until?dshort(x.valid_until):'—'):(x.due_date?dshort(x.due_date):'—')}</td>
-   <td class="num">${imoney(x.total,x.currency)}</td><td class="num">${x.kind==='invoice'&&x.number&&x.status!=='void'?imoney(x.balance,x.currency):'—'}</td>
-   <td><span class="chip ${x.overdue?'red':INV_CHIP[x.status]}">${x.overdue?'Overdue':INV_ST[x.status]}</span></td></tr>`).join('')||'<tr><td colspan="7"><div class="empty"><b>Nothing here yet.</b>Make a quotation or an invoice with the buttons above.</div></td></tr>';
+   <td class="num">${x.kind==='credit'?'− ':''}${imoney(x.total,x.currency)}</td><td class="num">${x.kind==='invoice'&&x.number&&x.status!=='void'?imoney(x.balance,x.currency):'—'}</td>
+   <td><span class="chip ${x.overdue?'red':INV_CHIP[x.status]}">${x.overdue?'Overdue':x.kind==='credit'&&x.status==='sent'?'Issued':INV_ST[x.status]}</span></td></tr>`).join('')||'<tr><td colspan="7"><div class="empty"><b>Nothing here yet.</b>Make a quotation or an invoice with the buttons above.</div></td></tr>';
   document.querySelectorAll('[data-inv]').forEach(t=>t.onclick=()=>invOpen(+t.dataset.inv))};
  $('#if-k').onclick=e=>{const b=e.target.closest('button');if(!b)return;INVF.k=b.dataset.k;$('#if-k').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));draw()};
  $('#if-q').oninput=draw;draw();
@@ -2461,44 +2484,123 @@ function invEdit(inv){
 }
 function refreshInv(){if(V==='inv')invoicesView();else if(V==='rec')record(+ARG)}
 function invShow(inv){
- const isQ=inv.kind==='quote',C=inv.currency,b=inv.bill_to,paid=inv.payments.reduce((s,p)=>s+(+p.amount)+(+p.wht),0),bal=ir2(+inv.total-paid),open=inv.status!=='void';
+ const isQ=inv.kind==='quote',isC=inv.kind==='credit',C=inv.currency,b=inv.bill_to,paid=inv.payments.reduce((s,p)=>s+(+p.amount)+(+p.wht),0);
+ const credited=(inv.credits||[]).filter(c=>c.status!=='void').reduce((s,c)=>s+(+c.total),0),bal=isC?0:ir2(+inv.total-paid-credited),open=!['void','credited'].includes(inv.status);
  $('#dr').classList.add('on','wide');
- $('#drb').innerHTML=`<p class="note" style="margin:0">${isQ?'Quotation':inv.tax_mode==='standard'?'Tax invoice':'Invoice'} · ${inv.issue_date?dshort(inv.issue_date):''}${inv.quote_id?' · from a quotation':''}</p>
-  <h2 style="margin:2px 0 4px">${esc(inv.number)} <span class="chip ${INV_CHIP[inv.status]}">${INV_ST[inv.status]}</span></h2>
+ $('#drb').innerHTML=`<p class="note" style="margin:0">${isQ?'Quotation':isC?'Credit note':inv.tax_mode==='standard'?'Tax invoice':'Invoice'} · ${inv.issue_date?dshort(inv.issue_date):''}${inv.quote_id?' · from a quotation':''}${isC&&inv.credit_for?` · against <a href="#" data-inv-open="${inv.credit_for}">${esc(inv.credit_for_number||'the invoice')}</a>`:''}</p>
+  <h2 style="margin:2px 0 4px">${esc(inv.number)} <span class="chip ${INV_CHIP[inv.status]}">${isC&&inv.status==='sent'?'Issued':INV_ST[inv.status]}</span></h2>
   <p style="margin:0 0 10px">${inv.contact_id?`<a href="#rec/${inv.contact_id}">${esc(b.company||b.name)}</a>`:esc(b.company||b.name)}${b.company&&b.name?' · '+esc(b.name):''}${b.email?' · '+esc(b.email):''}</p>
   <div class="kv"><span>Total</span><div><b>${imoney(inv.total,C)}</b>${C!=='GHS'?` <span class="note">= ${imoney(inv.total_ghs,'GHS')} at ${(+inv.fx_rate).toFixed(4)}</span>`:''}</div>
    <span>Tax</span><div>${inv.tax_mode==='standard'?`VAT ${imoney(inv.vat,C)} · NHIL ${imoney(inv.nhil,C)} · GETFund ${imoney(inv.getfund,C)}`:esc({zero:'Zero-rated',exempt:'Exempt',none:'No VAT'}[inv.tax_mode])+(inv.tax_note?' · '+esc(inv.tax_note):'')}</div>
-   ${isQ?`<span>Valid until</span><div>${inv.valid_until?dshort(inv.valid_until):'—'}</div>`:`<span>Due</span><div>${inv.due_date?dshort(inv.due_date):'—'}</div><span>Paid</span><div>${imoney(paid,C)} · <b>balance ${imoney(Math.max(0,bal),C)}</b></div>`}
+   ${isC?`<span>Reason</span><div>${esc(inv.notes||'')}</div>`:isQ?`<span>Valid until</span><div>${inv.valid_until?dshort(inv.valid_until):'—'}</div>`:`<span>Due</span><div>${inv.due_date?dshort(inv.due_date):'—'}</div><span>Paid</span><div>${imoney(paid,C)}${credited?` · credited ${imoney(credited,C)}`:''} · <b>balance ${imoney(Math.max(0,bal),C)}</b></div>`}
    ${inv.void_reason?`<span>Voided</span><div>${esc(inv.void_reason)}</div>`:''}</div>
   <div class="acts"><a class="btn btn-line" href="${esc(inv.link)}" target="_blank" rel="noopener">Open the client’s page</a><button class="btn btn-line" id="is-cp">Copy link</button>
-   ${open?`<button class="btn btn-dark" id="is-send">${inv.sent_at?'Email again':'Email to client'}</button>`:''}${open&&!isQ&&bal>0?'<button class="btn btn-line" id="is-rem">Send a reminder</button>':''}
+   ${open||isC?`<button class="btn btn-dark" id="is-send">${inv.sent_at&&!isC?'Email again':'Email to client'}</button>`:''}${open&&!isQ&&!isC&&bal>0?'<button class="btn btn-line" id="is-rem">Send a reminder</button>':''}
    ${isQ&&open?'<button class="btn btn-dark" id="is-conv">Turn into invoice</button>':''}</div>
-  ${!isQ&&open?`<h4 class="sec">Record a payment</h4>
+  ${!isQ&&!isC&&open&&bal>0?`<h4 class="sec">Record a payment</h4>
    <div class="f2"><div><label class="l" for="ip-a">Amount received (${C})</label><input class="t" id="ip-a" inputmode="decimal" value="${bal>0?(+inv.wht_rate?ir2(bal-ir2(+inv.taxable*inv.wht_rate/100)):bal):''}"></div>
     <div><label class="l" for="ip-w">Withholding tax deducted (${C})</label><input class="t" id="ip-w" inputmode="decimal" value="${+inv.wht_rate&&bal>0?ir2(+inv.taxable*inv.wht_rate/100):''}" placeholder="0"></div>
     <div><label class="l" for="ip-m">How</label><select class="t" id="ip-m">${[['bank','Bank transfer'],['momo','Mobile Money'],['card','Card'],['cash','Cash'],['cheque','Cheque'],['other','Other']].map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
     <div><label class="l" for="ip-d">Date</label><input class="t" id="ip-d" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
     <div><label class="l" for="ip-r">Reference <span class="note">(optional)</span></label><input class="t" id="ip-r"></div>
     <div><label class="l">&nbsp;</label><label class="cal-mine" style="min-height:44px"><input type="checkbox" id="ip-c"> WHT certificate received</label></div></div>
+   <label class="cal-mine" style="min-height:40px"><input type="checkbox" id="ip-rc" ${b.email?'checked':'disabled'}> Email a receipt${b.email?' to '+esc(b.email):' (no email on file)'}</label>
    <p class="err" id="ip-e"></p><button class="btn btn-dark" id="ip-s">Record payment</button>`:''}
   ${inv.payments.length?`<h4 class="sec">Payments</h4><ul class="list">${inv.payments.map(p=>`<li class="li"><div class="grow"><b>${imoney(p.amount,C)}</b>${+p.wht?` + WHT ${imoney(p.wht,C)}${p.wht_cert?' (certificate in)':' <span class="chip gold">certificate missing</span>'}`:''}
-   <div class="note">${dshort(p.paid_on)} · ${esc({momo:'Mobile Money',bank:'Bank',card:'Card',cash:'Cash',cheque:'Cheque',paystack:'Paystack (online)',other:'Other'}[p.method]||p.method)}${p.reference?' · '+esc(p.reference):''}</div></div>${open?`<button class="btn btn-line" data-rp="${p.id}">Remove</button>`:''}</li>`).join('')}</ul>`:''}
+   <div class="note">${dshort(p.paid_on)} · ${esc({momo:'Mobile Money',bank:'Bank',card:'Card',cash:'Cash',cheque:'Cheque',paystack:'Paystack (online)',other:'Other'}[p.method]||p.method)}${p.reference?' · '+esc(p.reference):''}${p.receipt_no?` · receipt <a href="${esc(inv.link)}/receipt/${p.id}" target="_blank" rel="noopener">${esc(p.receipt_no)}</a>${p.receipt_sent_at?' (emailed)':''}`:''}</div></div>
+   <div class="pact"><button class="btn btn-line" data-er="${p.id}">Email receipt</button>${open?`<button class="btn btn-line" data-rp="${p.id}">Remove</button>`:''}</div></li>`).join('')}</ul>`:''}
+  ${(inv.credits||[]).length?`<h4 class="sec">Credit notes</h4><ul class="list">${inv.credits.map(c=>`<li class="li" style="cursor:pointer" data-inv-open="${c.id}"><div class="grow"><b>${esc(c.number)}</b><div class="note">${dshort(c.issue_date)} · ${esc(c.notes||'')}</div></div><b class="num">− ${imoney(c.total,C)}</b></li>`).join('')}</ul>`:''}
+  ${!isQ&&!isC&&inv.number&&open&&bal>0?`<h4 class="sec">Correct or cancel with a credit note</h4>
+   <p class="note" style="margin-top:0">Under VAT rules an issued invoice is not changed or deleted: a credit note reduces it, with its own number, and the tax goes down with it.</p>
+   <div class="seg" id="cn-k"><button data-k="all" class="on">The whole balance</button><button data-k="part">Part of it</button></div>
+   <div class="f2" id="cn-pw" hidden><div><label class="l" for="cn-a">Amount to credit, before tax (${C})</label><input class="t" id="cn-a" inputmode="decimal"></div><div></div></div>
+   <label class="l" for="cn-r">Reason (printed on the credit note)</label><input class="t" id="cn-r" placeholder="e.g. Fee reduced as agreed; wrong client; duplicate invoice">
+   <p class="err" id="cn-e"></p><button class="btn btn-line" id="cn-go">Issue credit note</button>`:''}
+  ${inv.kind==='invoice'&&!isC?`<details class="rep"><summary><b>Repeat this invoice</b> <span class="note">for a retainer or membership</span></summary>
+   <div class="f2"><div><label class="l" for="rp-e">Every</label><select class="t" id="rp-e"><option value="month">Month</option><option value="quarter">Quarter</option><option value="year">Year</option></select></div>
+   <div><label class="l" for="rp-d">Next invoice on</label><input class="t" id="rp-d" type="date" value="${(()=>{const d=new Date(inv.issue_date||Date.now());d.setMonth(d.getMonth()+1);return d.toISOString().slice(0,10)})()}"></div>
+   <div><label class="l" for="rp-u">Until <span class="note">(optional)</span></label><input class="t" id="rp-u" type="date"></div>
+   <div><label class="l">&nbsp;</label><label class="cal-mine" style="min-height:44px"><input type="checkbox" id="rp-s" ${b.email?'checked':'disabled'}> Email it automatically${b.email?'':' (no email on file)'}</label></div></div>
+   <p class="note">Each new invoice copies these lines. Write <code>{month}</code> in a line to get the month's name, e.g. “Investor desk retainer, {month}”. ${C==='GHS'?'Cedi invoices are issued on the day.':'Foreign-currency invoices wait as drafts with a task, because each needs that day’s exchange rate.'}</p>
+   <p class="err" id="rp-err"></p><button class="btn btn-line" id="rp-go">Start repeating</button></details>`:''}
   <h4 class="sec">After issuing you can still change</h4>
   <div class="f2">${isQ?'':`<div><label class="l" for="is-ev">E-VAT invoice reference</label><input class="t" id="is-ev" value="${esc(inv.evat_ref||'')}"></div>`}
-   <div><label class="l" for="is-dd">${isQ?'Valid until':'Due date'}</label><input class="t" id="is-dd" type="date" value="${String((isQ?inv.valid_until:inv.due_date)||'').slice(0,10)}"></div></div>
+   ${isC?'':`<div><label class="l" for="is-dd">${isQ?'Valid until':'Due date'}</label><input class="t" id="is-dd" type="date" value="${String((isQ?inv.valid_until:inv.due_date)||'').slice(0,10)}"></div>`}</div>
   <label class="l" for="is-no">Notes</label><textarea class="t" id="is-no" rows="2">${esc(inv.notes||'')}</textarea>
-  <div class="acts"><button class="btn btn-line" id="is-save">Save</button>${open?'<button class="btn btn-line danger" id="is-void">Void…</button>':''}</div>
-  <p class="note">Amounts are locked once issued, as the tax rules require. To correct one, void it and issue a new one; the number stays in the list so there are no gaps.</p>`;
+  <div class="acts"><button class="btn btn-line" id="is-save">Save</button>${open&&!isC?`<button class="btn btn-line danger" id="is-void">${isQ?'Withdraw…':'Void (never sent)…'}</button>`:''}</div>
+  <p class="note">Amounts are locked once issued, as the tax rules require.${isQ||isC?'':' To correct an invoice the client has seen, use a credit note; void only one that never went out. Numbers stay in the list, so there are no gaps.'}</p>`;
  const act=async(a,body={})=>api('/api/invoices/'+inv.id+'/'+a,{method:'POST',body:JSON.stringify(body)});
  $('#is-cp').onclick=()=>{navigator.clipboard?.writeText(inv.link);toast('Link copied')};
  if($('#is-send'))$('#is-send').onclick=async()=>{const to=b.email||prompt('Send to which email address?');if(!to)return;try{await act('send',{to});toast('Emailed to '+to);invOpen(inv.id)}catch(e){toast(invErr(e))}};
  if($('#is-rem'))$('#is-rem').onclick=async()=>{const to=b.email||prompt('Send the reminder to which email address?');if(!to)return;try{await act('remind',{to});toast('Reminder sent')}catch(e){toast(invErr(e))}};
  if($('#is-conv'))$('#is-conv').onclick=async()=>{const r=await act('convert');toast('Draft invoice made from '+inv.number);refreshInv();invOpen(r.id)};
- if($('#ip-s'))$('#ip-s').onclick=async()=>{$('#ip-e').textContent='';try{const r=await act('payment',{amount:$('#ip-a').value,wht:$('#ip-w').value,wht_cert:$('#ip-c').checked,method:$('#ip-m').value,paid_on:$('#ip-d').value,reference:$('#ip-r').value});
+ if($('#rp-go'))$('#rp-go').onclick=async()=>{$('#rp-err').textContent='';try{await api('/api/invoice-schedules',{method:'POST',body:JSON.stringify({from_invoice_id:inv.id,every:$('#rp-e').value,next_date:$('#rp-d').value,until:$('#rp-u').value||null,auto_send:$('#rp-s').checked})});toast('Repeating from '+dshort($('#rp-d').value));INVF.k='rec';refreshInv()}
+  catch(e){$('#rp-err').textContent=e.message==='date_in_past'?'Pick a date from today on.':'Choose how often and the first date.'}};
+ document.querySelectorAll('#drb [data-inv-open]').forEach(x=>x.onclick=e=>{e.preventDefault();invOpen(+x.dataset.invOpen)});
+ document.querySelectorAll('[data-er]').forEach(x=>x.onclick=async()=>{const to=b.email||prompt('Email the receipt to which address?');if(!to)return;try{await act('receipt/'+x.dataset.er,{to});toast('Receipt emailed');invOpen(inv.id)}catch(e){toast(invErr(e))}});
+ if($('#cn-go')){let k='all';$('#cn-k').onclick=e=>{const t=e.target.closest('button');if(!t)return;k=t.dataset.k;$('#cn-k').querySelectorAll('button').forEach(z=>z.classList.toggle('on',z===t));$('#cn-pw').hidden=k!=='part'};
+  $('#cn-go').onclick=async()=>{$('#cn-e').textContent='';const reason=$('#cn-r').value.trim();if(!reason){$('#cn-e').textContent=INVERR.reason_required;return}
+   let lines=null;if(k==='part'){const a=+$('#cn-a').value;if(!(a>0)){$('#cn-e').textContent='Enter the amount to credit.';return}lines=[{description:'Credit: '+reason,qty:1,unit:a}]}
+   else if(credited||paid){const left=ir2(+inv.taxable*(bal/(+inv.total||1)));lines=[{description:'Credit: '+reason,qty:1,unit:left}]}
+   if(!confirm('Issue a credit note on '+inv.number+'? It gets its own number and cannot be deleted.'))return;
+   try{const r=await act('credit',{reason,...(lines?{lines}:{})});toast('Credit note '+r.number+' issued');refreshInv();invOpen(r.id)}catch(e){$('#cn-e').textContent=invErr(e)}}}
+ if($('#ip-s'))$('#ip-s').onclick=async()=>{$('#ip-e').textContent='';try{const r=await act('payment',{amount:$('#ip-a').value,wht:$('#ip-w').value,wht_cert:$('#ip-c').checked,method:$('#ip-m').value,paid_on:$('#ip-d').value,reference:$('#ip-r').value,send_receipt:!!($('#ip-rc')&&$('#ip-rc').checked)});
   toast(r.status==='paid'?'Paid in full':'Payment recorded');refreshInv();invOpen(inv.id)}catch(e){$('#ip-e').textContent=invErr(e)}};
  document.querySelectorAll('[data-rp]').forEach(x=>x.onclick=async()=>{if(!confirm('Remove this payment?'))return;await act('payment/'+x.dataset.rp);toast('Payment removed');refreshInv();invOpen(inv.id)});
- $('#is-save').onclick=async()=>{try{await api('/api/invoices/'+inv.id,{method:'POST',body:JSON.stringify({bill_to:b,evat_ref:$('#is-ev')?.value||'',notes:$('#is-no').value,[isQ?'valid_until':'due_date']:$('#is-dd').value})});toast('Saved');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
- if($('#is-void'))$('#is-void').onclick=async()=>{const reason=prompt('Why is '+inv.number+' being voided? (kept on record)');if(!reason)return;try{await act('void',{reason});toast(inv.number+' voided');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
+ $('#is-save').onclick=async()=>{try{await api('/api/invoices/'+inv.id,{method:'POST',body:JSON.stringify({bill_to:b,evat_ref:$('#is-ev')?.value||'',notes:$('#is-no').value,[isQ?'valid_until':'due_date']:$('#is-dd')?$('#is-dd').value:''})});toast('Saved');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
+ if($('#is-void'))$('#is-void').onclick=async()=>{const reason=prompt((isQ?'Why is ':'Void only an invoice that never reached the client. Why is ')+inv.number+' being '+(isQ?'withdrawn':'voided')+'? (kept on record)');if(!reason)return;try{await act('void',{reason});toast(inv.number+' voided');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
+}
+function acctPanel(){
+ const m0=new Date();m0.setDate(1);m0.setMonth(m0.getMonth()-1);const last=m0.toISOString().slice(0,7);
+ $('#dr').classList.add('on');
+ $('#drb').innerHTML=`<h2>For the accountant</h2><p class="note">Everything for one month, in Ghana cedis, ready for the VAT return and the books.</p>
+  <label class="l" for="ac-m">Month</label><input class="t" id="ac-m" type="month" value="${last}" style="max-width:220px">
+  <ul class="list" id="ac-l" style="margin-top:14px"></ul>
+  <p class="note">The Excel pack has a summary (sales, VAT, NHIL, GETFund, money received, withholding tax, what is owed), every invoice and credit note, payments with receipts and WHT certificates, and sheets ready to import into Xero or QuickBooks. On the first import, check that the account code and tax rate names match your file.</p>`;
+ const draw=()=>{const m=$('#ac-m').value;$('#ac-l').innerHTML=[['pack.xlsx','Monthly pack (Excel)','summary, invoices, payments, WHT, owed, import sheets'],['vat.csv','VAT return lines (CSV)','one row per invoice or credit note'],['xero.csv','Xero import (CSV)','sales invoices, credit notes as negatives'],['quickbooks.csv','QuickBooks import (CSV)','sales invoices']]
+  .map(([f,t,d])=>`<li class="li"><div class="grow"><b>${t}</b><div class="note">${d}</div></div><a class="btn btn-line" href="/api/invoices/${f}?month=${m}">Download</a></li>`).join('')};
+ $('#ac-m').onchange=draw;draw();
+}
+async function tfaCard(){
+ const box=$('#tfa');if(!box)return;const r=await api('/api/2fa').catch(()=>null);if(!r)return;
+ if(r.on){box.innerHTML=`<div class="ch"><h3>Two-step sign-in</h3><span class="chip green">On</span></div>
+  <p class="note" style="margin-top:0">Signing in with your password also needs the 6-digit code from your authenticator app. ${r.recovery_left} recovery code${r.recovery_left===1?'':'s'} left.${r.recovery_left<3?' <b>Turn it off and on again to get new ones.</b>':''}</p>
+  <details><summary class="note" style="cursor:pointer">Turn it off</summary><div class="f2"><div><label class="l" for="tf-pw">Your password</label><input class="t" id="tf-pw" type="password" autocomplete="current-password"></div>
+  <div><label class="l" for="tf-c">Code from the app</label><input class="t" id="tf-c" inputmode="numeric" autocomplete="one-time-code"></div></div><p class="err" id="tf-e"></p><button class="btn btn-line danger" id="tf-off">Turn off two-step sign-in</button></details>`;
+  $('#tf-off').onclick=async()=>{try{await api('/api/2fa/disable',{method:'POST',body:JSON.stringify({password:$('#tf-pw').value,code:$('#tf-c').value})});toast('Two-step sign-in is off');tfaCard()}catch(e){$('#tf-e').textContent='Password or code not right.'}};return}
+ box.innerHTML=`<div class="ch"><h3>Two-step sign-in</h3><span class="chip">Off</span></div>
+  <p class="note" style="margin-top:0">Recommended for everyone who can see client data. After your password you also type a 6-digit code from an app on your phone (Google Authenticator, Microsoft Authenticator or 1Password). Signing in with Google uses Google's own protection instead.</p>
+  <button class="btn btn-dark" id="tf-go">Set it up</button><div id="tf-set"></div>`;
+ $('#tf-go').onclick=async()=>{const s=await api('/api/2fa/setup',{method:'POST',body:'{}'});$('#tf-go').hidden=true;
+  $('#tf-set').innerHTML=`<ol class="how" style="margin:12px 0 0;padding-left:20px"><li>Open the authenticator app and add an account by scanning this code:</li></ol><div class="tf-qr">${s.qr}</div>
+   <p class="note">Can't scan? Enter this key by hand: <code style="user-select:all">${esc(s.secret.replace(/(.{4})/g,'$1 ').trim())}</code></p>
+   <ol class="how" start="2" style="padding-left:20px"><li>Type the 6-digit code the app shows:</li></ol>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><input class="t" id="tf-code" inputmode="numeric" autocomplete="one-time-code" style="max-width:180px" placeholder="123 456"><button class="btn btn-dark" id="tf-on">Turn on</button></div><p class="err" id="tf-e"></p>`;
+  $('#tf-code').focus();
+  $('#tf-on').onclick=async()=>{try{const x=await api('/api/2fa/enable',{method:'POST',body:JSON.stringify({code:$('#tf-code').value})});
+   box.innerHTML=`<div class="ch"><h3>Two-step sign-in</h3><span class="chip green">On</span></div><p><b>Save these recovery codes now.</b> Each one works once if you lose your phone. They are not shown again.</p>
+    <pre class="tf-rc">${x.recovery_codes.join('\n')}</pre><div class="acts"><button class="btn btn-line" id="tf-cp">Copy</button><button class="btn btn-dark" id="tf-done">I have saved them</button></div>`;
+   $('#tf-cp').onclick=()=>{navigator.clipboard?.writeText(x.recovery_codes.join('\n'));toast('Copied')};$('#tf-done').onclick=tfaCard;toast('Two-step sign-in is on')}
+  catch(e){$('#tf-e').textContent=e.message==='bad_code'?'That code is not right. Check the time on your phone and try the next code.':'Please start again.'}}};
+}
+async function safetyCard(){
+ const r=await api('/api/safety').catch(()=>null);const box=$('#safety');if(!r||!box)return;
+ const ago=t=>{if(!t)return 'never';const h=(Date.now()-Date.parse(t))/36e5;return h<1?'less than an hour ago':h<48?Math.round(h)+' hours ago':Math.round(h/24)+' days ago'};
+ const kb=n=>n>1e6?(n/1e6).toFixed(1)+' MB':Math.max(1,Math.round(n/1e3))+' KB';
+ const b=r.backup,o=r.offsite,okc=c=>`<span class="chip ${c?'green':'red'}">${c?'OK':'Check'}</span>`;
+ box.innerHTML=`<div class="ch"><h3>Safety net</h3>${r.problems.length?`<span class="chip red">${r.problems.length} to check</span>`:'<span class="chip green">All good</span>'}</div>
+  <div class="kv"><span>Nightly backup</span><div>${b?`${okc(b.ok&&(Date.now()-Date.parse(b.at))<36*36e5)} ${ago(b.at)}${b.bytes?' · '+kb(b.bytes):''}<div class="note">${esc(b.detail||'')}</div>`:'<span class="chip red">None yet</span> <span class="note">The first one runs tonight at 02:17.</span>'}</div>
+   <span>Off-site copy</span><div>${o?`${okc((Date.now()-Date.parse(o.at))<4*864e5)} ${ago(o.at)} · ${esc(o.where||'')} · ${o.files} copies`:'<span class="chip">Not set up</span> <span class="note">Run <code>bash scripts/mac-backup-install.sh</code> once on the Mac.</span>'}</div>
+   <span>Email delivery</span><div>${okc(r.mail_failed_24h<=5)} ${r.mail_failed_24h} failed in the last 24 hours</div>
+   <span>Security certificate</span><div>${r.cert_days==null?'<span class="note">not checked here</span>':`${okc(r.cert_days>=14)} ${esc(r.host)} valid for ${r.cert_days} more days`}</div></div>
+  ${r.problems.length?`<ul class="list">${r.problems.map(p=>`<li class="li"><div class="grow">${esc(p[1])}</div></li>`).join('')}</ul>`:''}
+  <p class="note">Checked every hour. If something is wrong, a warning goes to the people below (at most every 12 hours per problem). Uptime is also watched from outside.</p>
+  <div class="f2"><div><label class="l" for="sf-em">Warn by email <span class="note">(up to 5, comma-separated; blank = the owners)</span></label><input class="t" id="sf-em" value="${esc(r.alert_emails)}" placeholder="name@example.com"></div>
+  <div><label class="l" for="sf-wa">Warn on WhatsApp <span class="note">(once WhatsApp is connected)</span></label><input class="t" id="sf-wa" inputmode="tel" value="${esc(r.alert_whatsapp)}" placeholder="+233…"></div></div>
+  <p class="err" id="sf-err"></p><div class="acts"><button class="btn btn-dark" id="sf-s">Save</button><button class="btn btn-line" id="sf-t">Send a test warning</button></div>`;
+ const save=async extra=>{$('#sf-err').textContent='';try{const x=await api('/api/safety',{method:'POST',body:JSON.stringify({alert_emails:$('#sf-em').value,alert_whatsapp:$('#sf-wa').value,...extra})});return x}catch(e){$('#sf-err').textContent=e.message==='bad_email'?'One of the email addresses is not right.':e.message==='bad_phone'?'That WhatsApp number is not right.':'Could not save.';return null}};
+ $('#sf-s').onclick=async()=>{if(await save({})){toast('Saved');safetyCard()}};
+ $('#sf-t').onclick=async()=>{const x=await save({test:true});if(x)toast('Test warning sent to '+x.sent_to+' address'+(x.sent_to===1?'':'es'))};
 }
 async function invoiceSettingsCard(){
  const s=await invSettingsLoad();if(!s||!$('#inv-set'))return;const B=s.inv_bank||{fx:{},corr:[]};
@@ -2544,7 +2646,7 @@ async function invoiceSettingsCard(){
 }
 async function recordInvoices(cid){const box=$('#rc-inv');if(!box)return;const r=await api('/api/invoices').catch(()=>null);if(!r||!$('#rc-inv'))return;
  const L=r.rows.filter(x=>x.contact_id===cid);
- box.querySelector('.inv-rl').innerHTML=L.length?`<ul class="list">${L.map(x=>`<li class="li" style="cursor:pointer" data-inv="${x.id}"><div class="grow"><b>${esc(x.number||'Draft')}</b><div class="note">${x.kind==='quote'?'Quotation':'Invoice'}${x.issue_date?' · '+dshort(x.issue_date):''}</div></div><div style="text-align:right"><b class="num">${imoney(x.total,x.currency)}</b><div><span class="chip ${x.overdue?'red':INV_CHIP[x.status]}">${x.overdue?'Overdue':INV_ST[x.status]}</span></div></div></li>`).join('')}</ul>`:'<p class="note">None yet.</p>';
+ box.querySelector('.inv-rl').innerHTML=L.length?`<ul class="list">${L.map(x=>`<li class="li" style="cursor:pointer" data-inv="${x.id}"><div class="grow"><b>${esc(x.number||'Draft')}</b><div class="note">${KINDN[x.kind]}${x.issue_date?' · '+dshort(x.issue_date):''}</div></div><div style="text-align:right"><b class="num">${imoney(x.total,x.currency)}</b><div><span class="chip ${x.overdue?'red':INV_CHIP[x.status]}">${x.overdue?'Overdue':x.kind==='credit'&&x.status==='sent'?'Issued':INV_ST[x.status]}</span></div></div></li>`).join('')}</ul>`:'<p class="note">None yet.</p>';
  box.querySelectorAll('[data-inv]').forEach(t=>t.onclick=()=>invOpen(+t.dataset.inv))}
 
 /* phones: tables turn into cards, each value labelled with its column */

@@ -447,3 +447,32 @@ create table if not exists invoice_seq (kind text not null, year int not null, n
 -- pounds too: FirstBank's correspondent in London takes GBP
 alter table invoices drop constraint if exists invoices_currency_check;
 alter table invoices add constraint invoices_currency_check check (currency in ('GHS','EUR','USD','GBP'));
+
+-- two-step sign-in (authenticator app)
+alter table users add column if not exists totp_secret text;
+alter table users add column if not exists totp_on boolean not null default false;
+alter table users add column if not exists totp_last bigint;
+alter table users add column if not exists totp_recovery jsonb;
+
+-- credit notes (the VAT-correct way to reduce or cancel an issued invoice) and numbered receipts
+alter table invoices drop constraint if exists invoices_kind_check;
+alter table invoices add constraint invoices_kind_check check (kind in ('quote','invoice','credit'));
+alter table invoices drop constraint if exists invoices_status_check;
+alter table invoices add constraint invoices_status_check check (status in ('draft','sent','accepted','declined','part_paid','paid','credited','void'));
+alter table invoices add column if not exists credit_for int references invoices(id) on delete set null;
+create index if not exists invoices_credit_for on invoices (credit_for) where credit_for is not null;
+alter table invoice_payments add column if not exists receipt_no text unique;
+alter table invoice_payments add column if not exists receipt_sent_at timestamptz;
+
+-- recurring invoices (retainers, memberships)
+create table if not exists invoice_schedules (
+  id serial primary key,
+  template jsonb not null,
+  every text not null default 'month' check (every in ('month','quarter','year')),
+  next_date date not null, until date,
+  auto_send boolean not null default false, active boolean not null default true,
+  source_invoice_id int references invoices(id) on delete set null,
+  last_invoice_id int references invoices(id) on delete set null,
+  runs int not null default 0,
+  created_by text, created_at timestamptz default now(), updated_at timestamptz default now()
+);
