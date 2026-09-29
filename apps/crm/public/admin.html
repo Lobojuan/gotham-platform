@@ -336,6 +336,84 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 /* touch screens: 16px fields so iPhones do not zoom in on tap; menu links big enough for a thumb */
 @media (pointer:coarse),(max-width:1024px){input.t,select.t,textarea.t,.gsearch input,.ip-map select.t{font-size:16px}
  .side .links a{display:flex;align-items:center;min-height:44px}}
+/* calendar */
+.cal{padding:18px}
+.cal-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.cal-nav{display:flex;align-items:center;gap:6px}.cal-nav .iconbtn{font-size:22px;line-height:1}
+.cal-title{margin:0 0 0 8px;font-size:22px;letter-spacing:-.01em}
+.cal-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cal-mine{display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;min-height:40px}.cal-mine input{width:18px;height:18px;accent-color:var(--ink)}
+.cal-sum{margin:12px 0 8px;color:var(--mute);font-size:14px}.cal-sum b{color:var(--ink)}.cal-od{color:var(--red);font-weight:600}
+.cal-f{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.cal-fc{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;min-height:36px;transition:opacity .15s}
+.cal-fc i{width:9px;height:9px;border-radius:50%}.cal-fc b{color:var(--mute);font-weight:600}.cal-fc.off{opacity:.42}.cal-fc.off i{background:#C9CDD3!important}
+.t-event{--c:#A9761F}.t-task{--c:#0F1B2D}.t-deal{--c:#1F6B4E}.t-closed{--c:#6E8B3D}.t-campaign{--c:#6B4EA0}.t-activity{--c:#2F6DB5}.t-registration{--c:#0F7C86}.t-payment{--c:#B7791F}.t-sponsor{--c:#9C7A2B}
+.cal-fc i,.cal-dots i{background:var(--c)}
+.cal-wd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:12px;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;padding:0 2px 6px}
+.cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line);gap:1px}
+.cal-d{background:linear-gradient(rgba(169,118,31,calc(var(--busy)*.10)),rgba(169,118,31,calc(var(--busy)*.10))),#fff;min-height:112px;padding:6px 6px 8px;cursor:pointer;transition:background .15s;min-width:0}
+.cal-d:hover{background:#FBF7EE}.cal-d.out{background:#FAFAF8}.cal-d.out .cal-n b{color:#A6ADB6}
+.cal-d.sel{box-shadow:inset 0 0 0 2px var(--ink)}.cal-d.drop,.cal-col.drop{box-shadow:inset 0 0 0 2px var(--gold);background:var(--gold-soft)}
+.cal-n{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.cal-n b{display:grid;place-items:center;min-width:26px;height:26px;border-radius:50%;font-size:13.5px}
+.cal-d.today .cal-n b{background:var(--gold);color:#fff;box-shadow:0 0 0 4px var(--gold-soft)}
+.cal-c{font-size:11.5px;color:var(--mute);font-weight:600}
+.cal-es{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal-e{display:flex;align-items:center;gap:5px;width:100%;border:0;border-left:3px solid var(--c);background:color-mix(in srgb,var(--c) 10%,#fff);color:var(--ink);border-radius:6px;padding:3px 6px;font-size:12px;text-align:left;cursor:pointer;min-width:0;transition:transform .12s,box-shadow .12s}
+.cal-e:hover{transform:translateY(-1px);box-shadow:0 3px 8px rgba(15,27,45,.12)}
+.cal-e span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cal-e i{font-style:normal;color:var(--mute);font-size:11px;flex:none}
+.cal-e.t-event{background:linear-gradient(90deg,color-mix(in srgb,#A9761F 22%,#fff),color-mix(in srgb,#C9A24B 10%,#fff));font-weight:600}
+.cal-e.done span,.cal-row.done b{text-decoration:line-through;color:var(--mute)}.cal-e.hi{border-left-color:var(--red)}.cal-e.lost{--c:#A1322B}
+.cal-e[draggable="true"]{cursor:grab}.cal-e.drag{opacity:.4}
+.cal-more{border:0;background:none;color:var(--mute);font-size:12px;font-weight:600;text-align:left;padding:2px 6px;cursor:pointer}
+.cal-dots{display:none;gap:3px;justify-content:center;margin-top:4px}.cal-dots i{width:6px;height:6px;border-radius:50%}
+.cal-w{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.cal-col{border:1px solid var(--line);border-radius:14px;padding:8px;min-height:260px;display:flex;flex-direction:column;gap:6px;background:#fff;min-width:0}
+.cal-col.today{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+.cal-ch{display:flex;align-items:baseline;gap:6px;color:var(--mute);font-size:12.5px;font-weight:600;text-transform:uppercase}.cal-ch b{font-size:20px;color:var(--ink)}
+.cal-col .cal-es{flex:1}.cal-none{color:#B5BBC3}
+.cal-add{border:1px dashed var(--line);background:none;border-radius:8px;padding:6px;font-size:12.5px;color:var(--mute);cursor:pointer;min-height:36px}.cal-add:hover{border-color:var(--gold);color:var(--ink)}
+.cal-a{display:flex;flex-direction:column;gap:14px}
+.cal-ah{display:flex;align-items:center;gap:8px;position:sticky;top:0;background:#fff;padding:6px 0;z-index:1}.cal-ad.today .cal-ah b{color:var(--gold)}
+.cal-row{display:flex;align-items:center;gap:12px;width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;margin-top:6px;text-align:left;cursor:pointer;min-height:52px;transition:border-color .15s,transform .12s}
+.cal-row:hover{border-color:var(--c);transform:translateX(2px)}
+.cal-row>i{width:4px;align-self:stretch;border-radius:4px;background:var(--c);flex:none}
+.cal-rt{flex:0 0 60px;font-size:13px;font-weight:600;color:var(--mute);white-space:nowrap}
+#cal-feed svg{width:18px;height:18px}
+.cal-rb{display:flex;flex-direction:column;min-width:0}.cal-rb b{font-size:14.5px}.cal-rb small{color:var(--mute);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-dd{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}.cal-dd h3{margin:0}
+.cal-q{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.cal-q input.t:first-child{flex:1 1 220px}.cal-q input[type=time]{flex:0 0 120px}
+@media(max-width:700px){.cal{padding:12px}.cal-title{font-size:18px;margin-left:4px}.hide-s{display:none}
+ .cal-d{min-height:52px;padding:4px 2px}.cal-d .cal-es,.cal-c{display:none}.cal-dots{display:flex}.cal-n{justify-content:center;margin:0}
+ .cal-wd span{text-align:center}.cal-w{grid-template-columns:1fr}.cal-col{min-height:0}.cal-rt{flex-basis:54px;font-size:12.5px}
+ .cal-f{flex-wrap:nowrap;overflow-x:auto;margin:0 -12px 12px;padding:0 12px 4px;scrollbar-width:none}.cal-f::-webkit-scrollbar{display:none}.cal-fc{flex:none}}
+.c-sched{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}.c-sched input.t{width:auto}
+/* email designer */
+.dz{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;margin-top:12px;align-items:start}
+.dz-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.dz-tools select.t{flex:1 1 200px;width:auto}
+.dz-b{border:1px solid var(--line);border-radius:14px;padding:12px 14px 14px;margin-bottom:10px;background:#fff;transition:box-shadow .15s}
+.dz-b:focus-within{box-shadow:0 0 0 3px var(--gold-soft);border-color:var(--gold)}
+.dz-bh{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.dz-tag{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:13.5px}.dz-tag b{display:grid;place-items:center;width:24px;height:24px;border-radius:7px;background:var(--gold-soft);color:#7A5310;font-size:13px}
+.dz-ctl{display:flex;gap:4px}.dz-ctl button{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;font-size:14px}.dz-ctl button:disabled{opacity:.35;cursor:default}
+.dz-ctl button:hover:not(:disabled){border-color:var(--ink)}
+.dz-2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.dz-pic{display:flex;align-items:center;gap:12px;margin-top:10px}.dz-pic img{width:96px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.dz-pic span{display:grid;place-items:center;width:96px;height:64px;border-radius:8px;background:var(--sunk);font-size:11.5px;color:var(--mute);text-align:center}
+.dz-up{cursor:pointer}
+.dz-add{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:6px 0 10px;padding:10px;border:1px dashed #CDD1D6;border-radius:14px}
+.dz-ab{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;min-height:36px}
+.dz-ab b{color:var(--gold)}.dz-ab:hover{border-color:var(--ink)}
+.dz-r{position:sticky;top:76px}
+.dz-pv{border:1px solid var(--line);border-radius:16px;background:var(--sunk);padding:10px}
+.dz-pvh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.dz-frame{margin:0 auto;max-width:100%;transition:max-width .25s}.dz-frame.phone{max-width:390px}
+.dz-frame iframe{width:100%;height:calc(100vh - 190px);min-height:520px;border:0;border-radius:12px;background:#EDEDE8;display:block}
+@media(max-width:1100px){.dz{grid-template-columns:1fr}.dz-r{position:static}.dz-frame iframe{height:640px}}
+@media(max-width:600px){.dz-2{grid-template-columns:1fr}}
+/* taller menu (Calendar, Import clients): tighter on shorter screens, and a clear edge above the links when it scrolls */
+@media(min-width:821px) and (max-height:1020px){.nav a{padding-top:6px;padding-bottom:6px}.nav h6{margin-top:10px}}
+.side .links{border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
 </style></head><body>
 <div class="kente"></div>
 
@@ -480,11 +558,11 @@ const ghs=n=>'GHS '+Number(n||0).toLocaleString('en-GB',{maximumFractionDigits:0
 const ghsShort=n=>{n=Number(n||0);return n>=1e6?'GHS '+(n/1e6).toFixed(n>=1e7?0:1)+'m':n>=1e4?'GHS '+Math.round(n/1e3)+'k':ghs(n)};
 const dshort=s=>s?new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
 const NAV=[
- ['Overview',[['dash','Dashboard','home'],['tasks','Tasks','check','tcnt']]],
+ ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt']]],
  ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['reports','Reports','chart',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
  ['System',[['mail','Email outbox','mail','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
-const TITLES={dash:'Dashboard',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',rec:'Company record',reports:'Reports',
+const TITLES={dash:'Dashboard',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',rec:'Company record',reports:'Reports',
  regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',
  out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
 const ADMIN_ONLY=new Set(['pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
@@ -510,7 +588,7 @@ addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
 function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
- const m={dash:dashboard,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,rec:()=>record(+ARG),reports:reportsView,
+ const m={dash:dashboard,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,rec:()=>record(+ARG),reports:reportsView,
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
   contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>'};
@@ -1135,7 +1213,8 @@ const CSTATUS={new:'Not contacted',contacted:'Contacted',replied:'Replied',meeti
 const TEMPLATES={invitation:'Forum invitation — full design, cover image, date and venue',
  sponsor:'Sponsorship pitch — design with your tiers',
  brief:'Business brief — design, for the mailing list',
- plain:'Plain personal email — no design at all'};
+ plain:'Plain personal email — no design at all',
+ designer:'Designer — build your own with pictures, events and buttons'};
 
 async function outreach(){
  if(CAM)return campaignEditor();
@@ -1173,7 +1252,7 @@ async function outreach(){
     <td><b>${c.sent}</b>${c.in_flight?` <span class="note">+${c.in_flight} going out</span>`:''}${c.failed?` <span class="chip red" title="failed">${c.failed} failed</span>`:''}</td><td>${c.pending}</td>
     <td>${c.clicked}${c.sent?` <span class="note">${Math.round(c.clicked/c.sent*100)}%</span>`:''}</td>
     <td class="note">${c.daily_limit}/day</td>
-    <td><span class="tag ${c.status==='sending'?'t-paid':c.status==='done'?'t-hold':'t-canc'}">${c.status}</span></td>
+    <td><span class="tag ${c.status==='sending'||c.status==='scheduled'?'t-paid':c.status==='done'?'t-hold':'t-canc'}">${c.status==='scheduled'?'starts '+dshort(c.starts_at):c.status}</span></td>
     <td style="white-space:nowrap"><button class="btn btn-line" data-cedit="${c.id}">Open</button>
      ${c.status==='sending'?`<button class="btn btn-line" data-cpause="${c.id}">Pause</button>`:''}</td></tr>`).join('')
     ||'<tr><td colspan="8" class="note">No campaigns yet.</td></tr>'}
@@ -1220,6 +1299,209 @@ async function outreach(){
  document.querySelectorAll('[data-cedit]').forEach(b=>b.onclick=()=>{CAM=JSON.parse(JSON.stringify(cams.find(x=>String(x.id)===b.dataset.cedit)));outreach()});
  document.querySelectorAll('[data-cpause]').forEach(b=>b.onclick=async()=>{
   await api('/api/campaigns/'+b.dataset.cpause+'/pause',{method:'POST',body:'{}'});toast('Paused');outreach()});
+}
+
+/* ===================== email designer ===================== */
+const BLK={heading:['Heading','T'],text:['Text','¶'],image:['Picture','▣'],image_text:['Picture + text','◧'],button:['Button','●'],event:['Event','◆'],sponsors:['Sponsor logos','★'],divider:['Line','—']};
+let DZ={lib:null,t:0,phone:false};
+async function designerPanel(c,evOpts){
+ if(!Array.isArray(c.blocks)||!c.blocks.length)c.blocks=[{type:'heading',text:'',size:'l'},{type:'text',text:'Hello {{first_name}},\n\n'},{type:'button',label:'Find out more',style:'gold',url:'https://gothamconsult.com'}];
+ const box=$('#c-designer');
+ box.innerHTML=`<div class="dz">
+  <div class="dz-l">
+   <div class="dz-tools"><select class="t" id="dz-tpl" aria-label="Start from a template"><option value="">Start from a template…</option></select>
+    <button class="btn btn-line" type="button" id="dz-use">Use it</button><button class="btn btn-line" type="button" id="dz-savet">Save as template</button></div>
+   <div id="dz-blocks"></div>
+   <div class="dz-add"><span class="note">Add</span>${Object.entries(BLK).map(([k,[l,i]])=>`<button type="button" class="dz-ab" data-add="${k}"><b>${i}</b>${l}</button>`).join('')}</div>
+   <p class="note">In text: <code>**bold**</code>, <code>[link text](https://…)</code>, and <code>{{first_name}}</code> <code>{{company}}</code> for each person's own details.</p>
+  </div>
+  <div class="dz-r"><div class="dz-pv">
+   <div class="dz-pvh"><span class="note" id="dz-subj"></span><div class="seg" id="dz-dev"><button type="button" data-d="0" class="on">Desktop</button><button type="button" data-d="1">Phone</button></div></div>
+   <div class="dz-frame" id="dz-fw"><iframe id="dz-if" title="Email preview"></iframe></div></div></div></div>`;
+ try{const t=await api('/api/email-templates');DZ.tpls=t.rows;
+  $('#dz-tpl').innerHTML='<option value="">Start from a template…</option>'+[['Your saved designs',t.rows.filter(x=>!x.builtin)],['Starting points',t.rows.filter(x=>x.builtin)]]
+   .filter(([,L])=>L.length).map(([g,L])=>`<optgroup label="${g}">${L.map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join('')}</optgroup>`).join('')}catch(e){DZ.tpls=[]}
+ if(!DZ.lib)try{DZ.lib={};(await api('/api/media?kind=email')).rows.forEach(m=>DZ.lib[m.id]=m.sizes&&m.sizes.email&&m.sizes.email.jpg)}catch(e){DZ.lib={}}
+ const nextEv=(ALL_ITEMS.length?ALL_ITEMS:ITEMS).filter(i=>i.kind==='event'&&i.starts_at&&new Date(i.starts_at)>Date.now()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at))[0];
+ $('#dz-use').onclick=()=>{const t=(DZ.tpls||[]).find(x=>x.id===$('#dz-tpl').value);if(!t)return toast('Pick a template first');
+  if(c.blocks.length>1&&!confirm('Replace what is in the designer now with "'+t.name+'"?'))return;
+  c.blocks=JSON.parse(JSON.stringify(t.blocks)).map(b=>b.type==='event'&&!b.code&&nextEv?{...b,code:nextEv.code}:b);
+  if(t.subject&&!$('#c-subj').value.trim())$('#c-subj').value=t.subject;drawBlocks();preview()};
+ $('#dz-savet').onclick=async()=>{const cur=(DZ.tpls||[]).find(x=>x.id===$('#dz-tpl').value&&!x.builtin);
+  const name=prompt('Name this design so you can reuse it',cur?cur.name:($('#c-name').value||'My design'));if(!name)return;
+  const same=(DZ.tpls||[]).find(x=>!x.builtin&&x.name.toLowerCase()===name.trim().toLowerCase());
+  try{await api('/api/email-templates',{method:'POST',body:JSON.stringify({id:same?same.id:undefined,name,subject:$('#c-subj').value,blocks:c.blocks})});toast(same?'Design updated':'Design saved');designerPanel(c,evOpts)}catch(e){toast('Could not save it')}};
+ box.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{const k=b.dataset.add;
+  const nb={heading:{text:'',size:'m'},text:{text:''},image:{},image_text:{title:'',text:'',side:'left'},button:{label:'Find out more',style:'dark',url:''},event:{code:nextEv?nextEv.code:''},sponsors:{tier:'all'},divider:{}}[k];
+  c.blocks.push({type:k,...nb});drawBlocks();preview();setTimeout(()=>$('#dz-blocks').lastElementChild?.scrollIntoView({behavior:'smooth',block:'center'}),50)});
+ $('#dz-dev').onclick=e=>{const b=e.target.closest('button');if(!b)return;DZ.phone=b.dataset.d==='1';
+  $('#dz-dev').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));$('#dz-fw').classList.toggle('phone',DZ.phone)};
+ $('#c-subj').addEventListener('input',()=>preview());
+ if($('#c-carl'))$('#c-carl').addEventListener('change',()=>preview());
+ function field(i,k,label,val,ph,type){return `<div><label class="l">${label}</label>${type==='area'?`<textarea class="t" rows="4" data-i="${i}" data-k="${k}" placeholder="${esc(ph||'')}">${esc(val||'')}</textarea>`
+  :`<input class="t" data-i="${i}" data-k="${k}" value="${esc(val||'')}" placeholder="${esc(ph||'')}">`}</div>`}
+ function sel(i,k,label,val,opts){return `<div><label class="l">${label}</label><select class="t" data-i="${i}" data-k="${k}">${opts.map(([v,t])=>`<option value="${v}" ${v===val?'selected':''}>${t}</option>`).join('')}</select></div>`}
+ function pic(i,b){const u=b.media&&DZ.lib[b.media];return `<div class="dz-pic">${u?`<img src="${esc(u)}" alt="">`:`<span>${b.media?'Picture added':'No picture yet'}</span>`}
+   <label class="btn btn-line dz-up">${b.media?'Change picture':'Upload a picture'}<input type="file" accept="image/*" data-up="${i}" hidden></label></div>`}
+ function drawBlocks(){
+  $('#dz-blocks').innerHTML=c.blocks.map((b,i)=>`<div class="dz-b" data-b="${i}"><div class="dz-bh"><span class="dz-tag"><b>${BLK[b.type][1]}</b>${BLK[b.type][0]}</span>
+   <span class="dz-ctl"><button type="button" data-mv="-1" data-i="${i}" aria-label="Move up" ${i?'':'disabled'}>↑</button><button type="button" data-mv="1" data-i="${i}" aria-label="Move down" ${i<c.blocks.length-1?'':'disabled'}>↓</button>
+   <button type="button" data-dup="${i}" aria-label="Duplicate">⧉</button><button type="button" data-del="${i}" aria-label="Remove">✕</button></span></div>
+   ${b.type==='heading'?`<div class="dz-2">${field(i,'text','Heading',b.text,'You are invited, {{first_name}}')}${sel(i,'size','Size',b.size||'l',[['l','Large'],['m','Medium']])}</div>`:''}
+   ${b.type==='text'?field(i,'text','Text',b.text,'Write here. A blank line starts a new paragraph.','area'):''}
+   ${b.type==='image'?pic(i,b)+`<div class="dz-2">${field(i,'alt','Describe the picture (for people who cannot see it)',b.alt,'Guests at the September forum')}${field(i,'url','Link when clicked (optional)',b.url,'https://')}</div>${field(i,'caption','Caption (optional)',b.caption,'')}`:''}
+   ${b.type==='image_text'?pic(i,b)+`${field(i,'title','Title',b.title,'')}${field(i,'text','Text',b.text,'','area')}<div class="dz-2">${sel(i,'side','Picture on the',b.side||'left',[['left','Left'],['right','Right']])}${field(i,'alt','Describe the picture',b.alt,'')}</div><div class="dz-2">${field(i,'url','Link (optional)',b.url,'https://')}${field(i,'label','Link text',b.label,'Read more')}</div>`:''}
+   ${b.type==='button'?`<div class="dz-2">${field(i,'label','Button text',b.label,'Reserve your seat')}${sel(i,'style','Colour',b.style||'dark',[['dark','Dark'],['gold','Gold']])}</div>${field(i,'url','Where it goes',b.url,'https://gothamconsult.com/register?e=F1')}`:''}
+   ${b.type==='event'?`<div class="dz-2"><div><label class="l">Event</label><select class="t" data-i="${i}" data-k="code"><option value="">Pick an event</option>${evOpts.replace(/ selected/g,'').replace(`value="${esc(b.code||'')}"`,`value="${esc(b.code||'')}" selected`)}</select></div>${field(i,'label','Button text (optional)',b.label,'Reserve your seat')}</div><p class="note">Shows the cover picture, date, venue and price, with a button to register.</p>`:''}
+   ${b.type==='sponsors'?`<div class="dz-2">${sel(i,'tier','Which sponsors',b.tier||'all',[['all','All current sponsors'],['headline','Headline only'],['partner','Partners'],['supporting','Supporting']])}${field(i,'title','Line above the logos',b.title,'With thanks to our partners')}</div>`:''}
+   ${b.type==='divider'?'<p class="note" style="margin:0">A thin line between sections.</p>':''}</div>`).join('');
+  const B=$('#dz-blocks');
+  B.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('input',()=>{c.blocks[+el.dataset.i][el.dataset.k]=el.value;preview()}));
+  B.querySelectorAll('[data-mv]').forEach(el=>el.onclick=()=>{const i=+el.dataset.i,j=i+ +el.dataset.mv;[c.blocks[i],c.blocks[j]]=[c.blocks[j],c.blocks[i]];drawBlocks();preview()});
+  B.querySelectorAll('[data-dup]').forEach(el=>el.onclick=()=>{const i=+el.dataset.dup;c.blocks.splice(i+1,0,JSON.parse(JSON.stringify(c.blocks[i])));drawBlocks();preview()});
+  B.querySelectorAll('[data-del]').forEach(el=>el.onclick=()=>{c.blocks.splice(+el.dataset.del,1);drawBlocks();preview()});
+  B.querySelectorAll('[data-up]').forEach(el=>el.onchange=async()=>{const f=el.files[0];if(!f)return;const i=+el.dataset.up;
+   toast('Uploading…');try{const m=await upload(f,'email',{alt:c.blocks[i].alt||''});DZ.lib[m.id]=m.sizes&&m.sizes.email&&m.sizes.email.jpg;c.blocks[i].media=m.id;drawBlocks();preview();toast('Picture added')}
+   catch(e){toast(e.message&&!e.error?e.message:UPERR[e.error]||'Upload failed')}});
+ }
+ function preview(){clearTimeout(DZ.t);DZ.t=setTimeout(async()=>{
+  try{const r=await api('/api/campaigns/render',{method:'POST',body:JSON.stringify({subject:$('#c-subj').value,blocks:c.blocks,carlson:!!($('#c-carl')&&$('#c-carl').checked)})});
+   $('#dz-subj').innerHTML='Subject: <b>'+esc(r.subject)+'</b>';$('#dz-if').srcdoc=r.html}catch(e){}},350)}
+ drawBlocks();preview();
+}
+
+/* ===================== calendar: everything with a date ===================== */
+const CALT={event:['Events','#A9761F'],task:['Tasks','#0F1B2D'],deal:['Next steps','#1F6B4E'],closed:['Won & lost','#6E8B3D'],campaign:['Campaigns','#6B4EA0'],
+ activity:['Calls & meetings','#2F6DB5'],registration:['Registrations','#0F7C86'],payment:['Payments','#B7791F'],sponsor:['Sponsors','#9C7A2B']};
+let CAL=(()=>{let s={};try{s=JSON.parse(localStorage.getItem('gc-cal')||'{}')}catch(e){}
+ return {mode:s.mode||(innerWidth<700?'agenda':'month'),anchor:new Date().toISOString().slice(0,10),off:new Set(s.off||[]),mine:!!s.mine,sel:null}})();
+const calSave=()=>{try{localStorage.setItem('gc-cal',JSON.stringify({mode:CAL.mode,off:[...CAL.off],mine:CAL.mine}))}catch(e){}};
+const addD=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return ymd(d)};
+const monOf=s=>{const d=new Date(s+'T12:00:00');return addD(s,-((d.getDay()+6)%7))};
+const eDay=e=>e.all_day?String(e.start).slice(0,10):ymd(new Date(e.start));
+const eTime=e=>e.all_day?'':new Date(e.start).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+async function calView(){
+ const a=CAL.anchor, first=a.slice(0,8)+'01';
+ let from,to,title;
+ if(CAL.mode==='month'){from=monOf(first);to=addD(from,41);title=new Date(first+'T12:00:00').toLocaleDateString('en-GB',{month:'long',year:'numeric'})}
+ else if(CAL.mode==='week'){from=monOf(a);to=addD(from,6);title='Week of '+new Date(from+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long'})}
+ else{from=a;to=addD(a,29);title='Next 30 days from '+new Date(a+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'})}
+ setTitle('Calendar','Every event, task, next step, campaign, call and payment in one place');
+ pageActions(`<button class="btn btn-line" id="cal-feed" type="button">${ic('phone')}<span class="hide-s">Add to my phone</span></button>`);
+ $('#cal-feed').onclick=calFeed;
+ if(!$('#calw'))$('#view').innerHTML='<div class="empty">Loading…</div>';
+ let rows=[];
+ try{rows=(await api(`/api/calendar?from=${from}&to=${to}${CAL.mine?'&mine=1':''}`)).rows}catch(e){$('#view').innerHTML='<div class="empty">Could not load the calendar.</div>';return}
+ if(V!=='cal')return;
+ const count={};rows.forEach(e=>count[e.type]=(count[e.type]||0)+1);
+ const shown=rows.filter(e=>!CAL.off.has(e.type));
+ const byDay={};shown.forEach(e=>{(byDay[eDay(e)]||=[]).push(e)});
+ Object.values(byDay).forEach(L=>L.sort((x,y)=>(x.type==='event'?0:1)-(y.type==='event'?0:1)||(x.all_day?0:1)-(y.all_day?0:1)||String(x.start).localeCompare(String(y.start))));
+ const today=ymd(new Date());
+ const types=Object.keys(CALT).filter(t=>isAdmin()||['event','task','registration','payment'].includes(t));
+ const overdue=rows.filter(e=>e.type==='task'&&!e.done&&eDay(e)<today).length;
+ const sum=[['event','event','events'],['task','task','tasks'],['deal','next step','next steps'],['activity','call or meeting','calls and meetings'],['campaign','campaign day','campaign days'],['registration','day with registrations','days with registrations'],['payment','day with payments','days with payments']]
+  .filter(([t])=>count[t]).map(([t,one,many])=>`<b>${count[t]}</b> ${count[t]===1?one:many}`).join(' · ');
+ const chip=e=>`<button type="button" class="cal-e t-${e.type}${e.done?' done':''}${e.high?' hi':''}${e.won===false?' lost':''}" data-ck="${esc(e.key)}" ${e.movable?'draggable="true"':''} title="${esc(e.title+(e.sub?' — '+e.sub:''))}">
+   ${eTime(e)?`<i>${eTime(e)}</i>`:''}<span>${esc(e.title)}</span></button>`;
+ let body='';
+ if(CAL.mode==='month'){
+  const m=first.slice(0,7);
+  body=`<div class="cal-m"><div class="cal-wd">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<span>${d}</span>`).join('')}</div><div class="cal-g">`+
+   Array.from({length:42},(_,i)=>{const d=addD(from,i),L=byDay[d]||[],busy=Math.min(L.length,8);
+    return `<div class="cal-d${d.slice(0,7)!==m?' out':''}${d===today?' today':''}${d===CAL.sel?' sel':''}" data-day="${d}" style="--busy:${busy/8}">
+     <div class="cal-n"><b>${+d.slice(8)}</b>${L.length?`<span class="cal-c">${L.length}</span>`:''}</div>
+     <div class="cal-es">${L.slice(0,3).map(chip).join('')}${L.length>3?`<button type="button" class="cal-more" data-day="${d}">+${L.length-3} more</button>`:''}</div>
+     <div class="cal-dots">${[...new Set(L.map(e=>e.type))].slice(0,5).map(t=>`<i class="t-${t}"></i>`).join('')}</div></div>`}).join('')+`</div></div>`;
+ } else if(CAL.mode==='week'){
+  body=`<div class="cal-w">`+Array.from({length:7},(_,i)=>{const d=addD(from,i),L=byDay[d]||[];
+   return `<div class="cal-col${d===today?' today':''}" data-day="${d}"><div class="cal-ch"><span>${new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short'})}</span><b>${+d.slice(8)}</b></div>
+    <div class="cal-es">${L.map(chip).join('')||'<span class="cal-none">—</span>'}</div><button type="button" class="cal-add" data-add="${d}">+ Task</button></div>`}).join('')+`</div>`;
+ } else {
+  const days=Object.keys(byDay).sort();
+  body=`<div class="cal-a">${days.map(d=>`<div class="cal-ad${d===today?' today':''}"><div class="cal-ah"><b>${new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</b>${d===today?'<span class="chip gold">Today</span>':''}</div>
+   ${byDay[d].map(e=>`<button type="button" class="cal-row t-${e.type}${e.done?' done':''}" data-ck="${esc(e.key)}"><i></i><span class="cal-rt">${eTime(e)||'All day'}</span><span class="cal-rb"><b>${esc(e.title)}</b><small>${esc(CALT[e.type][0])}${e.sub?' · '+esc(e.sub):''}</small></span></button>`).join('')}</div>`).join('')
+   ||'<div class="empty">Nothing planned in these 30 days. Click + Task on a day in Week view, or add follow-ups from a client record.</div>'}</div>`;
+ }
+ $('#view').innerHTML=`<div id="calw" class="card cal">
+  <div class="cal-top"><div class="cal-nav"><button class="iconbtn" id="cal-p" type="button" aria-label="Previous">‹</button><button class="btn btn-line" id="cal-t" type="button">Today</button><button class="iconbtn" id="cal-n" type="button" aria-label="Next">›</button>
+   <h2 class="cal-title">${esc(title)}</h2></div>
+   <div class="cal-right"><div class="seg" id="cal-mode">${[['month','Month'],['week','Week'],['agenda','Agenda']].map(([k,l])=>`<button type="button" data-m="${k}" class="${CAL.mode===k?'on':''}">${l}</button>`).join('')}</div>
+   ${isAdmin()?`<label class="cal-mine"><input type="checkbox" id="cal-mine" ${CAL.mine?'checked':''}> Only mine</label>`:''}</div></div>
+  <p class="cal-sum">${sum||'Nothing in this period yet.'}${overdue?` · <span class="cal-od">${overdue} overdue</span>`:''}</p>
+  <div class="cal-f">${types.map(t=>`<button type="button" class="cal-fc${CAL.off.has(t)?' off':''}" data-t="${t}"><i class="t-${t}"></i>${CALT[t][0]}${count[t]?` <b>${count[t]}</b>`:''}</button>`).join('')}</div>
+  ${body}
+  <div id="cal-day"></div></div>`;
+ const move=n=>{CAL.anchor=CAL.mode==='month'?(()=>{const d=new Date(first+'T12:00:00');d.setMonth(d.getMonth()+n);return ymd(d)})():addD(CAL.anchor,n*(CAL.mode==='week'?7:30));calView()};
+ $('#cal-p').onclick=()=>move(-1);$('#cal-n').onclick=()=>move(1);$('#cal-t').onclick=()=>{CAL.anchor=today;CAL.sel=today;calView()};
+ $('#cal-mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;CAL.mode=b.dataset.m;calSave();calView()};
+ if($('#cal-mine'))$('#cal-mine').onchange=e=>{CAL.mine=e.target.checked;calSave();calView()};
+ document.querySelectorAll('.cal-fc').forEach(b=>b.onclick=()=>{const t=b.dataset.t;CAL.off.has(t)?CAL.off.delete(t):CAL.off.add(t);calSave();calView()});
+ const byKey={};rows.forEach(e=>byKey[e.key]=e);
+ document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();calOpen(byKey[b.dataset.ck])});
+ document.querySelectorAll('.cal-d,.cal-more').forEach(c=>c.onclick=ev=>{ev.stopPropagation();CAL.sel=c.dataset.day;
+  document.querySelectorAll('.cal-d.sel').forEach(x=>x.classList.remove('sel'));document.querySelector(`.cal-d[data-day="${c.dataset.day}"]`)?.classList.add('sel');
+  calDay(c.dataset.day,byDay[c.dataset.day]||[],byKey)});
+ document.querySelectorAll('[data-add]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();calDay(b.dataset.add,byDay[b.dataset.add]||[],byKey,true)});
+ /* drag a task, a next step or a scheduled campaign to another day */
+ document.querySelectorAll('[draggable="true"]').forEach(el=>el.addEventListener('dragstart',ev=>{ev.dataTransfer.setData('text/plain',el.dataset.ck);el.classList.add('drag')}));
+ document.querySelectorAll('[data-day]').forEach(cell=>{if(!cell.classList.contains('cal-d')&&!cell.classList.contains('cal-col'))return;
+  cell.addEventListener('dragover',ev=>{ev.preventDefault();cell.classList.add('drop')});
+  cell.addEventListener('dragleave',()=>cell.classList.remove('drop'));
+  cell.addEventListener('drop',async ev=>{ev.preventDefault();cell.classList.remove('drop');const e=byKey[ev.dataTransfer.getData('text/plain')];if(!e||!e.movable)return;
+   await calMove(e,cell.dataset.day)})});
+ if(CAL.sel&&CAL.mode==='month'&&byDay[CAL.sel]&&innerWidth<700)calDay(CAL.sel,byDay[CAL.sel],byKey);
+}
+async function calMove(e,d){
+ if(eDay(e)===d)return;
+ const keepTime=s=>{const o=new Date(s);const n=new Date(d+'T00:00:00');n.setHours(o.getHours(),o.getMinutes(),0,0);return n.toISOString()};
+ try{
+  if(e.type==='task')await api('/api/tasks/'+e.id,{method:'PATCH',body:JSON.stringify({due_at:e.all_day?d+'T00:00:00Z':keepTime(e.start)})});
+  else if(e.type==='deal')await api('/api/deals/'+e.id,{method:'PATCH',body:JSON.stringify({next_date:d})});
+  else if(e.type==='campaign')await api('/api/campaigns/'+e.id+'/start',{method:'POST',body:JSON.stringify({at:keepTime(e.start)})});
+  toast('Moved to '+new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}));badges();calView();
+ }catch(err){toast(err.error==='bad_time'?'A campaign can only move to a future time':'Could not move it')}
+}
+function calDay(d,L,byKey,focus){
+ const nice=new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+ const box=$('#cal-day');
+ box.innerHTML=`<div class="cal-dd"><div class="ch"><h3>${nice}</h3><button class="iconbtn" id="cal-dx" type="button" aria-label="Close">✕</button></div>
+  ${L.map(e=>`<button type="button" class="cal-row t-${e.type}${e.done?' done':''}" data-ck2="${esc(e.key)}"><i></i><span class="cal-rt">${eTime(e)||'All day'}</span><span class="cal-rb"><b>${esc(e.title)}</b><small>${esc(CALT[e.type][0])}${e.sub?' · '+esc(e.sub):''}</small></span></button>`).join('')||'<p class="note">Nothing on this day.</p>'}
+  <form class="cal-q" id="cal-q"><input class="t" id="cal-qt" placeholder="Add a task for ${esc(nice.split(',')[0])}…" required><input class="t" type="time" id="cal-qh" value="09:00" aria-label="Time"><button class="btn btn-dark">Add</button></form></div>`;
+ box.querySelectorAll('[data-ck2]').forEach(b=>b.onclick=()=>calOpen(byKey[b.dataset.ck2]));
+ $('#cal-dx').onclick=()=>{box.innerHTML='';CAL.sel=null;document.querySelectorAll('.cal-d.sel').forEach(x=>x.classList.remove('sel'))};
+ $('#cal-q').onsubmit=async ev=>{ev.preventDefault();const t=$('#cal-qt').value.trim();if(!t)return;
+  const due=new Date(d+'T'+($('#cal-qh').value||'09:00')+':00');
+  try{await api('/api/tasks',{method:'POST',body:JSON.stringify({title:t,due_at:due.toISOString()})});toast('Task added');badges();CAL.sel=d;calView()}catch(e){toast('Could not add it')}};
+ box.scrollIntoView({behavior:'smooth',block:'nearest'});if(focus)$('#cal-qt').focus();
+}
+async function calOpen(e){
+ if(!e)return;const L=e.link||{};
+ try{
+  if(L.kind==='task'){const t=(await api('/api/tasks?scope=all')).rows.find(x=>x.id===L.id);if(t){TASKCACHE[t.id]=t;taskForm(t)}else toast('That task is no longer there')}
+  else if(L.kind==='deal')openDeal(L.id);
+  else if(L.kind==='rec')go('rec',L.id);
+  else if(L.kind==='event'){const r=await api('/api/items/all');ALL_ITEMS=r.rows;const it=r.rows.find(x=>x.code===L.id);if(it){EV=JSON.parse(JSON.stringify(it));go('events')}}
+  else if(L.kind==='campaign'){const r=await api('/api/campaigns');const c=r.rows.find(x=>x.id===L.id);if(c){CAM=JSON.parse(JSON.stringify(c));go('out')}}
+  else if(L.kind==='regs')go('regs');
+  else if(L.kind==='spon')go('spon');
+ }catch(err){toast('Could not open it')}
+}
+async function calFeed(){
+ $('#dr').classList.add('on');$('#drb').innerHTML='<div class="empty">Making your link…</div>';
+ let f;try{f=await api('/api/calendar/feed')}catch(e){$('#drb').innerHTML='<p class="note">Could not make the link.</p>';return}
+ $('#drb').innerHTML=`<h2>Your calendar on your phone</h2>
+  <p class="note">Subscribe once and your Gotham events, tasks, next steps and scheduled campaigns appear in Google Calendar, iPhone or Outlook, and stay up to date (every hour or so). It is read-only: change things here.</p>
+  <label class="l">Your private link</label><div class="row2" style="display:flex;gap:8px"><input class="t" id="cf-url" readonly value="${esc(f.url)}"><button class="btn btn-dark" id="cf-copy" type="button">Copy</button></div>
+  <p style="margin:12px 0"><a class="btn btn-line" href="${esc(f.webcal)}">Open in my calendar app</a></p>
+  <h4 class="sec">Google Calendar</h4><p class="note" style="margin:0">On a computer, open calendar.google.com → next to <b>Other calendars</b> press <b>+</b> → <b>From URL</b> → paste the link → <b>Add calendar</b>. It then shows on your phone too.</p>
+  <h4 class="sec">iPhone</h4><p class="note" style="margin:0">Settings → Calendar → Accounts → Add Account → Other → <b>Add Subscribed Calendar</b> → paste the link. Or tap <b>Open in my calendar app</b> above.</p>
+  <h4 class="sec">Outlook</h4><p class="note" style="margin:0">Calendar → <b>Add calendar</b> → <b>Subscribe from web</b> → paste the link.</p>
+  <h4 class="sec">Keep it private</h4><p class="note" style="margin:0">Anyone with this link can see your tasks and next steps. If it was shared by mistake, reset it: the old link stops working at once.</p>
+  <button class="btn btn-line" id="cf-reset" type="button" style="margin-top:10px;color:var(--red)">Reset my link</button>`;
+ $('#cf-copy').onclick=async()=>{try{await navigator.clipboard.writeText(f.url);toast('Link copied')}catch(e){$('#cf-url').select();toast('Press Ctrl+C / ⌘C to copy')}};
+ $('#cf-reset').onclick=async()=>{if(!confirm('Reset your calendar link? Calendars using the old link stop updating until you subscribe again.'))return;
+  await api('/api/calendar/feed',{method:'POST',body:'{}'});toast('New link made');calFeed()};
 }
 
 /* ===================== import clients ===================== */
@@ -1423,6 +1705,8 @@ function campaignEditor(){
    <div><label class="l">Design</label><select class="t" id="c-tpl">${Object.entries(TEMPLATES).map(([k,t])=>`<option value="${k}" ${k===c.template?'selected':''}>${t}</option>`).join('')}</select></div></div>
   <div class="note" id="c-tplnote"></div>
   <label class="l">Subject line</label><input class="t" id="c-subj" value="${esc(c.subject||'')}" placeholder="An invitation, {{first_name}} — 24 October, Tang Palace">
+  <div id="c-designer"></div>
+  <div id="c-classic">
   <label class="l">Body <span class="note">— blank line between paragraphs</span></label>
   <textarea class="t" id="c-intro" rows="9" placeholder="Dear {{first_name}},&#10;&#10;We are bringing together mining operators, regulators and investors on 24 October...">${esc(c.intro||'')}</textarea>
   <div class="note" style="margin-top:6px">Drop these in and each person sees their own:
@@ -1430,7 +1714,9 @@ function campaignEditor(){
   <div class="f2" style="margin-top:12px"><div><label class="l">Button text</label><input class="t" id="c-cta" value="${esc(c.cta_label||'')}" placeholder="Request your invitation"></div>
    <div><label class="l">Button link</label><input class="t" id="c-ctau" value="${esc(c.cta_url||'')}" placeholder="https://…/register.html?e=F1"></div></div>
   <div class="f2"><div><label class="l">Pull details from this event</label><select class="t" id="c-item"><option value="">None</option>${evOpts}</select></div>
-   <div><label class="l">Signed by</label><input class="t" id="c-from" value="${esc(c.from_name||'')}" placeholder="Joy Anthony Preston"></div></div></div>
+   <div><label class="l">Signed by</label><input class="t" id="c-from" value="${esc(c.from_name||'')}" placeholder="Joy Anthony Preston"></div></div>
+  </div>
+  <label class="ip-ck" style="margin-top:12px"><input type="checkbox" id="c-carl" ${c.carlson?'checked':''}> This is about renewable energy or AI/software <span class="note">— names Carlson Capital Ltd and +233 55 239 5548 in the email. Leave off for everything else.</span></label></div>
   <div data-only="sms whatsapp">
    <label class="l"><span data-only="sms">Text message</span><span data-only="whatsapp">Message, for sending by hand from the Gotham WhatsApp</span> <span class="note" id="c-smsn"></span></label>
    <textarea class="t" id="c-sms" rows="5" maxlength="900" placeholder="Hello {{first_name}}, Gotham Consult invites you to SMEs at the Centre, 24 Oct, Tang Palace Hotel, Accra. Register:">${esc(c.sms_text||'')}</textarea>
@@ -1461,14 +1747,19 @@ function campaignEditor(){
    <button class="btn btn-line" id="c-test">Send a test to me</button>
    ${c.id?(c.status==='sending'
      ?'<button class="btn btn-line" id="c-pause">Pause sending</button>'
-     :'<button class="btn btn-green" id="c-start">Start sending</button>'):'<span class="note" style="align-self:center">Save it first.</span>'}
+     :c.status==='scheduled'
+     ?`<span class="chip gold" style="align-self:center">Starts ${esc(dt(c.starts_at))}</span><button class="btn btn-line" id="c-pause">Cancel the schedule</button>`
+     :'<button class="btn btn-green" id="c-start">Start sending</button><span class="c-sched"><input class="t" type="datetime-local" id="c-at" aria-label="Start on"><button class="btn btn-line" id="c-schedule">Schedule</button></span>'):'<span class="note" style="align-self:center">Save it first.</span>'}
    ${c.id?'<button class="btn btn-line" id="c-del" style="color:var(--red);margin-left:auto">Delete campaign</button>':''}</div>
   <div id="c-prevbox"></div></div>`;
 
  const note=()=>{const t=$('#c-tpl').value;
   $('#c-tplnote').textContent = t==='plain'
    ? 'Best choice for senior people. A managing director deletes anything that looks like a newsletter; a plain note from a named person gets read.'
-   : 'Designed email with your colours and kente band. Good for wider lists and for anything with a picture.'};
+   : t==='designer' ? 'Build it from blocks: pictures, text, buttons, an event card, sponsor logos. The preview on the right is what people get.'
+   : 'Designed email with your colours and kente band. Good for wider lists and for anything with a picture.';
+  const dz=t==='designer';$('#c-classic').style.display=dz?'none':'';$('#c-designer').style.display=dz?'':'none';
+  if(dz&&!$('#c-designer').children.length)designerPanel(CAM,evOpts)};
  $('#c-tpl').onchange=note; note();
  let ch=c.channel||'email';
  const CHNOTE={email:'Designed or plain email with a working unsubscribe link. Goes out through the gothamconsult.com mailbox, a limited number per hour.',
@@ -1484,7 +1775,7 @@ function campaignEditor(){
 
  const grab=()=>{const g=i=>{const e=$(i);return e?e.value:''};
   CAM.name=g('#c-name');CAM.template=g('#c-tpl');CAM.subject=g('#c-subj');CAM.intro=g('#c-intro');
-  CAM.cta_label=g('#c-cta');CAM.cta_url=g('#c-ctau');CAM.item_code=g('#c-item');CAM.from_name=g('#c-from');
+  CAM.cta_label=g('#c-cta');CAM.cta_url=g('#c-ctau');CAM.item_code=g('#c-item');CAM.from_name=g('#c-from');CAM.carlson=!!($('#c-carl')&&$('#c-carl').checked);
   CAM.seg_sector=g('#c-sec');CAM.seg_tags=g('#c-tags');CAM.seg_status=g('#c-st');CAM.daily_limit=g('#c-lim');
   CAM.channel=ch;CAM.seg_type=g('#c-ty');CAM.seg_country=g('#c-co');CAM.seg_consent=$('#c-cons').checked?'yes':'any';
   CAM.sms_text=g('#c-sms');CAM.wa_template=g('#c-wat');CAM.wa_lang=g('#c-wal');CAM.wa_params=g('#c-wap');
@@ -1492,6 +1783,7 @@ function campaignEditor(){
  const save=async()=>{grab();
   if(!CAM.name||(ch==='email'&&!CAM.subject))return toast(ch==='email'?'It needs a name and a subject line':'Give it a name');
   if(ch!=='email'&&!CAM.sms_text)return toast('Write the message first');
+  if(ch==='email'&&CAM.template==='designer'&&!(CAM.blocks||[]).length)return toast('Add at least one block');
   const r=await api('/api/campaigns',{method:'POST',body:JSON.stringify(CAM)});
   CAM.id=r.id;toast('Saved');campaignEditor();return r.id};
  $('#c-save').onclick=save;
@@ -1518,6 +1810,11 @@ function campaignEditor(){
   try{const r=await api('/api/campaigns/'+CAM.id+'/start',{method:'POST',body:'{}'});
    toast(`Started — ${r.queued} queued, ${r.sent_now} going out now`);CAM=null;outreach()}
   catch(e){toast(e.error==='empty_audience'?'Nobody matches that filter':e.error==='wa_template_missing'?'Add the approved WhatsApp template name':'Could not start')}};
+ if($('#c-schedule'))$('#c-schedule').onclick=async()=>{const v=$('#c-at').value;if(!v)return toast('Pick the day and time to start');
+  await save();const d=await api('/api/campaigns/'+CAM.id+'/preview');
+  if(!confirm(`Start "${CAM.name}" on ${dt(new Date(v))}, by ${d.channel}, to about ${d.audience} people, ${CAM.daily_limit} a day?\n\nThe audience is fixed when it starts. It shows in the Calendar until then.`))return;
+  try{await api('/api/campaigns/'+CAM.id+'/start',{method:'POST',body:JSON.stringify({at:new Date(v).toISOString()})});toast('Scheduled');CAM=null;outreach()}
+  catch(e){toast(e.error==='bad_time'?'Pick a time in the future':e.error==='empty_audience'?'Nobody matches that filter':'Could not schedule it')}};
  if($('#c-pause'))$('#c-pause').onclick=async()=>{await api('/api/campaigns/'+CAM.id+'/pause',{method:'POST',body:'{}'});
   toast('Paused');CAM=null;outreach()};
  if($('#c-del'))$('#c-del').onclick=async()=>{if(!confirm('Delete this campaign and its send history?'))return;

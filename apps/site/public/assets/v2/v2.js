@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=6';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=7';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -240,23 +240,97 @@
   });
 
   /* ---- forums page: every upcoming event, live from the back office ---- */
+  const LOC = () => ({ fr: 'fr-FR', es: 'es-ES' })[current] || 'en-GB';
+  const TZ = { timeZone: 'Africa/Accra' };
+  const icsT = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const evEnd = i => i.ends_at && new Date(i.ends_at) > new Date(i.starts_at) ? i.ends_at : new Date(new Date(i.starts_at).getTime() + 3 * 36e5).toISOString();
+  /* "Add to calendar": Google, the .ics file (iPhone, Mac, Outlook desktop), Outlook.com */
+  const addCal = i => {
+    const url = location.origin + '/register?e=' + encodeURIComponent(i.code), about = [i.summary || i.subtitle || '', 'Register: ' + url].filter(Boolean).join('\n\n');
+    const g = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(i.title) + '&dates=' + icsT(i.starts_at) + '/' + icsT(evEnd(i))
+      + '&details=' + encodeURIComponent(about) + '&location=' + encodeURIComponent(i.venue || '') + '&ctz=Africa/Accra';
+    const o = 'https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=' + encodeURIComponent(i.title)
+      + '&startdt=' + encodeURIComponent(new Date(i.starts_at).toISOString()) + '&enddt=' + encodeURIComponent(evEnd(i)) + '&location=' + encodeURIComponent(i.venue || '') + '&body=' + encodeURIComponent(about);
+    return `<details class="addcal"><summary>Add to calendar</summary><div class="addcal-m">
+      <a href="${esc(g)}" target="_blank" rel="noopener">Google Calendar</a>
+      <a href="/cal/event/${encodeURIComponent(i.code)}.ics" download>Apple or Outlook (.ics)</a>
+      <a href="${esc(o)}" target="_blank" rel="noopener">Outlook.com</a></div></details>`;
+  };
   const evWrap = LEG ? null : $('div.events#events');
   if (evWrap) items().then(d => {
     const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now() - 864e5)
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
     if (!ev.length) return;
-    const tz = { timeZone: 'Africa/Accra' };
+    const tz = TZ;
     evWrap.innerHTML = ev.map(i => {
       const t = new Date(i.starts_at), img = i.cover_image?.sizes?.md?.webp || i.cover_image?.sizes?.lg?.webp || ASSET + '/img/forum.webp';
       const price = Number(i.price) ? 'GHS ' + Number(i.price).toLocaleString('en-GH') : 'Free';
       const time = t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...tz });
       const day = t.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', ...tz });
-      return `<article class="event"><div class="cov" style="background-image:url('${esc(img)}')"><div class="date"><b>${t.toLocaleDateString('en-GB', { day: 'numeric', ...tz })}</b><span>${t.toLocaleDateString('en-GB', { month: 'short', ...tz })}</span></div></div>
-        <div class="body"><h3>${esc(i.title)}</h3><div class="meta">${i.approval ? '<span class="pill">By invitation</span>' : ''}<span class="pill teal">${esc(price)}</span><span class="pill gray">${esc(day)} · ${esc(time)}</span>${i.venue ? `<span class="pill gray">${esc(i.venue)}</span>` : ''}${i.seats_left != null ? `<span class="pill gray">${esc(i.seats_left)} seats left</span>` : ''}</div>
+      return `<article class="event" id="ev-${esc(i.code)}"><div class="cov" style="background-image:url('${esc(img)}')"><div class="date"><b>${t.toLocaleDateString('en-GB', { day: 'numeric', ...tz })}</b><span>${t.toLocaleDateString('en-GB', { month: 'short', ...tz })}</span></div></div>
+        <div class="body"><h3>${esc(i.title)}</h3><div class="meta">${i.approval ? '<span class="pill">By invitation</span>' : ''}<span class="pill teal">${esc(price)}</span><span class="pill gray">${esc(day)} · ${esc(time)}</span>${i.venue ? `<span class="pill gray">${esc(i.venue)}</span>` : ''}</div>
         ${(i.summary || i.subtitle) ? `<p>${esc(i.summary || i.subtitle)}</p>` : ''}
-        <a class="btn btn-gold" href="/register?e=${encodeURIComponent(i.code)}">${i.approval ? 'Request your invitation' : 'Reserve your seat'} <span class="arrow">→</span></a></div></article>`;
+        <div class="ev-acts"><a class="btn btn-gold" href="/register?e=${encodeURIComponent(i.code)}">${i.approval ? 'Request your invitation' : 'Reserve your seat'} <span class="arrow">→</span></a>${addCal(i)}</div></div></article>`;
     }).join('');
   }).catch(() => {});
+
+  /* ---- forums page: the calendar ---- */
+  const gcal = LEG ? null : $('#gcal');
+  if (gcal) {
+    const feed = location.host + '/cal/events.ics';
+    $('[data-cal-sub]').href = 'webcal://' + feed;
+    $('[data-cal-gsub]').href = 'https://calendar.google.com/calendar/render?cid=' + encodeURIComponent('webcal://' + feed);
+    let all = [], month = null, picked = null;
+    const ymd = d => new Date(d).toLocaleDateString('en-CA', TZ);           // YYYY-MM-DD in Accra
+    const draw = () => {
+      const [y, m] = month.split('-').map(Number), first = new Date(Date.UTC(y, m - 1, 1, 12));
+      const lead = (first.getUTCDay() + 6) % 7, days = new Date(Date.UTC(y, m, 0)).getUTCDate(), today = ymd(Date.now());
+      $('[data-cal-title]', gcal).textContent = first.toLocaleDateString(LOC(), { month: 'long', year: 'numeric', timeZone: 'UTC' });
+      $('[data-cal-wd]', gcal).innerHTML = Array.from({ length: 7 }, (_, k) => `<span>${new Date(Date.UTC(2026, 5, 1 + k, 12)).toLocaleDateString(LOC(), { weekday: 'short', timeZone: 'UTC' })}</span>`).join('');
+      const by = {}; all.forEach(i => (by[ymd(i.starts_at)] ||= []).push(i));
+      const narrow = matchMedia('(max-width: 420px)').matches;   // smallest phones: the grid is a picture, the list below is what you tap
+      let html = '';
+      for (let k = 0; k < lead; k++) html += '<span class="gcal-d blank"></span>';
+      for (let n = 1; n <= days; n++) {
+        const key = `${month}-${String(n).padStart(2, '0')}`, L = by[key] || [], past = key < today;
+        html += L.length && narrow
+          ? `<span class="gcal-d has${past ? ' past' : ''}${key === today ? ' today' : ''}${key === picked ? ' on' : ''}" aria-hidden="true"><b>${n}</b></span>`
+          : L.length
+          ? `<button type="button" class="gcal-d has${past ? ' past' : ''}${key === today ? ' today' : ''}${key === picked ? ' on' : ''}" data-day="${key}" aria-label="${esc(n + ' · ' + L.map(i => i.title).join(', '))}">
+              <b>${n}</b><span class="gcal-t">${esc(L[0].title)}${L.length > 1 ? ' +' + (L.length - 1) : ''}</span></button>`
+          : `<span class="gcal-d${key === today ? ' today' : ''}"><b>${n}</b></span>`;
+      }
+      const inMonth = all.filter(i => ymd(i.starts_at).startsWith(month));
+      if (narrow && inMonth.length) html += `<div class="gcal-list">${inMonth.map(i => `<button type="button" class="gcal-li${ymd(i.starts_at) === picked ? ' on' : ''}" data-day="${ymd(i.starts_at)}">
+          <b>${esc(new Date(i.starts_at).toLocaleDateString(LOC(), { day: 'numeric', month: 'short', ...TZ }))}</b><span>${esc(i.title)}</span></button>`).join('')}</div>`;
+      $('[data-cal-grid]', gcal).innerHTML = html;
+      $$('[data-day]', gcal).forEach(b => b.addEventListener('click', () => { picked = b.dataset.day; draw(); show(by[picked] || []); }));
+      const firstM = all.length ? ymd(all[0].starts_at).slice(0, 7) : month, lastM = all.length ? ymd(all[all.length - 1].starts_at).slice(0, 7) : month;
+      $('[data-cal-prev]', gcal).disabled = month <= firstM; $('[data-cal-next]', gcal).disabled = month >= lastM;
+    };
+    const show = L => {
+      const pop = $('[data-cal-pop]', gcal);
+      pop.hidden = !L.length;
+      pop.innerHTML = L.map(i => {
+        const t = new Date(i.starts_at), past = new Date(evEnd(i)) < Date.now();
+        return `<article class="gcal-ev${past ? ' past' : ''}"><p class="gcal-when">${esc(t.toLocaleDateString(LOC(), { weekday: 'long', day: 'numeric', month: 'long', ...TZ }))} · ${esc(t.toLocaleTimeString(LOC(), { hour: '2-digit', minute: '2-digit', ...TZ }))}${i.venue ? ' · ' + esc(i.venue) : ''}</p>
+          <h4>${esc(i.title)}</h4>${(i.summary || i.subtitle) ? `<p>${esc(i.summary || i.subtitle)}</p>` : ''}
+          <div class="ev-acts">${past ? '<span class="pill gray">Past event</span>' : `<a class="btn btn-gold" href="/register?e=${encodeURIComponent(i.code)}">${i.approval ? 'Request your invitation' : 'Reserve your seat'} <span class="arrow">→</span></a>${addCal(i)}`}</div></article>`;
+      }).join('');
+    };
+    const step = n => { const [y, m] = month.split('-').map(Number), d = new Date(Date.UTC(y, m - 1 + n, 1)); month = d.toISOString().slice(0, 7); picked = null; show([]); draw(); };
+    matchMedia('(max-width: 420px)').addEventListener?.('change', () => { if (month) draw(); });
+    $('[data-cal-prev]', gcal).addEventListener('click', () => step(-1));
+    $('[data-cal-next]', gcal).addEventListener('click', () => step(1));
+    $$('[data-lang]').forEach(b => b.addEventListener('click', () => setTimeout(() => { if (month) { draw(); if (picked) show(all.filter(i => ymd(i.starts_at) === picked)); } }, 60)));
+    items().then(d => {
+      all = (d.items || []).filter(i => ['event', 'briefing'].includes(i.kind) && i.starts_at).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+      const next = all.find(i => new Date(evEnd(i)) > Date.now()) || all[all.length - 1];
+      month = next ? ymd(next.starts_at).slice(0, 7) : ymd(Date.now()).slice(0, 7);
+      picked = next ? ymd(next.starts_at) : null;
+      draw(); if (picked) show(all.filter(i => ymd(i.starts_at) === picked));
+    }).catch(() => { month = ymd(Date.now()).slice(0, 7); draw(); });
+  }
 
   /* ---- Ghana Business Brief ---- */
   const bf = LEG ? null : $('#briefF');

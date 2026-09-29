@@ -40,7 +40,7 @@ async function crawl(req) {
     if (!html) continue;
     for (const m of html.matchAll(/href="([^"]+)"/g)) {
       let h = m[1].replace(/&amp;/g, '&'); if (h.startsWith(B)) h = h.slice(B.length);
-      if (SKIP.test(h) || h.startsWith('/assets') || /\.(css|js|png|webp|jpg|svg|xml|ico|pdf)(\?|$)/.test(h)) continue;
+      if (SKIP.test(h) || h.startsWith('/assets') || /\.(css|js|png|webp|jpg|svg|xml|ico|pdf|ics)(\?|$)/.test(h)) continue;
       if (h.startsWith('#')) { if (h.length > 1) anchors.push([path, h.slice(1)]); continue; }
       if (!h.startsWith('/')) continue;
       const [p, hash] = h.split('#'); const clean = p.split('?')[0] || '/';
@@ -188,6 +188,18 @@ async function journeys(browser) {
     check('Spanish on a practice page', /IA|inteligencia|negocio/i.test(await p.textContent('main')), (await p.textContent('h1')));
     await p.click('.langb'); await p.click('#langp [data-lang="en"]'); await p.waitForTimeout(300);
     check('back to English', /AI/.test(await p.textContent('h1')));
+    // forums: calendar, add to calendar, calendar files
+    await p.goto(B + '/forums', NAV); await settle(p);
+    await p.waitForSelector('.gcal-d.has', { timeout: 10000 }).catch(() => {});
+    check('forums calendar marks the event days', await p.locator('.gcal-d.has').count() >= 1);
+    check('forums calendar opens on the next event with its details', await p.locator('.gcal-ev h4').count() >= 1 && await p.locator('.gcal-ev a[href^="/register?e="]').count() >= 1);
+    check('subscribe links point to the events feed', /^webcal:\/\/.+\/cal\/events\.ics$/.test(await p.getAttribute('[data-cal-sub]', 'href')) && /calendar\.google\.com.+cid=webcal/.test(await p.getAttribute('[data-cal-gsub]', 'href')));
+    await p.locator('#events .addcal summary').first().click();
+    const acl = await p.$$eval('#events .addcal[open] a', a => a.map(x => x.getAttribute('href')));
+    check('"Add to calendar" offers Google, an .ics file and Outlook.com', acl.length === 3 && /calendar\.google\.com.+action=TEMPLATE.+dates=\d{8}T\d{6}Z\/\d{8}T\d{6}Z/.test(acl[0]) && /^\/cal\/event\/[A-Z0-9]+\.ics$/.test(acl[1]) && /outlook\.live\.com/.test(acl[2]), acl.join(' '));
+    const icsOk = await p.evaluate(async u => { const r = await fetch(u); const t = await r.text(); return r.ok && /text\/calendar/.test(r.headers.get('content-type')) && t.startsWith('BEGIN:VCALENDAR') && t.includes('BEGIN:VEVENT'); }, acl[1]);
+    const feedOk = await p.evaluate(async () => { const r = await fetch('/cal/events.ics'); return r.ok && (await r.text()).includes('BEGIN:VEVENT'); });
+    check('event file and events feed download as valid calendars', icsOk && feedOk);
     // free tools
     await p.goto(B + '/tools', NAV); await settle(p);
     check('tools page shows the health check', await p.isVisible('#hcq fieldset'));

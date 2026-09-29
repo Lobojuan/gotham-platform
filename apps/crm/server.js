@@ -255,7 +255,7 @@ const wrapMail = (title, inner, footer = '') => mailDoc(title, `<div style="font
 <p style="margin:0 0 6px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#A9761F;font-weight:600">Gotham Consult</p>
 <h1 style="margin:0 0 14px;font-size:22px;color:#0F1B2D">${title}</h1>
 ${inner}
-<p style="margin-top:22px;font-size:13px;color:#5A6472">Gotham Consult, Accra · in strategic partnership with Carlson Capital Ltd<br>WhatsApp +233 55 041 6627 · info@gothamconsult.com</p>
+<p style="margin-top:22px;font-size:13px;color:#5A6472">Gotham Consult, Accra<br>WhatsApp +233 55 041 6627 · info@gothamconsult.com</p>
 ${footer}
 </div></div></div>`);
 
@@ -975,7 +975,13 @@ function parseContacts(text) {
 /* The four email designs. Plain is deliberately undesigned: for a managing
    director, a message that looks like a newsletter is a message that gets
    deleted. */
+/* Carlson Capital Ltd is Gotham's partner only for renewable energy and AI/software. Only campaigns
+   marked as such name it, with Uffe's number; everything else carries Gotham Consult and its own number. */
+const partnerFoot = cam => cam && cam.carlson
+  ? 'Gotham Consult, Accra · Renewable energy &amp; AI/software partner: Carlson Capital Ltd · WhatsApp or call +233 55 239 5548'
+  : 'Gotham Consult, Accra · WhatsApp or call +233 55 041 6627';
 function campaignHtml(cam, c, item, links) {
+  if (cam.template === 'designer') return mailDoc(merge(cam.subject, c), designerBody(cam, c, item && item.designer ? item : { media: {}, events: {}, sponsors: [] }, links, !!links.preview));
   return mailDoc(merge(cam.subject, c), campaignBody(cam, c, item, links));
 }
 function campaignBody(cam, c, item, links) {
@@ -984,7 +990,7 @@ function campaignBody(cam, c, item, links) {
       <a href="${links.cta}" style="display:inline-block;background:#0F1B2D;color:#ffffff;text-decoration:none;
         border-radius:999px;padding:13px 26px;font-weight:600;font-size:15px">${esc(merge(cam.cta_label, c))}</a></td></tr>` : '';
   const foot = `<tr><td style="padding:22px 0 0;border-top:1px solid #E2E4E7;color:#8A93A0;font-size:12px;line-height:1.6">
-      Gotham Consult, Accra, in partnership with Carlson Capital Ltd · WhatsApp or call +233 55 239 5548<br>
+      ${partnerFoot(cam)}<br>
       You are receiving this because we believe it is relevant to your work${c.source ? ' (' + esc(c.source) + ')' : ''}.
       <a href="${links.unsub}" style="color:#8A93A0">Tell us to stop</a> and we will not write again.</td></tr>`;
 
@@ -993,7 +999,7 @@ function campaignBody(cam, c, item, links) {
       ${paras(body, 'margin:0 0 14px')}
       ${cam.cta_label ? `<p style="margin:0 0 14px"><a href="${links.cta}" style="color:#0F1B2D">${esc(merge(cam.cta_label, c))}</a></p>` : ''}
       <p style="margin:0 0 4px">${esc(cam.from_name || 'Joy Anthony Preston')}<br>
-      <span style="color:#555">Gotham Consult · +233 55 239 5548</span></p>
+      <span style="color:#555">Gotham Consult · +233 55 041 6627${cam.carlson ? '<br>Renewable energy &amp; AI partner: Carlson Capital Ltd · +233 55 239 5548' : ''}</span></p>
       <p style="margin:18px 0 0;color:#999;font-size:12px">
         If you would rather not hear from us, <a href="${links.unsub}" style="color:#999">say so here</a>.</p></div>`;
   }
@@ -1017,7 +1023,7 @@ function campaignBody(cam, c, item, links) {
     <tr><td style="padding:26px 34px 0">
       <table role="presentation" width="100%"><tr>
         <td style="font-size:15px;font-weight:700;color:#0F1B2D;letter-spacing:.01em">Gotham Consult</td>
-        <td align="right" style="font-size:11px;color:#8A93A0">with Carlson Capital Ltd</td>
+        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'Renewable energy &amp; AI partner: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
       </tr></table></td></tr>
     <tr><td style="padding:22px 34px 0">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -1036,6 +1042,162 @@ function campaignBody(cam, c, item, links) {
       </tr></table></td></tr>
    </table></div>`;
 }
+
+/* ---------- email designer: blocks with pictures, built into a mail-safe email ----------
+   A designed email is a list of blocks. Every link in it goes through the campaign's tracked
+   /c/<token>?l=<n> address; n is the link's place in the blocks, so nobody can use it to
+   redirect anywhere the email did not already point. */
+const BLOCK_TYPES = ['heading', 'text', 'image', 'image_text', 'button', 'event', 'sponsors', 'divider'];
+function cleanBlocks(list) {
+  return (Array.isArray(list) ? list : []).slice(0, 40).map(b => {
+    if (!b || !BLOCK_TYPES.includes(b.type)) return null;
+    const o = { type: b.type };
+    for (const [k, n] of [['text', 4000], ['title', 200], ['label', 80], ['alt', 200], ['caption', 300]]) if (typeof b[k] === 'string') o[k] = clean(b[k], n);
+    if (typeof b.code === 'string') o.code = clean(b.code, 12).toUpperCase();
+    if (typeof b.media === 'string') o.media = b.media.replace(/[^a-f0-9]/g, '').slice(0, 32) || undefined;
+    if (typeof b.url === 'string') { const u = clean(b.url, 500); if (/^(https?:\/\/|mailto:|tel:)/i.test(u)) o.url = u; }
+    if (['l', 'm'].includes(b.size)) o.size = b.size;
+    if (['left', 'right'].includes(b.side)) o.side = b.side;
+    if (['dark', 'gold'].includes(b.style)) o.style = b.style;
+    if (['all', 'headline', 'partner', 'supporting'].includes(b.tier)) o.tier = b.tier;
+    return o;
+  }).filter(Boolean);
+}
+const MD_LINK = /\[([^\]]{1,120})\]\(((?:https?:\/\/|mailto:|tel:)[^)\s]{1,400})\)/g;
+/* The links of a designed email, in the order they appear. The same walk renders them. */
+function designerLinks(blocks) {
+  const out = [];
+  for (const b of blocks || []) {
+    if (b.type === 'text' || b.type === 'image_text') for (const m of String(b.text || '').matchAll(MD_LINK)) out.push(m[2]);
+    if (['image', 'image_text'].includes(b.type) && b.url) out.push(b.url);
+    if (b.type === 'button') out.push(b.url || SITE_URL);   // a button always goes somewhere: its link, or the website
+    if (b.type === 'event' && b.code) out.push(`${SITE_URL.replace(/\/$/, '')}/register?e=${encodeURIComponent(b.code)}`);
+  }
+  return out;
+}
+async function designerData(cam) {
+  const blocks = cam.blocks || [];
+  const ids = [...new Set(blocks.map(b => b.media).filter(Boolean))];
+  const media = {};
+  if (ids.length) for (const r of (await q('select id, variants, width, height from media where id = any($1)', [ids])).rows) {
+    const v = (r.variants || {}).email || (r.variants || {}).og || (r.variants || {}).lg || Object.values(r.variants || {})[0];
+    if (v) media[r.id] = { url: `${MEDIA_URL}/media/${v.jpg}`, w: v.w, h: v.h };
+  }
+  const events = {};
+  for (const code of [...new Set(blocks.filter(b => b.type === 'event' && b.code).map(b => b.code))]) { const it = await itemForMail(code); if (it) events[code] = it; }
+  let sponsors = [];
+  if (blocks.some(b => b.type === 'sponsors')) sponsors = (await q(`select s.name, s.tier, s.url as website, m.variants from sponsors s left join media m on m.id=s.logo
+      where s.published and (s.starts_on is null or s.starts_on <= current_date) and (s.ends_on is null or s.ends_on >= current_date)
+      order by case s.tier when 'headline' then 0 when 'partner' then 1 when 'supporting' then 2 else 3 end, s.sort, s.name`)).rows
+    .map(r => ({ name: r.name, tier: r.tier, url: r.website, logo: r.variants && (r.variants.lg || r.variants.sm) ? `${MEDIA_URL}/media/${(r.variants.lg || r.variants.sm).jpg}` : null }));
+  return { designer: true, media, events, sponsors };
+}
+function designerBody(cam, c, data, links, preview) {
+  const blocks = cam.blocks || [];
+  /* every link is looked up in the list designerLinks() makes, so its number is its place there */
+  const LINKS = designerLinks(blocks);
+  const L = u => { const i = LINKS.indexOf(String(u).replace(/&amp;/g, '&')); return i < 0 ? SITE_URL : `${links.cta}${links.cta.includes('?') ? '&' : '?'}l=${i}`; };
+  const inline = (t, withLinks = true) => {
+    let h = esc(merge(t, c)).replace(/\*\*([^*]{1,200})\*\*/g, '<b>$1</b>');
+    if (withLinks) h = h.replace(/\[([^\]]{1,120})\]\(((?:https?:\/\/|mailto:|tel:)[^)\s]{1,400})\)/g, (m, label, u) => `<a href="${L(u)}" style="color:#0F1B2D;font-weight:600">${label}</a>`);
+    return h;
+  };
+  const paras = t => String(t || '').split(/\n\s*\n/).map(x => x.trim()).filter(Boolean)
+    .map(x => `<p style="margin:0 0 14px;color:#3A4453;font-size:16px;line-height:1.65">${inline(x).replace(/\n/g, '<br>')}</p>`).join('');
+  const img = (b, w) => {
+    const m = data.media[b.media];
+    if (!m) return preview ? `<div style="background:#F1F1EC;border:2px dashed #D5D8DC;border-radius:12px;color:#8A93A0;font-size:14px;text-align:center;padding:48px 12px">Add a picture</div>` : '';
+    const tag = `<img src="${m.url}" width="${w}" alt="${esc(b.alt || '')}" style="width:100%;max-width:${w}px;height:auto;display:block;border:0;border-radius:12px">`;
+    return b.url ? `<a href="${L(b.url)}" style="text-decoration:none">${tag}</a>` : tag;
+  };
+  const btn = (label, style, u) => `<a href="${L(u || SITE_URL)}" style="display:inline-block;${style === 'gold' ? 'background:#E9B75A;color:#1a1205' : 'background:#0F1B2D;color:#ffffff'};text-decoration:none;border-radius:999px;padding:14px 28px;font-weight:700;font-size:15px">${esc(merge(label || 'Find out more', c))}</a>`;
+  const row = inner => `<tr><td style="padding:0 32px 18px">${inner}</td></tr>`;
+  const out = [];
+  for (const b of blocks) {
+    if (b.type === 'heading') { if (b.text) out.push(row(`<h${b.size === 'm' ? 2 : 1} style="margin:6px 0 0;color:#0F1B2D;font-size:${b.size === 'm' ? 21 : 28}px;line-height:1.2;letter-spacing:-.01em">${inline(b.text, false)}</h${b.size === 'm' ? 2 : 1}>`)); }
+    else if (b.type === 'text') { if (b.text) out.push(row(paras(b.text))); }
+    else if (b.type === 'image') { const h = img(b, 536); if (h) out.push(row(h + (b.caption ? `<p style="margin:8px 0 0;color:#8A93A0;font-size:13px">${esc(b.caption)}</p>` : ''))); }
+    else if (b.type === 'image_text') {
+      const pic = `<div style="display:inline-block;width:100%;max-width:250px;vertical-align:top;margin:0 0 12px">${img(b, 250)}</div>`;
+      const words = `<div style="display:inline-block;width:100%;max-width:262px;vertical-align:top;${b.side === 'right' ? 'padding-right:20px' : 'padding-left:20px'};box-sizing:border-box">
+        ${b.title ? `<h3 style="margin:0 0 8px;color:#0F1B2D;font-size:19px;line-height:1.25">${inline(b.title, false)}</h3>` : ''}${paras(b.text)}
+        ${b.url && b.label ? `<a href="${L(b.url)}" style="color:#0F1B2D;font-weight:700;font-size:15px">${esc(b.label)} →</a>` : ''}</div>`;
+      out.push(row(`<div style="font-size:0">${b.side === 'right' ? words + pic : pic + words}</div>`));
+    }
+    else if (b.type === 'button') out.push(row(`<div style="padding:4px 0">${btn(b.label, b.style, b.url)}</div>`));
+    else if (b.type === 'event') {
+      const it = data.events[b.code];
+      if (!it) { if (preview) out.push(row('<div style="background:#F1F1EC;border-radius:12px;color:#8A93A0;padding:20px;text-align:center">Pick an event</div>')); continue; }
+      const when = it.starts_at ? new Date(it.starts_at).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Accra' })
+        + ' · ' + new Date(it.starts_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Accra' }) : '';
+      out.push(row(`<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E6D3A8;border-radius:16px;background:#FFF9EC;border-collapse:separate">
+        ${it.cover_url ? `<tr><td><img src="${it.cover_url}" width="534" alt="" style="width:100%;height:auto;display:block;border-radius:15px 15px 0 0"></td></tr>` : ''}
+        <tr><td style="padding:18px 20px 20px">
+          <p style="margin:0 0 6px;color:#8A6116;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase">${esc(when)}</p>
+          <p style="margin:0 0 6px;color:#0F1B2D;font-size:20px;font-weight:700;line-height:1.25">${esc(it.title)}</p>
+          <p style="margin:0 0 14px;color:#5A6472;font-size:14.5px">${esc([it.venue, Number(it.price) > 0 ? 'GHS ' + Number(it.price).toLocaleString('en-GB') : 'Free'].filter(Boolean).join(' · '))}</p>
+          ${btn(b.label || (it.approval ? 'Request your invitation' : 'Reserve your seat'), 'gold', `${SITE_URL.replace(/\/$/, '')}/register?e=${encodeURIComponent(b.code)}`)}</td></tr></table>`));
+    }
+    else if (b.type === 'sponsors') {
+      const S = data.sponsors.filter(s => s.logo && (!b.tier || b.tier === 'all' || s.tier === b.tier)).slice(0, 12);
+      if (!S.length) { if (preview) out.push(row('<div style="color:#8A93A0;font-size:13px">No current sponsor logos to show.</div>')); continue; }
+      out.push(row(`<p style="margin:0 0 10px;color:#8A93A0;font-size:12px;letter-spacing:.1em;text-transform:uppercase">${esc(b.title || 'With thanks to our partners')}</p>
+        <div>${S.map(s => `<img src="${s.logo}" alt="${esc(s.name)}" height="40" style="height:40px;width:auto;margin:0 18px 12px 0;vertical-align:middle">`).join('')}</div>`));
+    }
+    else if (b.type === 'divider') out.push(row('<div style="height:1px;background:#E2E4E7;margin:4px 0"></div>'));
+  }
+  return `<div style="background:#EDEDE8;padding:26px 12px">
+   <table role="presentation" width="600" cellpadding="0" cellspacing="0" align="center"
+     style="max-width:600px;width:100%;margin:0 auto;background:#ffffff;border-radius:18px;overflow:hidden;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+    <tr><td style="height:6px;background:#A9761F;font-size:0;line-height:0">&nbsp;</td></tr>
+    <tr><td style="padding:22px 32px 18px">
+      <table role="presentation" width="100%"><tr>
+        <td style="font-size:15px;font-weight:700;color:#0F1B2D">Gotham Consult</td>
+        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'Renewable energy &amp; AI partner: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
+      </tr></table></td></tr>
+    ${out.join('\n')}
+    <tr><td style="padding:10px 32px 26px"><div style="border-top:1px solid #E2E4E7;padding-top:18px;color:#8A93A0;font-size:12px;line-height:1.6">
+      ${partnerFoot(cam)}<br>
+      You are receiving this because we believe it is relevant to your work${c.source ? ' (' + esc(c.source) + ')' : ''}.
+      <a href="${links.unsub}" style="color:#8A93A0">Tell us to stop</a> and we will not write again.</div></td></tr>
+    <tr><td style="font-size:0;line-height:0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td style="height:5px;background:#A9761F"></td><td style="height:5px;background:#0F1B2D"></td><td style="height:5px;background:#1F6B4E"></td><td style="height:5px;background:#C9A24B"></td></tr></table></td></tr>
+   </table></div>`;
+}
+/* What a campaign's email needs besides the contact: its event, or a designed email's pictures, events and sponsors. */
+const mailContext = async cam => cam.template === 'designer' ? designerData(cam) : (cam.item_code ? itemForMail(cam.item_code) : null);
+
+/* Pictures for email: never cropped, at most 1200 px wide (sharp on phones), light enough for mobile data. */
+async function storeEmailImage(buf, originalName, alt, who) {
+  const id = mediaId();
+  const meta = await sharp(buf).metadata();
+  if (!meta.width || !meta.height) throw new Error('not_an_image');
+  const base = sharp(buf).rotate().resize({ width: 1200, withoutEnlargement: true });
+  const png = meta.hasAlpha && ['png', 'webp', 'gif'].includes(meta.format);
+  const out = png ? await base.png({ compressionLevel: 9, palette: true }).toBuffer() : await base.flatten({ background: '#ffffff' }).jpeg({ quality: 80, mozjpeg: true }).toBuffer();
+  const m2 = await sharp(out).metadata(), file = `${id}-email.${png ? 'png' : 'jpg'}`;
+  fs.writeFileSync(path.join(MEDIA, file), out);
+  const variants = { email: { w: m2.width, h: m2.height, webp: file, jpg: file, kb: Math.round(out.length / 1024) } };
+  await q(`insert into media(id,kind,original_name,mime,bytes,width,height,variants,alt,uploaded_by) values ($1,'email',$2,$3,$4,$5,$6,$7,$8,$9)`,
+    [id, safeName(originalName), 'image/' + (png ? 'png' : 'jpeg'), out.length, meta.width, meta.height, JSON.stringify(variants), clean(alt, 200), who]);
+  return { id };
+}
+/* Starting points in the designer. Saved templates sit next to these. */
+const STARTER_TEMPLATES = [
+  { id: 'starter-promo', name: 'Promotion', subject: '{{first_name}}, something for {{company}}', builtin: true, blocks: [
+    { type: 'image' }, { type: 'heading', text: 'A better way to grow in Ghana', size: 'l' },
+    { type: 'text', text: 'Hello {{first_name}},\n\nWrite two or three short lines about the offer: what it is, who it is for, and why now.' },
+    { type: 'button', label: 'Find out more', style: 'gold', url: 'https://gothamconsult.com/services' }] },
+  { id: 'starter-event', name: 'Event invitation', subject: 'You are invited, {{first_name}}', builtin: true, blocks: [
+    { type: 'heading', text: 'You are invited', size: 'l' },
+    { type: 'text', text: 'Dear {{first_name}},\n\nOne line on why this room matters for {{company}}.' },
+    { type: 'event' }, { type: 'sponsors', tier: 'all' }] },
+  { id: 'starter-news', name: 'Newsletter', subject: 'Ghana Business Brief', builtin: true, blocks: [
+    { type: 'heading', text: 'Ghana Business Brief', size: 'l' }, { type: 'text', text: 'Hello {{first_name}}, three things worth knowing this week.' },
+    { type: 'image_text', title: 'First story', text: 'Two lines and a [link](https://gothamconsult.com).', side: 'left' },
+    { type: 'image_text', title: 'Second story', text: 'Two lines about it.', side: 'right' }, { type: 'divider' },
+    { type: 'text', text: 'Reply to this email if you want to talk about any of it.' }] }
+];
 
 /* Who this campaign would go to, after the suppression rules for its channel. */
 const CLIENT_TYPES = ['corporate','international','government','investor','sme','media','partner','other'];
@@ -1250,6 +1412,27 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { ok: true, database: 'ok' });
     }
 
+    /* calendar files: the public events feed, one event, and each person's private feed */
+    const mIcs = req.method === 'GET' && p.match(/^\/cal\/(?:(events)|event\/([A-Za-z0-9_-]{1,12})|([a-f0-9]{40}))\.ics$/);
+    if (mIcs) {
+      let name, entries, file = 'gotham.ics';
+      if (mIcs[1] || mIcs[2]) {
+        entries = await publicEvents(mIcs[2] ? mIcs[2].toUpperCase() : null);
+        if (mIcs[2] && !entries.length) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
+        name = mIcs[2] ? entries[0].title : 'Gotham Consult events'; file = mIcs[2] ? `gotham-${mIcs[2].toLowerCase()}.ics` : 'gotham-events.ics';
+      } else {
+        const cu = (await q('select email, role, name from users where cal_token=$1 and coalesce(active,true)', [mIcs[3]])).rows[0];
+        if (!cu) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('This calendar link was reset or turned off.'); }
+        const from = ymdOf(new Date(Date.now() - 31 * 864e5)), to = ymdOf(new Date(Date.now() + 366 * 864e5));
+        entries = (await calEntries(cu, from, to, { mine: true, types: ['event', 'task', 'deal', 'campaign'] })).filter(e => !e.done && (e.type !== 'campaign' || e.movable));   // open tasks, next steps, events, scheduled campaigns
+        name = 'Gotham · ' + (cu.name || cu.email.split('@')[0]);
+      }
+      const body = icsCalendar(name, entries, PUBLIC_URL + '/admin#cal');
+      res.writeHead(200, { 'content-type': 'text/calendar; charset=utf-8', 'cache-control': mIcs[3] ? 'private, max-age=300' : 'public, max-age=900',
+        'content-disposition': `${mIcs[3] || mIcs[1] ? 'inline' : 'attachment'}; filename="${file}"`, 'x-robots-tag': 'noindex' });
+      return res.end(body);
+    }
+
     if (p === '/api/items' && req.method === 'GET') {
       const { rows } = await itemsPublic();
       const full = await withMedia(rows);
@@ -1348,7 +1531,7 @@ ${await askKnowledge()}`;
       await queueMail(email, clean(b.contact_name, 120) || company, 'Thank you for your interest in sponsoring',
         wrapMail('We have your details',
           `<p style="color:#5A6472;font-size:15px">Thank you for your interest in partnering with Gotham Consult. We will come back to you within two working days with the pack and the options for ${esc(company)}.</p>
-           <p style="color:#5A6472;font-size:15px">If it is urgent, WhatsApp or call +233 55 239 5548.</p>`),
+           <p style="color:#5A6472;font-size:15px">If it is urgent, WhatsApp or call +233 55 041 6627.</p>`),
         'sponsor_ack', null);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'sponsor_enquiry', company + ' · ' + (b.tier || 'no tier')]);
       await inboundDeal({ company, full_name: clean(b.contact_name, 120), email, phone: phoneGH(clean(b.phone, 40)), kind: 'sponsorship',
@@ -1749,8 +1932,10 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
         where token=$1 returning campaign_id`, [mClick[1]]);
       let to = SITE_URL;
       if (rows[0]) {
-        const c = (await q('select cta_url from campaigns where id=$1', [rows[0].campaign_id])).rows[0];
-        if (c && c.cta_url) to = c.cta_url;
+        const c = (await q('select cta_url, template, blocks from campaigns where id=$1', [rows[0].campaign_id])).rows[0];
+        const li = parseInt(url.searchParams.get('l'));
+        if (c && c.template === 'designer') { const u = designerLinks(c.blocks)[li]; if (u) to = u; }   // only links that are in the email
+        else if (c && c.cta_url) to = c.cta_url;
       }
       res.writeHead(302, { location: to });
       return res.end();
@@ -1892,7 +2077,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
 <div class="no-print">Print this page, or use your browser's Print dialog and choose <b>Save as PDF</b>. Paper size is set to ${size}. <a href="?size=${size === 'A4' ? 'a5' : 'a4'}">Switch to ${size === 'A4' ? 'A5' : 'A4'}</a></div>
 <div class="sheet">
   <div class="kente"></div>
-  <div class="brand">Gotham Consult <span>in partnership with Carlson Capital Ltd</span></div>
+  <div class="brand">Gotham Consult <span>Accra, Ghana</span></div>
   <p class="eyebrow">${esc(ev ? (ev.kind === 'event' ? 'You are invited' : 'Gotham Consult') : 'Gotham Consult')}</p>
   <h1>${esc(headline)}</h1>
   ${sub ? `<p class="sub">${esc(sub)}</p>` : ''}
@@ -1910,7 +2095,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     </div>
   </div>
   <div class="bar"><i style="background:#A9761F"></i><i style="background:#0F1B2D"></i><i style="background:#1F6B4E"></i><i style="background:#C9A24B"></i></div>
-  <div class="foot"><span>WhatsApp or call +233 55 239 5548</span><span>${esc(SITE_URL.replace(/^https?:\/\//, ''))}</span></div>
+  <div class="foot"><span>WhatsApp or call +233 55 041 6627</span><span>${esc(SITE_URL.replace(/^https?:\/\//, ''))}</span></div>
 </div></body></html>`);
     }
 
@@ -2332,28 +2517,60 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       return json(res, 200, { rows });
     }
 
+    /* ---- email designer: saved templates and a live preview ---- */
+    if (p === '/api/email-templates' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q('select id, name, subject, blocks, created_by, updated_at from email_templates order by updated_at desc');
+      return json(res, 200, { rows: [...rows.map(r => ({ ...r, id: String(r.id) })), ...STARTER_TEMPLATES] });
+    }
+    if (p === '/api/email-templates' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req); const name = clean(b.name, 80);
+      if (!name) return json(res, 400, { error: 'name_required' });
+      const blocks = JSON.stringify(cleanBlocks(b.blocks));
+      const id = /^\d+$/.test(String(b.id || '')) ? +b.id : null;
+      const r = id ? await q('update email_templates set name=$1, subject=$2, blocks=$3::jsonb, updated_at=now() where id=$4 returning id', [name, clean(b.subject, 200), blocks, id])
+        : await q('insert into email_templates(name, subject, blocks, created_by) values ($1,$2,$3::jsonb,$4) returning id', [name, clean(b.subject, 200), blocks, u.email]);
+      if (!r.rows.length) return json(res, 404, { error: 'not_found' });
+      return json(res, 200, { ok: true, id: String(r.rows[0].id) });
+    }
+    const mTpl = p.match(/^\/api\/email-templates\/(\d+)$/);
+    if (mTpl && req.method === 'DELETE') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      await q('delete from email_templates where id=$1', [+mTpl[1]]); return json(res, 200, { ok: true });
+    }
+    if (p === '/api/campaigns/render' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      const cam = { template: 'designer', subject: clean(b.subject, 200) || 'Preview', blocks: cleanBlocks(b.blocks), carlson: b.carlson === true };
+      const sample = { company: 'Acme Mining Ghana', full_name: 'Ama Mensah', role: 'Managing Director', sector: 'Mining', city: 'Accra', source: 'sample' };
+      const html = campaignHtml(cam, sample, await designerData(cam), { cta: PUBLIC_URL + '/c/sample', unsub: PUBLIC_URL + '/u/sample', preview: true });
+      return json(res, 200, { html, subject: merge(cam.subject, sample), links: designerLinks(cam.blocks).length });
+    }
+
     if (p === '/api/campaigns' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const b = await body(req);
       const channel = CHANNELS.includes(b.channel) ? b.channel : 'email';
       if (!clean(b.name, 120) || (channel === 'email' && !clean(b.subject, 200))) return json(res, 400, { error: 'name_and_subject' });
       const vals = [clean(b.name, 120), clean(b.subject, 200) || clean(b.name, 120),
-        ['invitation','sponsor','brief','plain'].includes(b.template) ? b.template : 'invitation',
+        ['invitation','sponsor','brief','plain','designer'].includes(b.template) ? b.template : 'invitation',
         clean(b.intro, 6000), clean(b.cta_label, 60), clean(b.cta_url, 400),
         clean(b.item_code, 12).toUpperCase() || null, clean(b.seg_sector, 60), clean(b.seg_tags, 200),
         clean(b.seg_status, 20), clean(b.from_name, 120),
         Math.max(1, Math.min(channel === 'email' ? 200 : 2000, parseInt(b.daily_limit) || 40)),
         channel, clean(b.seg_type, 200), clean(b.seg_country, 200), b.seg_consent === 'yes' ? 'yes' : 'any',
-        clean(b.sms_text, 900), clean(b.wa_template, 120).replace(/[^a-z0-9_]/gi, '').toLowerCase() || null, clean(b.wa_lang, 10) || 'en', clean(b.wa_params, 2000)];
+        clean(b.sms_text, 900), clean(b.wa_template, 120).replace(/[^a-z0-9_]/gi, '').toLowerCase() || null, clean(b.wa_lang, 10) || 'en', clean(b.wa_params, 2000),
+        b.carlson === true, JSON.stringify(cleanBlocks(b.blocks))];
       if (b.id) {
         await q(`update campaigns set name=$1,subject=$2,template=$3,intro=$4,cta_label=$5,cta_url=$6,item_code=$7,
           seg_sector=$8,seg_tags=$9,seg_status=$10,from_name=$11,daily_limit=$12,channel=$13,seg_type=$14,seg_country=$15,
-          seg_consent=$16,sms_text=$17,wa_template=$18,wa_lang=$19,wa_params=$20 where id=$21`, [...vals, +b.id]);
+          seg_consent=$16,sms_text=$17,wa_template=$18,wa_lang=$19,wa_params=$20,carlson=$21,blocks=$22::jsonb where id=$23`, [...vals, +b.id]);
         return json(res, 200, { ok: true, id: +b.id });
       }
       const { rows } = await q(`insert into campaigns(name,subject,template,intro,cta_label,cta_url,item_code,
-        seg_sector,seg_tags,seg_status,from_name,daily_limit,channel,seg_type,seg_country,seg_consent,sms_text,wa_template,wa_lang,wa_params,created_by)
-        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) returning id`, [...vals, u.email]);
+        seg_sector,seg_tags,seg_status,from_name,daily_limit,channel,seg_type,seg_country,seg_consent,sms_text,wa_template,wa_lang,wa_params,carlson,blocks,created_by)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22::jsonb,$23) returning id`, [...vals, u.email]);
       return json(res, 200, { ok: true, id: rows[0].id });
     }
 
@@ -2374,8 +2591,8 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const cnt = await q(`select count(*)::int as n from contacts c where ${where}`, vals);
       const one = (await q(`select * from contacts c where ${where} order by id limit 1`, vals)).rows[0]
         || { company: 'Acme Mining Ghana', full_name: 'Ama Mensah', role: 'Managing Director', sector: 'Mining', source: 'sample' };
-      const item = cam.item_code ? await itemForMail(cam.item_code) : null;
-      const html = cam.channel === 'email' || !cam.channel ? campaignHtml(cam, one, item, { cta: PUBLIC_URL + '/c/sample', unsub: PUBLIC_URL + '/u/sample' }) : null;
+      const item = await mailContext(cam);
+      const html = cam.channel === 'email' || !cam.channel ? campaignHtml(cam, one, item, { cta: PUBLIC_URL + '/c/sample', unsub: PUBLIC_URL + '/u/sample', preview: true }) : null;
       const text = cam.channel === 'sms' || cam.channel === 'whatsapp' ? msgText(cam, one, 'sample0000000') : null;
       return json(res, 200, { audience: cnt.rows[0].n, sample_to: one.company || one.full_name, subject: merge(cam.subject, one), html, text,
         channel: cam.channel || 'email', provider: cam.channel === 'sms' ? (smsReady() ? 'arkesel' : null) : cam.channel === 'whatsapp' ? (waReady() ? 'whatsapp_cloud' : null) : mailVia(),
@@ -2401,7 +2618,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const to = clean(b.email, 160).toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(to)) return json(res, 400, { error: 'bad_email' });
       const sample = { company: 'Acme Mining Ghana', full_name: 'Ama Mensah', role: 'Managing Director', sector: 'Mining', city: 'Accra', source: 'test send' };
-      const item = cam.item_code ? await itemForMail(cam.item_code) : null;
+      const item = await mailContext(cam);
       await queueMail(to, 'Test', '[TEST] ' + merge(cam.subject, sample),
         campaignHtml(cam, sample, item, { cta: PUBLIC_URL + '/c/sample', unsub: PUBLIC_URL + '/u/sample' }), 'campaign_test');
       await flushMail(3);
@@ -2419,24 +2636,24 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       }
       const cam = (await q('select * from campaigns where id=$1', [id])).rows[0];
       if (!cam) return json(res, 404, { error: 'not_found' });
-      if (cam.channel === 'sms' && !cam.sms_text) return json(res, 400, { error: 'sms_text_missing' });
-      if (cam.channel === 'whatsapp' && !cam.wa_template && waReady()) return json(res, 400, { error: 'wa_template_missing' });
-      const { where, vals } = segmentSql(cam);
-      const { rows: aud } = await q(`select c.id, c.email, c.phone, c.whatsapp from contacts c where ${where} order by c.id`, vals);
-      if (!aud.length) return json(res, 400, { error: 'empty_audience' });
-      const seenAddr = new Set();
-      for (const a of aud) {
-        const addr = String(toAddr(cam.channel || 'email', a) || '').toLowerCase();
-        if (seenAddr.has(addr)) continue;            // one message per email or phone number, even if two records share it
-        seenAddr.add(addr);
-        await q(`insert into campaign_sends(campaign_id,contact_id,token,channel,to_addr) values ($1,$2,$3,$4,$5)
-                 on conflict (campaign_id,contact_id) do nothing`, [id, a.id, tok() + tok(), cam.channel || 'email', addr]);
+      const b = await body(req).catch(() => ({}));
+      /* "Send on …": check it now, build the queue when the time comes */
+      if (b && b.at) {
+        const at = new Date(b.at);
+        if (isNaN(at) || at < new Date(Date.now() + 60e3) || at > new Date(Date.now() + 400 * 864e5)) return json(res, 400, { error: 'bad_time' });
+        if (cam.channel === 'sms' && !cam.sms_text) return json(res, 400, { error: 'sms_text_missing' });
+        if (cam.channel === 'whatsapp' && !cam.wa_template && waReady()) return json(res, 400, { error: 'wa_template_missing' });
+        const { where, vals } = segmentSql(cam);
+        const n = (await q(`select count(*)::int as n from contacts c where ${where}`, vals)).rows[0].n;
+        if (!n) return json(res, 400, { error: 'empty_audience' });
+        await q("update campaigns set status='scheduled', starts_at=$2 where id=$1", [id, at]);
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'campaign_schedule', `${cam.name} → ${at.toISOString()}, about ${n} contacts`]);
+        return json(res, 200, { ok: true, scheduled: at.toISOString(), audience: n });
       }
-      await q("update campaigns set status='sending' where id=$1", [id]);
-      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
-        [u.email, 'campaign_start', `${cam.name} → ${aud.length} contacts, ${cam.daily_limit}/day`]);
+      const st = await startCampaign(cam, u.email);
+      if (st.error) return json(res, 400, { error: st.error });
       const r = await runCampaigns();
-      return json(res, 200, { ok: true, queued: aud.length, sent_now: r });
+      return json(res, 200, { ok: true, queued: st.queued, sent_now: r });
     }
 
     if (p === '/api/audit' && req.method === 'GET') {
@@ -2483,16 +2700,17 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       let buf;
       try { buf = Buffer.from(raw, 'base64'); } catch { return json(res, 400, { error: 'bad_file' }); }
       const isDoc = b.kind === 'doc' || /pdf$/i.test(b.name || '');
-      const isLogo = !isDoc && b.kind === 'logo';
+      const isLogo = !isDoc && b.kind === 'logo', isEmail = !isDoc && b.kind === 'email';
       if (isDoc && buf.length > MAX_DOC_BYTES) return json(res, 413, { error: 'file_too_large' });
       if (!isDoc && buf.length > MAX_IMAGE_BYTES) return json(res, 413, { error: 'file_too_large' });
       try {
         const out = isDoc ? await storeDoc(buf, b.name, b.label || b.alt, u.email)
           : isLogo ? await storeLogo(buf, b.name, b.alt, u.email)
+          : isEmail ? await storeEmailImage(buf, b.name, b.alt, u.email)
           : await storeImage(buf, b.name, b.alt, u.email);
         const { rows } = await q('select * from media where id=$1', [out.id]);
         await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
-          [u.email, 'media_upload', `${isDoc ? 'PDF' : isLogo ? 'logo' : 'image'} ${safeName(b.name)} (${Math.round(buf.length / 1024)} KB)`]);
+          [u.email, 'media_upload', `${isDoc ? 'PDF' : isLogo ? 'logo' : isEmail ? 'email picture' : 'image'} ${safeName(b.name)} (${Math.round(buf.length / 1024)} KB)`]);
         return json(res, 200, { ...mediaPublic(rows[0]), name: rows[0].original_name, bytes: rows[0].bytes });
       } catch (e) {
         return json(res, 400, { error: e.message === 'not_a_pdf' ? 'not_a_pdf' : e.message === 'not_an_image' ? 'not_an_image' : 'process_failed' });
@@ -2793,6 +3011,28 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       return json(res, 200, up);
     }
 
+
+    /* ---- calendar ---- */
+    if (p === '/api/calendar' && req.method === 'GET') {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      const from = day(url.searchParams.get('from')), to = day(url.searchParams.get('to'));
+      if (!from || !to || to < from || Date.parse(to) - Date.parse(from) > 122 * 864e5) return json(res, 400, { error: 'bad_range' });
+      const types = String(url.searchParams.get('types') || '').split(',').filter(t => CAL_TYPES.includes(t));
+      const rows = await calEntries(u, from, to, { mine: url.searchParams.get('mine') === '1', types: types.length ? types : null });
+      return json(res, 200, { rows });
+    }
+    if (p === '/api/calendar/feed' && (req.method === 'GET' || req.method === 'POST')) {
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      let t = (await q('select cal_token from users where email=$1', [u.email])).rows[0]?.cal_token;
+      if (!t || req.method === 'POST') {
+        t = crypto.randomBytes(20).toString('hex');
+        await q('update users set cal_token=$1 where email=$2', [t, u.email]);
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'calendar_link', req.method === 'POST' ? 'reset' : 'created']);
+      }
+      const link = `${PUBLIC_URL}/cal/${t}.ics`;
+      return json(res, 200, { url: link, webcal: link.replace(/^https?:/, 'webcal:') });
+    }
+
     /* ---- notes: a call, a WhatsApp, a meeting ---- */
     if (p === '/api/notes' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -3082,7 +3322,7 @@ async function runCampaigns() {
       continue;
     }
 
-    const item = ch === 'email' && cam.item_code ? await itemForMail(cam.item_code) : null;
+    const item = ch === 'email' ? await mailContext(cam) : null;
     for (const c of due) {
       /* re-check suppression at send time, not just when the queue was built */
       const blocked = c.status === 'do_not_contact'
@@ -3113,6 +3353,159 @@ async function runCampaigns() {
   }
   if (sentTotal) { await flushMail(Math.min(100, sentTotal + 10)); await flushMessages(Math.min(500, sentTotal + 10)); }
   return sentTotal;
+}
+
+/* ---------- calendar: every dated thing in one place ----------
+   Events, tasks and follow-ups, deal next steps, deals won and lost, campaigns (scheduled
+   starts and what went out each day), logged calls and meetings, registrations and payments
+   per day, sponsor start and end dates. Each entry says where it lives, so a click opens it. */
+const ymdOf = d => (d instanceof Date ? d : new Date(d)).toISOString().slice(0, 10);
+const CAL_TYPES = ['event', 'task', 'deal', 'closed', 'campaign', 'activity', 'registration', 'payment', 'sponsor'];
+async function calEntries(u, from, to, opt = {}) {
+  const admin = u.role !== 'staff', mine = !!opt.mine, want = t => (!opt.types || opt.types.includes(t)) && (admin || ['event', 'task', 'registration', 'payment'].includes(t));
+  const lo = from + 'T00:00:00Z', hi = to + 'T23:59:59Z', out = [];
+  if (want('event')) {
+    const { rows } = await q(`select i.code, i.title, i.kind, i.venue, i.starts_at, i.ends_at, i.capacity, i.published, i.phase,
+        (select coalesce(sum(r.seats),0)::int from registrations r where r.item_code=i.code and r.status in ('new','pending','confirmed','attended')) as taken
+      from items i where i.starts_at is not null and i.starts_at <= $2 and coalesce(i.ends_at, i.starts_at) >= $1 ${admin ? '' : 'and i.published'}
+      order by i.starts_at`, [lo, hi]);
+    for (const r of rows) out.push({ key: 'event-' + r.code, type: 'event', id: r.code, title: r.title,
+      sub: [r.venue, `${r.taken}${r.capacity ? '/' + r.capacity : ''} registered`, r.published ? '' : 'draft'].filter(Boolean).join(' · '),
+      start: r.starts_at, end: r.ends_at, all_day: false, location: r.venue || '', link: { kind: 'event', id: r.code } });
+  }
+  if (want('task')) {
+    const cond = !admin ? 'and t.assignee=$3' : mine ? 'and (t.assignee=$3 or (t.assignee is null and t.created_by=$3))' : '';
+    const { rows } = await q(`select t.id, t.title, t.due_at, t.done_at, t.priority, t.assignee, c.company, c.full_name, d.title as deal_title
+      from tasks t left join contacts c on c.id=t.contact_id left join deals d on d.id=t.deal_id
+      where t.due_at between $1 and $2 ${cond} order by t.due_at`, cond ? [lo, hi, u.email] : [lo, hi]);
+    for (const r of rows) out.push({ key: 'task-' + r.id, type: 'task', id: r.id, title: r.title,
+      sub: [admin ? (r.company || r.full_name) : '', r.deal_title, r.assignee ? r.assignee.split('@')[0] : 'unassigned'].filter(Boolean).join(' · '),
+      start: r.due_at, all_day: /T00:00:00/.test(new Date(r.due_at).toISOString()), done: !!r.done_at, high: r.priority === 'high',
+      mine: r.assignee === u.email, movable: true, link: { kind: 'task', id: r.id } });
+  }
+  if (want('deal')) {
+    const { rows } = await q(`select id, title, company, next_step, next_date, owner, value, stage from deals
+      where next_date between $1::date and $2::date and stage not in ('won','lost') ${mine ? 'and owner=$3' : ''} order by next_date`,
+      mine ? [from, to, u.email] : [from, to]);
+    for (const r of rows) out.push({ key: 'deal-' + r.id, type: 'deal', id: r.id, title: r.next_step || 'Next step: ' + r.title,
+      sub: [r.company, r.title, Number(r.value) ? 'GHS ' + Number(r.value).toLocaleString('en-GB') : '', r.stage].filter(Boolean).join(' · '),
+      start: ymdOf(r.next_date), all_day: true, mine: r.owner === u.email, movable: true, link: { kind: 'deal', id: r.id } });
+  }
+  if (want('closed')) {
+    const { rows } = await q(`select id, title, company, stage, value, closed_at, owner from deals
+      where closed_at between $1 and $2 and stage in ('won','lost') ${mine ? 'and owner=$3' : ''}`, mine ? [lo, hi, u.email] : [lo, hi]);
+    for (const r of rows) out.push({ key: 'closed-' + r.id, type: 'closed', id: r.id, title: (r.stage === 'won' ? 'Won: ' : 'Lost: ') + r.title,
+      sub: [r.company, Number(r.value) ? 'GHS ' + Number(r.value).toLocaleString('en-GB') : ''].filter(Boolean).join(' · '),
+      start: r.closed_at, all_day: false, won: r.stage === 'won', link: { kind: 'deal', id: r.id } });
+  }
+  if (want('campaign')) {
+    const { rows: sch } = await q(`select id, name, channel, starts_at, status from campaigns where status='scheduled' and starts_at between $1 and $2`, [lo, hi]);
+    for (const r of sch) out.push({ key: 'camp-' + r.id, type: 'campaign', id: r.id, title: 'Starts: ' + r.name,
+      sub: (r.channel === 'sms' ? 'SMS' : r.channel === 'whatsapp' ? 'WhatsApp' : 'Email') + ' · scheduled', start: r.starts_at, all_day: false,
+      movable: true, link: { kind: 'campaign', id: r.id } });
+    const { rows: sent } = await q(`select c.id, c.name, c.channel, date_trunc('day', s.sent_at) as d, count(*)::int as n,
+        count(s.clicked_at)::int as clicks
+      from campaign_sends s join campaigns c on c.id=s.campaign_id
+      where s.sent_at between $1 and $2 group by c.id, c.name, c.channel, date_trunc('day', s.sent_at)`, [lo, hi]);
+    for (const r of sent) out.push({ key: `sent-${r.id}-${ymdOf(r.d)}`, type: 'campaign', id: r.id, title: `${r.name}: ${r.n} sent`,
+      sub: (r.channel === 'sms' ? 'SMS' : r.channel === 'whatsapp' ? 'WhatsApp' : 'Email') + (r.clicks ? ` · ${r.clicks} clicked` : ''),
+      start: ymdOf(r.d), all_day: true, link: { kind: 'campaign', id: r.id } });
+  }
+  if (want('activity')) {
+    const { rows } = await q(`select n.id, n.kind, n.body, n.at, n.author, n.contact_id, n.deal_id, c.company, c.full_name
+      from notes n left join contacts c on c.id=n.contact_id where n.at between $1 and $2 ${mine ? 'and n.author=$3' : ''} order by n.at`,
+      mine ? [lo, hi, u.email] : [lo, hi]);
+    const KN = { note: 'Note', call: 'Call', whatsapp: 'WhatsApp', meeting: 'Meeting', email: 'Email' };
+    for (const r of rows) out.push({ key: 'note-' + r.id, type: 'activity', id: r.id, title: `${KN[r.kind] || 'Note'}: ${r.company || r.full_name || 'contact'}`,
+      sub: [String(r.body || '').slice(0, 90), r.author ? r.author.split('@')[0] : ''].filter(Boolean).join(' · '), start: r.at, all_day: false,
+      link: r.contact_id ? { kind: 'rec', id: r.contact_id } : { kind: 'deal', id: r.deal_id } });
+  }
+  if (want('registration')) {
+    const { rows } = await q(`select r.item_code, i.title, date_trunc('day', r.created_at) as d, count(*)::int as n, coalesce(sum(r.seats),0)::int as seats
+      from registrations r join items i on i.code=r.item_code where r.created_at between $1 and $2 group by r.item_code, i.title, date_trunc('day', r.created_at)`, [lo, hi]);
+    for (const r of rows) out.push({ key: `reg-${r.item_code}-${ymdOf(r.d)}`, type: 'registration', id: r.item_code,
+      title: `${r.n} registration${r.n === 1 ? '' : 's'}`, sub: r.title + (r.seats > r.n ? ` · ${r.seats} seats` : ''), start: ymdOf(r.d), all_day: true,
+      link: { kind: 'regs', id: r.item_code } });
+  }
+  if (want('payment')) {
+    const { rows } = await q(`select r.item_code, i.title, date_trunc('day', r.paid_at) as d, count(*)::int as n, coalesce(sum(r.amount),0) as amt
+      from registrations r join items i on i.code=r.item_code where r.paid and r.paid_at between $1 and $2 group by r.item_code, i.title, date_trunc('day', r.paid_at)`, [lo, hi]);
+    for (const r of rows) out.push({ key: `pay-${r.item_code}-${ymdOf(r.d)}`, type: 'payment', id: r.item_code,
+      title: `${r.n} payment${r.n === 1 ? '' : 's'}${admin ? ' · GHS ' + Number(r.amt).toLocaleString('en-GB') : ''}`, sub: r.title, start: ymdOf(r.d), all_day: true,
+      link: { kind: 'regs', id: r.item_code } });
+  }
+  if (want('sponsor')) {
+    const { rows } = await q(`select id, name, tier, starts_on, ends_on from sponsors
+      where (starts_on between $1::date and $2::date) or (ends_on between $1::date and $2::date)`, [from, to]);
+    for (const r of rows) {
+      for (const [k, dte] of [['starts', r.starts_on], ['ends', r.ends_on]]) {
+        if (!dte) continue; const s = ymdOf(dte); if (s < from || s > to) continue;
+        out.push({ key: `spon-${r.id}-${k}`, type: 'sponsor', id: r.id, title: `Sponsor ${k}: ${r.name}`, sub: r.tier || '', start: s, all_day: true,
+          link: { kind: 'spon', id: r.id } });
+      }
+    }
+  }
+  return out.sort((a, b) => String(a.start).localeCompare(String(b.start)));
+}
+
+/* iCalendar text (RFC 5545): escaped, folded at 75 octets, CRLF line ends. */
+const icsEsc = s => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsFold = line => {
+  const out = []; let cur = '';
+  for (const ch of line) { if (Buffer.byteLength(cur + ch) > (out.length ? 74 : 75)) { out.push(cur); cur = ch; } else cur += ch; }
+  out.push(cur); return out.join('\r\n ');
+};
+const icsStamp = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+function icsCalendar(name, entries, link) {
+  const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Gotham Consult//Back office//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'X-WR-CALNAME:' + icsEsc(name), 'X-WR-TIMEZONE:Africa/Accra', 'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H'];
+  const now = icsStamp(new Date());
+  for (const e of entries) {
+    L.push('BEGIN:VEVENT', 'UID:' + e.key + '@gothamconsult.com', 'DTSTAMP:' + now);
+    if (e.all_day) {
+      const d = ymdOf(e.start), n = ymdOf(new Date(Date.parse(d + 'T00:00:00Z') + 864e5));
+      L.push('DTSTART;VALUE=DATE:' + d.replace(/-/g, ''), 'DTEND;VALUE=DATE:' + n.replace(/-/g, ''));
+    } else {
+      const s = new Date(e.start), en = e.end && new Date(e.end) > s ? new Date(e.end) : new Date(s.getTime() + (e.type === 'event' ? 3 : 0.5) * 36e5);
+      L.push('DTSTART:' + icsStamp(s), 'DTEND:' + icsStamp(en));
+    }
+    L.push('SUMMARY:' + icsEsc((e.done ? '✓ ' : '') + e.title));
+    if (e.sub || e.location) L.push('DESCRIPTION:' + icsEsc([e.sub, e.url || link].filter(Boolean).join('\n')));
+    if (e.location) L.push('LOCATION:' + icsEsc(e.location));
+    if (e.url || link) L.push('URL:' + (e.url || link));
+    if (e.done) L.push('STATUS:CANCELLED');
+    L.push('END:VEVENT');
+  }
+  L.push('END:VCALENDAR');
+  return L.map(icsFold).join('\r\n') + '\r\n';
+}
+/* Published events for the public: the website calendar and "Add to my calendar". */
+async function publicEvents(code) {
+  const { rows } = await q(`select code, title, subtitle, venue, starts_at, ends_at, price, currency, slug from items
+    where published and starts_at is not null and kind in ('event','briefing') ${code ? 'and code=$1' : "and starts_at > now() - interval '180 days'"} order by starts_at`, code ? [code] : []);
+  return rows.map(r => ({ key: 'gc-event-' + r.code, type: 'event', title: r.title, start: r.starts_at, end: r.ends_at, all_day: false,
+    location: r.venue || '', sub: r.subtitle || '', url: `${SITE_URL.replace(/\/$/, '')}/register?e=${encodeURIComponent(r.code)}` }));
+}
+
+/* Start a campaign: build its queue from the audience as it is right now. */
+async function startCampaign(cam, actor) {
+  if (cam.channel === 'sms' && !cam.sms_text) return { error: 'sms_text_missing' };
+  if (cam.channel === 'whatsapp' && !cam.wa_template && waReady()) return { error: 'wa_template_missing' };
+  const { where, vals } = segmentSql(cam);
+  const { rows: aud } = await q(`select c.id, c.email, c.phone, c.whatsapp from contacts c where ${where} order by c.id`, vals);
+  if (!aud.length) return { error: 'empty_audience' };
+  const seenAddr = new Set();
+  for (const a of aud) {
+    const addr = String(toAddr(cam.channel || 'email', a) || '').toLowerCase();
+    if (seenAddr.has(addr)) continue;            // one message per email or phone number, even if two records share it
+    seenAddr.add(addr);
+    await q(`insert into campaign_sends(campaign_id,contact_id,token,channel,to_addr) values ($1,$2,$3,$4,$5)
+             on conflict (campaign_id,contact_id) do nothing`, [cam.id, a.id, tok() + tok(), cam.channel || 'email', addr]);
+  }
+  await q("update campaigns set status='sending', starts_at=coalesce(starts_at, now()) where id=$1", [cam.id]);
+  await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+    [actor, 'campaign_start', `${cam.name} → ${aud.length} contacts, ${cam.daily_limit}/day`]);
+  return { queued: aud.length };
 }
 
 async function runJobs() {
@@ -3155,6 +3548,13 @@ async function runJobs() {
     // 4. Brief subscribers and forum registrants into the client database
     await syncRegistrations();
     // 5. outreach campaigns, within their daily limit; then whatever email, SMS and WhatsApp is waiting
+    // scheduled campaigns whose time has come
+    for (const cam of (await q("select * from campaigns where status='scheduled' and starts_at <= now()")).rows) {
+      const r = await startCampaign(cam, 'schedule');
+      if (r.error) { await q("update campaigns set status='paused' where id=$1", [cam.id]);
+        await q('insert into jobs_log(job,detail) values ($1,$2)', ['campaign_schedule', `${cam.name}: not started (${r.error})`]); }
+      else await q('insert into jobs_log(job,detail) values ($1,$2)', ['campaign_schedule', `${cam.name}: started, ${r.queued} queued`]);
+    }
     await runCampaigns();
     await flushMail(60);
     await flushMessages(200);

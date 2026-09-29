@@ -182,7 +182,7 @@ create table if not exists sponsor_leads (
 
 -- widen the media kinds for logos on an existing database
 alter table media drop constraint if exists media_kind_check;
-alter table media add constraint media_kind_check check (kind in ('image','logo','doc'));
+alter table media add constraint media_kind_check check (kind in ('image','logo','doc','email'));
 
 -- ---- outreach: contacts and campaigns (v1.4) ----
 create table if not exists contacts (
@@ -363,3 +363,28 @@ create table if not exists msg_outbox (
 create index if not exists msg_outbox_q on msg_outbox (status, channel, id);
 create index if not exists outbox_kind_status on outbox (status, kind, id);
 alter table outbox add column if not exists unsub_url text;
+
+-- Carlson Capital Ltd is named (with Uffe's number) only on renewable energy / AI-software campaigns
+alter table campaigns add column if not exists carlson boolean not null default false;
+
+-- calendar: campaigns can be scheduled; everyone gets a private feed for their phone calendar
+alter table campaigns add column if not exists starts_at timestamptz;
+alter table campaigns drop constraint if exists campaigns_status_check;
+alter table campaigns add constraint campaigns_status_check check (status in ('draft','scheduled','sending','paused','done'));
+alter table users add column if not exists cal_token text;
+create unique index if not exists users_cal_token_uq on users (cal_token) where cal_token is not null;
+
+-- email designer: a campaign can be a list of blocks with pictures; designs can be saved and reused
+alter table campaigns add column if not exists blocks jsonb not null default '[]'::jsonb;
+alter table campaigns drop constraint if exists campaigns_template_check;
+alter table campaigns add constraint campaigns_template_check check (template in ('invitation','sponsor','brief','plain','designer'));
+alter table media drop constraint if exists media_kind_check;
+alter table media add constraint media_kind_check check (kind in ('image','logo','doc','email'));
+create table if not exists email_templates (
+  id serial primary key,
+  name text not null,
+  subject text,
+  blocks jsonb not null default '[]'::jsonb,
+  created_by text,
+  created_at timestamptz default now(), updated_at timestamptz default now()
+);

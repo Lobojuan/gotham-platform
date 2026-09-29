@@ -191,3 +191,17 @@ for reduced motion.
 - Matching: email, then phone/WhatsApp, then company + person. Re-importing fills gaps and adds tags; it never overwrites CRM edits, never turns a consent "no" into "yes", and leaves opted-out contacts alone.
 - Consent "yes" for a whole list needs a written reason (`consent_source`); yes/no columns in the file are used per person and recorded as "<file>: column …".
 - Tests: `tests/api/15_import_formats.py`. 20,000 rows ≈ 15 s.
+
+## Calendar (back office `#cal`, website /forums, phone feeds)
+- `GET /api/calendar?from&to[&mine=1&types=…]` (max ~4 months): events, tasks, deal next steps, deals won/lost, campaigns (scheduled starts + sends per day), notes (calls/meetings), registrations and payments per day, sponsor dates. Staff get events, own tasks, registration/payment counts only.
+- Drag in the month/week view moves tasks (`PATCH /api/tasks/:id`), next steps (`PATCH /api/deals/:id`) and scheduled campaigns (`POST /api/campaigns/:id/start {at}`).
+- Campaigns can be scheduled (`status='scheduled'`, `starts_at`); the 15-minute job starts them and builds the queue then.
+- Private feed per person: `GET/POST /api/calendar/feed` → `/cal/<40 hex>.ics` (reset = new token). Public: `/cal/events.ics`, `/cal/event/<CODE>.ics`.
+- Tests: `tests/api/16_calendar_footer.py`, `tests/ui/calendar_ui.js`, forums checks in `tests/e2e/site_e2e.js`.
+
+## Email designer (Outreach → campaign → Design: "Designer")
+- `campaigns.template='designer'` + `campaigns.blocks` (heading, text, image, image_text, button, event, sponsors, divider). Pictures upload as media kind `email` (≤1200 px, JPEG or PNG, never cropped).
+- Every link becomes `/c/<token>?l=<n>`; n indexes `designerLinks(blocks)`, so the redirect can only go where the email already points.
+- Saved designs: `email_templates` + three starters. Live preview: `POST /api/campaigns/render`.
+- Carlson Capital Ltd and +233 55 239 5548 appear only on campaigns ticked "renewable energy or AI/software" (`campaigns.carlson`); everything else is Gotham + +233 55 041 6627.
+- Tests: `tests/api/17_email_designer.py`, `tests/ui/email_designer_ui.js`.
