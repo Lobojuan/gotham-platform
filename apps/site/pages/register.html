@@ -134,7 +134,7 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
 
 <div class="kente" aria-hidden="true"></div>
 <header><div class="wrap bar">
-  <a class="brand" href="#"><span class="mark">G</span><span>Gotham Consult<small>in partnership with Carlson Capital Ltd</small></span></a>
+  <a class="brand" href="#"><span class="mark">G</span><span>Gotham Consult</span></a>
   <nav class="main" id="nav" aria-label="Main"></nav>
 </div></header>
 
@@ -210,7 +210,7 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
         <div id="payInfo"></div>
       </fieldset>
 
-      <label class="consent" for="cons"><input type="checkbox" id="cons" required><span>I agree that Gotham Consult and Carlson Capital Ltd may use these details to process my registration and contact me about it, as described in the <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>, and I accept the <a href="/terms" target="_blank" rel="noopener">terms of service</a>. Ghana Data Protection Act 2012 (Act 843); GDPR standards for EU and UK clients.</span></label>
+      <label class="consent" for="cons"><input type="checkbox" id="cons" required><span>I agree that Gotham Consult may use these details to process my registration and contact me about it, as described in the <a href="/privacy" target="_blank" rel="noopener">privacy notice</a>, and I accept the <a href="/terms" target="_blank" rel="noopener">terms of service</a>. Ghana Data Protection Act 2012 (Act 843); GDPR standards for EU and UK clients.</span></label>
       <p class="err" id="err" role="alert"></p>
     </form>
 
@@ -238,7 +238,7 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
   </div>
 </main>
 
-<footer><div class="wrap">Gotham Consult · Accra, Ghana · In strategic partnership with Carlson Capital Ltd, registered in Ghana · WhatsApp +233 55 041 6627 · info@gothamconsult.com · <a href="/privacy" style="color:var(--mute)">Privacy</a> · <a href="/terms" style="color:var(--mute)">Terms</a><br>Investor, mining &amp; international desk: Uffe Carlson, Carlson Capital Ltd · WhatsApp and direct line <a href="tel:+233552395548" style="color:var(--mute)">+233 55 239 5548</a> · <a href="/admin" style="color:var(--mute)">Team login</a></div></footer>
+<footer><div class="wrap">Gotham Consult · Accra, Ghana · WhatsApp +233 55 041 6627 · info@gothamconsult.com · <a href="/privacy" style="color:var(--mute)">Privacy</a> · <a href="/terms" style="color:var(--mute)">Terms</a> · <a href="/admin" style="color:var(--mute)">Team login</a></div></footer>
 
 <script>
 /* ===== Settings Joy/Uffe can change ===== */
@@ -337,7 +337,7 @@ function render(){
   <li>Amount: <b>${gh}</b> · Reference: <span class="ref">${ref}</span></li>
   <li>Add the transaction ID from your MoMo SMS to your WhatsApp message.</li></ol>
 </div>`}
- else info=`<div class="box"><b style="color:var(--ink)">Invoice & bank transfer</b><br>We email a proforma invoice from Carlson Capital Ltd within one working day, in Ghana cedis, with bank details and reference <span class="ref">${ref}</span>. Your place is confirmed when payment arrives.</div>`;
+ else info=`<div class="box"><b style="color:var(--ink)">Invoice & bank transfer</b><br>We email a proforma invoice from Gotham Consult within one working day, in Ghana cedis, with bank details and reference <span class="ref">${ref}</span>. Your place is confirmed when payment arrives.</div>`;
  $('#payInfo').innerHTML=info;
  $('#goWa').textContent=free?'Reserve via WhatsApp':'Register via WhatsApp';
  $('#goSend').textContent=sel.appr?'Request my invitation':(free?'Reserve my seat':'Complete registration');
@@ -408,7 +408,7 @@ $('#goSend').onclick=async()=>{
   }else if(pay==='online'&&PAYL){
    extra=`<a class="btn btn-dark" href="${PAYL}" target="_blank" rel="noopener">Open secure payment →</a>`;
   }else{
-   extra=`<p class="note" style="margin-top:6px">We email a proforma invoice from Carlson Capital Ltd within one working day, with bank details and your reference.</p>`;
+   extra=`<p class="note" style="margin-top:6px">We email a proforma invoice from Gotham Consult within one working day, with bank details and your reference.</p>`;
   }
   OKT = d.status==='pending' ? 'Application received' : 'Registration received';
   done(extra);

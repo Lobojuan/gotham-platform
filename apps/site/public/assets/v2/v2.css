@@ -65,6 +65,10 @@ a:hover > .arrow, .btn:hover .arrow { transform: translateX(3px); }
 .brand b { display: block; font-size: 17px; line-height: 1.15; font-weight: 800; letter-spacing: -.01em; color: #fff; }
 .brand small { display: block; font-size: 12.5px; font-weight: 600; line-height: 1.3; color: var(--gold-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .brand small em { font-style: normal; font-weight: 500; color: rgba(255,255,255,.72); }
+.brand small .sc-l, .brand small .sc-s { font-weight: 500; color: rgba(255,255,255,.72); margin-right: 4px; }
+.brand small .sc-s { display: none; }
+@media (max-width: 1499px) { .brand small .sc-l { display: none; } .brand small .sc-s { display: inline; } }
+.nav a, .nav button, .gh-act .login { white-space: nowrap; }
 .nav { display: none; }
 .nav > ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 2px; }
 .nav a, .nav button.nb { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px;
@@ -330,6 +334,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .partner b { font-weight: 700; color: #fff; }
 .partner .cc { color: var(--gold-2); }
 .partner .x { color: rgba(255,255,255,.5); font-weight: 400; }
+.partner .ps { font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,.62); letter-spacing: .02em; }
 @media (max-width: 899px) { .partner { display: none; } }
 
 /* ---------- phone menu: two panes that slide, like a native app ---------- */

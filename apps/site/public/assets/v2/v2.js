@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=3';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=4';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -264,7 +264,7 @@
     try {
       const r = await fetch('/api/sponsor-enquiry', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(b) });
       if (!r.ok) throw new Error(); sf.reset(); msg.textContent = 'Thank you. We will come back to you within two working days.';
-    } catch { msg.innerHTML = 'That did not go through. WhatsApp us on <a href="https://wa.me/233552395548" target="_blank" rel="noopener">+233 55 239 5548</a>.'; }
+    } catch { msg.innerHTML = 'That did not go through. WhatsApp us on <a href="https://wa.me/233550416627" target="_blank" rel="noopener">+233 55 041 6627</a>.'; }
     btn.disabled = false;
   });
 

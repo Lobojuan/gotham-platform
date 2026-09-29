@@ -63,6 +63,12 @@ async function crawl(req) {
     check(`${page}: exactly one h1`, (h.match(/<h1[\s>]/g) || []).length === 1, String((h.match(/<h1[\s>]/g) || []).length));
     check(`${page}: viewport meta`, /name="viewport" content="width=device-width/.test(h));
   }
+  // Carlson Capital Ltd is only the renewable energy and AI/software partner: never in the content of other services
+  for (const page of ['/mining', '/invest', '/family', '/register', '/forums', '/teaser', '/services', '/services/market-entry', '/services/compliance-esg',
+    '/services/investment-readiness', '/services/family-support', '/services/education', '/services/media-forums']) {
+    const h = seen.get(page)?.html || '', main = h.replace(/<header class="gh[\s\S]*?<\/header>|<dialog class="sheet[\s\S]*?<\/dialog>|<footer class="gf[\s\S]*?<\/footer>|<script[\s\S]*?<\/script>/g, '');
+    check(`${page}: no Carlson Capital or its number in the page content`, main && !/Carlson|233552395548|55 239 5548/.test(main), (main.match(/.{40}(Carlson|233552395548|55 239 5548).{40}/) || [''])[0]);
+  }
   return pages;
 }
 

@@ -16,7 +16,7 @@ META = {
  'classic.html': dict(   # the previous one-page site, kept for the free tools until they move
    extra='<meta name="robots" content="noindex">',
    title='Gotham Consult · business, investment and compliance in Ghana',
-   desc='Gotham Consult with Carlson Capital Ltd builds partnerships among businesses, investors, public institutions and international partners in Ghana.',
+   desc='Gotham Consult builds partnerships among businesses, investors, public institutions and international partners in Ghana.',
    og='img/boot2.webp'),
  'register.html': dict(
    title='Register · Gotham Consult',
@@ -30,17 +30,17 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=10">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=11">\n'
   '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 V2 = {
- 'index.html': ('Gotham Consult · build partnerships in Ghana', 'Business development, investment and compliance in Ghana, with Carlson Capital Ltd.', 'img/boot2.webp'),
+ 'index.html': ('Gotham Consult · build partnerships in Ghana', 'Business development, investment and compliance in Ghana.', 'img/boot2.webp'),
  'services.html': ('Services and prices · Gotham Consult', 'Ten practices with fixed prices in Ghana cedis: investment readiness, market entry, mining, AI, compliance, education and family support.', 'img/real-airportcity.webp'),
  'invest.html': ('Invest in Ghana · Gotham Consult', 'Ghana in numbers, sectors to watch and what the GIPA Act 2026 means for investors from Germany, the Nordics, the UK and beyond.', 'img/real-bog.webp'),
  'mining.html': ('Mining and critical minerals · Gotham Consult', 'Geology-led concession screening, due diligence and licensing in Ghana, with TERRA field data and the Afri-MINEX platform.', 'img/solar.webp'),
  'forums.html': ('Forums and seminars · Gotham Consult', 'Forums, roundtables and the free weekly Ghana Business Brief. Register in a minute, pay by mobile money.', 'img/forum.webp'),
- 'about.html': ('About and contact · Gotham Consult', 'An Accra-based business development and international projects consultancy, with strategic partner Carlson Capital Ltd.', 'img/joy.webp'),
+ 'about.html': ('About and contact · Gotham Consult', 'An Accra-based business development and international projects consultancy. Renewable energy and AI partner: Carlson Capital Ltd.', 'img/joy.webp'),
 }
 for _n, (_t, _d, _o) in V2.items():
     META[_n] = dict(title=_t, desc=_d, og=_o, extra=V2_EXTRA)
