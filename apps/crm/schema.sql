@@ -310,3 +310,56 @@ create table if not exists notes (
 );
 create index if not exists notes_contact_idx on notes (contact_id, at desc);
 create index if not exists notes_deal_idx on notes (deal_id, at desc);
+
+-- ---- client database and email / SMS / WhatsApp broadcasts (v1.8) ----
+-- what kind of client, and who agreed to hear from us on which channel (Act 843: purpose, consent, proof)
+alter table contacts add column if not exists client_type text;          -- corporate | international | government | investor | sme | media | partner | other
+alter table contacts add column if not exists language text default 'en';
+alter table contacts add column if not exists whatsapp text;             -- if different from phone
+alter table contacts add column if not exists consent_email text default 'unknown';     -- yes | no | unknown
+alter table contacts add column if not exists consent_sms text default 'unknown';
+alter table contacts add column if not exists consent_whatsapp text default 'unknown';
+alter table contacts add column if not exists consent_source text;      -- "Brief signup", "forum registration", "business card at forum", …
+alter table contacts add column if not exists consent_at timestamptz;
+alter table contacts add column if not exists sms_unsub_at timestamptz;
+alter table contacts add column if not exists whatsapp_unsub_at timestamptz;
+alter table contacts add column if not exists reg_id int references registrations(id) on delete set null;
+create unique index if not exists contacts_reg_uq on contacts (reg_id) where reg_id is not null;
+create index if not exists contacts_type_idx on contacts (client_type, country);
+
+alter table campaigns add column if not exists channel text not null default 'email';   -- email | sms | whatsapp
+alter table campaigns add column if not exists seg_type text;
+alter table campaigns add column if not exists seg_country text;
+alter table campaigns add column if not exists seg_consent text default 'any';           -- any | yes (only people who said yes on this channel)
+alter table campaigns add column if not exists sms_text text;
+alter table campaigns add column if not exists wa_template text;                        -- approved WhatsApp template name
+alter table campaigns add column if not exists wa_lang text default 'en';
+alter table campaigns add column if not exists wa_params text;                          -- one per line, merge fields allowed
+alter table campaigns drop constraint if exists campaigns_subject_check;
+
+alter table campaign_sends add column if not exists channel text default 'email';
+alter table campaign_sends add column if not exists to_addr text;
+alter table campaign_sends add column if not exists outbox_id int;
+alter table campaign_sends add column if not exists msg_id int;
+alter table campaign_sends add column if not exists error text;
+alter table campaign_sends add column if not exists delivered_at timestamptz;
+alter table campaign_sends drop constraint if exists campaign_sends_status_check;
+alter table campaign_sends add constraint campaign_sends_status_check
+  check (status in ('queued','sending','sent','delivered','skipped','failed','manual'));
+
+-- SMS and WhatsApp waiting to go out (the email outbox stays as it is)
+create table if not exists msg_outbox (
+  id serial primary key,
+  channel text not null check (channel in ('sms','whatsapp')),
+  to_phone text not null, to_name text,
+  body text,                              -- SMS text, or the rendered WhatsApp text for hand sending
+  template text, lang text, params jsonb, -- WhatsApp template
+  kind text not null default 'campaign',
+  contact_id int references contacts(id) on delete set null,
+  status text not null default 'queued' check (status in ('queued','sent','delivered','failed','cancelled','manual')),
+  provider_id text, error text,
+  created_at timestamptz default now(), sent_at timestamptz
+);
+create index if not exists msg_outbox_q on msg_outbox (status, channel, id);
+create index if not exists outbox_kind_status on outbox (status, kind, id);
+alter table outbox add column if not exists unsub_url text;

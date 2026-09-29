@@ -96,7 +96,7 @@ ok("started: %d queued, only %d sent now (limit 2/day)"%(r['queued'],r['sent_now
 
 st,cams,_=call('/api/campaigns',cookie=ck)
 c0=[x for x in cams['rows'] if x['id']==cid][0]
-assert c0['sent']==2 and c0['pending']==2, c0
+assert c0['released']==2 and c0['pending']==2, c0
 ok('two held back for tomorrow')
 
 st,ob,_=call('/api/outbox',cookie=ck)
@@ -111,8 +111,8 @@ st,_b,_=call('/u/'+tokens[0],raw=True)
 assert st==200; ok('opt-out page loads')
 st,c2,_=call('/api/contacts',cookie=ck)
 gone=[r for r in c2['rows'] if r['unsubscribed_at']]
-assert len(gone)==1 and gone[0]['status']=='do_not_contact', gone
-ok('opt-out recorded as do-not-contact')
+assert len(gone)==1 and gone[0]['consent_email']=='no', gone
+ok('opt-out recorded: no more email to this person (SMS/WhatsApp consent untouched)')
 
 st,r2,_=call('/api/campaigns',{**cam,'name':'Second wave','daily_limit':50},cookie=ck)
 st,pv2,_=call('/api/campaigns/%d/preview'%r2['id'],cookie=ck)

@@ -166,3 +166,21 @@ for reduced motion.
 - `v2.js` runs only the shared chrome on the older pages (`body.v2-legacy`): their own forms, tabs and counters are
   left to their own scripts (it used to fill terms' `#events` heading with forum cards and double-send the classic brief form).
 - Next: phone QA on real devices (Uffe/Joy).
+
+### Client database and broadcasts (email, SMS, WhatsApp) — 29 September 2026
+- Contacts now have client type (corporate, international, government, investor, SME, media, partner, other), country,
+  language, a separate WhatsApp number, and consent per channel (yes / no / not asked) with how and when it was given.
+- Confirmed Brief subscribers and forum registrants join the client list every 15 minutes (tags `brief`, `event-<code>`),
+  carrying the email consent they gave on the form ("Add Brief subscribers and registrants now" does it at once).
+- Campaigns choose a channel. Email: Resend if `RESEND_API_KEY` is set, otherwise the gothamconsult.com mailbox by SMTP
+  (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, port 465), capped per hour/day (`MAIL_HOURLY_LIMIT`, `MAIL_DAILY_LIMIT`);
+  tickets and confirmations always go before newsletters. SMS: Arkesel (`ARKESEL_API_KEY`, `SMS_SENDER_ID`).
+  WhatsApp: Meta WhatsApp Business (`WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`;
+  webhook `/api/hooks/whatsapp`), approved template name + values per campaign; only to people who said yes.
+  Without a provider, SMS/WhatsApp wait under Outreach → "Send by hand" (one tap each, then "Sent").
+- Opt-out is per channel (`/u/<token>`): email link + List-Unsubscribe header, SMS link, WhatsApp link or "STOP".
+  Anyone who opts out after being queued is skipped at send time. Every secret goes in with `bash scripts/set-secret.sh NAME`.
+- Namecheap's terms require double opt-in for mass mailings from shared hosting: use the mailbox for tickets and for
+  opted-in lists; bulk invitations to imported lists should go through Resend.
+- Test: `tests/api/14_broadcast_channels.py` (mock SMTP, Arkesel and Meta).
+

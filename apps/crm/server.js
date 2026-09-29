@@ -6,6 +6,7 @@ import pg from 'pg';
 import QR from 'qrcode';
 import sharp from 'sharp';
 import ExcelJS from 'exceljs';
+import nodemailer from 'nodemailer';
 
 const PORT = process.env.PORT || 4100;
 const SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
@@ -68,6 +69,13 @@ function body(req) {
     req.on('end', () => { try { resolve(d ? JSON.parse(d) : {}); } catch { reject(new Error('bad_json')); } });
   });
 }
+function rawBody(req, limit = 1e6) {
+  return new Promise((resolve, reject) => {
+    const parts = []; let size = 0;
+    req.on('data', c => { size += c.length; if (size > limit) { reject(new Error('too_large')); req.destroy(); return; } parts.push(c); });
+    req.on('end', () => resolve(Buffer.concat(parts))); req.on('error', reject);
+  });
+}
 function bodyBig(req, limit) {
   return new Promise((resolve, reject) => {
     const parts = []; let size = 0;
@@ -125,32 +133,113 @@ function phoneIntl(dial, local) {
 const BASE = process.env.PUBLIC_URL || 'https://gothamconsult.com';
 const FROM = process.env.MAIL_FROM || 'Gotham Consult <info@gothamconsult.com>';
 
-async function queueMail(to_email, to_name, subject, body, kind, reg_id = null) {
-  if (!to_email) return;
-  await q('insert into outbox(to_email,to_name,subject,body,kind,reg_id) values ($1,$2,$3,$4,$5,$6)',
-    [to_email, to_name, subject, body, kind, reg_id]);
+async function queueMail(to_email, to_name, subject, body, kind, reg_id = null, unsub_url = null) {
+  if (!to_email) return null;
+  const { rows } = await q('insert into outbox(to_email,to_name,subject,body,kind,reg_id,unsub_url) values ($1,$2,$3,$4,$5,$6,$7) returning id',
+    [to_email, to_name, subject, body, kind, reg_id, unsub_url]);
+  return rows[0].id;
 }
+/* Email goes out through the gothamconsult.com mailbox on our web host (SMTP), or Resend if that key is set.
+   Shared hosting allows only so many emails an hour, so tickets and confirmations always go before newsletters. */
+/* Resend first when its key is set (built for this, no hosting-plan limits); otherwise the mailbox on our web host. */
+const mailVia = () => process.env.RESEND_API_KEY ? 'resend' : (process.env.SMTP_HOST && process.env.SMTP_PASS) ? 'smtp' : null;
+/* hourly and daily caps: the web host allows ~50 an hour on the basic plan; Resend's free plan 100 a day */
+const MAIL_HOURLY = Math.max(1, +(process.env.MAIL_HOURLY_LIMIT || (process.env.RESEND_API_KEY ? 100 : 50)));
+const MAIL_DAILY = Math.max(1, +(process.env.MAIL_DAILY_LIMIT || (process.env.RESEND_API_KEY ? 100 : 1000)));
+let smtpClient = null;
+function smtp() {
+  if (smtpClient) return smtpClient;
+  const port = +(process.env.SMTP_PORT || 465);
+  smtpClient = nodemailer.createTransport({ host: process.env.SMTP_HOST, port, secure: port === 465, pool: true, maxConnections: 2,
+    ...(process.env.SMTP_INSECURE_TEST === '1' ? { ignoreTLS: true } : {}),
+    auth: { user: process.env.SMTP_USER || 'info@gothamconsult.com', pass: process.env.SMTP_PASS } });
+  return smtpClient;
+}
+const htmlToText = h => String(h || '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|h\d|tr|li)>/gi, '\n')
+  .replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, '$2 ($1)').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+  .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\n{3,}/g, '\n\n').trim();
 async function flushMail(limit = 20) {
-  const key = process.env.RESEND_API_KEY;
-  const { rows } = await q("select * from outbox where status='queued' order by id limit $1", [limit]);
-  if (!rows.length) return { sent: 0, held: 0 };
-  if (!key) return { sent: 0, held: rows.length };          // no key yet: leave them for staff to send by hand
+  const via = mailVia();
+  const queued = (await q("select count(*)::int as n from outbox where status='queued'")).rows[0].n;
+  if (!queued) return { sent: 0, held: 0 };
+  if (!via) return { sent: 0, held: queued };          // no mail account set up yet: leave them for staff to send by hand
+  const lim = (await q(`select count(*) filter (where sent_at > now() - interval '1 hour')::int as h, count(*)::int as d
+    from outbox where status='sent' and sent_at > now() - interval '24 hours'`)).rows[0];
+  const room = Math.min(limit, MAIL_HOURLY - lim.h, MAIL_DAILY - lim.d);
+  if (room <= 0) return { sent: 0, held: queued, reason: 'mail_limit' };
+  const { rows } = await q(`select * from outbox where status='queued'
+    order by case when kind in ('campaign') then 1 else 0 end, id limit $1`, [room]);
   let sent = 0;
   for (const m of rows) {
+    let ok = false, pid = null, err = null;
     try {
-      const r = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { 'authorization': 'Bearer ' + key, 'content-type': 'application/json' },
-        body: JSON.stringify({ from: FROM, to: [m.to_email], subject: m.subject, html: m.body })
-      });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok) { await q("update outbox set status='sent', sent_at=now(), provider_id=$1 where id=$2", [d.id || null, m.id]); sent++; }
-      else await q("update outbox set status='failed', error=$1 where id=$2", [JSON.stringify(d).slice(0, 400), m.id]);
-    } catch (e) {
-      await q("update outbox set status='failed', error=$1 where id=$2", [String(e).slice(0, 400), m.id]);
-    }
+      const headers = m.unsub_url ? { 'List-Unsubscribe': `<${m.unsub_url}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } : undefined;
+      if (via === 'smtp') {
+        const info = await smtp().sendMail({ from: FROM, to: m.to_name ? { name: m.to_name, address: m.to_email } : m.to_email,
+          subject: m.subject, html: m.body, text: htmlToText(m.body), headers });
+        ok = true; pid = info.messageId || null;
+      } else {
+        const r = await fetch('https://api.resend.com/emails', {
+          method: 'POST', headers: { 'authorization': 'Bearer ' + process.env.RESEND_API_KEY, 'content-type': 'application/json' },
+          body: JSON.stringify({ from: FROM, to: [m.to_email], subject: m.subject, html: m.body, headers }) });
+        const d = await r.json().catch(() => ({}));
+        ok = r.ok; pid = d.id || null; if (!ok) err = JSON.stringify(d).slice(0, 400);
+      }
+    } catch (e) { err = String(e.message || e).slice(0, 400); }
+    if (ok) { await q("update outbox set status='sent', sent_at=now(), provider_id=$1 where id=$2", [pid, m.id]); sent++; }
+    else await q("update outbox set status='failed', error=$1 where id=$2", [err, m.id]);
+    await q(`update campaign_sends set status=$1, error=$2 where outbox_id=$3`, [ok ? 'sent' : 'failed', ok ? null : err, m.id]);
   }
-  return { sent, held: 0 };
+  return { sent, held: queued - sent };
+}
+
+/* SMS (Arkesel) and WhatsApp (Meta WhatsApp Business) go out once their keys are set on the server;
+   until then they wait in msg_outbox and the back office shows them as tap-to-send links. */
+const smsReady = () => !!process.env.ARKESEL_API_KEY;
+const waReady = () => !!(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_ID);
+async function sendSms(to, text) {
+  const r = await fetch(process.env.ARKESEL_URL || 'https://sms.arkesel.com/api/v2/sms/send', { method: 'POST',
+    headers: { 'api-key': process.env.ARKESEL_API_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify({ sender: process.env.SMS_SENDER_ID || 'GOTHAM', message: text, recipients: [String(to).replace(/^\+/, '')] }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || (d.status && d.status !== 'success')) throw new Error(JSON.stringify(d).slice(0, 300) || 'sms_failed');
+  return (d.data && (d.data.id || (Array.isArray(d.data) && d.data[0] && d.data[0].id))) || null;
+}
+async function sendWhatsApp(to, template, lang, params) {
+  const r = await fetch(`${process.env.WHATSAPP_API_BASE || 'https://graph.facebook.com/v21.0'}/${process.env.WHATSAPP_PHONE_ID}/messages`, { method: 'POST',
+    headers: { authorization: 'Bearer ' + process.env.WHATSAPP_TOKEN, 'content-type': 'application/json' },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to: String(to).replace(/^\+/, ''), type: 'template',
+      template: { name: template, language: { code: lang || 'en' },
+        components: params && params.length ? [{ type: 'body', parameters: params.map(t => ({ type: 'text', text: String(t).slice(0, 1000) })) }] : [] } }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(JSON.stringify(d.error || d).slice(0, 300));
+  return d.messages && d.messages[0] && d.messages[0].id || null;
+}
+async function flushMessages(limit = 60) {
+  const chans = [smsReady() && 'sms', waReady() && 'whatsapp'].filter(Boolean);
+  if (!chans.length) return 0;
+  const { rows } = await q(`select m.*, c.status as c_status, c.sms_unsub_at, c.whatsapp_unsub_at, c.consent_sms, c.consent_whatsapp
+    from msg_outbox m left join contacts c on c.id = m.contact_id
+    where m.status='queued' and m.channel = any($1) order by m.id limit $2`, [chans, limit]);
+  let n = 0;
+  for (const m of rows) {
+    /* someone who opted out after the message was queued does not get it */
+    if (m.contact_id && (m.c_status === 'do_not_contact' || (m.channel === 'sms' ? (m.sms_unsub_at || m.consent_sms === 'no') : (m.whatsapp_unsub_at || m.consent_whatsapp !== 'yes')))) {
+      await q("update msg_outbox set status='cancelled', error='opted out' where id=$1", [m.id]);
+      await q("update campaign_sends set status='skipped', skip_reason='opted out' where msg_id=$1", [m.id]);
+      continue;
+    }
+    let ok = false, pid = null, err = null;
+    try {
+      pid = m.channel === 'sms' ? await sendSms(m.to_phone, m.body) : await sendWhatsApp(m.to_phone, m.template, m.lang, m.params || []);
+      ok = true;
+    } catch (e) { err = String(e.message || e).slice(0, 400); }
+    await q("update msg_outbox set status=$1, sent_at=case when $1='sent' then now() else sent_at end, provider_id=$2, error=$3 where id=$4",
+      [ok ? 'sent' : 'failed', pid, err, m.id]);
+    await q('update campaign_sends set status=$1, error=$2 where msg_id=$3', [ok ? 'sent' : 'failed', err, m.id]);
+    if (ok) n++;
+  }
+  return n;
 }
 /* Every outgoing email must declare its character set, or an em dash
    arrives in someone's inbox as three pieces of rubbish. */
@@ -527,20 +616,75 @@ function campaignBody(cam, c, item, links) {
    </table></div>`;
 }
 
-/* Who this campaign would go to, after the suppression rules. */
+/* Who this campaign would go to, after the suppression rules for its channel. */
+const CLIENT_TYPES = ['corporate','international','government','investor','sme','media','partner','other'];
+const CHANNELS = ['email','sms','whatsapp'];
+const csvList = v => String(v || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
 function segmentSql(cam) {
-  const where = [`(c.email is not null and c.email <> '')`,
-    `c.unsubscribed_at is null`, `not coalesce(c.bounced,false)`, `c.status <> 'do_not_contact'`];
-  const vals = [];
-  if (cam.seg_sector) { vals.push(cam.seg_sector); where.push(`lower(c.sector) = lower($${vals.length})`); }
+  const ch = CHANNELS.includes(cam.channel) ? cam.channel : 'email';
+  const where = [`c.status <> 'do_not_contact'`], vals = [];
+  if (ch === 'email') where.push(`(c.email is not null and c.email <> '')`, `c.unsubscribed_at is null`, `not coalesce(c.bounced,false)`, `coalesce(c.consent_email,'unknown') <> 'no'`);
+  if (ch === 'sms') where.push(`coalesce(c.phone,'') <> ''`, `c.sms_unsub_at is null`, `coalesce(c.consent_sms,'unknown') <> 'no'`);
+  /* WhatsApp's rules: only people who said yes */
+  if (ch === 'whatsapp') where.push(`coalesce(nullif(c.whatsapp,''), c.phone, '') <> ''`, `c.whatsapp_unsub_at is null`, `c.consent_whatsapp = 'yes'`);
+  if (cam.seg_consent === 'yes' && ch !== 'whatsapp') where.push(`c.consent_${ch} = 'yes'`);
+  if (cam.seg_sector) { vals.push(csvList(cam.seg_sector)); where.push(`lower(coalesce(c.sector,'')) = any($${vals.length})`); }
   if (cam.seg_status) { vals.push(cam.seg_status); where.push(`c.status = $${vals.length}`); }
-  if (cam.seg_tags) {
-    for (const t of String(cam.seg_tags).split(',').map(x => x.trim()).filter(Boolean)) {
-      vals.push('%' + t.toLowerCase() + '%');
-      where.push(`lower(coalesce(c.tags,'')) like $${vals.length}`);
-    }
+  if (cam.seg_type) { vals.push(csvList(cam.seg_type)); where.push(`lower(coalesce(c.client_type,'')) = any($${vals.length})`); }
+  if (cam.seg_country) { vals.push(csvList(cam.seg_country)); where.push(`lower(coalesce(c.country,'')) = any($${vals.length})`); }
+  /* whole tags only: "gold" no longer matches "goldfields" */
+  for (const t of csvList(cam.seg_tags)) {
+    vals.push(t);
+    where.push(`$${vals.length} = any(string_to_array(regexp_replace(lower(coalesce(c.tags,'')), '\\s*,\\s*', ',', 'g'), ','))`);
   }
   return { where: where.join(' and '), vals };
+}
+const addTag = (tags, t) => { const l = String(tags || '').split(',').map(x => x.trim()).filter(Boolean); if (!l.map(x => x.toLowerCase()).includes(t.toLowerCase())) l.push(t); return l.join(', '); };
+/* the words of a text or WhatsApp message; the opt-out link is always added */
+function msgText(cam, c, token) {
+  const body = merge(cam.sms_text || cam.intro || '', c).trim();
+  const link = cam.cta_url ? `\n${cam.cta_url}` : '';
+  return `${body}${link}\nStop: ${PUBLIC_URL}/u/${token}`;
+}
+const waParams = (cam, c) => String(cam.wa_params || '').split('\n').map(x => merge(x.trim(), c)).filter(Boolean).slice(0, 10);
+const toAddr = (ch, c) => ch === 'email' ? c.email : ch === 'sms' ? c.phone : (c.whatsapp || c.phone);
+
+/* Brief subscribers and forum registrants join the client database, with the consent they gave on the form. */
+async function syncRegistrations() {
+  const { rows } = await q(`select r.*, i.kind as item_kind from registrations r left join items i on i.code=r.item_code
+    where r.status not in ('declined') order by r.id`);
+  let added = 0, updated = 0;
+  for (const r of rows) {
+    const brief = r.item_code === 'BRIEF';
+    const tag = brief ? 'brief' : 'event-' + String(r.item_code).toLowerCase();
+    const okEmail = brief ? (r.confirmed_email && !r.unsubscribed_at) : !!r.marketing_opt_in;
+    const src = brief ? 'Ghana Business Brief signup (email confirmed)' : `registration ${r.reference}`;
+    const email = r.email ? String(r.email).toLowerCase() : null;
+    let c = (await q('select * from contacts where reg_id=$1', [r.id])).rows[0];
+    if (!c && email) c = (await q('select * from contacts where lower(email)=$1', [email])).rows[0];
+    if (!c && r.phone) c = (await q("select * from contacts where phone=$1 and coalesce(email,'')='' order by id limit 1", [r.phone])).rows[0];
+    if (c) {
+      const tags = addTag(c.tags, tag);
+      const ce = c.consent_email === 'no' ? 'no' : (okEmail ? 'yes' : c.consent_email);
+      if (tags !== c.tags || ce !== c.consent_email || (!c.reg_id && !c.email && email)) {
+        await q(`update contacts set tags=$1, consent_email=$2, consent_source=case when $2='yes' and consent_email<>'yes' then $3 else consent_source end,
+          consent_at=case when $2='yes' and consent_email<>'yes' then coalesce($4, now()) else consent_at end,
+          email=coalesce(email,$5), phone=coalesce(phone,$6), company=coalesce(company,$7), full_name=coalesce(full_name,$8)
+          where id=$9`, [tags, ce, src, r.consent_at, email, r.phone, r.company, r.full_name, c.id]);
+        updated++;
+      }
+      if (!c.reg_id) await q('update contacts set reg_id=$1 where id=$2 and not exists (select 1 from contacts where reg_id=$1)', [r.id, c.id]);
+    } else {
+      if (brief && !okEmail) continue;     // an unconfirmed Brief signup is not a contact yet
+      await q(`insert into contacts(company,full_name,role,email,phone,sector,country,tags,source,reg_id,client_type,consent_email,consent_source,consent_at)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) on conflict do nothing`,
+        [r.company && r.company !== '-' ? r.company : null, r.full_name, r.job_title, email, r.phone, r.sector, r.country || 'Ghana', tag, src, r.id,
+          /invest/i.test(r.category || '') ? 'investor' : /government|stakeholder/i.test(r.category || '') ? 'government' : /media/i.test(r.category || '') ? 'media' : null,
+          okEmail ? 'yes' : 'unknown', okEmail ? src : null, okEmail ? (r.consent_at || r.created_at) : null]);
+      added++;
+    }
+  }
+  return { added, updated };
 }
 
 /* ---------- queries ---------- */
@@ -1191,13 +1335,22 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       return res.end();
     }
 
-    /* one click and we never write to them again */
+    /* one click and we never write to them again on that channel (email also answers mail clients' one-click POST) */
     const mUnsub2 = p.match(/^\/u\/([A-Za-z0-9_-]{10,})$/);
-    if (mUnsub2 && req.method === 'GET') {
-      const { rows } = await q(`update contacts set unsubscribed_at=now(), status='do_not_contact'
-        where id = (select contact_id from campaign_sends where token=$1) returning company, full_name`, [mUnsub2[1]]);
+    if (mUnsub2 && (req.method === 'GET' || req.method === 'POST')) {
+      const s0 = (await q('select contact_id, channel from campaign_sends where token=$1', [mUnsub2[1]])).rows[0];
+      let rows = [];
+      if (s0) {
+        const ch = s0.channel || 'email';
+        rows = (await q(ch === 'sms' ? `update contacts set sms_unsub_at=coalesce(sms_unsub_at,now()), consent_sms='no' where id=$1 returning company, full_name`
+          : ch === 'whatsapp' ? `update contacts set whatsapp_unsub_at=coalesce(whatsapp_unsub_at,now()), consent_whatsapp='no' where id=$1 returning company, full_name`
+          : `update contacts set unsubscribed_at=coalesce(unsubscribed_at,now()), consent_email='no' where id=$1 returning company, full_name`, [s0.contact_id])).rows;
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['recipient', 'unsubscribe_' + ch, String(s0.contact_id)]);
+      }
+      if (req.method === 'POST') return json(res, 200, { ok: true });
+      const what = s0 && s0.channel === 'sms' ? 'text messages' : s0 && s0.channel === 'whatsapp' ? 'WhatsApp messages' : 'emails';
       return sendHtml(pageShell('Removed', rows[0]
-        ? `<h1>Done, we will not write again</h1><p>${esc(rows[0].company || rows[0].full_name || 'You')} has been removed from our list. Nothing further will be sent.</p>`
+        ? `<h1>Done, no more ${what} from us</h1><p>${esc(rows[0].company || rows[0].full_name || 'You')} has been removed from this list. Nothing further will be sent this way.</p>`
         : '<h1>That link is no longer valid</h1><p>Write to info@gothamconsult.com and we will remove you by hand.</p>'));
     }
 
@@ -1372,8 +1525,77 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (p === '/api/outbox' && req.method === 'GET') {
       if (!auth()) return json(res, 401, { error: 'no_session' });
       const { rows } = await q('select id,to_email,to_name,subject,kind,status,error,created_at,sent_at,body from outbox order by id desc limit 200');
-      const key = !!process.env.RESEND_API_KEY;
-      return json(res, 200, { rows, sending_enabled: key });
+      return json(res, 200, { rows, sending_enabled: !!mailVia(), via: mailVia(), hourly_limit: MAIL_HOURLY });
+    }
+
+    /* which channels can send by themselves, and what is waiting to be sent by hand */
+    if (p === '/api/channels' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const lastHour = (await q("select count(*)::int as n from outbox where status='sent' and sent_at > now() - interval '1 hour'")).rows[0].n;
+      const waiting = (await q(`select channel, count(*)::int as n from msg_outbox where status='queued' group by channel`)).rows;
+      const mailWaiting = (await q("select count(*)::int as n from outbox where status='queued'")).rows[0].n;
+      const lastDay = (await q("select count(*)::int as n from outbox where status='sent' and sent_at > now() - interval '24 hours'")).rows[0].n;
+      const lastFail = (await q("select error from outbox where status='failed' order by id desc limit 1")).rows[0];
+      return json(res, 200, { email: { via: mailVia(), from: FROM, hourly_limit: MAIL_HOURLY, daily_limit: MAIL_DAILY, sent_last_hour: lastHour, sent_last_day: lastDay,
+          waiting: mailWaiting, last_error: lastFail ? String(lastFail.error || '').slice(0, 200) : null },
+        sms: { ready: smsReady(), sender: process.env.SMS_SENDER_ID || 'GOTHAM', waiting: (waiting.find(w => w.channel === 'sms') || {}).n || 0 },
+        whatsapp: { ready: waReady(), waiting: (waiting.find(w => w.channel === 'whatsapp') || {}).n || 0 } });
+    }
+    if (p === '/api/messages' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q(`select id,channel,to_phone,to_name,body,template,status,error,kind,created_at,sent_at from msg_outbox
+        order by case status when 'queued' then 0 when 'failed' then 1 else 2 end, id desc limit 300`);
+      return json(res, 200, { rows });
+    }
+    const mMsg = p.match(/^\/api\/messages\/(\d+)\/(sent|cancelled|retry)$/);
+    if (mMsg && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const st = mMsg[2] === 'retry' ? 'queued' : mMsg[2];
+      await q("update msg_outbox set status=$1, error=null, sent_at=case when $1='sent' then now() else sent_at end where id=$2", [st, +mMsg[1]]);
+      await q("update campaign_sends set status=$1 where msg_id=$2", [st === 'queued' ? 'sending' : st === 'cancelled' ? 'skipped' : 'sent', +mMsg[1]]);
+      if (st === 'queued') await flushMessages(5);
+      return json(res, 200, { ok: true });
+    }
+    if (p === '/api/contacts/sync' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      return json(res, 200, await syncRegistrations());
+    }
+
+    /* WhatsApp Business webhook: Meta checks the address once, then reports deliveries and replies (STOP = opt out) */
+    if (p === '/api/hooks/whatsapp' && req.method === 'GET') {
+      const sp = new URL(req.url, 'http://x').searchParams;
+      if (process.env.WHATSAPP_VERIFY_TOKEN && sp.get('hub.verify_token') === process.env.WHATSAPP_VERIFY_TOKEN) {
+        res.writeHead(200, { 'content-type': 'text/plain' }); return res.end(String(sp.get('hub.challenge') || ''));
+      }
+      return json(res, 403, { error: 'bad_token' });
+    }
+    if (p === '/api/hooks/whatsapp' && req.method === 'POST') {
+      const raw = await rawBody(req, 1e6);
+      const secret = process.env.WHATSAPP_APP_SECRET;
+      if (secret) {
+        const want = 'sha256=' + crypto.createHmac('sha256', secret).update(raw).digest('hex');
+        const got = String(req.headers['x-hub-signature-256'] || '');
+        if (got.length !== want.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want))) return json(res, 401, { error: 'bad_signature' });
+      } else return json(res, 503, { error: 'not_configured' });
+      let d = {}; try { d = JSON.parse(raw.toString('utf8')); } catch {}
+      for (const e of d.entry || []) for (const ch of e.changes || []) {
+        const v = ch.value || {};
+        for (const st of v.statuses || []) {
+          const m = (await q("update msg_outbox set status=case when $1 in ('delivered','read') then 'delivered' when $1='failed' then 'failed' else status end, error=case when $1='failed' then $3 else error end where provider_id=$2 returning id",
+            [st.status, st.id, JSON.stringify(st.errors || '').slice(0, 300)])).rows[0];
+          if (m && (st.status === 'delivered' || st.status === 'read')) await q("update campaign_sends set status='delivered', delivered_at=coalesce(delivered_at,now()) where msg_id=$1", [m.id]);
+          if (m && st.status === 'failed') await q("update campaign_sends set status='failed', error=$2 where msg_id=$1", [m.id, 'whatsapp: ' + (st.errors && st.errors[0] && st.errors[0].title || 'failed')]);
+        }
+        for (const msg of v.messages || []) {
+          const text = String((msg.text && msg.text.body) || (msg.button && msg.button.text) || '').trim().toLowerCase();
+          if (/^(stop|unsubscribe|stop all|opt out|cancel)$/.test(text)) {
+            const ph = phoneGH('+' + String(msg.from || '').replace(/\D/g, ''));
+            await q("update contacts set whatsapp_unsub_at=coalesce(whatsapp_unsub_at,now()), consent_whatsapp='no' where coalesce(nullif(whatsapp,''), phone)=$1", [ph]);
+            await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['recipient', 'unsubscribe_whatsapp', ph]);
+          }
+        }
+      }
+      return json(res, 200, { ok: true });
     }
     if (p === '/api/outbox/flush' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -1515,18 +1737,26 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         ? await q('select id, company, full_name from contacts where lower(email)=lower($1)', [email])
         : await q(`select id, company, full_name from contacts
              where lower(coalesce(company,''))=lower($1) and lower(coalesce(full_name,''))=lower($2)`, [company, full_name]);
-      if (dup.rows.length && b.confirm_duplicate !== true)
-        return json(res, 409, { error: 'already_there', id: dup.rows[0].id,
+      /* the same email address can only be on one record, so that case always points to the existing one */
+      if (dup.rows.length && (email || b.confirm_duplicate !== true))
+        return json(res, 409, { error: 'already_there', id: dup.rows[0].id, same_email: !!email,
           who: dup.rows[0].company || dup.rows[0].full_name });
+      const cons = v => ['yes','no','unknown'].includes(v) ? v : 'unknown';
+      const anyYes = [b.consent_email, b.consent_sms, b.consent_whatsapp].includes('yes');
       const { rows } = await q(`insert into contacts(company,full_name,role,email,phone,sector,city,country,
-          website,priority,tags,notes,source,status,unsubscribed_at)
+          website,priority,tags,notes,source,status,unsubscribed_at,client_type,language,whatsapp,
+          consent_email,consent_sms,consent_whatsapp,consent_source,consent_at)
         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
-          case when $14::text = 'do_not_contact' then now() else null end) returning id`,
+          case when $14::text = 'do_not_contact' then now() else null end,$15,$16,$17,$18,$19,$20,$21,$22) returning id`,
         [company, full_name, clean(b.role, 140), email || null, phoneGH(clean(b.phone, 60)),
           clean(b.sector, 60), clean(b.city, 80), clean(b.country, 60) || 'Ghana',
           clean(b.website, 200), clean(b.priority, 40), clean(b.tags, 200), clean(b.notes, 4000),
           clean(b.source, 120) || 'added by hand',
-          ['new','contacted','replied','meeting','won','lost','do_not_contact'].includes(b.status) ? b.status : 'new']);
+          ['new','contacted','replied','meeting','won','lost','do_not_contact'].includes(b.status) ? b.status : 'new',
+          CLIENT_TYPES.includes(b.client_type) ? b.client_type : null, clean(b.language, 10) || 'en',
+          b.whatsapp ? phoneGH(clean(b.whatsapp, 60)) : null,
+          cons(b.consent_email), cons(b.consent_sms), cons(b.consent_whatsapp),
+          anyYes ? (clean(b.consent_source, 160) || 'recorded by ' + u.email) : null, anyYes ? new Date() : null]);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
         [u.email, 'contact_add', company || full_name]);
       return json(res, 200, { ok: true, id: rows[0].id });
@@ -1705,11 +1935,24 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           city      = coalesce($7, city),      website   = coalesce($8, website),
           priority  = coalesce($9, priority),  tags      = coalesce($10, tags),
           notes     = coalesce($11, notes),    status    = coalesce($12, status),
-          unsubscribed_at = case when $12='do_not_contact' then coalesce(unsubscribed_at, now()) else unsubscribed_at end
+          unsubscribed_at = case when $12='do_not_contact' then coalesce(unsubscribed_at, now()) else unsubscribed_at end,
+          country = coalesce($14, country), client_type = case when $15 = '' then null else coalesce($15, client_type) end,
+          language = coalesce($16, language), whatsapp = case when $17 = '' then null else coalesce($17, whatsapp) end,
+          consent_source = case when coalesce($18,consent_email)='yes' or coalesce($19,consent_sms)='yes' or coalesce($20,consent_whatsapp)='yes'
+            then coalesce($21, consent_source) else consent_source end,
+          consent_at = case when ($18='yes' and consent_email<>'yes') or ($19='yes' and consent_sms<>'yes') or ($20='yes' and consent_whatsapp<>'yes')
+            then now() else consent_at end,
+          consent_email = coalesce($18, consent_email), consent_sms = coalesce($19, consent_sms), consent_whatsapp = coalesce($20, consent_whatsapp),
+          sms_unsub_at = case when $19='yes' then null else sms_unsub_at end,
+          whatsapp_unsub_at = case when $20='yes' then null else whatsapp_unsub_at end
         where id=$13`,
         [set(b.company), set(b.full_name), set(b.role), email === undefined ? null : email,
           b.phone === undefined ? null : phoneGH(clean(b.phone, 60)), set(b.sector), set(b.city),
-          set(b.website), set(b.priority), set(b.tags), set(b.notes), b.status || null, +mCon[1]]);
+          set(b.website), set(b.priority), set(b.tags), set(b.notes), b.status || null, +mCon[1],
+          set(b.country), b.client_type === undefined ? null : (CLIENT_TYPES.includes(b.client_type) ? b.client_type : ''),
+          set(b.language), b.whatsapp === undefined ? null : (b.whatsapp ? phoneGH(clean(b.whatsapp, 60)) : ''),
+          ...['consent_email','consent_sms','consent_whatsapp'].map(k => ['yes','no','unknown'].includes(b[k]) ? b[k] : null),
+          b.consent_source ? clean(b.consent_source, 160) : 'recorded by ' + u.email]);
       return json(res, 200, { ok: true });
     }
 
@@ -1717,8 +1960,11 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (p === '/api/campaigns' && req.method === 'GET') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const { rows } = await q(`select c.*,
-        (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.status='sent') as sent,
+        (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.status in ('sent','delivered')) as sent,
         (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.status='queued') as pending,
+        (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.status in ('sending','manual')) as in_flight,
+        (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.status not in ('queued','skipped')) as released,
+        (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.status='failed') as failed,
         (select count(*)::int from campaign_sends s where s.campaign_id=c.id and s.clicked_at is not null) as clicked
         from campaigns c order by c.id desc`);
       return json(res, 200, { rows });
@@ -1727,21 +1973,25 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (p === '/api/campaigns' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const b = await body(req);
-      if (!clean(b.name, 120) || !clean(b.subject, 200)) return json(res, 400, { error: 'name_and_subject' });
-      const vals = [clean(b.name, 120), clean(b.subject, 200),
+      const channel = CHANNELS.includes(b.channel) ? b.channel : 'email';
+      if (!clean(b.name, 120) || (channel === 'email' && !clean(b.subject, 200))) return json(res, 400, { error: 'name_and_subject' });
+      const vals = [clean(b.name, 120), clean(b.subject, 200) || clean(b.name, 120),
         ['invitation','sponsor','brief','plain'].includes(b.template) ? b.template : 'invitation',
         clean(b.intro, 6000), clean(b.cta_label, 60), clean(b.cta_url, 400),
         clean(b.item_code, 12).toUpperCase() || null, clean(b.seg_sector, 60), clean(b.seg_tags, 200),
         clean(b.seg_status, 20), clean(b.from_name, 120),
-        Math.max(1, Math.min(200, parseInt(b.daily_limit) || 40))];
+        Math.max(1, Math.min(channel === 'email' ? 200 : 2000, parseInt(b.daily_limit) || 40)),
+        channel, clean(b.seg_type, 200), clean(b.seg_country, 200), b.seg_consent === 'yes' ? 'yes' : 'any',
+        clean(b.sms_text, 900), clean(b.wa_template, 120).replace(/[^a-z0-9_]/gi, '').toLowerCase() || null, clean(b.wa_lang, 10) || 'en', clean(b.wa_params, 2000)];
       if (b.id) {
         await q(`update campaigns set name=$1,subject=$2,template=$3,intro=$4,cta_label=$5,cta_url=$6,item_code=$7,
-          seg_sector=$8,seg_tags=$9,seg_status=$10,from_name=$11,daily_limit=$12 where id=$13`, [...vals, +b.id]);
+          seg_sector=$8,seg_tags=$9,seg_status=$10,from_name=$11,daily_limit=$12,channel=$13,seg_type=$14,seg_country=$15,
+          seg_consent=$16,sms_text=$17,wa_template=$18,wa_lang=$19,wa_params=$20 where id=$21`, [...vals, +b.id]);
         return json(res, 200, { ok: true, id: +b.id });
       }
       const { rows } = await q(`insert into campaigns(name,subject,template,intro,cta_label,cta_url,item_code,
-        seg_sector,seg_tags,seg_status,from_name,daily_limit,created_by)
-        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) returning id`, [...vals, u.email]);
+        seg_sector,seg_tags,seg_status,from_name,daily_limit,channel,seg_type,seg_country,seg_consent,sms_text,wa_template,wa_lang,wa_params,created_by)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) returning id`, [...vals, u.email]);
       return json(res, 200, { ok: true, id: rows[0].id });
     }
 
@@ -1763,8 +2013,11 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const one = (await q(`select * from contacts c where ${where} order by id limit 1`, vals)).rows[0]
         || { company: 'Acme Mining Ghana', full_name: 'Ama Mensah', role: 'Managing Director', sector: 'Mining', source: 'sample' };
       const item = cam.item_code ? await itemForMail(cam.item_code) : null;
-      const html = campaignHtml(cam, one, item, { cta: PUBLIC_URL + '/c/sample', unsub: PUBLIC_URL + '/u/sample' });
-      return json(res, 200, { audience: cnt.rows[0].n, sample_to: one.company || one.full_name, subject: merge(cam.subject, one), html });
+      const html = cam.channel === 'email' || !cam.channel ? campaignHtml(cam, one, item, { cta: PUBLIC_URL + '/c/sample', unsub: PUBLIC_URL + '/u/sample' }) : null;
+      const text = cam.channel === 'sms' || cam.channel === 'whatsapp' ? msgText(cam, one, 'sample0000000') : null;
+      return json(res, 200, { audience: cnt.rows[0].n, sample_to: one.company || one.full_name, subject: merge(cam.subject, one), html, text,
+        channel: cam.channel || 'email', provider: cam.channel === 'sms' ? (smsReady() ? 'arkesel' : null) : cam.channel === 'whatsapp' ? (waReady() ? 'whatsapp_cloud' : null) : mailVia(),
+        segments: text ? Math.ceil(text.length / (/[^\x00-\x7F]/.test(text) ? 67 : 153)) : null });
     }
 
     /* send one to yourself before it goes to two hundred people */
@@ -1772,10 +2025,19 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (mCamTest && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const b = await body(req);
-      const to = clean(b.email, 160).toLowerCase();
-      if (!/^\S+@\S+\.\S+$/.test(to)) return json(res, 400, { error: 'bad_email' });
       const cam = (await q('select * from campaigns where id=$1', [+mCamTest[1]])).rows[0];
       if (!cam) return json(res, 404, { error: 'not_found' });
+      if (cam.channel === 'sms' || cam.channel === 'whatsapp') {
+        const ph = phoneGH(clean(b.phone, 40));
+        if (!ph) return json(res, 400, { error: 'bad_phone' });
+        const sample = { company: 'Acme Mining Ghana', full_name: 'Ama Mensah', role: 'Managing Director', sector: 'Mining' };
+        await q(`insert into msg_outbox(channel,to_phone,to_name,body,template,lang,params,kind) values ($1,$2,'Test',$3,$4,$5,$6,'test')`,
+          [cam.channel, ph, '[TEST] ' + msgText(cam, sample, 'sample0000000'), cam.wa_template, cam.wa_lang, JSON.stringify(waParams(cam, sample))]);
+        const n = await flushMessages(5);
+        return json(res, 200, { ok: true, sent: n, manual: n === 0 });
+      }
+      const to = clean(b.email, 160).toLowerCase();
+      if (!/^\S+@\S+\.\S+$/.test(to)) return json(res, 400, { error: 'bad_email' });
       const sample = { company: 'Acme Mining Ghana', full_name: 'Ama Mensah', role: 'Managing Director', sector: 'Mining', city: 'Accra', source: 'test send' };
       const item = cam.item_code ? await itemForMail(cam.item_code) : null;
       await queueMail(to, 'Test', '[TEST] ' + merge(cam.subject, sample),
@@ -1795,12 +2057,18 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       }
       const cam = (await q('select * from campaigns where id=$1', [id])).rows[0];
       if (!cam) return json(res, 404, { error: 'not_found' });
+      if (cam.channel === 'sms' && !cam.sms_text) return json(res, 400, { error: 'sms_text_missing' });
+      if (cam.channel === 'whatsapp' && !cam.wa_template && waReady()) return json(res, 400, { error: 'wa_template_missing' });
       const { where, vals } = segmentSql(cam);
-      const { rows: aud } = await q(`select c.id from contacts c where ${where}`, vals);
+      const { rows: aud } = await q(`select c.id, c.email, c.phone, c.whatsapp from contacts c where ${where} order by c.id`, vals);
       if (!aud.length) return json(res, 400, { error: 'empty_audience' });
+      const seenAddr = new Set();
       for (const a of aud) {
-        await q(`insert into campaign_sends(campaign_id,contact_id,token) values ($1,$2,$3)
-                 on conflict (campaign_id,contact_id) do nothing`, [id, a.id, tok() + tok()]);
+        const addr = String(toAddr(cam.channel || 'email', a) || '').toLowerCase();
+        if (seenAddr.has(addr)) continue;            // one message per email or phone number, even if two records share it
+        seenAddr.add(addr);
+        await q(`insert into campaign_sends(campaign_id,contact_id,token,channel,to_addr) values ($1,$2,$3,$4,$5)
+                 on conflict (campaign_id,contact_id) do nothing`, [id, a.id, tok() + tok(), cam.channel || 'email', addr]);
       }
       await q("update campaigns set status='sending' where id=$1", [id]);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
@@ -2436,8 +2704,9 @@ async function runCampaigns() {
   let sentTotal = 0;
   const { rows: cams } = await q("select * from campaigns where status='sending'");
   for (const cam of cams) {
+    const ch = cam.channel || 'email';
     const today = await q(`select count(*)::int as n from campaign_sends
-      where campaign_id=$1 and status='sent' and sent_at > now() - interval '24 hours'`, [cam.id]);
+      where campaign_id=$1 and status <> 'queued' and status <> 'skipped' and sent_at > now() - interval '24 hours'`, [cam.id]);
     const room = cam.daily_limit - today.rows[0].n;
     if (room <= 0) continue;
 
@@ -2451,23 +2720,36 @@ async function runCampaigns() {
       continue;
     }
 
-    const item = cam.item_code ? await itemForMail(cam.item_code) : null;
+    const item = ch === 'email' && cam.item_code ? await itemForMail(cam.item_code) : null;
     for (const c of due) {
       /* re-check suppression at send time, not just when the queue was built */
-      if (!c.email || c.unsubscribed_at || c.bounced || c.status === 'do_not_contact') {
+      const blocked = c.status === 'do_not_contact'
+        || (ch === 'email' && (!c.email || c.unsubscribed_at || c.bounced || c.consent_email === 'no'))
+        || (ch === 'sms' && (!c.phone || c.sms_unsub_at || c.consent_sms === 'no'))
+        || (ch === 'whatsapp' && (!(c.whatsapp || c.phone) || c.whatsapp_unsub_at || c.consent_whatsapp !== 'yes'));
+      if (blocked) {
         await q("update campaign_sends set status='skipped', skip_reason='suppressed' where id=$1", [c.send_id]);
         continue;
       }
-      const links = { cta: `${PUBLIC_URL}/c/${c.token}`, unsub: `${PUBLIC_URL}/u/${c.token}` };
-      await queueMail(c.email, c.full_name || c.company, merge(cam.subject, c),
-        campaignHtml(cam, c, item, links), 'campaign');
-      await q("update campaign_sends set status='sent', sent_at=now() where id=$1", [c.send_id]);
+      const unsub = `${PUBLIC_URL}/u/${c.token}`;
+      if (ch === 'email') {
+        const links = { cta: `${PUBLIC_URL}/c/${c.token}`, unsub };
+        const oid = await queueMail(c.email, c.full_name || c.company, merge(cam.subject, c),
+          campaignHtml(cam, c, item, links), 'campaign', null, unsub);
+        await q("update campaign_sends set status='sending', sent_at=now(), outbox_id=$2, to_addr=$3 where id=$1", [c.send_id, oid, c.email]);
+      } else {
+        const to = ch === 'sms' ? c.phone : (c.whatsapp || c.phone);
+        const { rows: m } = await q(`insert into msg_outbox(channel,to_phone,to_name,body,template,lang,params,kind,contact_id)
+          values ($1,$2,$3,$4,$5,$6,$7,'campaign',$8) returning id`,
+          [ch, to, c.full_name || c.company, msgText(cam, c, c.token), cam.wa_template, cam.wa_lang, JSON.stringify(waParams(cam, c)), c.contact_id]);
+        await q("update campaign_sends set status='sending', sent_at=now(), msg_id=$2, to_addr=$3 where id=$1", [c.send_id, m[0].id, to]);
+      }
       await q("update contacts set last_sent_at=now(), status = case when status='new' then 'contacted' else status end where id=$1", [c.contact_id]);
       sentTotal++;
     }
-    await q('insert into jobs_log(job,detail) values ($1,$2)', ['campaign', `${cam.name}: ${due.length} queued to send`]);
+    await q('insert into jobs_log(job,detail) values ($1,$2)', ['campaign', `${cam.name} (${ch}): ${due.length} released`]);
   }
-  if (sentTotal) await flushMail(Math.min(100, sentTotal + 10));
+  if (sentTotal) { await flushMail(Math.min(100, sentTotal + 10)); await flushMessages(Math.min(500, sentTotal + 10)); }
   return sentTotal;
 }
 
@@ -2508,8 +2790,12 @@ async function runJobs() {
     }
     await flushMail(30);
 
-    // 4. outreach campaigns, within their daily limit
+    // 4. Brief subscribers and forum registrants into the client database
+    await syncRegistrations();
+    // 5. outreach campaigns, within their daily limit; then whatever email, SMS and WhatsApp is waiting
     await runCampaigns();
+    await flushMail(60);
+    await flushMessages(200);
   } catch (e) { console.error('jobs', e); }
 }
 

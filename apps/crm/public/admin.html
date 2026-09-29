@@ -79,6 +79,7 @@ textarea.t{resize:vertical;font-family:inherit}
 .bar{height:6px;background:var(--sunk);border-radius:99px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--gold)}
 .note{font-size:13px;color:var(--mute)}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.f3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 label.l{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;z-index:20}
 .toast.on{opacity:1}
@@ -729,24 +730,29 @@ function dealForm(pre){
 }
 
 /* ===================== companies & people ===================== */
-let CF={q:'',st:'',tag:''};
+let CF={q:'',st:'',tag:'',ty:'',co:''};
 async function contactsView(){
  setTitle('Companies & people','Everyone you work with, in one list');
  $('#view').innerHTML='<div class="empty">Loading…</div>';
  const r=await api('/api/contacts');CONTACTS=r.rows;if(V!=='contacts')return;
  $('#view').innerHTML=`<div class="filters"><input class="t" id="cf-q" placeholder="Search name, company, phone, sector, tag" value="${esc(CF.q)}" style="max-width:320px">
   <select class="t" id="cf-st" style="max-width:190px"><option value="">Any status</option>${Object.entries(CSTATUS).map(([k,t])=>`<option value="${k}" ${CF.st===k?'selected':''}>${t}</option>`).join('')}</select>
-  <div class="seg" id="cf-tag">${[['','All'],['family-desk','Family Desk'],['forum-lead','Forum leads'],['mining','Mining']].map(([k,l])=>`<button data-t="${k}" class="${CF.tag===k?'on':''}">${l}</button>`).join('')}</div></div>
-  <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Company</th><th>Person</th><th>Phone</th><th>Sector</th><th>Status</th><th>Added</th></tr></thead><tbody id="cf-tb"></tbody></table></div></div><p class="note" id="cf-n"></p>`;
+  <select class="t" id="cf-ty" style="max-width:170px"><option value="">Any type</option>${Object.entries(CTYPE).map(([k,t])=>`<option value="${k}" ${CF.ty===k?'selected':''}>${t}</option>`).join('')}</select>
+  <select class="t" id="cf-co" style="max-width:170px"><option value="">Any country</option>${[...new Set(CONTACTS.map(c=>c.country).filter(Boolean))].sort().map(k=>`<option ${CF.co===k?'selected':''}>${esc(k)}</option>`).join('')}</select>
+  <div class="seg" id="cf-tag">${[['','All'],['brief','Brief'],['family-desk','Family Desk'],['forum-lead','Forum leads'],['mining','Mining']].map(([k,l])=>`<button data-t="${k}" class="${CF.tag===k?'on':''}">${l}</button>`).join('')}</div></div>
+  <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Company</th><th>Person</th><th>Type · country</th><th>Phone</th><th>May contact</th><th>Status</th><th>Added</th></tr></thead><tbody id="cf-tb"></tbody></table></div></div><p class="note" id="cf-n"></p>`;
  const draw=()=>{const f=CF.q.toLowerCase(),fd=f.replace(/\D/g,'').replace(/^0+/,'');
-  const L=CONTACTS.filter(c=>(!CF.st||c.status===CF.st)&&(!CF.tag||(c.tags||'').includes(CF.tag))&&(!f||[c.company,c.full_name,c.email,c.sector,c.tags,c.city,c.role].join(' ').toLowerCase().includes(f)||(fd.length>3&&(c.phone||'').replace(/\D/g,'').includes(fd))));
-  $('#cf-tb').innerHTML=L.slice(0,300).map(c=>`<tr class="r" data-rec="${c.id}"><td><b>${esc(c.company||c.full_name||'—')}</b>${c.priority?` <span class="chip gold">${esc(c.priority)}</span>`:''}</td><td>${esc(c.company?c.full_name||'':'')}<div class="note">${esc(c.role||'')}</div></td><td class="note">${esc(c.phone||'—')}</td><td class="note">${esc(c.sector||'—')}</td><td><span class="chip ${c.status==='won'?'green':c.status==='do_not_contact'||c.status==='lost'?'red':c.status==='new'?'':'blue'}">${esc(CSTATUS[c.status]||c.status)}</span></td><td class="note">${dshort(c.created_at)}</td></tr>`).join('')||'<tr><td colspan="6"><div class="empty">Nothing matches.</div></td></tr>';
+  const L=CONTACTS.filter(c=>(!CF.st||c.status===CF.st)&&(!CF.ty||c.client_type===CF.ty)&&(!CF.co||c.country===CF.co)&&(!CF.tag||(c.tags||'').toLowerCase().split(',').map(x=>x.trim()).some(x=>x===CF.tag||x.startsWith(CF.tag)))&&(!f||[c.company,c.full_name,c.email,c.sector,c.tags,c.city,c.role].join(' ').toLowerCase().includes(f)||(fd.length>3&&(c.phone||'').replace(/\D/g,'').includes(fd))));
+  $('#cf-tb').innerHTML=L.slice(0,300).map(c=>`<tr class="r" data-rec="${c.id}"><td><b>${esc(c.company||c.full_name||'—')}</b>${c.priority?` <span class="chip gold">${esc(c.priority)}</span>`:''}</td><td>${esc(c.company?c.full_name||'':'')}<div class="note">${esc(c.role||'')}</div></td><td class="note">${esc(CTYPE[c.client_type]||'—')}<div>${esc(c.country||'')}</div></td><td class="note">${esc(c.phone||'—')}</td><td style="white-space:nowrap">${consChip(c,'email','Email')} ${consChip(c,'sms','SMS')} ${consChip(c,'whatsapp','WA')}</td><td><span class="chip ${c.status==='won'?'green':c.status==='do_not_contact'||c.status==='lost'?'red':c.status==='new'?'':'blue'}">${esc(CSTATUS[c.status]||c.status)}</span></td><td class="note">${dshort(c.created_at)}</td></tr>`).join('')||'<tr><td colspan="7"><div class="empty">Nothing matches.</div></td></tr>';
   $('#cf-n').textContent=L.length+' of '+CONTACTS.length+(L.length>300?' · showing the first 300, search to narrow down':'');
   document.querySelectorAll('[data-rec]').forEach(t=>t.onclick=()=>go('rec',t.dataset.rec))};
- $('#cf-q').oninput=()=>{CF.q=$('#cf-q').value;draw()};$('#cf-st').onchange=()=>{CF.st=$('#cf-st').value;draw()};
+ $('#cf-q').oninput=()=>{CF.q=$('#cf-q').value;draw()};$('#cf-st').onchange=()=>{CF.st=$('#cf-st').value;draw()};$('#cf-ty').onchange=()=>{CF.ty=$('#cf-ty').value;draw()};$('#cf-co').onchange=()=>{CF.co=$('#cf-co').value;draw()};
  $('#cf-tag').onclick=e=>{const b=e.target.closest('button');if(!b)return;CF.tag=b.dataset.t;$('#cf-tag').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));draw()};
  draw();
 }
+const CTYPE={corporate:'Corporate',international:'International',government:'Government',investor:'Investor',sme:'SME',media:'Media',partner:'Partner',other:'Other'};
+const CONS={yes:'Yes',no:'No',unknown:'Not asked'};
+const consChip=(c,ch,lab)=>{const v=c['consent_'+ch]||'unknown',out=ch==='email'?c.unsubscribed_at:c[ch+'_unsub_at'];return `<span class="chip ${out||v==='no'?'red':v==='yes'?'green':''}" title="${lab}: ${out?'opted out '+dshort(out):CONS[v]}">${lab} ${out?'✕':v==='yes'?'✓':v==='no'?'✕':'?'}</span>`};
 const NOTE_NAME={note:'Note',call:'Call',whatsapp:'WhatsApp',meeting:'Meeting',email:'Email'};
 const NOTE_ICON={note:'✎',call:'☎',whatsapp:'◉',meeting:'◎',email:'✉'};
 const TL_ICON={...NOTE_ICON,deal:'◆',registration:'✓',attended:'★',campaign:'✉',click:'↗',enquiry:'★',task:'☑',created:'+'};
@@ -756,7 +762,7 @@ async function record(id){
  if(!r){$('#view').innerHTML='<div class="empty"><b>Not found.</b>It may have been removed.</div>';return}
  const c=r.contact,name=c.company||c.full_name||c.email||'Unnamed';setTitle(name,c.company&&c.full_name?c.full_name+(c.role?' · '+c.role:''):'');
  pageActions(`<a class="btn btn-line" href="#contacts">← All contacts</a><button class="btn btn-line" id="rc-edit">Edit details</button>`);
- const tel=(c.phone||'').replace(/[^\d+]/g,''),wa=tel.replace(/\D/g,'');
+ const tel=(c.phone||'').replace(/[^\d+]/g,''),wa=(c.whatsapp||tel).replace(/\D/g,'');
  const tags=(c.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
  const openD=r.deals.filter(d=>!['won','lost'].includes(d.stage)),openT=r.tasks.filter(t=>!t.done_at);
  r.tasks.forEach(t=>TASKCACHE[t.id]={...t,company:c.company,contact_name:c.full_name});
@@ -765,7 +771,9 @@ async function record(id){
    <div class="quick"><a class="${tel?'':'off'}" href="tel:${esc(tel)}">${ic('phone')}Call</a><a class="${wa?'':'off'}" target="_blank" rel="noopener" href="https://wa.me/${wa}">${ic('wa')}WhatsApp</a><a class="${c.email?'':'off'}" href="mailto:${esc(c.email||'')}">${ic('mail')}Email</a></div>
    <div class="kv"><span>Phone</span><div>${esc(c.phone||'—')}</div><span>Email</span><div style="overflow-wrap:anywhere">${esc(c.email||'—')}</div>
     ${c.website?`<span>Website</span><div><a href="${/^https?:/.test(c.website)?'':'https://'}${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website)}</a></div>`:''}
-    <span>Country</span><div>${esc(c.country||'—')}</div><span>Source</span><div>${esc(c.source||'—')}</div><span>Added</span><div>${dt(c.created_at)}</div>
+    <span>Client type</span><div>${esc(CTYPE[c.client_type]||'—')}</div><span>Country</span><div>${esc(c.country||'—')}${c.language&&c.language!=='en'?' · '+esc(c.language):''}</div>
+    ${c.whatsapp?`<span>WhatsApp</span><div>${esc(c.whatsapp)}</div>`:''}
+    <span>May contact</span><div>${consChip(c,'email','Email')} ${consChip(c,'sms','SMS')} ${consChip(c,'whatsapp','WhatsApp')}${c.consent_source?`<div class="note">${esc(c.consent_source)}${c.consent_at?' · '+dshort(c.consent_at):''}</div>`:''}</div><span>Source</span><div>${esc(c.source||'—')}</div><span>Added</span><div>${dt(c.created_at)}</div>
     ${tags.length?`<span>Tags</span><div>${tags.map(t=>`<span class="chip">${esc(t)}</span>`).join(' ')}</div>`:''}
     ${c.extra&&Object.keys(c.extra).length?Object.entries(c.extra).slice(0,10).map(([k,v])=>`<span>${esc(k)}</span><div>${esc(v)}</div>`).join(''):''}</div>
    <label class="l" for="rc-st">Status</label><select class="t" id="rc-st">${Object.entries(CSTATUS).map(([k,t])=>`<option value="${k}" ${k===c.status?'selected':''}>${t}</option>`).join('')}</select>
@@ -1106,22 +1114,38 @@ const TEMPLATES={invitation:'Forum invitation — full design, cover image, date
 
 async function outreach(){
  if(CAM)return campaignEditor();
- const [{rows,sectors},{rows:cams}]=await Promise.all([api('/api/contacts'),api('/api/campaigns')]);
+ const [{rows,sectors},{rows:cams},chs,{rows:msgs}]=await Promise.all([api('/api/contacts'),api('/api/campaigns'),api('/api/channels'),api('/api/messages')]);
  CONTACTS=rows;SECTORS=sectors;
- const reachable=rows.filter(r=>r.email&&!r.unsubscribed_at&&!r.bounced&&r.status!=='do_not_contact').length;
- const noEmail=rows.filter(r=>!r.email).length;
+ const live=r=>r.status!=='do_not_contact';
+ const reachable=rows.filter(r=>live(r)&&r.email&&!r.unsubscribed_at&&!r.bounced&&r.consent_email!=='no').length;
+ const bySms=rows.filter(r=>live(r)&&r.phone&&!r.sms_unsub_at&&r.consent_sms!=='no').length;
+ const byWa=rows.filter(r=>live(r)&&(r.whatsapp||r.phone)&&!r.whatsapp_unsub_at&&r.consent_whatsapp==='yes').length;
+ const hand=msgs.filter(m=>m.status==='queued'&&!(m.channel==='sms'?chs.sms.ready:chs.whatsapp.ready));
+ const digits=x=>String(x||'').replace(/\D/g,'');
  $('#view').innerHTML=`<div class="kpis">
    <div class="kpi"><b>${rows.length}</b><span>contacts</span></div>
    <div class="kpi"><b>${reachable}</b><span>reachable by email</span></div>
-   <div class="kpi"><b>${noEmail}</b><span>no email address</span></div>
+   <div class="kpi"><b>${bySms}</b><span>reachable by SMS</span></div>
+   <div class="kpi"><b>${byWa}</b><span>said yes to WhatsApp</span></div>
    <div class="kpi"><b>${rows.filter(r=>r.status==='replied'||r.status==='meeting').length}</b><span>replied or met</span></div>
    <div class="kpi" style="cursor:pointer" id="k-fd" title="Show Family Desk interest"><b>${rows.filter(r=>(r.tags||'').includes('family-desk')).length}</b><span>Family Desk families</span></div></div>
 
+  <div class="card"><div class="ch"><h3>How messages go out</h3><button class="btn btn-line" id="c-sync">Add Brief subscribers and registrants now</button></div>
+   <ul class="list">
+    <li class="li"><div class="grow"><b>Email</b><div class="note">${chs.email.via?`Sending through ${chs.email.via==='smtp'?'the gothamconsult.com mailbox':'Resend'} as ${esc(chs.email.from)} · ${chs.email.sent_last_hour}/${chs.email.hourly_limit} this hour, ${chs.email.sent_last_day}/${chs.email.daily_limit} today`:'Not connected yet — emails wait in Email outbox'}${chs.email.waiting?` · ${chs.email.waiting} waiting`:''}${chs.email.last_error?`<div style="color:var(--red)">Last failure: ${esc(chs.email.last_error)}</div>`:''}</div></div><span class="chip ${chs.email.via?'green':'gold'}">${chs.email.via?'on':'waiting for set-up'}</span></li>
+    <li class="li"><div class="grow"><b>SMS</b><div class="note">${chs.sms.ready?`Arkesel, sender name ${esc(chs.sms.sender)}`:'No SMS provider connected — texts wait below for sending by hand'}</div></div><span class="chip ${chs.sms.ready?'green':'gold'}">${chs.sms.ready?'on':'by hand'}</span></li>
+    <li class="li"><div class="grow"><b>WhatsApp</b><div class="note">${chs.whatsapp.ready?'WhatsApp Business connected':'WhatsApp Business not connected — messages wait below, one tap each to send from the Gotham WhatsApp'}</div></div><span class="chip ${chs.whatsapp.ready?'green':'gold'}">${chs.whatsapp.ready?'on':'by hand'}</span></li>
+   </ul></div>
+  ${hand.length?`<div class="card"><div class="ch"><h3>Send by hand <span class="chip gold">${hand.length}</span></h3><span class="note">Tap to open the message ready to send, then mark it sent.</span></div>
+   <ul class="list">${hand.slice(0,60).map(m=>`<li class="li"><div class="grow"><b>${esc(m.to_name||m.to_phone)}</b> <span class="note">${esc(m.to_phone)} · ${m.channel==='sms'?'SMS':'WhatsApp'}</span><div class="note" style="white-space:pre-wrap">${esc(m.body||'').slice(0,160)}${(m.body||'').length>160?'…':''}</div></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><a class="btn btn-line" target="_blank" rel="noopener" href="${m.channel==='sms'?'sms:'+esc(m.to_phone)+'?&body='+encodeURIComponent(m.body||''):'https://wa.me/'+digits(m.to_phone)+'?text='+encodeURIComponent(m.body||'')}">Open</a>
+    <button class="btn btn-dark" data-msent="${m.id}">Sent</button><button class="btn btn-line" data-mskip="${m.id}">Skip</button></div></li>`).join('')}</ul>
+   ${hand.length>60?`<p class="note">Showing 60 of ${hand.length}.</p>`:''}</div>`:''}
   <div class="card"><div class="ch"><h3>Campaigns</h3><button class="btn btn-dark" id="c-new">New campaign</button></div>
-   <div class="wrapx"><table><thead><tr><th>Name</th><th>Design</th><th>Sent</th><th>Waiting</th><th>Clicked</th><th>Pace</th><th>Status</th><th></th></tr></thead><tbody>
-   ${cams.map(c=>`<tr><td><b>${esc(c.name)}</b><div class="note">${esc(c.subject)}</div></td>
-    <td class="note">${esc((TEMPLATES[c.template]||c.template).split(' —')[0])}</td>
-    <td><b>${c.sent}</b></td><td>${c.pending}</td>
+   <div class="wrapx"><table><thead><tr><th>Name</th><th>By</th><th>Sent</th><th>Waiting</th><th>Clicked</th><th>Pace</th><th>Status</th><th></th></tr></thead><tbody>
+   ${cams.map(c=>`<tr><td><b>${esc(c.name)}</b><div class="note">${esc(c.channel==='email'||!c.channel?c.subject:(c.sms_text||'').slice(0,60))}</div></td>
+    <td class="note">${c.channel==='sms'?'SMS':c.channel==='whatsapp'?'WhatsApp':'Email · '+esc((TEMPLATES[c.template]||c.template).split(' —')[0])}</td>
+    <td><b>${c.sent}</b>${c.in_flight?` <span class="note">+${c.in_flight} going out</span>`:''}${c.failed?` <span class="chip red" title="failed">${c.failed} failed</span>`:''}</td><td>${c.pending}</td>
     <td>${c.clicked}${c.sent?` <span class="note">${Math.round(c.clicked/c.sent*100)}%</span>`:''}</td>
     <td class="note">${c.daily_limit}/day</td>
     <td><span class="tag ${c.status==='sending'?'t-paid':c.status==='done'?'t-hold':'t-canc'}">${c.status}</span></td>
@@ -1246,6 +1270,9 @@ Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></te
  }
 
  $('#c-new').onclick=()=>{CAM={template:'invitation',daily_limit:40,status:'draft',from_name:'Joy Anthony Preston'};outreach()};
+ $('#c-sync').onclick=async()=>{const r=await api('/api/contacts/sync',{method:'POST',body:'{}'});toast(`${r.added} added, ${r.updated} updated`);outreach()};
+ document.querySelectorAll('[data-msent],[data-mskip]').forEach(b=>b.onclick=async()=>{const id=b.dataset.msent||b.dataset.mskip;
+  await api('/api/messages/'+id+'/'+(b.dataset.msent?'sent':'cancelled'),{method:'POST',body:'{}'});b.closest('li').remove()});
  document.querySelectorAll('[data-cedit]').forEach(b=>b.onclick=()=>{CAM=JSON.parse(JSON.stringify(cams.find(x=>String(x.id)===b.dataset.cedit)));outreach()});
  document.querySelectorAll('[data-cpause]').forEach(b=>b.onclick=async()=>{
   await api('/api/campaigns/'+b.dataset.cpause+'/pause',{method:'POST',body:'{}'});toast('Paused');outreach()});
@@ -1263,7 +1290,15 @@ function contactForm(r){
   ${f('k-web','Website',n.website,'goldfields.com')}
   <h4 class="sec">Person</h4>
   <div class="f2"><div>${f('k-name','Name',n.full_name,'Elliot Twum')}</div><div>${f('k-role','Job title',n.role,'Managing Director')}</div></div>
-  <div class="f2"><div>${f('k-em','Email',n.email,'name@company.com','email')}</div><div>${f('k-ph','Phone or WhatsApp',n.phone,'024 000 0000')}</div></div>
+  <div class="f2"><div>${f('k-em','Email',n.email,'name@company.com','email')}</div><div>${f('k-ph','Phone',n.phone,'024 000 0000 or +44 …')}</div></div>
+  <div class="f2"><div>${f('k-wa','WhatsApp, if a different number',n.whatsapp,'')}</div><div>${f('k-lang','Language',n.language||'en','en, fr, de, da…')}</div></div>
+  <h4 class="sec">Client</h4>
+  <div class="f2"><div><label class="l">Type of client</label><select class="t" id="k-type"><option value="">Not set</option>${Object.entries(CTYPE).map(([k,t])=>`<option value="${k}" ${k===n.client_type?'selected':''}>${t}</option>`).join('')}</select></div>
+   <div>${f('k-country','Country',n.country||'Ghana','Ghana')}</div></div>
+  <h4 class="sec">May we send them news and invitations?</h4>
+  <p class="note" style="margin-top:-4px">Record what they agreed to. WhatsApp messages only go to people marked Yes. An opt-out link is added to every message.</p>
+  <div class="f3">${[['email','Email'],['sms','SMS'],['whatsapp','WhatsApp']].map(([k,l])=>`<div><label class="l">${l}</label><select class="t" id="k-c-${k}">${Object.entries(CONS).map(([v,t])=>`<option value="${v}" ${(n['consent_'+k]||'unknown')===v?'selected':''}>${t}</option>`).join('')}</select></div>`).join('')}</div>
+  ${f('k-csrc','How they agreed',n.consent_source,'e.g. signed up at the forum, asked by email on 12 Oct')}
   <h4 class="sec">Your working notes</h4>
   <div class="f2"><div>${f('k-pri','Priority',n.priority,'Tier 1')}</div>
    <div><label class="l">Status</label><select class="t" id="k-st">${Object.entries(CSTATUS).map(([k,t])=>`<option value="${k}" ${k===n.status?'selected':''}>${t}</option>`).join('')}</select></div></div>
@@ -1281,6 +1316,8 @@ function contactForm(r){
 
  const body=()=>({company:$('#k-co').value,sector:$('#k-sec').value,city:$('#k-city').value,website:$('#k-web').value,
   full_name:$('#k-name').value,role:$('#k-role').value,email:$('#k-em').value,phone:$('#k-ph').value,
+  whatsapp:$('#k-wa').value,language:$('#k-lang').value,client_type:$('#k-type').value,country:$('#k-country').value,
+  consent_email:$('#k-c-email').value,consent_sms:$('#k-c-sms').value,consent_whatsapp:$('#k-c-whatsapp').value,consent_source:$('#k-csrc').value,
   priority:$('#k-pri').value,status:$('#k-st').value,tags:$('#k-tags').value,notes:$('#k-notes').value,
   ...(r?{}:{source:$('#k-src').value})});
  const close=()=>{closeDr();render()};
@@ -1293,7 +1330,8 @@ function contactForm(r){
    else   await api('/api/contacts',{method:'POST',body:JSON.stringify(b)});
    toast(r?'Saved':'Added');close();
   }catch(e){
-   if(e.error==='already_there'){
+   if(e.error==='already_there'&&e.same_email){toast(`${e.who} already has that email — opening it`);close();go('rec',e.id)}
+   else if(e.error==='already_there'){
     if(confirm(`${e.who} is already on the list. Add a second entry anyway?`)){
      await api('/api/contacts',{method:'POST',body:JSON.stringify({...b,confirm_duplicate:true})});
      toast('Added');close()}
@@ -1312,8 +1350,12 @@ function campaignEditor(){
    <div style="display:flex;gap:8px"><button class="btn btn-line" id="c-back">← All campaigns</button>
     <button class="btn btn-dark" id="c-save">Save</button></div></div>
 
+  <h4 class="sec">Send by</h4>
+  <div class="seg" id="c-ch">${[['email','Email'],['sms','SMS'],['whatsapp','WhatsApp']].map(([k,l])=>`<button type="button" data-ch="${k}" class="${(c.channel||'email')===k?'on':''}">${l}</button>`).join('')}</div>
+  <div class="note" id="c-chnote" style="margin-top:6px"></div>
   <h4 class="sec">The message</h4>
-  <div class="f2"><div><label class="l">Name it (only you see this)</label><input class="t" id="c-name" value="${esc(c.name||'')}" placeholder="Mining MDs — October forum"></div>
+  <label class="l">Name it (only you see this)</label><input class="t" id="c-name" value="${esc(c.name||'')}" placeholder="Mining MDs — October forum">
+  <div data-only="email"><div>
    <div><label class="l">Design</label><select class="t" id="c-tpl">${Object.entries(TEMPLATES).map(([k,t])=>`<option value="${k}" ${k===c.template?'selected':''}>${t}</option>`).join('')}</select></div></div>
   <div class="note" id="c-tplnote"></div>
   <label class="l">Subject line</label><input class="t" id="c-subj" value="${esc(c.subject||'')}" placeholder="An invitation, {{first_name}} — 24 October, Tang Palace">
@@ -1324,19 +1366,35 @@ function campaignEditor(){
   <div class="f2" style="margin-top:12px"><div><label class="l">Button text</label><input class="t" id="c-cta" value="${esc(c.cta_label||'')}" placeholder="Request your invitation"></div>
    <div><label class="l">Button link</label><input class="t" id="c-ctau" value="${esc(c.cta_url||'')}" placeholder="https://…/register.html?e=F1"></div></div>
   <div class="f2"><div><label class="l">Pull details from this event</label><select class="t" id="c-item"><option value="">None</option>${evOpts}</select></div>
-   <div><label class="l">Signed by</label><input class="t" id="c-from" value="${esc(c.from_name||'')}" placeholder="Joy Anthony Preston"></div></div>
+   <div><label class="l">Signed by</label><input class="t" id="c-from" value="${esc(c.from_name||'')}" placeholder="Joy Anthony Preston"></div></div></div>
+  <div data-only="sms whatsapp">
+   <label class="l"><span data-only="sms">Text message</span><span data-only="whatsapp">Message, for sending by hand from the Gotham WhatsApp</span> <span class="note" id="c-smsn"></span></label>
+   <textarea class="t" id="c-sms" rows="5" maxlength="900" placeholder="Hello {{first_name}}, Gotham Consult invites you to SMEs at the Centre, 24 Oct, Tang Palace Hotel, Accra. Register:">${esc(c.sms_text||'')}</textarea>
+   <div class="note">The link below and an opt-out link are added at the end. Merge fields: <code>{{first_name}}</code> <code>{{company}}</code></div>
+   <label class="l">Link</label><input class="t" id="c-ctau2" value="${esc(c.cta_url||'')}" placeholder="https://gothamconsult.com/register?e=F1">
+  </div>
+  <div data-only="whatsapp"><h4 class="sec">WhatsApp Business template <span class="note">— used once WhatsApp Business is connected</span></h4>
+   <div class="f2"><div><label class="l">Template name (as approved by Meta)</label><input class="t" id="c-wat" value="${esc(c.wa_template||'')}" placeholder="forum_invitation"></div>
+    <div><label class="l">Template language</label><input class="t" id="c-wal" value="${esc(c.wa_lang||'en')}" placeholder="en"></div></div>
+   <label class="l">Template values, one per line <span class="note">— fills {{1}}, {{2}}… in the template</span></label>
+   <textarea class="t" id="c-wap" rows="3" placeholder="{{first_name}}&#10;SMEs at the Centre, 24 October&#10;https://gothamconsult.com/register?e=F1">${esc(c.wa_params||'')}</textarea></div>
 
   <h4 class="sec">Who gets it</h4>
+  <div class="note" style="margin-bottom:6px">Quick lists: <button type="button" class="btn btn-line" data-aud="brief">Brief subscribers</button> ${(ALL_ITEMS.length?ALL_ITEMS:ITEMS).filter(i=>i.kind==='event').slice(0,4).map(i=>`<button type="button" class="btn btn-line" data-aud="event-${esc(i.code.toLowerCase())}">Registered for ${esc(i.code)}</button>`).join(' ')}</div>
+  <div class="f2"><div><label class="l">Type of client <span class="note">— one or more, comma separated</span></label><input class="t" id="c-ty" list="c-tylist" value="${esc(c.seg_type||'')}" placeholder="corporate, international — blank for all">
+    <datalist id="c-tylist">${Object.keys(CTYPE).map(k=>`<option value="${k}">`).join('')}</datalist></div>
+   <div><label class="l">Country</label><input class="t" id="c-co" value="${esc(c.seg_country||'')}" placeholder="Ghana, Nigeria, UK — blank for all"></div></div>
   <div class="f2"><div><label class="l">Sector</label><input class="t" id="c-sec" value="${esc(c.seg_sector||'')}" placeholder="Mining — leave blank for everyone"></div>
    <div><label class="l">Must have these tags</label><input class="t" id="c-tags" value="${esc(c.seg_tags||'')}" placeholder="tier-a"></div></div>
+  <label class="note" style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="c-cons" ${c.seg_consent==='yes'?'checked':''}> Only people who said yes to this channel <span data-only="whatsapp">(always the case for WhatsApp)</span></label>
   <div class="f2"><div><label class="l">Only this status</label><select class="t" id="c-st"><option value="">Any</option>${Object.entries(CSTATUS).filter(([k])=>k!=='do_not_contact').map(([k,t])=>`<option value="${k}" ${k===c.seg_status?'selected':''}>${t}</option>`).join('')}</select></div>
-   <div><label class="l">How many a day</label><input class="t" id="c-lim" type="number" min="1" max="200" value="${c.daily_limit||40}">
+   <div><label class="l">How many a day</label><input class="t" id="c-lim" type="number" min="1" max="2000" value="${c.daily_limit||40}">
     <div class="note">Slow is safe. A burst of cold email from a young domain gets it blocked — and then your registration confirmations stop arriving too.</div></div></div>
 
   <h4 class="sec">Check before you send</h4>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
    <button class="btn btn-line" id="c-prev">Preview it</button>
-   <button class="btn btn-line" id="c-test">Send one to me</button>
+   <button class="btn btn-line" id="c-test">Send a test to me</button>
    ${c.id?(c.status==='sending'
      ?'<button class="btn btn-line" id="c-pause">Pause sending</button>'
      :'<button class="btn btn-green" id="c-start">Start sending</button>'):'<span class="note" style="align-self:center">Save it first.</span>'}
@@ -1348,34 +1406,54 @@ function campaignEditor(){
    ? 'Best choice for senior people. A managing director deletes anything that looks like a newsletter; a plain note from a named person gets read.'
    : 'Designed email with your colours and kente band. Good for wider lists and for anything with a picture.'};
  $('#c-tpl').onchange=note; note();
+ let ch=c.channel||'email';
+ const CHNOTE={email:'Designed or plain email with a working unsubscribe link. Goes out through the gothamconsult.com mailbox, a limited number per hour.',
+  sms:'Text message from the sender name GOTHAM, with an opt-out link. Keep it short: 160 characters is one SMS; each extra 153 is another.',
+  whatsapp:'Only to people who said yes to WhatsApp. Until WhatsApp Business is connected, messages wait in the list on the Outreach page for you to send with one tap each.'};
+ const showCh=()=>{document.querySelectorAll('#view [data-only]').forEach(e=>e.style.display=e.dataset.only.split(' ').includes(ch)?'':'none');
+  $('#c-ch').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.ch===ch));$('#c-chnote').textContent=CHNOTE[ch];
+  if($('#c-lim')&&ch==='email'&&+$('#c-lim').value>200)$('#c-lim').value=200};
+ $('#c-ch').onclick=e=>{const b=e.target.closest('button');if(!b)return;ch=b.dataset.ch;showCh()};showCh();
+ const smsCount=()=>{const t=$('#c-sms').value,n=t.length+70;$('#c-smsn').textContent=`— ${t.length} characters, about ${Math.max(1,Math.ceil(n/(/[^\x00-\x7F]/.test(t)?67:153)))} SMS each with the links`};
+ $('#c-sms').oninput=smsCount;smsCount();
+ document.querySelectorAll('[data-aud]').forEach(b=>b.onclick=()=>{$('#c-tags').value=b.dataset.aud;toast('Audience: '+b.textContent)});
 
  const grab=()=>{const g=i=>{const e=$(i);return e?e.value:''};
   CAM.name=g('#c-name');CAM.template=g('#c-tpl');CAM.subject=g('#c-subj');CAM.intro=g('#c-intro');
   CAM.cta_label=g('#c-cta');CAM.cta_url=g('#c-ctau');CAM.item_code=g('#c-item');CAM.from_name=g('#c-from');
-  CAM.seg_sector=g('#c-sec');CAM.seg_tags=g('#c-tags');CAM.seg_status=g('#c-st');CAM.daily_limit=g('#c-lim')};
+  CAM.seg_sector=g('#c-sec');CAM.seg_tags=g('#c-tags');CAM.seg_status=g('#c-st');CAM.daily_limit=g('#c-lim');
+  CAM.channel=ch;CAM.seg_type=g('#c-ty');CAM.seg_country=g('#c-co');CAM.seg_consent=$('#c-cons').checked?'yes':'any';
+  CAM.sms_text=g('#c-sms');CAM.wa_template=g('#c-wat');CAM.wa_lang=g('#c-wal');CAM.wa_params=g('#c-wap');
+  if(ch!=='email')CAM.cta_url=g('#c-ctau2')};
  const save=async()=>{grab();
-  if(!CAM.name||!CAM.subject)return toast('It needs a name and a subject line');
+  if(!CAM.name||(ch==='email'&&!CAM.subject))return toast(ch==='email'?'It needs a name and a subject line':'Give it a name');
+  if(ch!=='email'&&!CAM.sms_text)return toast('Write the message first');
   const r=await api('/api/campaigns',{method:'POST',body:JSON.stringify(CAM)});
   CAM.id=r.id;toast('Saved');campaignEditor();return r.id};
  $('#c-save').onclick=save;
  $('#c-back').onclick=()=>{CAM=null;outreach()};
  $('#c-prev').onclick=async()=>{const id=CAM.id||await save();if(!id)return;
   const d=await api('/api/campaigns/'+id+'/preview');
-  $('#c-prevbox').innerHTML=`<div class="note" style="margin:16px 0 8px">Goes to <b>${d.audience}</b> ${d.audience===1?'person':'people'}. Shown as ${esc(d.sample_to||'a sample contact')} would see it.
-   <div>Subject: <b>${esc(d.subject)}</b></div></div>
-   <iframe id="c-if" style="width:100%;height:620px;border:1px solid var(--line);border-radius:12px;background:#fff"></iframe>`;
-  const f=$('#c-if');f.srcdoc=d.html};
- $('#c-test').onclick=async()=>{const id=CAM.id||await save();if(!id)return;
+  const how=d.provider?'sends automatically':'waits for you to send by hand (no '+(d.channel==='email'?'mail account':d.channel==='sms'?'SMS provider':'WhatsApp Business')+' connected yet)';
+  $('#c-prevbox').innerHTML=`<div class="note" style="margin:16px 0 8px">Goes to <b>${d.audience}</b> ${d.audience===1?'person':'people'} by ${esc(d.channel)} and ${how}. Shown as ${esc(d.sample_to||'a sample contact')} would see it.
+   ${d.channel==='email'?`<div>Subject: <b>${esc(d.subject)}</b></div>`:`<div>About ${d.segments} SMS each.</div>`}</div>
+   ${d.html?'<iframe id="c-if" style="width:100%;height:620px;border:1px solid var(--line);border-radius:12px;background:#fff"></iframe>'
+     :`<div class="card" style="max-width:420px;white-space:pre-wrap;background:#E7F7EE;border-radius:16px">${esc(d.text)}</div>`}`;
+  if(d.html)$('#c-if').srcdoc=d.html};
+ $('#c-test').onclick=async()=>{const id=await save();if(!id)return;
+  if(ch!=='email'){const ph=prompt('Send a test '+(ch==='sms'?'SMS':'WhatsApp')+' to which number?','');if(!ph)return;
+   try{const r=await api('/api/campaigns/'+id+'/test',{method:'POST',body:JSON.stringify({phone:ph})});
+    toast(r.manual?'Test is waiting in "Send by hand" on the Outreach page':'Test sent')}catch(e){toast('Check the number')}return}
   const to=prompt('Send a test to which address?',ME.email.includes('@')?ME.email:'');
   if(!to)return;
   try{await api('/api/campaigns/'+id+'/test',{method:'POST',body:JSON.stringify({email:to})});
    toast('Test queued — it sends as soon as email is switched on')}catch(e){toast('Check the address')}};
  if($('#c-start'))$('#c-start').onclick=async()=>{await save();
   const d=await api('/api/campaigns/'+CAM.id+'/preview');
-  if(!confirm(`Send "${CAM.name}" to ${d.audience} people, ${CAM.daily_limit} a day?\n\nEveryone gets an opt-out link and nobody is written to twice.`))return;
+  if(!confirm(`Send "${CAM.name}" by ${d.channel} to ${d.audience} people, ${CAM.daily_limit} a day?\n\nEveryone gets an opt-out link and nobody is written to twice.`))return;
   try{const r=await api('/api/campaigns/'+CAM.id+'/start',{method:'POST',body:'{}'});
    toast(`Started — ${r.queued} queued, ${r.sent_now} going out now`);CAM=null;outreach()}
-  catch(e){toast(e.error==='empty_audience'?'Nobody matches that filter':'Could not start')}};
+  catch(e){toast(e.error==='empty_audience'?'Nobody matches that filter':e.error==='wa_template_missing'?'Add the approved WhatsApp template name':'Could not start')}};
  if($('#c-pause'))$('#c-pause').onclick=async()=>{await api('/api/campaigns/'+CAM.id+'/pause',{method:'POST',body:'{}'});
   toast('Paused');CAM=null;outreach()};
  if($('#c-del'))$('#c-del').onclick=async()=>{if(!confirm('Delete this campaign and its send history?'))return;
