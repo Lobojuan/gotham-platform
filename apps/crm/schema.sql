@@ -388,3 +388,15 @@ create table if not exists email_templates (
   created_by text,
   created_at timestamptz default now(), updated_at timestamptz default now()
 );
+
+-- WhatsApp conversations (incoming and what we replied), so the AI answers each message once and with context
+create table if not exists wa_messages (
+  id serial primary key,
+  phone text not null,
+  direction text not null check (direction in ('in','out')),
+  body text,
+  kind text,
+  msg_id text unique,
+  at timestamptz default now()
+);
+create index if not exists wa_messages_phone_idx on wa_messages (phone, at desc);

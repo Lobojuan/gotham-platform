@@ -39,7 +39,7 @@ os.makedirs('/tmp/mediatest',exist_ok=True)
 
 srv=start({})
 try:
-    st,d=ask({'q':'How do I pay?'}); assert st==200 and d=={'fallback':True},(st,d)
+    st,d=ask({'q':'How do I pay?'}); assert st==200 and d=={'fallback':True,'actions':[{'type':'person'}]},(st,d)
     ok('without OPENAI_API_KEY the chat falls back to the built-in answers')
 finally: srv.terminate(); srv.wait()
 

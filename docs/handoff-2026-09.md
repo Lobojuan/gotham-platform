@@ -205,3 +205,12 @@ for reduced motion.
 - Saved designs: `email_templates` + three starters. Live preview: `POST /api/campaigns/render`.
 - Carlson Capital Ltd and +233 55 239 5548 appear only on campaigns ticked "renewable energy or AI/software" (`campaigns.carlson`); everything else is Gotham + +233 55 041 6627.
 - Tests: `tests/api/17_email_designer.py`, `tests/ui/email_designer_ui.js`.
+
+## AI (Groq free tier, same key as Ask Gotham)
+- Website chat: the model may end a reply with `[[register:CODE]]`, `[[lead]]` or `[[person]]`; `chatActions()` checks codes against open forums and turns them into buttons. "Leave your details" → `POST /api/chat-lead` (consent tick required) → contact (tag `chat-lead`), deal, task for tomorrow, note. No marketing consent assumed.
+- Back office: `POST /api/ai {task: email|sms|whatsapp|designer|client|deal}` (admins, `AI_ADMIN_CAP`/day, default 200). Only fills fields; nothing saved until Save.
+- WhatsApp: incoming messages are stored in `wa_messages` and as notes. With Settings → "WhatsApp: AI replies" on (`settings.wa_autoreply`), the AI answers inside Meta's 24-hour window; complaints, requests for a person, voice notes/pictures and meeting/quote requests become high-priority tasks. Opted-out numbers never get an automatic reply. Counts against `ASK_DAILY_CAP`.
+- Tests: `tests/api/18_ai.py`, chat checks in `tests/e2e/site_e2e.js`, `tests/ui/ai_helper_ui.js`. The mock model (`tests/e2e/mock_ai.js`) adds tags and JSON.
+
+## Calendar day pop-up
+- Clicking a day opens a pop-up beside it (a bottom sheet on phones) with that day's items and quick add; nothing scrolls. `tests/ui/calendar_popup_ui.js`.

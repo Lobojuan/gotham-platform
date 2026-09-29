@@ -1301,7 +1301,7 @@ async function askKnowledge() {
   askKnow = { at: Date.now(), text: base + '\n\n## Upcoming forums and products (live from the back office)\n' + (forums || '- None published right now.') };
   return askKnow.text;
 }
-async function askModel(messages) {
+async function askModel(messages, opt = {}) {
   /* Works with any OpenAI-compatible chat API: OpenAI, Groq (OPENAI_BASE_URL=https://api.groq.com/openai/v1), Kimi…
      OPENAI_MODEL may list several models, comma-separated: when one is rate-limited (429) or down (5xx), the next is
      tried. On Groq's free tier each model has its own per-minute allowance, so this keeps answers flowing in bursts.
@@ -1310,7 +1310,7 @@ async function askModel(messages) {
   let last = '';
   for (const model of models) {
     const effort = process.env.OPENAI_REASONING || (/gpt-oss/.test(model) ? 'low' : /^(gpt-5|o\d)/.test(model) ? 'minimal' : '');
-    let opts = { max_completion_tokens: 900, ...(effort ? { reasoning_effort: effort } : {}) };
+    let opts = { max_completion_tokens: opt.max || 900, ...(effort ? { reasoning_effort: effort } : {}), ...(opt.json && !/gpt-oss/.test(model) ? { response_format: { type: 'json_object' } } : {}) };
     for (let attempt = 0; attempt < 3; attempt++) {
       const r = await fetch(OPENAI_BASE + '/chat/completions', {
         method: 'POST', signal: AbortSignal.timeout(25e3),
@@ -1318,6 +1318,7 @@ async function askModel(messages) {
         body: JSON.stringify({ model, messages, ...opts }) });
       if (r.ok) {
         const j = await r.json();
+        if (opt.raw) return String(j.choices?.[0]?.message?.content || '').trim();
         /* the chat shows plain text: drop markdown marks the model may add anyway */
         return String(j.choices?.[0]?.message?.content || '')
           .replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1').replace(/^#{1,6}\s+/gm, '')
@@ -1325,13 +1326,35 @@ async function askModel(messages) {
       }
       const t = (await r.text()).slice(0, 300);
       if (r.status === 400 && opts.reasoning_effort && /reasoning/i.test(t)) { const { reasoning_effort, ...rest } = opts; opts = rest; continue; }
-      if (r.status === 400 && opts.max_completion_tokens && /max_completion_tokens/i.test(t)) { const { max_completion_tokens, ...rest } = opts; opts = { ...rest, max_tokens: 900 }; continue; }
+      if (r.status === 400 && opts.max_completion_tokens && /max_completion_tokens/i.test(t)) { const { max_completion_tokens, ...rest } = opts; opts = { ...rest, max_tokens: opt.max || 900 }; continue; }
+      if (r.status === 400 && opts.response_format && /response_format|json/i.test(t)) { const { response_format, ...rest } = opts; opts = rest; continue; }
       last = 'ai ' + model + ' ' + r.status + ' ' + t;
       if (r.status === 429 || r.status >= 500) break;              // try the next model
       throw new Error(last);
     }
   }
   throw new Error(last || 'ai: no model answered');
+}
+
+
+/* The chat's buttons: the model ends a reply with [[register:F1]], [[lead]] or [[person]]; we check a
+   forum code against what is really open, and a register link written in the answer counts too. */
+async function chatActions(answer) {
+  const tags = [...String(answer).matchAll(/\[\[\s*(register\s*:\s*([A-Za-z0-9]{1,12})|lead|person)\s*\]\]/gi)];
+  let text = String(answer).replace(/\[\[[^\]]{0,40}\]\]/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  const codes = new Set(tags.filter(t => t[2]).map(t => t[2].toUpperCase()));
+  for (const m of text.matchAll(/register\?e=([A-Za-z0-9]{1,12})/g)) codes.add(m[1].toUpperCase());
+  const actions = [];
+  if (codes.size) {
+    const { rows } = await itemsPublic();
+    for (const code of codes) {
+      const it = rows.find(r => r.code === code && r.phase !== 'past' && (!r.starts_at || new Date(r.starts_at) > Date.now() - 864e5));
+      if (it && it.seats_left !== 0) actions.push({ type: 'register', code, title: it.title, approval: !!it.approval });
+    }
+  }
+  if (tags.some(t => /^lead$/i.test(t[1]))) actions.push({ type: 'lead' });
+  if (tags.some(t => /^person$/i.test(t[1]))) actions.push({ type: 'person' });
+  return { text, actions: actions.slice(0, 3) };
 }
 
 /* Attach resolved image/doc objects to a list of items in one extra query. */
@@ -1482,7 +1505,7 @@ const server = http.createServer(async (req, res) => {
 
     /* ---- someone wants to sponsor us ---- */
     if (p === '/api/ask' && req.method === 'POST') {
-      if (!OPENAI_KEY) return json(res, 200, { fallback: true }, cors);
+      if (!OPENAI_KEY) return json(res, 200, { fallback: true, actions: [{ type: 'person' }] }, cors);
       if (rateLimited(ip, 20, 3600e3, 'ask')) return json(res, 429, { error: 'too_many' }, cors);
       const today = new Date().toISOString().slice(0, 10);
       if (askDay.day !== today) { askDay.day = today; askDay.n = 0; }
@@ -1503,18 +1526,44 @@ line in simple English with the key facts, because your Ghanaian-language writin
 Ga and Twi. Plain text only: no markdown, no asterisks. Always state prices in Ghana cedis (GHS), never in another currency; if asked for dollars or euros, give the GHS price and say we invoice in cedis.
 Do not invent prices, dates, people or services; if the answer is not below, say our team will answer on WhatsApp (+233 55 041 6627).
 You give general information, not legal, tax or investment advice; for their specific case, suggest a call or WhatsApp.
-Do not ask for or collect personal details in the chat; to register, point to gothamconsult.com/register.
+Never ask the visitor to type personal details (name, phone, email) in the chat.
+At the very end of your reply you may add ONE tag on its own line, and the page turns it into a button (never mention the tag):
+[[register:CODE]] when they want to attend one of the forums listed below (CODE is the forum's code in brackets);
+[[lead]] when they want a quote, a proposal, a call, a meeting, help with their own case, or to be contacted;
+[[person]] when they ask for a human, are unhappy or in a hurry, or you cannot answer from the knowledge below.
 Stay on Gotham Consult, doing business and investing in Ghana; politely decline anything else.
 
 ${await askKnowledge()}`;
       try {
         const answer = await askModel([{ role: 'system', content: system }, ...history, { role: 'user', content: question }]);
-        if (!answer) return json(res, 200, { fallback: true }, cors);
-        return json(res, 200, { answer: answer.slice(0, 2000) }, cors);
+        if (!answer) return json(res, 200, { fallback: true, actions: [{ type: 'person' }] }, cors);
+        const { text, actions } = await chatActions(answer);
+        return json(res, 200, { answer: text.slice(0, 2000), actions }, cors);
       } catch (e) {
         console.error('ask failed:', String(e.message || e).slice(0, 300));
         return json(res, 200, { fallback: true }, cors);
       }
+    }
+
+    /* "Leave your details" in the chat: the visitor chooses to; it becomes a lead with a task for tomorrow */
+    if (p === '/api/chat-lead' && req.method === 'POST') {
+      if (rateLimited(ip, 5, 600e3, 'chatlead')) return json(res, 429, { error: 'too_many' }, cors);
+      const b = await body(req);
+      const name = clean(b.name, 120), company = clean(b.company, 160), need = clean(b.need, 600), reach = clean(b.contact, 160);
+      const email = /^\S+@\S+\.\S+$/.test(reach) ? reach.toLowerCase() : '', phone = email ? '' : phoneGH(reach);
+      if (!name || (!email && String(phone).replace(/\D/g, '').length < 9)) return json(res, 400, { error: 'missing_fields' }, cors);
+      if (b.consent !== true) return json(res, 400, { error: 'consent_required' }, cors);
+      const dealId = await inboundDeal({ company: company || null, full_name: name, email: email || null, phone: phone || null, kind: 'consulting',
+        title: `${company || name} · website chat`, source: 'Website chat', task: `Reply to ${firstName(name)} from the website chat${need ? ': ' + need.slice(0, 120) : ''}` });
+      if (dealId) {
+        const c = (await q('select contact_id from deals where id=$1', [dealId])).rows[0];
+        if (c && c.contact_id) {
+          await q(`update contacts set tags=$2, phone=coalesce(phone, nullif($3,'')) where id=$1`, [c.contact_id, mergeTags((await q('select tags from contacts where id=$1', [c.contact_id])).rows[0]?.tags, ['chat-lead']), phone]);
+          await q("insert into notes(contact_id,deal_id,kind,body,author) values ($1,$2,'note',$3,'website chat')", [c.contact_id, dealId,
+            `Asked on the website chat to be contacted about: ${need || '(not said)'}` + (b.question ? `\nLast question: ${clean(b.question, 600)}` : '') + (b.language && b.language !== 'en' ? `\nLanguage: ${clean(b.language, 5)}` : '')]);
+        }
+      }
+      return json(res, 200, { ok: true }, cors);
     }
 
     if (p === '/api/sponsor-enquiry' && req.method === 'POST') {
@@ -2184,6 +2233,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         if (got.length !== want.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want))) return json(res, 401, { error: 'bad_signature' });
       } else return json(res, 503, { error: 'not_configured' });
       let d = {}; try { d = JSON.parse(raw.toString('utf8')); } catch {}
+      const inbound = [];
       for (const e of d.entry || []) for (const ch of e.changes || []) {
         const v = ch.value || {};
         for (const st of v.statuses || []) {
@@ -2192,6 +2242,8 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           if (m && (st.status === 'delivered' || st.status === 'read')) await q("update campaign_sends set status='delivered', delivered_at=coalesce(delivered_at,now()) where msg_id=$1", [m.id]);
           if (m && st.status === 'failed') await q("update campaign_sends set status='failed', error=$2 where msg_id=$1", [m.id, 'whatsapp: ' + (st.errors && st.errors[0] && st.errors[0].title || 'failed')]);
         }
+        const names = Object.fromEntries((v.contacts || []).map(k => [k.wa_id, k.profile && k.profile.name]));
+        for (const msg of v.messages || []) inbound.push([msg, names[msg.from]]);
         for (const msg of v.messages || []) {
           const text = String((msg.text && msg.text.body) || (msg.button && msg.button.text) || '').trim().toLowerCase();
           if (/^(stop|unsubscribe|stop all|opt out|cancel)$/.test(text)) {
@@ -2201,7 +2253,9 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           }
         }
       }
-      return json(res, 200, { ok: true });
+      json(res, 200, { ok: true });                                  // answer Meta at once; the AI reply follows
+      for (const [m, name] of inbound) await waInbound(m, name).catch(e => console.error('wa inbound', e.message));
+      return;
     }
     if (p === '/api/outbox/flush' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -3012,6 +3066,27 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
 
 
+    /* ---- AI helper in the back office ---- */
+    if (p === '/api/ai' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (!OPENAI_KEY) return json(res, 503, { error: 'ai_off' });
+      const b = await body(req);
+      try { const r = await aiHelp(u, b); return json(res, r.error ? (r.error === 'not_found' ? 404 : r.error === 'daily_cap' ? 429 : 400) : 200, r); }
+      catch (e) { console.error('ai help', String(e.message || e).slice(0, 300)); return json(res, 502, { error: 'ai_failed' }); }
+    }
+    if (p === '/api/whatsapp/autoreply' && (req.method === 'GET' || req.method === 'POST')) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (req.method === 'POST') {
+        const b = await body(req); const v = b.on === true ? 'on' : 'off';
+        await q(`insert into settings(key,value) values ('wa_autoreply',$1) on conflict (key) do update set value=excluded.value`, [v]);
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'whatsapp_autoreply', v]);
+      }
+      const on = ((await q("select value from settings where key='wa_autoreply'")).rows[0] || {}).value === 'on';
+      const recent = (await q(`select w.phone, w.direction, w.body, w.kind, w.at, c.id as contact_id, c.company, c.full_name from wa_messages w
+        left join contacts c on coalesce(nullif(c.whatsapp,''), c.phone)=w.phone order by w.at desc limit 30`)).rows;
+      return json(res, 200, { on, connected: waReady(), ai: !!OPENAI_KEY, recent });
+    }
+
     /* ---- calendar ---- */
     if (p === '/api/calendar' && req.method === 'GET') {
       const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
@@ -3353,6 +3428,143 @@ async function runCampaigns() {
   }
   if (sentTotal) { await flushMail(Math.min(100, sentTotal + 10)); await flushMessages(Math.min(500, sentTotal + 10)); }
   return sentTotal;
+}
+
+/* ---------- AI in the back office: write, sum up, suggest ----------
+   Same model and key as the website chat (Groq's free tier by default). Admins only, with its own
+   daily allowance. Nothing is saved until the person presses Save: the AI only fills in fields. */
+const AI_ADMIN_CAP = +(process.env.AI_ADMIN_CAP || 200);
+const aiDay = { day: '', n: 0 };
+const AI_RULES = `You write for Gotham Consult, a business-development and advisory firm in Accra, Ghana.
+Plain, warm, professional English (or the language asked). Short sentences. No hype, no emojis, no markdown.
+Prices only in Ghana cedis (GHS). Never invent facts, prices, dates, names or results: use only what you are given.
+Carlson Capital Ltd is Gotham's partner only for renewable energy and AI/software; mention it only for those topics.
+Gotham's WhatsApp: +233 55 041 6627. Website: gothamconsult.com.`;
+const jsonFrom = t => { const m = String(t || '').match(/\{[\s\S]*\}/); if (!m) return null; try { return JSON.parse(m[0]); } catch { return null; } };
+async function aiHelp(u, b) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (aiDay.day !== today) { aiDay.day = today; aiDay.n = 0; }
+  if (aiDay.n >= AI_ADMIN_CAP) return { error: 'daily_cap' };
+  aiDay.n++;
+  const know = await askKnowledge();
+  const ask = async (instr, max = 900, json = false) => askModel([{ role: 'system', content: AI_RULES + '\n\n' + know.slice(0, 9000) }, { role: 'user', content: instr }], { raw: true, max, json });
+  const brief = clean(b.brief, 1200);
+  if (b.task === 'email') {
+    if (!brief) return { error: 'brief_required' };
+    const plain = b.template === 'plain';
+    const out = jsonFrom(await ask(`Write a ${plain ? 'short personal email from Joy Anthony Preston' : 'campaign email'} about: ${brief}
+Use {{first_name}} for the reader's first name and {{company}} for their company where natural. ${plain ? 'Under 120 words.' : 'Under 170 words.'}
+Answer only with JSON: {"subject": "under 70 characters", "body": "paragraphs separated by a blank line, starting with a greeting, no signature"}`, 900, true));
+    if (!out || !out.body) return { error: 'ai_failed' };
+    return { subject: clean(String(out.subject || ''), 200), body: clean(String(out.body), 6000) };
+  }
+  if (b.task === 'sms' || b.task === 'whatsapp') {
+    if (!brief) return { error: 'brief_required' };
+    const text = await ask(`Write one ${b.task === 'sms' ? 'SMS text, at most 150 characters' : 'WhatsApp message, at most 400 characters'} about: ${brief}
+Start with "Hello {{first_name}}," and do not add a link or an opt-out line (they are added automatically). Answer with the message only.`, 400);
+    return { text: clean(text.replace(/^["']|["']$/g, ''), b.task === 'sms' ? 300 : 900) };
+  }
+  if (b.task === 'designer') {
+    if (!brief) return { error: 'brief_required' };
+    const { rows: evs } = await itemsPublic();
+    const upcoming = evs.filter(r => r.starts_at && new Date(r.starts_at) > Date.now()).map(r => `${r.code}: ${r.title}`).join('; ') || 'none';
+    const out = jsonFrom(await ask(`Design an email about: ${brief}
+Available block types: heading {text, size:"l"|"m"}, text {text} (paragraphs separated by a blank line, may use {{first_name}}), image {} (an empty picture slot for the user to fill),
+image_text {title, text, side:"left"|"right"}, button {label, url, style:"gold"|"dark"}, event {code} (only one of these upcoming codes: ${upcoming}), sponsors {tier:"all"}, divider {}.
+Use 3 to 7 blocks, start with a heading, keep text short. Buttons point to https://gothamconsult.com pages or https://wa.me/233550416627.
+Answer only with JSON: {"subject": "under 70 characters", "blocks": [ ... ]}`, 1400, true));
+    const blocks = cleanBlocks(out && out.blocks).filter(x => x.type !== 'event' || evs.some(r => r.code === x.code));
+    if (!blocks.length) return { error: 'ai_failed' };
+    return { subject: clean(String(out.subject || ''), 200), blocks };
+  }
+  if (b.task === 'client') {
+    const c = (await q('select * from contacts where id=$1', [+b.contact_id])).rows[0];
+    if (!c) return { error: 'not_found' };
+    const notes = (await q('select kind, body, author, at from notes where contact_id=$1 order by at desc limit 25', [c.id])).rows;
+    const deals = (await q('select title, kind, stage, value, next_step, next_date from deals where contact_id=$1 order by updated_at desc limit 8', [c.id])).rows;
+    const tasks = (await q('select title, due_at, done_at from tasks where contact_id=$1 order by coalesce(due_at, created_at) desc limit 10', [c.id])).rows;
+    const regs = c.email ? (await q('select r.item_code, i.title, r.status, r.paid, r.created_at from registrations r join items i on i.code=r.item_code where lower(r.email)=lower($1) order by r.created_at desc limit 8', [c.email])).rows : [];
+    const facts = JSON.stringify({ company: c.company, person: c.full_name, role: c.role, sector: c.sector, city: c.city, country: c.country, type: c.client_type, status: c.status,
+      tags: c.tags, source: c.source, added: c.created_at, notes: notes.map(n => `${ymdOf(n.at)} ${n.kind} (${String(n.author || '').split('@')[0]}): ${String(n.body).slice(0, 300)}`),
+      deals, tasks: tasks.map(t => `${t.title} — due ${t.due_at ? ymdOf(t.due_at) : 'no date'}${t.done_at ? ' (done)' : ''}`), registrations: regs, today: ymdOf(new Date()) }).slice(0, 7000);
+    const out = jsonFrom(await ask(`Here is everything the back office holds on one client, as JSON: ${facts}
+Sum it up for a colleague who is about to call them. Answer only with JSON:
+{"summary": "3 to 5 short sentences: who they are, what has happened so far, where things stand", "next": "one concrete next step, with a suggested date if sensible"}`, 900, true));
+    if (!out || !out.summary) return { error: 'ai_failed' };
+    return { summary: clean(String(out.summary), 1500), next: clean(String(out.next || ''), 300) };
+  }
+  if (b.task === 'deal') {
+    const d = (await q('select d.*, c.full_name, c.role from deals d left join contacts c on c.id=d.contact_id where d.id=$1', [+b.deal_id])).rows[0];
+    if (!d) return { error: 'not_found' };
+    const notes = (await q('select kind, body, at from notes where deal_id=$1 or (contact_id=$2 and deal_id is null) order by at desc limit 12', [d.id, d.contact_id || 0])).rows;
+    const out = jsonFrom(await ask(`A deal: ${JSON.stringify({ title: d.title, company: d.company, person: d.full_name, role: d.role, kind: d.kind, stage: d.stage, value_ghs: d.value,
+      current_next_step: d.next_step, next_date: d.next_date, source: d.source, notes: notes.map(n => `${ymdOf(n.at)} ${n.kind}: ${String(n.body).slice(0, 240)}`), today: ymdOf(new Date()) })}
+Suggest the single best next step to move it forward. Answer only with JSON: {"next_step": "under 90 characters, starts with a verb", "next_date": "YYYY-MM-DD within the next 14 days", "why": "one short sentence"}`, 600, true));
+    if (!out || !out.next_step) return { error: 'ai_failed' };
+    const nd = /^\d{4}-\d{2}-\d{2}$/.test(out.next_date || '') ? out.next_date : null;
+    return { next_step: clean(String(out.next_step), 300), next_date: nd, why: clean(String(out.why || ''), 300) };
+  }
+  return { error: 'unknown_task' };
+}
+
+/* ---------- WhatsApp: the AI answers incoming messages ----------
+   Only when switched on in Settings and WhatsApp is connected. A customer's message opens Meta's 24-hour
+   window, so a plain text reply is allowed. Anything that needs a person becomes a task for the team. */
+async function sendWhatsAppText(to, body) {
+  const r = await fetch(`${process.env.WHATSAPP_API_BASE || 'https://graph.facebook.com/v21.0'}/${process.env.WHATSAPP_PHONE_ID}/messages`, { method: 'POST',
+    headers: { authorization: 'Bearer ' + process.env.WHATSAPP_TOKEN, 'content-type': 'application/json' },
+    body: JSON.stringify({ messaging_product: 'whatsapp', to: String(to).replace(/^\+/, ''), type: 'text', text: { preview_url: true, body: String(body).slice(0, 4000) } }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(JSON.stringify(d.error || d).slice(0, 300));
+  return d.messages && d.messages[0] && d.messages[0].id || null;
+}
+const WA_HUMAN = /\b(complain|complaint|refund|angry|urgent|emergency|lawyer|court|scam|fraud|cancel my|problem with (my )?payment|speak to (a|someone|joy)|talk to (a|someone|joy)|human|real person)\b/i;
+async function waInbound(msg, contactName) {
+  const from = phoneGH('+' + String(msg.from || '').replace(/\D/g, ''));
+  const text = String((msg.text && msg.text.body) || (msg.button && msg.button.text) || (msg.interactive && (msg.interactive.button_reply || msg.interactive.list_reply || {}).title) || '').trim();
+  if (!from || !msg.id) return;
+  const fresh = await q(`insert into wa_messages(phone, direction, body, msg_id, kind) values ($1,'in',$2,$3,$4) on conflict (msg_id) do nothing returning id`,
+    [from, text.slice(0, 4000), msg.id, msg.type || 'text']);
+  if (!fresh.rows.length) return;                                    // Meta sends a webhook again when it is unsure: answer once
+  let c = (await q(`select * from contacts where coalesce(nullif(whatsapp,''), phone)=$1 or phone=$1 or whatsapp=$1 order by id limit 1`, [from])).rows[0];
+  if (!c) c = (await q(`insert into contacts(full_name, phone, whatsapp, source, tags, status) values ($1,$2,$2,'WhatsApp message','whatsapp-inbound','new') returning *`,
+    [clean(contactName || '', 120) || null, from])).rows[0];
+  await q("insert into notes(contact_id,kind,body,author) values ($1,'whatsapp',$2,'whatsapp')", [c.id, 'Received: ' + (text || `[${msg.type}]`)]);
+  if (/^(stop|unsubscribe|stop all|opt out|cancel)$/i.test(text) || c.status === 'do_not_contact' || c.whatsapp_unsub_at || c.consent_whatsapp === 'no') return;   // opted out: the team decides
+  const settingOn = ((await q("select value from settings where key='wa_autoreply'")).rows[0] || {}).value === 'on';
+  if (!settingOn || !waReady() || !OPENAI_KEY) return;
+  const recentOut = (await q(`select count(*)::int as n from wa_messages where phone=$1 and direction='out' and at > now() - interval '1 hour'`, [from])).rows[0].n;
+  if (recentOut >= 10) return;                                        // a runaway conversation waits for a person
+  const handover = async why => {
+    const reply = 'Thank you. I have passed this to our team and Joy will reply to you personally here on WhatsApp soon.';
+    const id = await sendWhatsAppText(from, reply).catch(e => { console.error('wa reply', e.message); return null; });
+    await q(`insert into wa_messages(phone, direction, body, msg_id, kind) values ($1,'out',$2,$3,'handover')`, [from, reply, id || 'local-' + crypto.randomBytes(6).toString('hex')]);
+    await q("insert into notes(contact_id,kind,body,author) values ($1,'whatsapp',$2,'whatsapp AI')", [c.id, 'Sent: ' + reply]);
+    await q(`insert into tasks(title, due_at, contact_id, created_by, priority, notes) values ($1, now() + interval '2 hours', $2, 'whatsapp AI', 'high', $3)`,
+      [`WhatsApp from ${c.full_name || c.company || from}: reply personally`, c.id, `${why}\n\nThey wrote: ${text.slice(0, 800)}`]);
+  };
+  if (!text || msg.type !== 'text' || WA_HUMAN.test(text)) return handover(!text ? 'They sent a ' + (msg.type || 'message') + ', not text.' : 'Asked for a person or raised a problem.');
+  const hist = (await q(`select direction, body from wa_messages where phone=$1 and id <> $2 order by at desc limit 6`, [from, fresh.rows[0].id])).rows.reverse()
+    .map(m => ({ role: m.direction === 'in' ? 'user' : 'assistant', content: String(m.body).slice(0, 800) }));
+  const system = `You are the WhatsApp assistant of Gotham Consult (Accra, Ghana), answering on the company's WhatsApp.
+Answer only from the knowledge below. Warm, brief (at most 90 words), plain text, no markdown. Reply in the language they write in.
+Prices only in Ghana cedis (GHS). Do not invent prices, dates, people or services. General information only, not legal, tax or investment advice.
+If you cannot answer from the knowledge, or they want a meeting, a quote or help with their own case, end your reply with [[person]] on its own line.
+Registration links: gothamconsult.com/register?e=CODE.\n\n${await askKnowledge()}`;
+  const today = new Date().toISOString().slice(0, 10);
+  if (askDay.day !== today) { askDay.day = today; askDay.n = 0; }
+  if (askDay.n >= ASK_DAILY_CAP) return handover('The day\'s AI allowance is used up.');
+  askDay.n++;
+  let answer;
+  try { answer = await askModel([{ role: 'system', content: system }, ...hist, { role: 'user', content: text }]); } catch (e) { console.error('wa ai', e.message); return handover('The AI could not answer just now.'); }
+  const needsPerson = /\[\[\s*(person|lead)\s*\]\]/i.test(answer);   // a meeting or a quote needs a person too
+  answer = answer.replace(/\[\[[^\]]{0,40}\]\]/g, '').trim();
+  if (!answer) return handover('The AI had no answer.');
+  const id = await sendWhatsAppText(from, answer + (needsPerson ? '\n\nI have also asked our team to follow up with you personally.' : '')).catch(e => { console.error('wa reply', e.message); return null; });
+  await q(`insert into wa_messages(phone, direction, body, msg_id, kind) values ($1,'out',$2,$3,'ai')`, [from, answer, id || 'local-' + crypto.randomBytes(6).toString('hex')]);
+  await q("insert into notes(contact_id,kind,body,author) values ($1,'whatsapp',$2,'whatsapp AI')", [c.id, 'Sent (AI): ' + answer]);
+  if (needsPerson) await q(`insert into tasks(title, due_at, contact_id, created_by, priority, notes) values ($1, now() + interval '4 hours', $2, 'whatsapp AI', 'high', $3)`,
+    [`WhatsApp from ${c.full_name || c.company || from}: follow up`, c.id, `The AI answered but they need a person.\n\nThey wrote: ${text.slice(0, 800)}\n\nAI replied: ${answer.slice(0, 800)}`]);
 }
 
 /* ---------- calendar: every dated thing in one place ----------

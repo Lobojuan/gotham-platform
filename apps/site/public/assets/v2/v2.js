@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=7';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=8';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -424,15 +424,51 @@
   $('#chatX')?.addEventListener('click', closeChat);
   const FALLBACK = 'Good question. Our team will answer you personally on WhatsApp: +233 55 041 6627.';
   async function ask(q) {
-    say(q, 'me'); const t = say('•••', 'bot typing'); let a = '';
+    say(q, 'me'); const t = say('•••', 'bot typing'); let a = '', acts = [];
     try {
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ q, history: HIST.slice(-6), language: current }), signal: AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined });
       const j = await r.json().catch(() => ({}));
       a = j.answer || (r.status === 429 ? 'You have asked a lot in a short time. Please WhatsApp us on +233 55 041 6627.' : '');
+      acts = Array.isArray(j.actions) ? j.actions : [];
     } catch {}
-    t.remove(); a = a || FALLBACK; say(a, 'bot');
+    t.remove(); if (!a) { a = FALLBACK; acts = [{ type: 'person' }]; } say(a, 'bot');
     HIST.push({ role: 'user', content: q }, { role: 'assistant', content: a });
+    if (acts.length) actions(acts, q);
+  }
+  /* buttons the AI can offer under its answer: register for a forum, leave your details, talk to a person */
+  const WA = 'https://wa.me/233550416627?text=';
+  function actions(list, q) {
+    const box = document.createElement('div'); box.className = 'chat-acts';
+    for (const x of list) {
+      if (x.type === 'register') box.insertAdjacentHTML('beforeend', `<a class="chat-act gold" href="/register?e=${encodeURIComponent(x.code)}"><span>${x.approval ? 'Request your invitation' : 'Reserve your seat'}</span><small>${esc(x.title)}</small></a>`);
+      if (x.type === 'lead') { const b = document.createElement('button'); b.type = 'button'; b.className = 'chat-act'; b.innerHTML = '<span>Leave your details</span>'; b.addEventListener('click', () => { b.disabled = true; leadForm(q); }); box.append(b); }
+      if (x.type === 'person') box.insertAdjacentHTML('beforeend', `<a class="chat-act wa" target="_blank" rel="noopener" href="${WA + encodeURIComponent('Hello Gotham Consult, I was asking on your website: ' + q)}"><span>Continue on WhatsApp</span></a>`);
+    }
+    msgs.append(box); msgs.scrollTop = msgs.scrollHeight;
+  }
+  function leadForm(q) {
+    const f = document.createElement('form'); f.className = 'chat-lead'; f.noValidate = true;
+    f.innerHTML = `<p class="cl-h">We will get back to you</p>
+      <label>Your name<input name="name" autocomplete="name" required></label>
+      <label>Company (optional)<input name="company" autocomplete="organization"></label>
+      <label>WhatsApp number or email<input name="contact" autocomplete="tel" inputmode="email" required></label>
+      <label>What do you need?<textarea name="need" rows="2" maxlength="600">${esc(q)}</textarea></label>
+      <label class="cl-ok"><input type="checkbox" name="consent"> <span>Gotham Consult may contact me about this request.</span></label>
+      <p class="cl-msg" role="status"></p><button class="btn btn-gold" type="submit">Send</button>`;
+    msgs.append(f); msgs.scrollTop = msgs.scrollHeight; f.querySelector('input').focus({ preventScroll: true });
+    f.addEventListener('submit', async e => {
+      e.preventDefault(); const v = n => f.elements[n].value.trim(), msg = $('.cl-msg', f);
+      if (!v('name') || !v('contact')) { msg.textContent = 'Please add your name and a WhatsApp number or email.'; return; }
+      if (!f.elements.consent.checked) { msg.textContent = 'Please tick the box so we may contact you.'; return; }
+      const btn = $('button', f); btn.disabled = true;
+      try {
+        const r = await fetch('/api/chat-lead', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ name: v('name'), company: v('company'), contact: v('contact'), need: v('need'), question: q, consent: true, language: current }) });
+        if (!r.ok) throw new Error(String(r.status));
+        f.remove(); say('Thank you. Our team will get back to you soon.', 'bot');
+      } catch { msg.textContent = 'That did not go through. Please WhatsApp us on +233 55 041 6627.'; btn.disabled = false; }
+    });
   }
   const chips = ['Next forum', 'How do I pay?', 'What is GIPA Act 1173?', 'Invest in Ghana'];
   if ($('#chatChips')) $('#chatChips').innerHTML = chips.map(c => `<button type="button">${esc(c)}</button>`).join('');

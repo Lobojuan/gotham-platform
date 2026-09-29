@@ -174,6 +174,20 @@ async function journeys(browser) {
     // home chat via chip
     await p.click('#chatO'); await p.locator('#chatChips button').first().click();
     check('home chat chip gets an answer', await waitAnswer(p, 2) && isAnswer(await lastBot(p)));
+    if (!LIVE) {   // buttons under an answer (the stand-in model adds the tags); not on the live site, where a test lead would be real
+      await p.fill('#chatI', 'I want a seat at the next forum'); await p.press('#chatI', 'Enter'); await waitAnswer(p, 3);
+      check('chat offers a register button for the forum', await p.locator('.chat-act.gold[href^="/register?e="]').count() >= 1);
+      await p.fill('#chatI', 'Can someone call me with a quote?'); await p.press('#chatI', 'Enter'); await waitAnswer(p, 4);
+      await p.locator('.chat-act:has-text("Leave your details")').last().click();
+      await p.fill('.chat-lead [name=name]', 'E2E Visitor'); await p.fill('.chat-lead [name=contact]', 'e2e.visitor@example.org');
+      await p.click('.chat-lead button[type=submit]'); await p.waitForTimeout(300);
+      check('details form asks for the consent tick first', /tick the box/.test(await p.textContent('.chat-lead .cl-msg')));
+      await p.check('.chat-lead [name=consent]'); await p.click('.chat-lead button[type=submit]');
+      await p.waitForSelector('.chat-lead', { state: 'detached', timeout: 8000 }).catch(() => {});
+      check('details form sends and says thank you', /get back to you/.test(await lastBot(p)));
+      await p.fill('#chatI', 'I want to speak to a human'); await p.press('#chatI', 'Enter'); await waitAnswer(p, 6);
+      check('chat offers WhatsApp with the question filled in', /wa\.me\/233550416627\?text=.*human/.test(await p.getAttribute('.chat-act.wa >> nth=-1', 'href') || ''));
+    }
     await p.click('#chatX');
     // the Earth: real pictures load, the card tells you something and moves on when asked
     await p.waitForFunction(() => performance.getEntriesByType('resource').some(r => /\/img\/earth\/day-\dk\.webp/.test(r.name)), null, { timeout: 15000 }).catch(() => {});
