@@ -440,6 +440,14 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 @media(prefers-reduced-motion:reduce){.cal-pop{transition:none}}
 .cal-pop .cal-row.hl{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent)}
 .cal-d .cal-e{pointer-events:auto}
+.lcard .or{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:13px;margin:14px 0 10px}.lcard .or::before,.lcard .or::after{content:"";flex:1;height:1px;background:var(--line)}
+.gbtn{width:100%;justify-content:center;gap:10px;min-height:44px}.gbtn svg{width:18px;height:18px}
+.inv-lines{margin:6px 0 10px}.inv-lh,.inv-l{display:grid;grid-template-columns:minmax(0,1fr) 64px 110px 70px 120px 36px;gap:8px;align-items:start}
+.inv-lh{font-size:12px;color:var(--muted,#5A6472);padding:0 2px 4px}.inv-l{margin-bottom:8px}.inv-l textarea{resize:vertical;min-height:44px}.inv-amt{padding-top:12px;font-weight:600;white-space:nowrap}
+.inv-sum{margin:10px 0 0 auto;min-width:300px;border-collapse:collapse}.inv-sum td{padding:5px 6px;border:0}.inv-sum td:last-child{text-align:right;white-space:nowrap}.inv-sum .tot td{border-top:2px solid #0F1B2D;font-weight:800;font-size:17px}
+.inv-f{display:block;margin:0}.inv-f span{display:none}.inv-f .t{width:100%}
+.inv-warn{background:#FFF7E8;border-color:#F0D9A8}td.num,th.num{text-align:right}
+@media(max-width:700px){.inv-lh{display:none}.inv-l{grid-template-columns:1fr 1fr 1fr 36px;border:1px solid var(--line);border-radius:12px;padding:10px}.inv-l textarea{grid-column:1/-1}.inv-f span{display:block;font-size:12px;color:#5A6472;margin-bottom:2px}.inv-amt{grid-column:1/4;padding-top:6px}.inv-l>.iconbtn{align-self:end}.inv-sum{min-width:0;width:100%}}
 </style></head><body>
 <div class="kente"></div>
 
@@ -449,6 +457,8 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
   <label for="pw">Password</label><input class="t" id="pw" type="password" autocomplete="current-password" required>
   <p class="err" id="lerr"></p>
   <button class="btn btn-dark" style="width:100%;justify-content:center;margin-top:6px">Sign in</button>
+  <div id="gwrap" hidden><div class="or"><span>or</span></div>
+   <a class="btn btn-line gbtn" id="gbtn" href="/auth/google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</a></div>
   <p class="note" style="margin:14px 0 0;text-align:center">Forgotten your password? Ask an owner to reset it under Settings → Team.</p>
 </form></section>
 
@@ -479,6 +489,7 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 <symbol id="i-wa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-4.6A9 9 0 1 1 8 19.6z"/><path d="M9 9.5c.3 1.8 2.7 4.3 4.6 4.7l1.2-1.2 1.8.8-.4 1.7c-3 .5-7.3-3.6-7.2-6.8L10.6 8l.9 1.8z"/></symbol>
 <symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
 <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
+<symbol id="i-bill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></symbol>
 <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
 </defs></svg>
 
@@ -516,6 +527,16 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 <div class="toast" id="toast"></div>
 
 <script>
+/* Sign in with Google: shown only when the server has it switched on; explains a refused sign-in */
+(()=>{const GERR={not_in_team:'That Google account is not in the team list. Ask an owner to add your email under Settings → Team, then try again.',
+  expired:'The Google sign-in took too long or was opened twice. Please try again.',cancelled:'Google sign-in was cancelled.',failed:'Google sign-in did not work. Please try again, or use your password.',
+  off:'Google sign-in is not switched on yet.',busy:'Too many tries. Wait a few minutes.'};
+ const g=new URLSearchParams(location.search).get('google');
+ addEventListener('DOMContentLoaded',()=>{
+  fetch('/api/auth/options').then(r=>r.json()).then(o=>{if(o.google){const w=document.getElementById('gwrap');if(w)w.hidden=false}}).catch(()=>{});
+  if(g&&GERR[g]){const e=document.getElementById('lerr');if(e)e.textContent=GERR[g];history.replaceState(null,'',location.pathname+location.hash)}});
+})();
+
 const $=s=>document.querySelector(s), api=(u,o={})=>fetch(u,{credentials:'same-origin',headers:{'content-type':'application/json'},...o}).then(async r=>{const d=await r.json().catch(()=>({}));
  if(r.status===401&&d.error==='no_session'&&ME&&!/\/api\/(me|login|password)$/.test(u)){ME=null;toast('You were signed out. Please sign in again.');setTimeout(()=>location.reload(),1600)}
  if(!r.ok)throw Object.assign(new Error(d.error||r.status),d);return d});
@@ -585,13 +606,13 @@ const ghsShort=n=>{n=Number(n||0);return n>=1e6?'GHS '+(n/1e6).toFixed(n>=1e7?0:
 const dshort=s=>s?new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
 const NAV=[
  ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt']]],
- ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['reports','Reports','chart',null,1]]],
+ ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
  ['System',[['mail','Email outbox','mail','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
-const TITLES={dash:'Dashboard',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',rec:'Company record',reports:'Reports',
+const TITLES={dash:'Dashboard',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',rec:'Company record',reports:'Reports',
  regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',
  out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
-const ADMIN_ONLY=new Set(['pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
+const ADMIN_ONLY=new Set(['inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
 let V='dash', ARG=null, USERS=[];
 function buildNav(){
  $('#nav').innerHTML=NAV.map(([g,items])=>{const it=items.filter(x=>!x[4]||isAdmin());
@@ -614,10 +635,11 @@ addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
 function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
- const m={dash:dashboard,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,rec:()=>record(+ARG),reports:reportsView,
+ const m={dash:dashboard,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,inv:invoicesView,rec:()=>record(+ARG),reports:reportsView,
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
-  contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>'};
+  contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>',
+  inv:`<a class="btn btn-line" id="inv-csv" href="/api/invoices/vat.csv" title="This month's invoices in cedis for the VAT return">VAT report (CSV)</a><button class="btn btn-line" data-new="quote">New quotation</button><button class="btn btn-dark" data-new="invoice">New invoice</button>`};
  pageActions(acts[V]||'');
  const f=m[V];if(!f)return;const r=f();if(typeof r==='string')$('#view').innerHTML=r;
 }
@@ -638,7 +660,7 @@ document.addEventListener('keydown',e=>{
 $('#newb').onclick=e=>{e.stopPropagation();$('#newm').classList.toggle('on')};
 document.addEventListener('click',e=>{if(!e.target.closest('.newbtn'))$('#newm').classList.remove('on');if(!e.target.closest('#gs'))$('#sres').classList.remove('on');
  const n=e.target.closest('[data-new]');if(!n)return;$('#newm').classList.remove('on');
- ({task:()=>taskForm({}),deal:()=>dealForm({}),contact:()=>contactForm(null),event:()=>go('events')})[n.dataset.new]?.()});
+ ({task:()=>taskForm({}),deal:()=>dealForm({}),contact:()=>contactForm(null),event:()=>go('events'),quote:()=>invNew('quote'),invoice:()=>invNew('invoice')})[n.dataset.new]?.()});
 /* global search */
 let sT=0,sItems=[],sHl=-1;
 $('#gq').addEventListener('input',()=>{clearTimeout(sT);const s=$('#gq').value.trim();if(s.length<2){$('#sres').classList.remove('on');return}sT=setTimeout(()=>doSearch(s),170)});
@@ -820,7 +842,7 @@ async function openDeal(id,wantStage){
   <div><label class="l" for="df-k">Kind</label><select class="t" id="df-k">${Object.entries(KIND_NAME).map(([k,l])=>`<option value="${k}" ${k===d.kind?'selected':''}>${l}</option>`).join('')}</select></div>
   <div><label class="l" for="df-t">Title</label><input class="t" id="df-t" value="${esc(d.title)}"></div></div>
   <div style="margin:8px 0 2px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="ai-btn" id="df-ai">✦ Suggest a next step</button><span class="note" id="df-aiw"></span></div>
-  <div class="acts"><button class="btn btn-dark" id="df-s">Save</button>${d.contact_phone?`<a class="btn btn-wa" target="_blank" rel="noopener" href="https://wa.me/${d.contact_phone.replace(/\D/g,'')}">WhatsApp</a>`:''}<button class="btn btn-line" id="df-task">Add task</button></div>
+  <div class="acts"><button class="btn btn-dark" id="df-s">Save</button>${d.contact_phone?`<a class="btn btn-wa" target="_blank" rel="noopener" href="https://wa.me/${d.contact_phone.replace(/\D/g,'')}">WhatsApp</a>`:''}<button class="btn btn-line" id="df-task">Add task</button><button class="btn btn-line" id="df-quo">Quotation</button><button class="btn btn-line" id="df-inv">Invoice</button></div>
   <h4 class="sec">Tasks</h4>${r.tasks.length?`<ul class="list">${r.tasks.map(t=>(TASKCACHE[t.id]=t,taskRow(t))).join('')}</ul>`:'<p class="note">No tasks yet.</p>'}
   <h4 class="sec">Notes</h4><div class="composer"><textarea id="dn-b" placeholder="What happened? e.g. Called Ama, she wants the headline package"></textarea><div class="cbar"><div class="seg" id="dn-k">${['note','call','whatsapp','meeting','email'].map((k,i)=>`<button data-k="${k}" class="${i?'':'on'}">${NOTE_NAME[k]}</button>`).join('')}</div><button class="btn btn-dark" id="dn-s">Add note</button></div></div>
   <ul class="tl">${r.notes.map(n=>`<li class="${n.kind}"><i>${NOTE_ICON[n.kind]}</i><div class="when">${dt(n.at)} · ${esc(userName(n.author))} · ${NOTE_NAME[n.kind]}</div><div class="txt">${esc(n.body)}</div></li>`).join('')}
@@ -833,6 +855,7 @@ async function openDeal(id,wantStage){
  $('#df-s').onclick=()=>patch({value:$('#df-v').value,owner:$('#df-o').value,next_step:$('#df-n').value,next_date:$('#df-nd').value||null,kind:$('#df-k').value,title:$('#df-t').value});
  if($('#df-ai'))$('#df-ai').onclick=async()=>{const r=await aiCall({task:'deal',deal_id:d.id},$('#df-ai'));if(!r||r.error)return;
   $('#df-n').value=r.next_step;if(r.next_date)$('#df-nd').value=r.next_date;$('#df-aiw').textContent=r.why?'Why: '+r.why+' Press Save to keep it.':'Press Save to keep it.'};
+ $('#df-quo').onclick=()=>invNew('quote',{deal_id:id,contact_id:d.contact_id,title:d.title,value:Number(d.value)||''});$('#df-inv').onclick=()=>invNew('invoice',{deal_id:id,contact_id:d.contact_id,title:d.title,value:Number(d.value)||''});
  $('#df-task').onclick=()=>taskForm({deal_id:id,contact_id:d.contact_id,title:d.next_step||'',company:d.company,deal_title:d.title});
  let nk='note';$('#dn-k').onclick=e=>{const b=e.target.closest('button');if(!b)return;nk=b.dataset.k;$('#dn-k').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))};
  $('#dn-s').onclick=async()=>{const body=$('#dn-b').value.trim();if(!body)return $('#dn-b').focus();await api('/api/notes',{method:'POST',body:JSON.stringify({deal_id:id,kind:nk,body})});toast('Note added');openDeal(id)};
@@ -917,6 +940,7 @@ async function record(id){
  </div><div>
   <div class="card"><div class="ch"><h3>✦ AI summary</h3><button type="button" class="ai-btn" id="rc-ai">Sum up this client</button></div>
    <div id="rc-aio"><p class="note" style="margin:0">Reads this client's notes, deals, tasks and registrations and suggests the next step. The history is sent to the AI service to do this.</p></div></div>
+  <div class="card" id="rc-inv"><div class="ch"><h3>Quotations & invoices</h3><div class="pact"><button class="btn btn-line" id="rc-quo">Quotation</button><button class="btn btn-line" id="rc-invn">Invoice</button></div></div><div class="inv-rl"><p class="note">Loading…</p></div></div>
   <div class="card"><h3 style="margin-bottom:10px">Log what happened</h3><div class="composer"><textarea id="rn-b" placeholder="e.g. Called Kwame. Interested in the headline package, wants the pack by Friday."></textarea>
    <div class="cbar"><div class="seg" id="rn-k">${Object.keys(NOTE_NAME).map((k,i)=>`<button data-k="${k}" class="${i===1?'on':''}">${NOTE_NAME[k]}</button>`).join('')}</div>
    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label class="note" style="display:flex;gap:6px;align-items:center">Follow up <select class="t" id="rn-f" style="width:auto;padding:6px 8px"><option value="">no</option><option value="1">tomorrow</option><option value="3">in 3 days</option><option value="7">next week</option></select></label><button class="btn btn-dark" id="rn-s">Save</button></div></div></div>
@@ -927,6 +951,7 @@ async function record(id){
   $('#rc-aio').innerHTML=`<div class="ai-out">${esc(r.summary)}${r.next?`<b>Next step</b>${esc(r.next)}`:''}</div>${r.next?'<button type="button" class="btn btn-line" id="rc-ait" style="margin-top:10px">Make it a task</button>':''}`;
   if($('#rc-ait'))$('#rc-ait').onclick=()=>taskForm({contact_id:c.id,company:name,title:r.next})};
  $('#rc-st').onchange=async()=>{await api('/api/contacts/'+id,{method:'PATCH',body:JSON.stringify({status:$('#rc-st').value})});toast('Status updated')};
+ $('#rc-quo').onclick=()=>invNew('quote',{contact_id:id});$('#rc-invn').onclick=()=>invNew('invoice',{contact_id:id});recordInvoices(id);
  $('#rc-deal').onclick=()=>dealForm({contact_id:id,company:name,kind:(c.tags||'').includes('family-desk')?'family_desk':'consulting'});
  $('#rc-task').onclick=()=>taskForm({contact_id:id,company:name});
  document.querySelectorAll('[data-od]').forEach(x=>x.onclick=()=>openDeal(+x.dataset.od));
@@ -2240,6 +2265,7 @@ async function settings(){
  ${isAdmin()?`<div class="card" id="wa-ai"><div class="ch"><h3>WhatsApp: AI replies</h3><label class="cal-mine"><input type="checkbox" id="wa-on"> On</label></div>
   <p class="note" style="margin-top:0">When someone writes to the Gotham WhatsApp, the AI answers from the same knowledge as the website chat, in their language. Complaints, requests for a person, voice notes and pictures go to the team as a task instead. Every message is saved on the client's record.</p>
   <div id="wa-st" class="note"></div><div id="wa-list"></div></div>`:''}
+ ${isAdmin()?'<div class="card" id="inv-set"><p class="note">Loading…</p></div>':''}
  <div class="card"><h3>Venue and seats</h3>
   <p class="note">The largest number of seats any single event may be set to. It stops a room that holds 40 being sold as 120.</p>
   <div class="f2"><div><label class="l">Maximum seats per event</label><input class="t" id="s-max" type="number" inputmode="numeric" min="1" value="${esc(SET.max_seats||'')}" placeholder="40"></div><div></div></div>
@@ -2251,7 +2277,7 @@ async function settings(){
   <div><label class="l">Online payment link (Paystack)</label><input class="t" id="s-pay" inputmode="url" value="${esc(SET.pay_link||'')}" placeholder="https://paystack.com/pay/..."></div></div>
   <button class="btn btn-dark" id="ss" style="margin-top:14px">Save settings</button></div>
  <div class="card" id="team"><div class="ch"><h3>Team</h3>${owner?'<button class="btn btn-dark" id="u-new">Add a person</button>':''}</div>
-  <p class="note">${owner?'Only an owner (super admin) can add people, change roles, reset passwords or remove access. Changes take effect on the person\'s next click.':'Ask an owner to add people or reset a password.'}</p>
+  <p class="note">${owner?'Only an owner (super admin) can add people, change roles, reset passwords or remove access. Changes take effect on the person\'s next click.':'Ask an owner to add people or reset a password.'} Anyone on this list can also use <b>Sign in with Google</b> if their Google account uses the same email address; Google accounts not on the list are refused.</p>
   <div id="u-form"></div><div id="u-out"></div>
   <div class="team">${users.rows.map(u=>{const me=u.email===ME.email;return `<div class="tm">
    <div class="tm-a"><span class="av">${esc((u.name||u.email).trim()[0]||'?').toUpperCase()}</span>
@@ -2299,12 +2325,205 @@ async function settings(){
  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
   if(!confirm('Remove '+b.dataset.del+' permanently? Their sign-in stops working immediately.'))return;
   await api('/api/users/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});toast('Removed');settings()});
+ invoiceSettingsCard();
  if($('#wa-on')){const drawWa=w=>{$('#wa-on').checked=w.on;
    $('#wa-st').innerHTML=!w.connected?'<span class="chip red">WhatsApp Business is not connected yet</span> Replies start once it is connected (Meta setup).':!w.ai?'<span class="chip red">AI is off on the server</span>':`<span class="chip ${w.on?'green':''}">${w.on?'Answering automatically':'Off: messages wait for the team'}</span>`;
    $('#wa-list').innerHTML=w.recent.length?`<h4 class="sec">Latest messages</h4>${w.recent.slice(0,12).map(m=>`<div class="wa-row"><span class="dir ${m.direction}">${m.direction==='in'?'In':'Sent'}</span><div><b>${m.contact_id?`<a href="#rec/${m.contact_id}">${esc(m.company||m.full_name||m.phone)}</a>`:esc(m.phone)}</b> <span class="note">${dt(m.at)}${m.kind==='handover'?' · passed to the team':m.kind==='ai'?' · AI':''}</span><div>${esc(String(m.body||'').slice(0,240))}</div></div></div>`).join('')}`:'<p class="note">No WhatsApp messages yet.</p>'};
   api('/api/whatsapp/autoreply').then(drawWa).catch(()=>{});
   $('#wa-on').onchange=async e=>{try{drawWa(await api('/api/whatsapp/autoreply',{method:'POST',body:JSON.stringify({on:e.target.checked})}));toast(e.target.checked?'AI replies on':'AI replies off')}catch(err){toast('Could not change it');e.target.checked=!e.target.checked}}}
 }
+
+/* ===================== quotes & invoices ===================== */
+const INV_ST={draft:'Draft',sent:'Sent',accepted:'Accepted',declined:'Declined',part_paid:'Part paid',paid:'Paid',void:'Void'};
+const INV_CHIP={draft:'',sent:'blue',accepted:'green',declined:'red',part_paid:'gold',paid:'green',void:'red'};
+const RESID={resident:'Resident in Ghana',non_resident:'Non-resident (abroad)',expatriate:'Expatriate in Ghana'};
+const TAXM={standard:'VAT + NHIL + GETFund (20%)',zero:'Zero-rated (give the reason)',exempt:'Exempt (give the reason)',none:'No VAT (not VAT-registered)'};
+const INVERR={fx_needs_nonresident:'Euro and dollar invoices are only for non-residents or expatriates (Bank of Ghana rule). Set the client as non-resident or expatriate, or bill in cedis.',
+ fx_rate_required:'Add the exchange rate to cedis (press “Suggest rate”, then check it against the Bank of Ghana rate).',not_vat_registered:'Gotham is not marked as VAT-registered. Turn it on in Settings → Company & invoicing, or choose “No VAT”.',
+ zero_needs_reason:'Say why it is zero-rated (for example: export of services to a non-resident).',exempt_needs_reason:'Say why it is exempt.',bill_to_required:'Add the client’s name or company.',
+ empty:'Add at least one line with a price.',no_email:'Add the client’s email address first.',issued_cannot_delete:'An issued invoice cannot be deleted. Void it instead.',reason_required:'Give a reason.',
+ amount_required:'Enter the amount received.',issue_first:'Issue the invoice first.',void:'This one is void.',not_a_quote:'Only a quotation can be turned into an invoice.',bad_rate:'Tax rates must be between 0 and 50%.',bad_terms:'Payment terms must be 0 to 180 days.'};
+const invErr=e=>INVERR[e&&e.message]||'Could not save. Please try again.';
+const ir2=n=>Math.round((+n+Number.EPSILON)*100)/100;
+const imoney=(n,c)=>(c||'GHS')+' '+Number(n||0).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+let INVSET=null,INVF={k:'all'};
+async function invSettingsLoad(){INVSET=await api('/api/invoice-settings').catch(()=>INVSET);return INVSET}
+function invTotals(inv,rates){let sub=0,off=0;for(const l of inv.lines){const g=ir2((+l.qty||0)*(+l.unit||0));sub+=g;off+=ir2(g*(+l.discount||0)/100)}
+ sub=ir2(sub);off=ir2(off);const tx=ir2(sub-off),s=inv.tax_mode==='standard',vat=s?ir2(tx*rates.vat/100):0,nhil=s?ir2(tx*rates.nhil/100):0,gf=s?ir2(tx*rates.getfund/100):0,tot=ir2(tx+vat+nhil+gf),fx=inv.currency==='GHS'?1:(+inv.fx_rate||0);
+ return {subtotal:sub,discount:off,taxable:tx,vat,nhil,getfund:gf,total:tot,total_ghs:ir2(tot*fx),tax_ghs:ir2((vat+nhil+gf)*fx)}}
+async function invoicesView(){
+ setTitle('Invoices & quotes','Quotations and tax invoices in cedis, euros or dollars, with Ghana VAT');
+ $('#view').innerHTML='<div class="empty">Loading…</div>';
+ const [r]=await Promise.all([api('/api/invoices'),invSettingsLoad()]);if(V!=='inv')return;
+ const s=r.summary,owed=Object.entries(s.owed||{});
+ const kp=(l,v,sub)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+ const setup=!INVSET.inv_tin?`<div class="card inv-warn"><b>Before the first invoice:</b> add Gotham’s TIN, VAT status and bank details in <a href="#settings" data-go-set>Settings → Company & invoicing</a>. ${INVSET.inv_vat_registered==='yes'?'':'Until Gotham is marked VAT-registered, invoices carry no VAT.'}</div>`:'';
+ $('#view').innerHTML=setup+`<div class="kpis">${kp('Owed to Gotham',owed.length?owed.map(([c,v])=>imoney(v,c)).join('<br>'):'Nothing','issued invoices not yet paid')}
+  ${kp('Overdue',s.overdue,s.overdue?'<b style="color:var(--red);display:inline;font-size:13px">send a reminder</b>':'none late')}
+  ${kp('Tax this month',imoney(s.tax_this_month_ghs,'GHS'),'VAT + NHIL + GETFund, in cedis')}
+  ${kp('Drafts',r.rows.filter(x=>!x.number).length,'not yet issued')}</div>
+  <div class="filters"><div class="seg" id="if-k">${[['all','All'],['invoice','Invoices'],['quote','Quotations'],['unpaid','Unpaid'],['draft','Drafts']].map(([k,l])=>`<button data-k="${k}" class="${INVF.k===k?'on':''}">${l}</button>`).join('')}</div>
+  <input class="t" id="if-q" placeholder="Search number or client" style="max-width:260px"></div>
+  <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Number</th><th>Client</th><th>Date</th><th>Due / valid</th><th class="num">Total</th><th class="num">Balance</th><th>Status</th></tr></thead><tbody id="if-tb"></tbody></table></div></div>`;
+ const draw=()=>{const f=($('#if-q').value||'').toLowerCase();
+  const L=r.rows.filter(x=>({all:1,invoice:x.kind==='invoice',quote:x.kind==='quote',unpaid:x.kind==='invoice'&&['sent','part_paid'].includes(x.status),draft:!x.number})[INVF.k])
+   .filter(x=>!f||[x.number,x.bill_to.company,x.bill_to.name,x.bill_to.email].join(' ').toLowerCase().includes(f));
+  $('#if-tb').innerHTML=L.map(x=>`<tr class="r" data-inv="${x.id}"><td><b>${esc(x.number||'Draft')}</b><div class="note">${x.kind==='quote'?'Quotation':'Invoice'}</div></td><td>${esc(x.bill_to.company||x.bill_to.name)}${x.bill_to.company&&x.bill_to.name?`<div class="note">${esc(x.bill_to.name)}</div>`:''}</td>
+   <td class="note">${x.issue_date?dshort(x.issue_date):'—'}</td><td class="note">${x.kind==='quote'?(x.valid_until?dshort(x.valid_until):'—'):(x.due_date?dshort(x.due_date):'—')}</td>
+   <td class="num">${imoney(x.total,x.currency)}</td><td class="num">${x.kind==='invoice'&&x.number&&x.status!=='void'?imoney(x.balance,x.currency):'—'}</td>
+   <td><span class="chip ${x.overdue?'red':INV_CHIP[x.status]}">${x.overdue?'Overdue':INV_ST[x.status]}</span></td></tr>`).join('')||'<tr><td colspan="7"><div class="empty"><b>Nothing here yet.</b>Make a quotation or an invoice with the buttons above.</div></td></tr>';
+  document.querySelectorAll('[data-inv]').forEach(t=>t.onclick=()=>invOpen(+t.dataset.inv))};
+ $('#if-k').onclick=e=>{const b=e.target.closest('button');if(!b)return;INVF.k=b.dataset.k;$('#if-k').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));draw()};
+ $('#if-q').oninput=draw;draw();
+}
+async function invNew(kind,pre={}){
+ await (INVSET||invSettingsLoad());
+ const inv={id:null,kind,contact_id:pre.contact_id||null,deal_id:pre.deal_id||null,bill_to:{name:'',company:'',email:'',address:'',country:'Ghana',tax_id:'',residency:'resident'},currency:'GHS',fx_rate:'',fx_date:'',
+  tax_mode:INVSET.inv_vat_registered==='yes'?'standard':'none',tax_note:'',lines:[{description:pre.title||'',qty:1,unit:pre.value||'',discount:0}],issue_date:'',due_date:'',valid_until:'',notes:'',wht_rate:0,evat_ref:''};
+ if(pre.contact_id){const r=await api('/api/contacts/'+pre.contact_id+'/record').catch(()=>null);if(r){const c=r.contact;
+  Object.assign(inv.bill_to,{name:c.full_name||'',company:c.company||'',email:c.email||'',country:c.country||'Ghana',address:c.city||''});
+  if(c.country&&!/^gh|ghana/i.test(c.country))inv.bill_to.residency='non_resident'}}
+ invEdit(inv);
+}
+async function invOpen(id){const inv=await api('/api/invoices/'+id);if(!inv.number)invEdit(inv);else invShow(inv)}
+function invEdit(inv){
+ const isQ=inv.kind==='quote',rates=inv.id&&inv.rates?inv.rates:INVSET.rates;
+ $('#dr').classList.add('on','wide');
+ const b=inv.bill_to,fxOK=['non_resident','expatriate'].includes(b.residency);
+ $('#drb').innerHTML=`<p class="note" style="margin:0">${inv.id?'Draft · not yet issued':'New'} ${isQ?'quotation':'invoice'}</p><h2 style="margin:2px 0 10px">${isQ?'Quotation':'Invoice'}</h2>
+  <label class="l" for="iv-c">Client</label><input class="t" id="iv-c" placeholder="Find a company or person in the CRM" autocomplete="off" value="${esc(b.company||b.name)}"><div class="sres" id="iv-r" style="position:relative;top:4px"></div>
+  <div class="f2"><div><label class="l" for="iv-co">Company</label><input class="t" id="iv-co" value="${esc(b.company)}"></div><div><label class="l" for="iv-nm">Contact name</label><input class="t" id="iv-nm" value="${esc(b.name)}"></div>
+  <div><label class="l" for="iv-em">Email (for sending)</label><input class="t" id="iv-em" type="email" value="${esc(b.email)}"></div><div><label class="l" for="iv-tid">Client TIN / VAT no. <span class="note">(optional)</span></label><input class="t" id="iv-tid" value="${esc(b.tax_id)}"></div>
+  <div><label class="l" for="iv-cty">Country</label><input class="t" id="iv-cty" value="${esc(b.country)}"></div><div><label class="l" for="iv-res">Client is</label><select class="t" id="iv-res">${Object.entries(RESID).map(([k,l])=>`<option value="${k}" ${k===b.residency?'selected':''}>${l}</option>`).join('')}</select></div></div>
+  <label class="l" for="iv-ad">Address <span class="note">(optional)</span></label><textarea class="t" id="iv-ad" rows="2">${esc(b.address)}</textarea>
+  <h4 class="sec">Money and tax</h4>
+  <div class="f2"><div><label class="l" for="iv-cur">Currency</label><select class="t" id="iv-cur">${['GHS','EUR','USD'].map(c=>`<option value="${c}" ${c===inv.currency?'selected':''} ${c!=='GHS'&&!fxOK?'disabled':''}>${{GHS:'Ghana cedi (GHS)',EUR:'Euro (EUR)',USD:'US dollar (USD)'}[c]}</option>`).join('')}</select>
+   <p class="note" id="iv-curn" style="margin:4px 0 0">${fxOK?'Paid into Gotham’s foreign exchange account.':'Euro and dollar are only for non-resident or expatriate clients (Bank of Ghana).'}</p></div>
+   <div id="iv-fxw" ${inv.currency==='GHS'?'hidden':''}><label class="l" for="iv-fx">Exchange rate: 1 <span id="iv-fxc">${inv.currency}</span> = GHS</label><div style="display:flex;gap:8px"><input class="t" id="iv-fx" inputmode="decimal" value="${esc(inv.fx_rate||'')}" placeholder="e.g. 17.25"><button class="btn btn-line" id="iv-fxs" type="button">Suggest rate</button></div>
+   <p class="note" id="iv-fxn" style="margin:4px 0 0">Use the Bank of Ghana reference rate on the invoice date.</p><input type="hidden" id="iv-fxd" value="${esc(inv.fx_date?String(inv.fx_date).slice(0,10):'')}"></div></div>
+  <div class="f2"><div><label class="l" for="iv-tm">VAT</label><select class="t" id="iv-tm">${Object.entries(TAXM).map(([k,l])=>`<option value="${k}" ${k===inv.tax_mode?'selected':''}>${l}</option>`).join('')}</select></div>
+   <div id="iv-tnw" ${['zero','exempt'].includes(inv.tax_mode)?'':'hidden'}><label class="l" for="iv-tn">Reason</label><input class="t" id="iv-tn" value="${esc(inv.tax_note||'')}" placeholder="e.g. Export of services to a non-resident"></div></div>
+  <h4 class="sec">What you are charging for</h4><p class="note" style="margin-top:0">Prices before tax. The taxes are added below.</p>
+  <div class="inv-lines"><div class="inv-lh"><span>Description</span><span>Qty</span><span>Unit price</span><span>Disc. %</span><span class="num">Amount</span><span></span></div><div id="iv-ls"></div></div>
+  <button class="btn btn-line" id="iv-add" type="button">+ Add a line</button>
+  <table class="inv-sum" id="iv-sum"></table>
+  <h4 class="sec">Dates and notes</h4>
+  <div class="f2"><div><label class="l" for="iv-id">${isQ?'Quotation':'Invoice'} date <span class="note">(blank = the day you issue it)</span></label><input class="t" id="iv-id" type="date" value="${inv.issue_date?String(inv.issue_date).slice(0,10):''}"></div>
+   <div><label class="l" for="iv-dd">${isQ?'Valid until':'Due date'} <span class="note">(blank = ${isQ?'30 days':(INVSET.inv_terms_days||14)+' days'})</span></label><input class="t" id="iv-dd" type="date" value="${(isQ?inv.valid_until:inv.due_date)?String(isQ?inv.valid_until:inv.due_date).slice(0,10):''}"></div>
+   ${isQ?'':`<div><label class="l" for="iv-wht">Withholding tax the client deducts %</label><select class="t" id="iv-wht">${[[0,'None'],[3,'3% (goods)'],[7.5,'7.5% (services, resident)'],[20,'20% (non-resident)']].map(([v,l])=>`<option value="${v}" ${+inv.wht_rate===v?'selected':''}>${l}</option>`).join('')}</select></div>
+   <div><label class="l" for="iv-ev">E-VAT invoice reference <span class="note">(from GRA)</span></label><input class="t" id="iv-ev" value="${esc(inv.evat_ref||'')}"></div>`}</div>
+  <label class="l" for="iv-no">Notes printed on it <span class="note">(optional)</span></label><textarea class="t" id="iv-no" rows="2" placeholder="e.g. 50% on signing, 50% on delivery">${esc(inv.notes||'')}</textarea>
+  <p class="err" id="iv-e"></p>
+  <div class="acts"><button class="btn btn-line" id="iv-save">Save draft</button><button class="btn btn-dark" id="iv-iss">Issue ${isQ?'quotation':'invoice'}</button><button class="btn btn-dark" id="iv-send">Issue and email</button>${inv.id?'<button class="btn btn-line danger" id="iv-del">Delete draft</button>':''}</div>
+  <p class="note">Issuing gives it the next number (${isQ?'QUO':'INV'}-${new Date().getFullYear()}-…) and locks the amounts. Mistakes after that: void it and make a new one.</p>`;
+ let lines=inv.lines.length?inv.lines.map(l=>({...l})):[{description:'',qty:1,unit:'',discount:0}],cid=inv.contact_id;
+ const cur=()=>$('#iv-cur').value;
+ const drawLines=()=>{$('#iv-ls').innerHTML=lines.map((l,i)=>`<div class="inv-l" data-i="${i}"><textarea class="t" data-f="description" rows="1" aria-label="Description" placeholder="e.g. Market entry advisory">${esc(l.description)}</textarea>
+   <label class="inv-f"><span>Qty</span><input class="t" data-f="qty" inputmode="decimal" aria-label="Quantity" value="${esc(l.qty)}"></label><label class="inv-f"><span>Unit price</span><input class="t" data-f="unit" inputmode="decimal" aria-label="Unit price" value="${esc(l.unit)}" placeholder="0.00"></label><label class="inv-f"><span>Disc. %</span><input class="t" data-f="discount" inputmode="decimal" aria-label="Discount %" value="${esc(l.discount||'')}" placeholder="0"></label>
+   <span class="num inv-amt"></span><button class="iconbtn" type="button" data-rm="${i}" aria-label="Remove line" title="Remove line">×</button></div>`).join('');
+  $('#iv-ls').querySelectorAll('[data-f]').forEach(x=>x.oninput=()=>{lines[+x.closest('[data-i]').dataset.i][x.dataset.f]=x.value;sums()});
+  $('#iv-ls').querySelectorAll('[data-rm]').forEach(x=>x.onclick=()=>{lines.splice(+x.dataset.rm,1);if(!lines.length)lines.push({description:'',qty:1,unit:'',discount:0});drawLines()});sums()};
+ const collect=()=>({kind:inv.kind,contact_id:cid,deal_id:inv.deal_id,bill_to:{name:$('#iv-nm').value,company:$('#iv-co').value,email:$('#iv-em').value,address:$('#iv-ad').value,country:$('#iv-cty').value,tax_id:$('#iv-tid').value,residency:$('#iv-res').value},
+  currency:cur(),fx_rate:$('#iv-fx').value,fx_date:$('#iv-fxd').value,tax_mode:$('#iv-tm').value,tax_note:$('#iv-tn').value,lines:lines.filter(l=>String(l.description).trim()||+l.unit).map(l=>({...l,qty:+l.qty||0,unit:+l.unit||0,discount:+l.discount||0})),
+  issue_date:$('#iv-id').value,due_date:isQ?'':$('#iv-dd').value,valid_until:isQ?$('#iv-dd').value:'',notes:$('#iv-no').value,wht_rate:isQ?0:+$('#iv-wht').value,evat_ref:isQ?'':$('#iv-ev').value});
+ const sums=()=>{const c=collect(),t=invTotals(c,rates),C=c.currency;
+  $('#iv-ls').querySelectorAll('.inv-l').forEach((row,i)=>{const l=lines[i],g=ir2((+l.qty||0)*(+l.unit||0));row.querySelector('.inv-amt').textContent=imoney(g-ir2(g*(+l.discount||0)/100),C)});
+  $('#iv-sum').innerHTML=`<tr><td>Subtotal${t.discount?' after discounts':''}</td><td>${imoney(t.taxable,C)}</td></tr>`+(c.tax_mode==='standard'?`<tr><td>VAT ${rates.vat}%</td><td>${imoney(t.vat,C)}</td></tr><tr><td>NHIL ${rates.nhil}%</td><td>${imoney(t.nhil,C)}</td></tr><tr><td>GETFund levy ${rates.getfund}%</td><td>${imoney(t.getfund,C)}</td></tr>`
+   :`<tr><td>${{zero:'VAT zero-rated',exempt:'VAT exempt',none:'No VAT'}[c.tax_mode]}</td><td>${imoney(0,C)}</td></tr>`)+`<tr class="tot"><td>Total</td><td>${imoney(t.total,C)}</td></tr>`
+   +(C!=='GHS'?`<tr><td class="note">In cedis (for VAT)</td><td class="note">${+c.fx_rate?imoney(t.total_ghs,'GHS'):'add the rate'}</td></tr>`:'')
+   +(!isQ&&c.wht_rate?`<tr><td class="note">Client withholds ${c.wht_rate}% of ${imoney(t.taxable,C)}</td><td class="note">− ${imoney(ir2(t.taxable*c.wht_rate/100),C)}</td></tr><tr><td class="note">So you receive</td><td class="note">${imoney(ir2(t.total-t.taxable*c.wht_rate/100),C)}</td></tr>`:'')};
+ const resid=()=>{const ok=['non_resident','expatriate'].includes($('#iv-res').value);$('#iv-cur').querySelectorAll('option').forEach(o=>o.disabled=o.value!=='GHS'&&!ok);
+  if(!ok&&cur()!=='GHS'){$('#iv-cur').value='GHS';curCh()}$('#iv-curn').textContent=ok?'Paid into Gotham’s foreign exchange account.':'Euro and dollar are only for non-resident or expatriate clients (Bank of Ghana).'};
+ const curCh=()=>{$('#iv-fxw').hidden=cur()==='GHS';$('#iv-fxc').textContent=cur();sums()};
+ $('#iv-res').onchange=resid;$('#iv-cur').onchange=curCh;$('#iv-fx').oninput=()=>{$('#iv-fxd').value=new Date().toISOString().slice(0,10);sums()};
+ $('#iv-tm').onchange=()=>{$('#iv-tnw').hidden=!['zero','exempt'].includes($('#iv-tm').value);if($('#iv-tm').value==='zero'&&!$('#iv-tn').value&&$('#iv-res').value==='non_resident')$('#iv-tn').value='Export of services to a non-resident';sums()};
+ if($('#iv-wht'))$('#iv-wht').onchange=sums;
+ $('#iv-fxs').onclick=async()=>{$('#iv-fxn').textContent='Looking up…';try{const r=await api('/api/fx?c='+cur());$('#iv-fx').value=r.rate;$('#iv-fxd').value=r.date;$('#iv-fxn').textContent='Market rate today: '+r.rate+'. Check it against the Bank of Ghana reference rate before issuing.';sums()}
+  catch{$('#iv-fxn').textContent='No rate available right now. Type the Bank of Ghana rate.'}};
+ $('#iv-add').onclick=()=>{lines.push({description:'',qty:1,unit:'',discount:0});drawLines();$('#iv-ls').querySelector('.inv-l:last-child textarea').focus()};
+ let sT3=0;$('#iv-c').oninput=()=>{clearTimeout(sT3);const s=$('#iv-c').value.trim();if(s.length<2){$('#iv-r').classList.remove('on');return}
+  sT3=setTimeout(async()=>{const r=await api('/api/search?q='+encodeURIComponent(s));if(!$('#iv-r'))return;$('#iv-r').innerHTML=r.contacts.map(c=>`<a data-c="${c.id}"><b>${esc(c.company||c.full_name)}</b><small>${esc([c.full_name,c.email].filter(Boolean).join(' · '))}</small></a>`).join('')||'<div class="none">Not in the CRM. Fill in the fields below.</div>';
+   $('#iv-r').classList.add('on');$('#iv-r').querySelectorAll('a').forEach(a=>a.onclick=async()=>{cid=+a.dataset.c;$('#iv-r').classList.remove('on');const rr=await api('/api/contacts/'+cid+'/record');const c=rr.contact;
+    $('#iv-c').value=c.company||c.full_name;$('#iv-co').value=c.company||'';$('#iv-nm').value=c.full_name||'';$('#iv-em').value=c.email||'';$('#iv-cty').value=c.country||'Ghana';
+    if(c.country&&!/^gh|ghana/i.test(c.country)){$('#iv-res').value='non_resident';resid()}})},180)};
+ const save=async()=>{$('#iv-e').textContent='';try{const d=await api(inv.id?'/api/invoices/'+inv.id:'/api/invoices',{method:'POST',body:JSON.stringify(collect())});inv.id=d.id;return d.id}catch(e){$('#iv-e').textContent=invErr(e);return null}};
+ $('#iv-save').onclick=async()=>{if(await save()){toast('Draft saved');refreshInv();invOpen(inv.id)}};
+ const issue=async send=>{const id=await save();if(!id)return;
+  if(send&&!$('#iv-em').value.trim()){$('#iv-e').textContent=INVERR.no_email;return}
+  try{const r=await api('/api/invoices/'+id+'/'+(send?'send':'issue'),{method:'POST',body:'{}'});toast((isQ?'Quotation ':'Invoice ')+r.number+(send?' issued and emailed':' issued'));refreshInv();invOpen(id)}catch(e){$('#iv-e').textContent=invErr(e)}};
+ $('#iv-iss').onclick=()=>issue(false);$('#iv-send').onclick=()=>issue(true);
+ if($('#iv-del'))$('#iv-del').onclick=async()=>{if(!confirm('Delete this draft?'))return;await api('/api/invoices/'+inv.id,{method:'DELETE'});toast('Draft deleted');closeDr();refreshInv()};
+ drawLines();
+}
+function refreshInv(){if(V==='inv')invoicesView();else if(V==='rec')record(+ARG)}
+function invShow(inv){
+ const isQ=inv.kind==='quote',C=inv.currency,b=inv.bill_to,paid=inv.payments.reduce((s,p)=>s+(+p.amount)+(+p.wht),0),bal=ir2(+inv.total-paid),open=inv.status!=='void';
+ $('#dr').classList.add('on','wide');
+ $('#drb').innerHTML=`<p class="note" style="margin:0">${isQ?'Quotation':inv.tax_mode==='standard'?'Tax invoice':'Invoice'} · ${inv.issue_date?dshort(inv.issue_date):''}${inv.quote_id?' · from a quotation':''}</p>
+  <h2 style="margin:2px 0 4px">${esc(inv.number)} <span class="chip ${INV_CHIP[inv.status]}">${INV_ST[inv.status]}</span></h2>
+  <p style="margin:0 0 10px">${inv.contact_id?`<a href="#rec/${inv.contact_id}">${esc(b.company||b.name)}</a>`:esc(b.company||b.name)}${b.company&&b.name?' · '+esc(b.name):''}${b.email?' · '+esc(b.email):''}</p>
+  <div class="kv"><span>Total</span><div><b>${imoney(inv.total,C)}</b>${C!=='GHS'?` <span class="note">= ${imoney(inv.total_ghs,'GHS')} at ${(+inv.fx_rate).toFixed(4)}</span>`:''}</div>
+   <span>Tax</span><div>${inv.tax_mode==='standard'?`VAT ${imoney(inv.vat,C)} · NHIL ${imoney(inv.nhil,C)} · GETFund ${imoney(inv.getfund,C)}`:esc({zero:'Zero-rated',exempt:'Exempt',none:'No VAT'}[inv.tax_mode])+(inv.tax_note?' · '+esc(inv.tax_note):'')}</div>
+   ${isQ?`<span>Valid until</span><div>${inv.valid_until?dshort(inv.valid_until):'—'}</div>`:`<span>Due</span><div>${inv.due_date?dshort(inv.due_date):'—'}</div><span>Paid</span><div>${imoney(paid,C)} · <b>balance ${imoney(Math.max(0,bal),C)}</b></div>`}
+   ${inv.void_reason?`<span>Voided</span><div>${esc(inv.void_reason)}</div>`:''}</div>
+  <div class="acts"><a class="btn btn-line" href="${esc(inv.link)}" target="_blank" rel="noopener">Open the client’s page</a><button class="btn btn-line" id="is-cp">Copy link</button>
+   ${open?`<button class="btn btn-dark" id="is-send">${inv.sent_at?'Email again':'Email to client'}</button>`:''}${open&&!isQ&&bal>0?'<button class="btn btn-line" id="is-rem">Send a reminder</button>':''}
+   ${isQ&&open?'<button class="btn btn-dark" id="is-conv">Turn into invoice</button>':''}</div>
+  ${!isQ&&open?`<h4 class="sec">Record a payment</h4>
+   <div class="f2"><div><label class="l" for="ip-a">Amount received (${C})</label><input class="t" id="ip-a" inputmode="decimal" value="${bal>0?(+inv.wht_rate?ir2(bal-ir2(+inv.taxable*inv.wht_rate/100)):bal):''}"></div>
+    <div><label class="l" for="ip-w">Withholding tax deducted (${C})</label><input class="t" id="ip-w" inputmode="decimal" value="${+inv.wht_rate&&bal>0?ir2(+inv.taxable*inv.wht_rate/100):''}" placeholder="0"></div>
+    <div><label class="l" for="ip-m">How</label><select class="t" id="ip-m">${[['bank','Bank transfer'],['momo','Mobile Money'],['card','Card'],['cash','Cash'],['cheque','Cheque'],['other','Other']].map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></div>
+    <div><label class="l" for="ip-d">Date</label><input class="t" id="ip-d" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+    <div><label class="l" for="ip-r">Reference <span class="note">(optional)</span></label><input class="t" id="ip-r"></div>
+    <div><label class="l">&nbsp;</label><label class="cal-mine" style="min-height:44px"><input type="checkbox" id="ip-c"> WHT certificate received</label></div></div>
+   <p class="err" id="ip-e"></p><button class="btn btn-dark" id="ip-s">Record payment</button>`:''}
+  ${inv.payments.length?`<h4 class="sec">Payments</h4><ul class="list">${inv.payments.map(p=>`<li class="li"><div class="grow"><b>${imoney(p.amount,C)}</b>${+p.wht?` + WHT ${imoney(p.wht,C)}${p.wht_cert?' (certificate in)':' <span class="chip gold">certificate missing</span>'}`:''}
+   <div class="note">${dshort(p.paid_on)} · ${esc({momo:'Mobile Money',bank:'Bank',card:'Card',cash:'Cash',cheque:'Cheque',paystack:'Paystack (online)',other:'Other'}[p.method]||p.method)}${p.reference?' · '+esc(p.reference):''}</div></div>${open?`<button class="btn btn-line" data-rp="${p.id}">Remove</button>`:''}</li>`).join('')}</ul>`:''}
+  <h4 class="sec">After issuing you can still change</h4>
+  <div class="f2">${isQ?'':`<div><label class="l" for="is-ev">E-VAT invoice reference</label><input class="t" id="is-ev" value="${esc(inv.evat_ref||'')}"></div>`}
+   <div><label class="l" for="is-dd">${isQ?'Valid until':'Due date'}</label><input class="t" id="is-dd" type="date" value="${String((isQ?inv.valid_until:inv.due_date)||'').slice(0,10)}"></div></div>
+  <label class="l" for="is-no">Notes</label><textarea class="t" id="is-no" rows="2">${esc(inv.notes||'')}</textarea>
+  <div class="acts"><button class="btn btn-line" id="is-save">Save</button>${open?'<button class="btn btn-line danger" id="is-void">Void…</button>':''}</div>
+  <p class="note">Amounts are locked once issued, as the tax rules require. To correct one, void it and issue a new one; the number stays in the list so there are no gaps.</p>`;
+ const act=async(a,body={})=>api('/api/invoices/'+inv.id+'/'+a,{method:'POST',body:JSON.stringify(body)});
+ $('#is-cp').onclick=()=>{navigator.clipboard?.writeText(inv.link);toast('Link copied')};
+ if($('#is-send'))$('#is-send').onclick=async()=>{const to=b.email||prompt('Send to which email address?');if(!to)return;try{await act('send',{to});toast('Emailed to '+to);invOpen(inv.id)}catch(e){toast(invErr(e))}};
+ if($('#is-rem'))$('#is-rem').onclick=async()=>{const to=b.email||prompt('Send the reminder to which email address?');if(!to)return;try{await act('remind',{to});toast('Reminder sent')}catch(e){toast(invErr(e))}};
+ if($('#is-conv'))$('#is-conv').onclick=async()=>{const r=await act('convert');toast('Draft invoice made from '+inv.number);refreshInv();invOpen(r.id)};
+ if($('#ip-s'))$('#ip-s').onclick=async()=>{$('#ip-e').textContent='';try{const r=await act('payment',{amount:$('#ip-a').value,wht:$('#ip-w').value,wht_cert:$('#ip-c').checked,method:$('#ip-m').value,paid_on:$('#ip-d').value,reference:$('#ip-r').value});
+  toast(r.status==='paid'?'Paid in full':'Payment recorded');refreshInv();invOpen(inv.id)}catch(e){$('#ip-e').textContent=invErr(e)}};
+ document.querySelectorAll('[data-rp]').forEach(x=>x.onclick=async()=>{if(!confirm('Remove this payment?'))return;await act('payment/'+x.dataset.rp);toast('Payment removed');refreshInv();invOpen(inv.id)});
+ $('#is-save').onclick=async()=>{try{await api('/api/invoices/'+inv.id,{method:'POST',body:JSON.stringify({bill_to:b,evat_ref:$('#is-ev')?.value||'',notes:$('#is-no').value,[isQ?'valid_until':'due_date']:$('#is-dd').value})});toast('Saved');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
+ if($('#is-void'))$('#is-void').onclick=async()=>{const reason=prompt('Why is '+inv.number+' being voided? (kept on record)');if(!reason)return;try{await act('void',{reason});toast(inv.number+' voided');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
+}
+async function invoiceSettingsCard(){
+ const s=await invSettingsLoad();if(!s||!$('#inv-set'))return;
+ $('#inv-set').innerHTML=`<div class="ch"><h3>Company & invoicing</h3></div>
+  <p class="note" style="margin-top:0">Printed on every quotation and invoice. Ghana tax since 1 January 2026: VAT 15% + NHIL 2.5% + GETFund 2.5% (20% in total), each on the same amount. Consultancy services must register for VAT whatever the turnover.</p>
+  <div class="f2"><div><label class="l" for="is-co">Company name</label><input class="t" id="is-co" value="${esc(s.inv_co_name||'')}" placeholder="Gotham Consult"></div>
+  <div><label class="l" for="is-em">Email on invoices</label><input class="t" id="is-em" value="${esc(s.inv_email||'')}" placeholder="info@gothamconsult.com"></div>
+  <div><label class="l" for="is-tin">TIN (Ghana Card or company TIN)</label><input class="t" id="is-tin" value="${esc(s.inv_tin||'')}"></div>
+  <div><label class="l" for="is-vr">VAT-registered with GRA?</label><select class="t" id="is-vr"><option value="no">No: invoices carry no VAT</option><option value="yes" ${s.inv_vat_registered==='yes'?'selected':''}>Yes: tax invoices with VAT, NHIL, GETFund</option></select></div>
+  <div><label class="l" for="is-vn">VAT registration number</label><input class="t" id="is-vn" value="${esc(s.inv_vat_number||'')}"></div>
+  <div><label class="l" for="is-td">Payment terms (days)</label><input class="t" id="is-td" inputmode="numeric" value="${esc(s.inv_terms_days||'')}" placeholder="14"></div></div>
+  <label class="l" for="is-ad">Address</label><textarea class="t" id="is-ad" rows="2" placeholder="Street, area, Accra · GhanaPost GPS">${esc(s.inv_co_address||'')}</textarea>
+  <label class="l" for="is-bg">Bank details for cedis (GHS)</label><textarea class="t" id="is-bg" rows="3" placeholder="Bank, branch, account name, account number">${esc(s.inv_bank_ghs||'')}</textarea>
+  <div class="f2"><div><label class="l" for="is-bu">US dollar foreign exchange account</label><textarea class="t" id="is-bu" rows="3" placeholder="Bank, account no., SWIFT">${esc(s.inv_bank_usd||'')}</textarea></div>
+  <div><label class="l" for="is-be">Euro foreign exchange account</label><textarea class="t" id="is-be" rows="3" placeholder="Bank, account no., IBAN/SWIFT">${esc(s.inv_bank_eur||'')}</textarea></div></div>
+  <label class="l" for="is-ft">Footer line <span class="note">(optional)</span></label><input class="t" id="is-ft" value="${esc(s.inv_footer||'')}" placeholder="Gotham Consult · Accra, Ghana · gothamconsult.com">
+  <details style="margin-top:10px"><summary class="note" style="cursor:pointer">Tax rates (change only if the budget changes them)</summary>
+  <div class="f2"><div><label class="l" for="is-rv">VAT %</label><input class="t" id="is-rv" inputmode="decimal" value="${s.rates.vat}"></div><div><label class="l" for="is-rn">NHIL %</label><input class="t" id="is-rn" inputmode="decimal" value="${s.rates.nhil}"></div>
+  <div><label class="l" for="is-rg">GETFund %</label><input class="t" id="is-rg" inputmode="decimal" value="${s.rates.getfund}"></div><div></div></div></details>
+  <p class="note">${s.paystack?'<span class="chip green">Online payment on</span> Clients can pay GHS and USD invoices by card or MoMo (Paystack). Euro invoices are paid by bank transfer.':'<span class="chip">Online payment off</span> Clients pay by MoMo or bank transfer. Add a Paystack key on the server to let them pay by card or MoMo online.'}</p>
+  <p class="err" id="is-err"></p><button class="btn btn-dark" id="is-sv">Save company & invoicing</button>`;
+ $('#is-sv').onclick=async()=>{$('#is-err').textContent='';try{await api('/api/invoice-settings',{method:'POST',body:JSON.stringify({inv_co_name:$('#is-co').value,inv_email:$('#is-em').value,inv_tin:$('#is-tin').value,inv_vat_registered:$('#is-vr').value,
+  inv_vat_number:$('#is-vn').value,inv_terms_days:$('#is-td').value,inv_co_address:$('#is-ad').value,inv_bank_ghs:$('#is-bg').value,inv_bank_usd:$('#is-bu').value,inv_bank_eur:$('#is-be').value,inv_footer:$('#is-ft').value,
+  inv_tax_vat:$('#is-rv').value,inv_tax_nhil:$('#is-rn').value,inv_tax_getfund:$('#is-rg').value})});toast('Saved');invoiceSettingsCard()}catch(e){$('#is-err').textContent=invErr(e)}};
+}
+async function recordInvoices(cid){const box=$('#rc-inv');if(!box)return;const r=await api('/api/invoices').catch(()=>null);if(!r||!$('#rc-inv'))return;
+ const L=r.rows.filter(x=>x.contact_id===cid);
+ box.querySelector('.inv-rl').innerHTML=L.length?`<ul class="list">${L.map(x=>`<li class="li" style="cursor:pointer" data-inv="${x.id}"><div class="grow"><b>${esc(x.number||'Draft')}</b><div class="note">${x.kind==='quote'?'Quotation':'Invoice'}${x.issue_date?' · '+dshort(x.issue_date):''}</div></div><div style="text-align:right"><b class="num">${imoney(x.total,x.currency)}</b><div><span class="chip ${x.overdue?'red':INV_CHIP[x.status]}">${x.overdue?'Overdue':INV_ST[x.status]}</span></div></div></li>`).join('')}</ul>`:'<p class="note">None yet.</p>';
+ box.querySelectorAll('[data-inv]').forEach(t=>t.onclick=()=>invOpen(+t.dataset.inv))}
 
 /* phones: tables turn into cards, each value labelled with its column */
 function labelTables(root){root.querySelectorAll('table').forEach(t=>{const h=[...t.querySelectorAll('thead th')].map(th=>th.textContent.trim());if(!h.length)return;

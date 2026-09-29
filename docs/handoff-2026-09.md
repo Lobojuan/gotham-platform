@@ -214,3 +214,20 @@ for reduced motion.
 
 ## Calendar day pop-up
 - Clicking a day opens a pop-up beside it (a bottom sheet on phones) with that day's items and quick add; nothing scrolls. `tests/ui/calendar_popup_ui.js`.
+
+## Quotes, invoices, Ghana tax, Paystack, Sign in with Google, SEO (29 Sep 2026)
+- **Back office → Invoices & quotes** (admin): quotations (QUO-YYYY-NNNN) and invoices (INV-YYYY-NNNN), numbered on issue, amounts locked after issue (void, never delete, so no gaps).
+  Also from a deal (Quotation / Invoice buttons) and on each company record.
+- **Tax** (Settings → Company & invoicing): VAT 15% + NHIL 2.5% + GETFund 2.5% on the same taxable value (20%), since 1 Jan 2026. Rates are settings; each invoice stores its rates.
+  Modes: standard (only when "VAT-registered" is Yes), zero-rated or exempt (reason required), none. Withholding tax per invoice (3 / 7.5 / 20%); payments record WHT and whether the certificate came in.
+  E-VAT: the GRA E-VAT reference is recorded on the invoice; a live link to GRA's certified invoicing system needs GRA credentials (not built).
+  VAT report: `/api/invoices/vat.csv?month=YYYY-MM` (button on the list) in cedis.
+- **Currency**: GHS for everyone in Ghana. EUR/USD only when the client is non-resident or expatriate (Bank of Ghana, Aug 2025), with an exchange rate (Suggest rate = open.er-api market mid-rate, check against BoG); cedi value stored for VAT.
+- **Client page** `/i/<token>`: printable A4 (print → PDF), how to pay (MoMo, bank, FEA accounts), Accept quotation, Pay online.
+- **Paystack** (`PAYSTACK_SECRET_KEY`): GHS and USD by card/MoMo; verified on return and by the signed webhook `POST /api/hooks/paystack` (set that URL in the Paystack dashboard); idempotent per reference. EUR by bank transfer.
+- **Sign in with Google** (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`): only for existing active team emails, never creates users. Redirect URI `https://gothamconsult.com/auth/google/callback`.
+  State + PKCE; state kept server-side (single use, 10 min) because the WordPress bridge forwards only the gc_session cookie.
+- **SEO**: keyword-led titles/descriptions (build.py V2 + PRACTICE_SEO), JSON-LD (ProfessionalService/LocalBusiness, WebSite, WebPage, BreadcrumbList, Service, FAQPage from the FAQ blocks, BusinessEvent on /teaser),
+  invest FAQ, 1200×630 JPG share images (public/img/og), sitemap with lastmod (register left out, noindex), robots disallows /admin and /i/, site 404 page,
+  server 301s: `/x/` and `/x.html` → `/x`, www (via bridge X-Forwarded-Host) → apex.
+- Tests: `tests/api/19_invoices_google.py` (mock Paystack, Google, FX), `tests/ui/invoices_ui.js`.

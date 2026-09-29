@@ -5,7 +5,8 @@ The pages in pages/ are written as page bodies so they can also be published
 as artifacts. This wraps each one in a complete HTML document with the meta
 tags a real website needs, and copies public/ over the top.
 """
-import os, re, shutil, sys
+import os, re, shutil, sys, json, html as htmlmod
+from datetime import date
 import chrome_css
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -23,7 +24,7 @@ META = {
    desc='Register for a Gotham Consult forum, membership or investor briefing. Mobile money, card or invoice.',
    og='img/forum.webp'),
  'family.html': dict(
-   title='Family Desk · care and paperwork for your parents in Ghana · Gotham Consult',
+   title='Family Desk: Care for Your Parents in Ghana | Gotham Consult',
    desc='Renewals, visits, property watch and appointments for older parents in Ghana, with a written report after every visit. For families abroad.',
    og='img/forum.webp'),
 }
@@ -34,13 +35,15 @@ V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link re
   '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
+# Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
+# 50-60 characters; descriptions 140-160 characters.
 V2 = {
- 'index.html': ('Gotham Consult · build partnerships in Ghana', 'Business development, investment and compliance in Ghana.', 'img/boot2.webp'),
- 'services.html': ('Services and prices · Gotham Consult', 'Ten practices with fixed prices in Ghana cedis: investment readiness, market entry, mining, AI, compliance, education and family support.', 'img/real-airportcity.webp'),
- 'invest.html': ('Invest in Ghana · Gotham Consult', 'Ghana in numbers, sectors to watch and what the GIPA Act 2026 means for investors from Germany, the Nordics, the UK and beyond.', 'img/real-bog.webp'),
- 'mining.html': ('Mining and critical minerals · Gotham Consult', 'Geology-led concession screening, due diligence and licensing in Ghana, with TERRA field data and the Afri-MINEX platform.', 'img/solar.webp'),
- 'forums.html': ('Forums and seminars · Gotham Consult', 'Forums, roundtables and the free weekly Ghana Business Brief. Register in a minute, pay by mobile money.', 'img/forum.webp'),
- 'about.html': ('About and contact · Gotham Consult', 'An Accra-based business development and international projects consultancy. Renewable energy and AI partner: Carlson Capital Ltd.', 'img/joy.webp'),
+ 'index.html': ('Business Consulting in Ghana | Gotham Consult, Accra', 'Accra business consultancy for investors and companies: company registration, GIPA, market entry, compliance and business forums in Ghana.', 'img/og/boot2.jpg'),
+ 'services.html': ('Consulting Services in Ghana, Fixed Fees | Gotham Consult', 'Consulting services in Ghana with fixed fees in cedis: investment readiness and GIPA registration, market entry, mining, compliance, AI and education.', 'img/og/real-airportcity.jpg'),
+ 'invest.html': ('Invest in Ghana: GIPA Act 2026 Guide | Gotham Consult', 'Invest in Ghana with a local desk: key numbers, sectors to watch, company registration and what the GIPA Act 2026 changes for foreign investors.', 'img/og/real-bog.jpg'),
+ 'mining.html': ('Mining Due Diligence and Licensing in Ghana | Gotham Consult', 'Geology-led concession screening, due diligence and mining licences in Ghana, with field data investors and banks can check before they commit.', 'img/og/solar.jpg'),
+ 'forums.html': ('Business Forums and Events in Accra, Ghana | Gotham Consult', 'Business forums, investor roundtables and seminars in Accra, plus the free weekly Ghana Business Brief. Register in a minute and pay by mobile money.', 'img/og/forum.jpg'),
+ 'about.html': ('About Gotham Consult | Business Consultancy in Accra, Ghana', 'Accra-based business consultancy connecting companies, investors and public institutions in Ghana. Office hours, WhatsApp and contact details.', 'img/og/joy.jpg'),
 }
 for _n, (_t, _d, _o) in V2.items():
     META[_n] = dict(title=_t, desc=_d, og=_o, extra=V2_EXTRA)
@@ -57,15 +60,73 @@ PRACTICES = {
  'family-support': ('Senior citizens and family support', "Practical help for older people in Ghana and peace of mind for families abroad: renewals handled, regular visits, property looked after and estate paperwork in order, with written reports and photos.", 'img/accra.webp'),
  'media-forums': ('Media, forums and inclusive enterprise', "Get your business in front of investors and buyers through features, roundtables, trade missions and showcases, and grow in a way that includes persons with disabilities.", 'img/forum.webp'),
 }
+# search titles and descriptions for the practice pages (the visible names above stay as they are)
+PRACTICE_SEO = {
+ 'investment-readiness': ('GIPA Registration and Investment Readiness in Ghana', 'Register your company with GIPA and get investor-ready in Ghana: registration, financial documents and a clear story for banks, programmes and investors.'),
+ 'market-entry': ('Ghana Market Entry and Company Registration', 'Enter the Ghana market with a registered company, checked partners and a local desk in Accra. Company registration, GIPA, tax and licences handled.'),
+ 'ai': ('AI Consulting for Businesses in Ghana', 'Use AI for bookkeeping from mobile-money and bank statements, monthly reports, research and admin, with your staff trained to use it well.'),
+ 'digital': ('Websites, Online Shops and Hosting in Ghana', 'A website or online shop that takes mobile money and card payments, with hosting, business email and daily backups looked after in Ghana.'),
+ 'creative-studio': ('AI Adverts, Jingles and Video in Ghana', 'Jingles, radio spots, posters and video adverts made quickly with AI, with voice-overs in Twi and English that reach your customers in Ghana.'),
+ 'energy-mining': ('Energy, Mining and Infrastructure Projects in Ghana', 'Due diligence, a clear licensing path and bankable documents for solar, mining and infrastructure projects in Ghana, ready for banks and DFIs.'),
+ 'compliance-esg': ('Compliance, AML, Data Protection and ESG in Ghana', 'Anti-money-laundering, data protection and ESG practices that international banks, investors and buyers recognise, plus a well-designed CSR programme.'),
+ 'education': ('School Registration and Licensing in Ghana', 'Register and licence a school or training centre in Ghana, strengthen teaching and prepare staff for digital learning, with the paperwork handled.'),
+ 'family-support': ('Family Support for Parents in Ghana, for Families Abroad', 'Renewals, regular visits, property watch and estate paperwork for older people in Ghana, with written reports and photos for families abroad.'),
+ 'media-forums': ('Business Media, Forums and Trade Missions in Ghana', 'Features, roundtables, trade missions and showcases that put your business in front of investors and buyers in Ghana, including inclusive enterprise.'),
+}
 for _s, (_t, _d, _o) in PRACTICES.items():
-    META[f'services/{_s}.html'] = dict(title=f'{_t} · Gotham Consult', desc=_d, og=_o, extra=V2_EXTRA)
+    _st, _sd = PRACTICE_SEO[_s]
+    META[f'services/{_s}.html'] = dict(title=f'{_st} | Gotham Consult', desc=_sd, og='img/og/' + os.path.basename(_o).replace('.webp', '.jpg'), extra=V2_EXTRA, crumb=_t)
 META_REST = {
  'teaser.html': dict(
-   title='SMEs at the Centre · 24 October 2026 · Gotham Consult',
+   title='SMEs at the Centre Forum, Accra, 24 October 2026 | Gotham Consult',
    desc='A working forum at Tang Palace Hotel, Accra. By invitation, free for SMEs, stakeholders and investors.',
-   og='img/boot2.webp'),
+   og='img/og/boot2.jpg'),
 }
 META.update(META_REST)
+META['404.html'] = dict(title='Page not found | Gotham Consult', desc='This page is not here any more. Find our services, the Ghana investment guide, forums and contact details.', og='img/og/boot2.jpg', extra=V2_EXTRA + '\n<meta name="robots" content="noindex">')
+META['register.html']['extra'] = '<meta name="robots" content="noindex, follow">'
+META['register.html']['og'] = 'img/og/forum.jpg'
+META['family.html']['og'] = 'img/og/forum.jpg'
+META['classic.html']['og'] = 'img/og/boot2.jpg'
+
+# ---- structured data for Google (JSON-LD) ----
+ORG = {'@type': ['ProfessionalService', 'LocalBusiness'], '@id': SITE + '/#org', 'name': 'Gotham Consult', 'url': SITE + '/',
+  'logo': SITE + '/img/og/boot2.jpg', 'image': SITE + '/img/og/boot2.jpg',
+  'description': 'Accra business consultancy for investment, company registration, GIPA, market entry, compliance and business forums in Ghana.',
+  'telephone': '+233550416627', 'email': 'info@gothamconsult.com', 'priceRange': 'GHS',
+  'address': {'@type': 'PostalAddress', 'addressLocality': 'Accra', 'addressRegion': 'Greater Accra', 'addressCountry': 'GH'},
+  'areaServed': [{'@type': 'Country', 'name': 'Ghana'}, {'@type': 'Place', 'name': 'West Africa'}],
+  'knowsLanguage': ['en', 'fr', 'es'],
+  'openingHoursSpecification': {'@type': 'OpeningHoursSpecification', 'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], 'opens': '09:00', 'closes': '17:00'},
+  'knowsAbout': ['Business consulting in Ghana', 'Investing in Ghana', 'GIPA registration', 'Company registration in Ghana', 'Market entry', 'Mining due diligence', 'Compliance and ESG', 'Business forums in Accra']}
+SITE_LD = {'@type': 'WebSite', '@id': SITE + '/#site', 'url': SITE + '/', 'name': 'Gotham Consult', 'inLanguage': 'en', 'publisher': {'@id': SITE + '/#org'}}
+def faqs_in(body):
+    out = []
+    for q, a in re.findall(r'<details class="faq"><summary>(.*?)</summary>\s*<p>(.*?)</p>', body, flags=re.S):
+        t = lambda x: htmlmod.unescape(re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', x))).strip()
+        if t(q) and t(a): out.append({'@type': 'Question', 'name': t(q), 'acceptedAnswer': {'@type': 'Answer', 'text': t(a)}})
+    return out
+def ld_for(name, m, body):
+    path = '' if name == 'index.html' else name[:-5]
+    g = [ORG, SITE_LD] if name in ('index.html', 'about.html') else [{'@type': 'ProfessionalService', '@id': SITE + '/#org', 'name': 'Gotham Consult', 'url': SITE + '/'}]
+    g.append({'@type': 'WebPage', '@id': f'{SITE}/{path}#page', 'url': f'{SITE}/{path}', 'name': m['title'], 'description': m['desc'], 'isPartOf': {'@id': SITE + '/#site'}, 'about': {'@id': SITE + '/#org'}, 'inLanguage': 'en'})
+    if name.startswith('services/'):
+        g.append({'@type': 'BreadcrumbList', 'itemListElement': [
+          {'@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': SITE + '/'},
+          {'@type': 'ListItem', 'position': 2, 'name': 'Services', 'item': SITE + '/services'},
+          {'@type': 'ListItem', 'position': 3, 'name': m.get('crumb', m['title']), 'item': f'{SITE}/{path}'}]})
+        g.append({'@type': 'Service', 'name': m.get('crumb', m['title']), 'serviceType': m.get('crumb', m['title']), 'description': m['desc'], 'provider': {'@id': SITE + '/#org'},
+          'areaServed': {'@type': 'Country', 'name': 'Ghana'}, 'url': f'{SITE}/{path}'})
+    if name == 'teaser.html':
+        g.append({'@type': 'BusinessEvent', 'name': 'SMEs at the Centre: inclusive partnerships under the GIPA Act', 'startDate': '2026-10-24',
+          'eventAttendanceMode': 'https://schema.org/OfflineEventAttendanceMode', 'eventStatus': 'https://schema.org/EventScheduled',
+          'location': {'@type': 'Place', 'name': 'Tang Palace Hotel', 'address': {'@type': 'PostalAddress', 'addressLocality': 'Accra', 'addressCountry': 'GH'}},
+          'organizer': {'@type': 'Organization', 'name': 'Gotham Consult', 'url': SITE + '/'}, 'isAccessibleForFree': True,
+          'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'GHS', 'availability': 'https://schema.org/InStock', 'url': SITE + '/teaser'},
+          'url': SITE + '/teaser', 'image': SITE + '/img/og/boot2.jpg', 'description': m['desc']})
+    f = faqs_in(body)
+    if f: g.append({'@type': 'FAQPage', '@id': f'{SITE}/{path}#faq', 'mainEntity': f})
+    return '<script type="application/ld+json">' + json.dumps({'@context': 'https://schema.org', '@graph': g}, ensure_ascii=False).replace('</', '<\\/') + '</script>'
 
 HEAD = '''<!doctype html>
 <html lang="en">
@@ -83,9 +144,7 @@ HEAD = '''<!doctype html>
 <meta property="og:description" content="{desc}">
 <meta property="og:url" content="{site}/{path}">
 <meta property="og:image" content="{site}/{og}">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
+{ogsize}<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{title}">
 <meta name="twitter:description" content="{desc}">
 <meta name="twitter:image" content="{site}/{og}">
@@ -115,8 +174,11 @@ def main():
             if f'<!--#{part}-->' in body:
                 body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
         os.makedirs(os.path.dirname(os.path.join(DIST, name)), exist_ok=True)
+        mm = {'extra': '', **m}; mm.pop('crumb', None)
+        mm['extra'] = (mm['extra'] + '\n' + ld_for(name, m, body)) if name not in ('classic.html', 'register.html', '404.html') else mm['extra']
+        ogsize = '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta property="og:image:alt" content="' + htmlmod.escape(m['title']) + '">\n' if m['og'].startswith('img/og/') else ''
         out = body if body.lstrip().lower().startswith('<!doctype') else \
-              HEAD.format(site=SITE, path=('' if name == 'index.html' else name[:-5] if name.endswith('.html') else name), **{'extra': '', **m}) + body + '\n</body>\n</html>'
+              HEAD.format(site=SITE, path=('' if name == 'index.html' else name[:-5] if name.endswith('.html') else name), ogsize=ogsize, **mm) + body + '\n</body>\n</html>'
         open(os.path.join(DIST, name), 'w', encoding='utf-8').write(out)
         print(f'  {name}')
 
@@ -136,6 +198,7 @@ def main():
         h = open(path, encoding='utf-8').read()
         h = re.sub(r'<link rel="stylesheet" href="https://fonts\.googleapis\.com/css2\?[^"]*">\s*', '', h)   # their own font link blocked the first paint; head_add loads the same fonts without blocking
         h = h.replace('</head>', head_add + '</head>', 1)
+        h = re.sub(r'(<body.*?)<title>.*?</title>', r'\1', h, count=1, flags=re.S)   # their own <title> sat in the body, a second title for Google
         h = re.sub(r'<header(?: id="hdr")?><div class="wrap bar">.*?</header>', '', h, count=1, flags=re.S)   # old top bar
         h = re.sub(r'<footer>.*?</footer>', '', h, count=1, flags=re.S)                                    # old footer
         h = re.sub(r'<body([^>]*)>', lambda m: '<body' + (re.sub(r'class="', 'class="v2-legacy ', m.group(1), 1) if 'class="' in m.group(1) else m.group(1) + ' class="v2-legacy"') + '>\n' + keep + top, h, count=1)
@@ -182,9 +245,10 @@ def main():
         print(f'  static files from {asset}')
 
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
-        f'User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n')
-    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'tools', 'family', 'register', 'teaser', 'privacy', 'terms']
-    urls = ''.join(f'  <url><loc>{SITE}/{p}</loc></url>\n' for p in pages)
+        f'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /i/\nSitemap: {SITE}/sitemap.xml\n')
+    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'tools', 'family', 'teaser', 'privacy', 'terms']
+    today = date.today().isoformat()
+    urls = ''.join(f'  <url><loc>{SITE}/{p}</loc><lastmod>{today}</lastmod></url>\n' for p in pages)
     open(os.path.join(DIST, 'sitemap.xml'), 'w').write(
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls + '</urlset>\n')

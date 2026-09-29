@@ -43,6 +43,14 @@ try:
     st,h=get('/assets/v2/v2.css'); assert st==200 and h.get('access-control-allow-origin')=='*',(st,dict(h))
     st,_=get('/img/forum.webp'); assert st==200,st
     ok('css, js and images are served straight from the server address (faster than the bridge), usable from gothamconsult.com')
+    K={'X-GC-Proxy-Key':'bridge-key-123'}
+    st,h=get('/invest',**K,**{'X-Forwarded-Host':'www.gothamconsult.com'}); assert st==301 and h['location']=='https://gothamconsult.com/invest',(st,h.get('location'))
+    st,_=get('/api/health',**K,**{'X-Forwarded-Host':'www.gothamconsult.com'}); assert st==200,st
+    ok('www.gothamconsult.com (through the bridge) moves to gothamconsult.com; the API is left alone')
+    for a,b in (('/about/','/about'),('/about.html','/about'),('/services/ai/','/services/ai'),('/index.html','/'),('/register.html?e=F1','/register?e=F1')):
+        st,h=get(a,**K); assert st==301 and h['location']==b,(a,st,h.get('location'))
+    st,h=get('/no-such-page',**K); assert st==404 and 'text/html' in h['content-type'],(st,dict(h))
+    ok('one address per page for Google: trailing slash and .html move to the clean address; unknown pages get the site 404 page')
     print('PASSED')
 finally:
     srv.terminate()

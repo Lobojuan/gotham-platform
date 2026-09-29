@@ -400,3 +400,46 @@ create table if not exists wa_messages (
   at timestamptz default now()
 );
 create index if not exists wa_messages_phone_idx on wa_messages (phone, at desc);
+
+-- quotes and invoices: GHS for Ghana, EUR/USD only for non-residents (Bank of Ghana), Ghana VAT from 1 Jan 2026:
+-- VAT 15% + NHIL 2.5% + GETFund 2.5% on the same value (not cascading). Amounts are stored as computed at the time.
+create table if not exists invoices (
+  id serial primary key,
+  kind text not null default 'invoice' check (kind in ('quote','invoice')),
+  number text unique,
+  status text not null default 'draft' check (status in ('draft','sent','accepted','declined','part_paid','paid','void')),
+  contact_id int references contacts(id) on delete set null,
+  deal_id int references deals(id) on delete set null,
+  quote_id int references invoices(id) on delete set null,
+  bill_to jsonb not null default '{}'::jsonb,
+  currency text not null default 'GHS' check (currency in ('GHS','EUR','USD')),
+  fx_rate numeric(14,6), fx_date date,
+  tax_mode text not null default 'standard' check (tax_mode in ('standard','zero','exempt','none')),
+  tax_note text,
+  rates jsonb,
+  lines jsonb not null default '[]'::jsonb,
+  subtotal numeric(14,2) default 0, discount numeric(14,2) default 0, taxable numeric(14,2) default 0,
+  vat numeric(14,2) default 0, nhil numeric(14,2) default 0, getfund numeric(14,2) default 0, total numeric(14,2) default 0,
+  total_ghs numeric(14,2) default 0, tax_ghs numeric(14,2) default 0,
+  issue_date date, due_date date, valid_until date,
+  notes text, wht_rate numeric(5,2) default 0, evat_ref text,
+  token text unique,
+  sent_at timestamptz, paid_at timestamptz, accepted_at timestamptz, voided_at timestamptz, void_reason text,
+  created_by text, created_at timestamptz default now(), updated_at timestamptz default now()
+);
+create index if not exists invoices_status_idx on invoices (kind, status, issue_date desc);
+create table if not exists invoice_payments (
+  id serial primary key,
+  invoice_id int not null references invoices(id) on delete cascade,
+  paid_on date not null default current_date,
+  amount numeric(14,2) not null,
+  wht numeric(14,2) not null default 0,
+  wht_cert boolean not null default false,
+  method text not null default 'bank' check (method in ('momo','bank','card','cash','cheque','paystack','other')),
+  reference text,
+  fx_rate numeric(14,6),
+  note text,
+  recorded_by text, created_at timestamptz default now()
+);
+create unique index if not exists invoice_payments_ref_uq on invoice_payments (method, reference) where reference is not null and method = 'paystack';
+create table if not exists invoice_seq (kind text not null, year int not null, n int not null default 0, primary key (kind, year));

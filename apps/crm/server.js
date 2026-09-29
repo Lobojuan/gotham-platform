@@ -1383,6 +1383,27 @@ async function withMedia(rows) {
   }));
 }
 
+
+/* ---------- Sign in with Google (OpenID Connect) ----------
+   Only for people already in the team list: the Google account's verified email must match a
+   sign-in an owner created. Nobody gets an account by signing in. State and PKCE protect the
+   round trip; the ID token comes straight from Google's token endpoint over TLS and is checked
+   for audience, issuer, expiry and a verified email. */
+const G_ID = process.env.GOOGLE_CLIENT_ID || '', G_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
+const G_AUTH = process.env.GOOGLE_AUTH_URL || 'https://accounts.google.com/o/oauth2/v2/auth';
+const G_TOKEN = process.env.GOOGLE_TOKEN_URL || 'https://oauth2.googleapis.com/token';
+const googleOn = () => !!(G_ID && G_SECRET);
+const b64u = b => Buffer.from(b).toString('base64url');
+const gSign = v => crypto.createHmac('sha256', SECRET).update('google:' + v).digest('base64url');
+/* The state is also kept here for 10 minutes, single use: the WordPress bridge on gothamconsult.com
+   only passes the sign-in cookie through, so on that road the cookie copy does not arrive. */
+const GSTATE = new Map();
+const gState = (req, state) => { if (/(?:^|;\s*)gc_g=/.test(String(req.headers.cookie || ''))) { const c = gCookie(req); return c && c.state === state ? (GSTATE.delete(state), c) : null; }
+  const s = state && GSTATE.get(state); if (!s) return null; GSTATE.delete(state); return s.exp > Date.now() ? s : null; };
+const gCookie = (req) => { const m = String(req.headers.cookie || '').match(/(?:^|;\s*)gc_g=([^;]+)/); if (!m) return null;
+  const [v, sig] = decodeURIComponent(m[1]).split('.'); if (!v || !sig || gSign(v) !== sig) return null;
+  try { const o = JSON.parse(Buffer.from(v, 'base64url').toString()); return o.exp > Date.now() ? o : null; } catch { return null; } };
+
 /* ---------- server ---------- */
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
@@ -1407,6 +1428,15 @@ const server = http.createServer(async (req, res) => {
     '/wp-admin': '/admin', '/wp-login.php': '/admin', '/feed': '/', '/wp-sitemap.xml': '/sitemap.xml', '/sample-page': '/' };
   const oldKey = p.replace(/\/+$/, '') || '/';
   if ((req.method === 'GET' || req.method === 'HEAD') && OLD[oldKey]) { res.writeHead(301, { location: OLD[oldKey] }); return res.end(); }
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    /* one address per page for Google: www → gothamconsult.com (the bridge tells us the host), /about/ and /about.html → /about */
+    const fwd = String(req.headers['x-forwarded-host'] || '').toLowerCase();
+    if (viaBridge && fwd.startsWith('www.') && !p.startsWith('/api/')) { res.writeHead(301, { location: PUBLIC_URL + req.url, 'cache-control': 'public, max-age=3600' }); return res.end(); }
+    if (p !== '/' && !/^\/(api|admin|media|assets|img|js|i|cal)(\/|$)/.test(p) && (/\/$/.test(p) || /\.html$/.test(p))) {
+      const to = p.replace(/\/+$/, '').replace(/(\/index)?\.html$/, '') || '/';
+      if (to !== p) { res.writeHead(301, { location: to + url.search, 'cache-control': 'public, max-age=3600' }); return res.end(); }
+    }
+  }
   const origin = req.headers.origin;
   const cors = origin && ORIGINS.includes(origin)
     ? { 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', 'vary': 'Origin' } : {};
@@ -1459,7 +1489,7 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/items' && req.method === 'GET') {
       const { rows } = await itemsPublic();
       const full = await withMedia(rows);
-      const s = await q('select key,value from settings');
+      const s = await q("select key,value from settings where key = any($1)", [['max_seats', 'momo_number', 'momo_name', 'whatsapp', 'pay_link']]);   // public: never bank details or tax numbers
       return json(res, 200, { items: full, settings: Object.fromEntries(s.rows.map(r => [r.key, r.value])) }, cors);
     }
 
@@ -1872,6 +1902,49 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
     }
 
     /* ---- auth ---- */
+    /* ---- Sign in with Google ---- */
+    if (p === '/api/auth/options') return json(res, 200, { google: googleOn() });
+    if (p === '/auth/google' && req.method === 'GET') {
+      if (!googleOn()) { res.writeHead(302, { location: '/admin?google=off' }); return res.end(); }
+      if (rateLimited(ip, 20, 300e3, 'google')) { res.writeHead(302, { location: '/admin?google=busy' }); return res.end(); }
+      const state = b64u(crypto.randomBytes(18)), verifier = b64u(crypto.randomBytes(32));
+      const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
+      const v = b64u(JSON.stringify({ state, verifier, exp: Date.now() + 10 * 60e3 }));
+      for (const [k, x] of GSTATE) if (x.exp < Date.now() || GSTATE.size > 2000) GSTATE.delete(k);
+      GSTATE.set(state, { state, verifier, exp: Date.now() + 10 * 60e3 });
+      const u = new URL(G_AUTH);
+      Object.entries({ client_id: G_ID, redirect_uri: PUBLIC_URL + '/auth/google/callback', response_type: 'code', scope: 'openid email profile',
+        state, code_challenge: challenge, code_challenge_method: 'S256', prompt: 'select_account' }).forEach(([k, x]) => u.searchParams.set(k, x));
+      res.writeHead(302, { location: u.href, 'cache-control': 'no-store',
+        'set-cookie': `gc_g=${encodeURIComponent(v + '.' + gSign(v))}; HttpOnly; Path=/auth/google; Max-Age=600; SameSite=Lax; Secure` });
+      return res.end();
+    }
+    if (p === '/auth/google/callback' && req.method === 'GET') {
+      const back = why => { res.writeHead(302, { location: '/admin?google=' + why, 'cache-control': 'no-store', 'set-cookie': 'gc_g=; Path=/auth/google; Max-Age=0' }); return res.end(); };
+      if (!googleOn()) return back('off');
+      if (url.searchParams.get('error')) { gState(req, url.searchParams.get('state')); return back('cancelled'); }
+      const st = gState(req, url.searchParams.get('state')), code = url.searchParams.get('code');
+      if (!st || !code) return back('expired');
+      let claims;
+      try {
+        const r = await fetch(G_TOKEN, { method: 'POST', signal: AbortSignal.timeout(15e3), headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ code, client_id: G_ID, client_secret: G_SECRET, redirect_uri: PUBLIC_URL + '/auth/google/callback', grant_type: 'authorization_code', code_verifier: st.verifier }) });
+        const t = await r.json();
+        if (!r.ok || !t.id_token) throw new Error('token ' + r.status);
+        claims = JSON.parse(Buffer.from(String(t.id_token).split('.')[1], 'base64url').toString());
+      } catch (e) { console.error('google sign-in', e.message); return back('failed'); }
+      const auds = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
+      if (!auds.includes(G_ID) || !['accounts.google.com', 'https://accounts.google.com'].includes(claims.iss) || !(claims.exp * 1000 > Date.now())
+        || !(claims.email_verified === true || claims.email_verified === 'true') || !claims.email) return back('failed');
+      const u = (await q('select * from users where lower(email)=lower($1) and coalesce(active,true)', [claims.email])).rows[0];
+      if (!u) { await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [String(claims.email).slice(0, 120), 'google_refused', 'not in the team list']); return back('not_in_team'); }
+      await q('update users set last_login=now() where id=$1', [u.id]);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'login_google', 'signed in with Google']);
+      res.writeHead(302, { location: '/admin', 'cache-control': 'no-store', 'set-cookie': [
+        `gc_session=${makeToken(u)}; HttpOnly; Path=/; Max-Age=43200; SameSite=Lax; Secure`, 'gc_g=; Path=/auth/google; Max-Age=0'] });
+      return res.end();
+    }
+
     if (p === '/api/login' && req.method === 'POST') {
       if (rateLimited(ip, 8, 300e3, 'login')) return json(res, 429, { error: 'too_many' });
       const b = await body(req);
@@ -3066,6 +3139,222 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
 
 
+    /* ---- quotes and invoices ---- */
+    if (p === '/api/invoice-settings' && (req.method === 'GET' || req.method === 'POST')) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (req.method === 'POST') {
+        const b = await body(req);
+        for (const k of INV_KEYS) if (b[k] !== undefined) {
+          let v = clean(String(b[k] ?? ''), k.startsWith('inv_bank') || k === 'inv_co_address' || k === 'inv_footer' ? 600 : 120);
+          if (k === 'inv_vat_registered') v = v === 'yes' ? 'yes' : 'no';
+          if (k.startsWith('inv_tax_') && v !== '' && !(+v >= 0 && +v <= 50)) return json(res, 400, { error: 'bad_rate', fields: [k] });
+          if (k === 'inv_terms_days' && v !== '' && !(+v >= 0 && +v <= 180)) return json(res, 400, { error: 'bad_terms', fields: [k] });
+          await q(`insert into settings(key,value) values ($1,$2) on conflict (key) do update set value=excluded.value`, [k, v]);
+        }
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_settings', Object.keys(b).join(', ').slice(0, 300)]);
+      }
+      const st = await invSettings();
+      return json(res, 200, { ...Object.fromEntries(INV_KEYS.map(k => [k, st[k] ?? ''])), rates: st.rates, tax_default: TAX_DEFAULT, paystack: !!PAYSTACK_KEY });
+    }
+    if (p === '/api/fx' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const c = String(url.searchParams.get('c') || '').toUpperCase(); if (!['EUR', 'USD'].includes(c)) return json(res, 400, { error: 'bad_currency' });
+      try {
+        const r = await fetch(`${process.env.FX_API || 'https://open.er-api.com/v6/latest'}/${c}`, { signal: AbortSignal.timeout(8000) }); const j = await r.json();
+        const rate = j && j.rates && +j.rates.GHS; if (!rate) throw new Error('no rate');
+        return json(res, 200, { currency: c, rate: Math.round(rate * 10000) / 10000, source: 'market mid-rate (check against the Bank of Ghana reference rate)', date: new Date().toISOString().slice(0, 10) });
+      } catch { return json(res, 502, { error: 'fx_unavailable' }); }
+    }
+    if (p === '/api/invoices' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q(`select i.*, coalesce((select sum(amount+wht) from invoice_payments x where x.invoice_id=i.id),0) as paid from invoices i order by coalesce(i.issue_date, i.created_at::date) desc, i.id desc limit 500`);
+      const today = new Date().toISOString().slice(0, 10), m = today.slice(0, 7);
+      const out = rows.map(r => ({ ...r, balance: r2(+r.total - +r.paid), overdue: r.kind === 'invoice' && ['sent', 'part_paid'].includes(r.status) && r.due_date && ymdOf(r.due_date) < today }));
+      const owed = {}; out.filter(r => r.kind === 'invoice' && ['sent', 'part_paid'].includes(r.status)).forEach(r => owed[r.currency] = r2((owed[r.currency] || 0) + r.balance));
+      const monthTax = out.filter(r => r.kind === 'invoice' && r.number && r.status !== 'void' && r.issue_date && ymdOf(r.issue_date).startsWith(m)).reduce((s, r) => s + (+r.tax_ghs), 0);
+      return json(res, 200, { rows: out, summary: { owed, overdue: out.filter(r => r.overdue).length, tax_this_month_ghs: r2(monthTax) } });
+    }
+    const mInv = p.match(/^\/api\/invoices\/(\d+)(?:\/(issue|send|payment|void|convert|remind))?(?:\/(\d+))?$/);
+    if ((p === '/api/invoices' && req.method === 'POST') || (mInv && !mInv[2] && req.method === 'POST')) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req), st = await invSettings();
+      const id = mInv ? +mInv[1] : (+b.id || null);
+      const cur = id ? (await q('select * from invoices where id=$1', [id])).rows[0] : null;
+      if (id && !cur) return json(res, 404, { error: 'not_found' });
+      if (cur && cur.status === 'void') return json(res, 400, { error: 'void' });
+      const bt = b.bill_to || {};
+      const inv = {
+        kind: cur ? cur.kind : (b.kind === 'quote' ? 'quote' : 'invoice'),
+        contact_id: +b.contact_id || null, deal_id: +b.deal_id || null,
+        bill_to: { name: clean(bt.name, 160), company: clean(bt.company, 160), address: clean(bt.address, 400), country: clean(bt.country, 60) || 'Ghana',
+          email: clean(bt.email, 160).toLowerCase(), tax_id: clean(bt.tax_id, 60), residency: ['resident', 'non_resident', 'expatriate'].includes(bt.residency) ? bt.residency : 'resident' },
+        currency: CURRENCIES.includes(b.currency) ? b.currency : 'GHS', fx_rate: +b.fx_rate > 0 ? +b.fx_rate : null, fx_date: /^\d{4}-\d{2}-\d{2}$/.test(b.fx_date || '') ? b.fx_date : null,
+        tax_mode: TAX_MODES.includes(b.tax_mode) ? b.tax_mode : (st.vat_registered ? 'standard' : 'none'), tax_note: clean(b.tax_note, 200),
+        lines: cleanLines(b.lines), issue_date: /^\d{4}-\d{2}-\d{2}$/.test(b.issue_date || '') ? b.issue_date : null,
+        due_date: /^\d{4}-\d{2}-\d{2}$/.test(b.due_date || '') ? b.due_date : null, valid_until: /^\d{4}-\d{2}-\d{2}$/.test(b.valid_until || '') ? b.valid_until : null,
+        notes: clean(b.notes, 2000), wht_rate: Math.max(0, Math.min(30, +b.wht_rate || 0)), evat_ref: clean(b.evat_ref, 120) };
+      if (inv.currency === 'GHS') { inv.fx_rate = null; inv.fx_date = null; }
+      if (!inv.bill_to.name && !inv.bill_to.company) return json(res, 400, { error: 'bill_to_required' });
+      if (cur && cur.number) {
+        /* issued: the money is fixed. Only the E-VAT reference, the due date and the notes may change. */
+        await q('update invoices set evat_ref=$2, due_date=coalesce($3,due_date), valid_until=coalesce($4,valid_until), notes=$5, updated_at=now() where id=$1',
+          [cur.id, inv.evat_ref || null, inv.due_date, inv.valid_until, inv.notes || null]);
+        return json(res, 200, { ok: true, id: cur.id, locked: true });
+      }
+      const err = invoiceRules(inv, st); if (err) return json(res, 400, { error: err });
+      const t = invoiceTotals(inv, st.rates);
+      const vals = [inv.kind, inv.contact_id, inv.deal_id, JSON.stringify(inv.bill_to), inv.currency, inv.fx_rate, inv.fx_date, inv.tax_mode, inv.tax_note || null, JSON.stringify(st.rates),
+        JSON.stringify(inv.lines), t.subtotal, t.discount, t.taxable, t.vat, t.nhil, t.getfund, t.total, t.total_ghs, t.tax_ghs, inv.issue_date, inv.due_date, inv.valid_until,
+        inv.notes || null, inv.wht_rate, inv.evat_ref || null];
+      let rid;
+      if (cur) {
+        await q(`update invoices set kind=$1, contact_id=$2, deal_id=$3, bill_to=$4, currency=$5, fx_rate=$6, fx_date=$7, tax_mode=$8, tax_note=$9, rates=$10, lines=$11,
+          subtotal=$12, discount=$13, taxable=$14, vat=$15, nhil=$16, getfund=$17, total=$18, total_ghs=$19, tax_ghs=$20, issue_date=$21, due_date=$22, valid_until=$23,
+          notes=$24, wht_rate=$25, evat_ref=$26, updated_at=now() where id=$27`, [...vals, cur.id]); rid = cur.id;
+      } else {
+        rid = (await q(`insert into invoices(kind, contact_id, deal_id, bill_to, currency, fx_rate, fx_date, tax_mode, tax_note, rates, lines, subtotal, discount, taxable, vat, nhil, getfund,
+          total, total_ghs, tax_ghs, issue_date, due_date, valid_until, notes, wht_rate, evat_ref, created_by, token)
+          values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28) returning id`,
+          [...vals, u.email, crypto.randomBytes(18).toString('base64url')])).rows[0].id;
+      }
+      return json(res, 200, { ok: true, id: rid, totals: t });
+    }
+    if (mInv && req.method === 'GET' && !mInv[2]) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const inv = (await q('select * from invoices where id=$1', [+mInv[1]])).rows[0]; if (!inv) return json(res, 404, { error: 'not_found' });
+      const pays = (await q('select * from invoice_payments where invoice_id=$1 order by paid_on, id', [inv.id])).rows;
+      return json(res, 200, { ...inv, payments: pays, link: `${PUBLIC_URL}/i/${inv.token}` });
+    }
+    if (mInv && req.method === 'DELETE' && !mInv[2]) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const r = await q("delete from invoices where id=$1 and number is null returning id", [+mInv[1]]);
+      return r.rows.length ? json(res, 200, { ok: true }) : json(res, 400, { error: 'issued_cannot_delete' });
+    }
+    if (mInv && mInv[2] && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      let inv = (await q('select * from invoices where id=$1', [+mInv[1]])).rows[0]; if (!inv) return json(res, 404, { error: 'not_found' });
+      const b = await body(req).catch(() => ({})), st = await invSettings(), act = mInv[2];
+      if (inv.status === 'void' && act !== 'convert') return json(res, 400, { error: 'void' });
+      if (act === 'issue' || act === 'send' || act === 'remind') {
+        if (!inv.number) {
+          const err = invoiceRules({ ...inv, fx_rate: inv.fx_rate }, st); if (err) return json(res, 400, { error: err });
+          if (!(inv.lines || []).length || !(+inv.total > 0)) return json(res, 400, { error: 'empty' });
+          const today = new Date().toISOString().slice(0, 10), issue = inv.issue_date ? ymdOf(inv.issue_date) : today;
+          const due = inv.due_date ? ymdOf(inv.due_date) : ymdOf(new Date(Date.parse(issue) + st.terms * 864e5));
+          const valid = inv.valid_until ? ymdOf(inv.valid_until) : ymdOf(new Date(Date.parse(issue) + 30 * 864e5));
+          inv = (await q(`update invoices set number=$2, status='sent', issue_date=$3, due_date=$4, valid_until=$5, sent_at=now(), updated_at=now() where id=$1 returning *`,
+            [inv.id, await nextNumber(inv.kind), issue, inv.kind === 'invoice' ? due : null, inv.kind === 'quote' ? valid : null])).rows[0];
+          await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_issue', `${inv.number} ${inv.currency} ${inv.total}`]);
+        }
+        if (act === 'send' || act === 'remind') {
+          const to = clean(b.to || inv.bill_to.email, 160).toLowerCase();
+          if (!/^\S+@\S+\.\S+$/.test(to)) return json(res, 400, { error: 'no_email' });
+          const isQ = inv.kind === 'quote', link = `${PUBLIC_URL}/i/${inv.token}`, who = inv.bill_to.name || inv.bill_to.company || '';
+          const paid = +(await q('select coalesce(sum(amount+wht),0) s from invoice_payments where invoice_id=$1', [inv.id])).rows[0].s;
+          const subject = act === 'remind' ? `Reminder: invoice ${inv.number} from ${st.co_name}` : `${isQ ? 'Quotation' : 'Invoice'} ${inv.number} from ${st.co_name}`;
+          await queueMail(to, who, subject, wrapMail(isQ ? 'Your quotation' : act === 'remind' ? 'A friendly reminder' : 'Your invoice',
+            `<p style="color:#5A6472;font-size:15px">${who ? 'Dear ' + esc(firstName(who)) + ',' : 'Hello,'}</p>
+             <p style="color:#5A6472;font-size:15px">${isQ ? `Please find our quotation ${esc(inv.number)} for ${esc(money2(inv.total, inv.currency))}, valid until ${esc(ymdOf(inv.valid_until))}.`
+               : act === 'remind' ? `Invoice ${esc(inv.number)} has ${esc(money2(Math.max(0, +inv.total - paid), inv.currency))} outstanding${inv.due_date ? ', due ' + esc(ymdOf(inv.due_date)) : ''}.`
+               : `Please find invoice ${esc(inv.number)} for ${esc(money2(inv.total, inv.currency))}${inv.due_date ? ', due ' + esc(ymdOf(inv.due_date)) : ''}.`}</p>
+             <p style="margin:18px 0"><a href="${link}" style="background:#0F1B2D;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;display:inline-block;font-weight:600">${isQ ? 'View the quotation' : 'View and pay'}</a></p>
+             <p style="color:#5A6472;font-size:13px">You can print it or save it as a PDF from that page.</p>`), isQ ? 'quote' : 'invoice', null);
+          await q('update invoices set sent_at=now() where id=$1', [inv.id]);
+          await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_' + act, `${inv.number} → ${to}`]);
+          flushMail(3).catch(() => {});
+        }
+        return json(res, 200, { ok: true, number: inv.number, link: `${PUBLIC_URL}/i/${inv.token}` });
+      }
+      if (act === 'payment') {
+        if (inv.kind !== 'invoice' || !inv.number) return json(res, 400, { error: 'issue_first' });
+        if (mInv[3]) { await q('delete from invoice_payments where id=$1 and invoice_id=$2', [+mInv[3], inv.id]); const x = await invoicePaid(inv.id); return json(res, 200, { ok: true, status: x.status }); }
+        const amount = r2(+b.amount || 0), wht = r2(+b.wht || 0);
+        if (!(amount > 0 || wht > 0)) return json(res, 400, { error: 'amount_required' });
+        await q(`insert into invoice_payments(invoice_id, paid_on, amount, wht, wht_cert, method, reference, fx_rate, note, recorded_by) values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+          [inv.id, /^\d{4}-\d{2}-\d{2}$/.test(b.paid_on || '') ? b.paid_on : new Date().toISOString().slice(0, 10), amount, wht, b.wht_cert === true,
+            ['momo', 'bank', 'card', 'cash', 'cheque', 'other'].includes(b.method) ? b.method : 'bank', clean(b.reference, 120) || null, +b.fx_rate > 0 ? +b.fx_rate : null, clean(b.note, 300) || null, u.email]);
+        const x = await invoicePaid(inv.id);
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_payment', `${inv.number} ${inv.currency} ${amount}${wht ? ' + WHT ' + wht : ''}`]);
+        return json(res, 200, { ok: true, status: x.status });
+      }
+      if (act === 'void') {
+        const reason = clean(b.reason, 300); if (!reason) return json(res, 400, { error: 'reason_required' });
+        if (!inv.number) return json(res, 400, { error: 'delete_draft_instead' });
+        await q("update invoices set status='void', voided_at=now(), void_reason=$2, updated_at=now() where id=$1", [inv.id, reason]);
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_void', `${inv.number}: ${reason}`]);
+        return json(res, 200, { ok: true });
+      }
+      if (act === 'convert') {
+        if (inv.kind !== 'quote') return json(res, 400, { error: 'not_a_quote' });
+        const nid = (await q(`insert into invoices(kind, contact_id, deal_id, quote_id, bill_to, currency, fx_rate, fx_date, tax_mode, tax_note, rates, lines, subtotal, discount, taxable, vat, nhil, getfund,
+            total, total_ghs, tax_ghs, notes, wht_rate, created_by, token)
+          select 'invoice', contact_id, deal_id, id, bill_to, currency, fx_rate, fx_date, tax_mode, tax_note, rates, lines, subtotal, discount, taxable, vat, nhil, getfund,
+            total, total_ghs, tax_ghs, notes, wht_rate, $2, $3 from invoices where id=$1 returning id`, [inv.id, u.email, crypto.randomBytes(18).toString('base64url')])).rows[0].id;
+        if (inv.status === 'sent') await q("update invoices set status='accepted', accepted_at=coalesce(accepted_at,now()) where id=$1", [inv.id]);
+        return json(res, 200, { ok: true, id: nid });
+      }
+    }
+    if (p === '/api/invoices/vat.csv' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const m = /^\d{4}-\d{2}$/.test(url.searchParams.get('month') || '') ? url.searchParams.get('month') : new Date().toISOString().slice(0, 7);
+      const { rows } = await q(`select * from invoices where kind='invoice' and number is not null and status <> 'void' and to_char(issue_date,'YYYY-MM')=$1 order by number`, [m]);
+      const cols = ['number', 'issue_date', 'client', 'client_tax_id', 'residency', 'tax_treatment', 'currency', 'fx_rate', 'taxable', 'vat', 'nhil', 'getfund', 'total', 'taxable_ghs', 'vat_ghs', 'nhil_ghs', 'getfund_ghs', 'total_ghs', 'evat_ref'];
+      const csvq = v => /[",\n]/.test(String(v ?? '')) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v ?? '');
+      const lines = [cols.join(',')].concat(rows.map(r => { const fx = r.currency === 'GHS' ? 1 : +r.fx_rate;
+        return [r.number, ymdOf(r.issue_date), r.bill_to.company || r.bill_to.name, r.bill_to.tax_id, r.bill_to.residency, r.tax_mode, r.currency, r.currency === 'GHS' ? '' : r.fx_rate,
+          r.taxable, r.vat, r.nhil, r.getfund, r.total, r2(r.taxable * fx), r2(r.vat * fx), r2(r.nhil * fx), r2(r.getfund * fx), r.total_ghs, r.evat_ref].map(csvq).join(','); }));
+      res.writeHead(200, { 'content-type': 'text/csv; charset=utf-8', 'content-disposition': `attachment; filename="vat-${m}.csv"` });
+      return res.end('﻿' + lines.join('\r\n'));
+    }
+
+    /* ---- the client's page: view, print, pay, accept a quotation ---- */
+    const mPub = p.match(/^\/i\/([A-Za-z0-9_-]{20,40})(?:\/(pay|accept))?$/);
+    if (mPub) {
+      const inv = (await q('select * from invoices where token=$1 and number is not null', [mPub[1]])).rows[0];
+      if (!inv) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
+      const st = await invSettings();
+      if (mPub[2] === 'pay' && req.method === 'POST') {
+        if (rateLimited(ip, 10, 600e3, 'pay')) { res.writeHead(429); return res.end('Too many tries'); }
+        if (!paystackOn(inv.currency) || inv.kind !== 'invoice' || ['paid', 'void'].includes(inv.status)) { res.writeHead(303, { location: `/i/${inv.token}` }); return res.end(); }
+        const paid = +(await q('select coalesce(sum(amount+wht),0) s from invoice_payments where invoice_id=$1', [inv.id])).rows[0].s, due = r2(+inv.total - paid);
+        try {
+          const r = await fetch(`${PAYSTACK}/transaction/initialize`, { method: 'POST', signal: AbortSignal.timeout(15e3),
+            headers: { authorization: 'Bearer ' + PAYSTACK_KEY, 'content-type': 'application/json' },
+            body: JSON.stringify({ email: inv.bill_to.email || st.inv_email || 'info@gothamconsult.com', amount: Math.round(due * 100), currency: inv.currency,
+              reference: `${inv.number}-${crypto.randomBytes(4).toString('hex')}`, callback_url: `${PUBLIC_URL}/i/${inv.token}`, metadata: { invoice_id: inv.id, invoice: inv.number } }) });
+          const j = await r.json(); if (!r.ok || !j.data || !j.data.authorization_url) throw new Error(JSON.stringify(j).slice(0, 200));
+          res.writeHead(303, { location: j.data.authorization_url }); return res.end();
+        } catch (e) { console.error('paystack init', e.message); res.writeHead(303, { location: `/i/${inv.token}?pay=failed` }); return res.end(); }
+      }
+      if (mPub[2] === 'accept' && req.method === 'POST') {
+        if (inv.kind === 'quote' && inv.status === 'sent') {
+          await q("update invoices set status='accepted', accepted_at=now() where id=$1", [inv.id]);
+          await q(`insert into tasks(title, due_at, contact_id, deal_id, created_by, priority) values ($1, now() + interval '1 day', $2, $3, 'website', 'high')`,
+            [`Quotation ${inv.number} accepted by ${inv.bill_to.company || inv.bill_to.name}: send the invoice`, inv.contact_id, inv.deal_id]);
+        }
+        res.writeHead(303, { location: `/i/${inv.token}?accepted=1` }); return res.end();
+      }
+      if (req.method !== 'GET') { res.writeHead(405); return res.end(); }
+      let msg = '', fresh = inv;
+      const ref = url.searchParams.get('reference') || url.searchParams.get('trxref');
+      if (ref && PAYSTACK_KEY) { const x = await paystackRecord(ref).catch(() => null); if (x) { fresh = x; msg = x.status === 'paid' ? 'Thank you. Your payment is received.' : 'Thank you. Your payment is received; a balance remains.'; } }
+      if (url.searchParams.get('pay') === 'failed') msg = 'Online payment could not start. Please try again or use the bank details below.';
+      if (url.searchParams.get('accepted')) msg = 'Thank you. The quotation is accepted; we will send the invoice.';
+      const pays = (await q('select * from invoice_payments where invoice_id=$1', [inv.id])).rows;
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'referrer-policy': 'no-referrer' });
+      return res.end(invoicePage(fresh, pays, st, { msg, payUrl: paystackOn(fresh.currency) ? `/i/${fresh.token}/pay` : null }));
+    }
+    if (p === '/api/hooks/paystack' && req.method === 'POST') {
+      const raw = await rawBody(req, 1e6);
+      if (!PAYSTACK_KEY) return json(res, 503, { error: 'not_configured' });
+      const want = crypto.createHmac('sha512', PAYSTACK_KEY).update(raw).digest('hex'), got = String(req.headers['x-paystack-signature'] || '');
+      if (got.length !== want.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want))) return json(res, 401, { error: 'bad_signature' });
+      let d = {}; try { d = JSON.parse(raw.toString('utf8')); } catch {}
+      json(res, 200, { ok: true });
+      if (d.event === 'charge.success' && d.data && d.data.reference) await paystackRecord(d.data.reference).catch(e => console.error('paystack hook', e.message));
+      return;
+    }
+
     /* ---- AI helper in the back office ---- */
     if (p === '/api/ai' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -3565,6 +3854,146 @@ Registration links: gothamconsult.com/register?e=CODE.\n\n${await askKnowledge()
   await q("insert into notes(contact_id,kind,body,author) values ($1,'whatsapp',$2,'whatsapp AI')", [c.id, 'Sent (AI): ' + answer]);
   if (needsPerson) await q(`insert into tasks(title, due_at, contact_id, created_by, priority, notes) values ($1, now() + interval '4 hours', $2, 'whatsapp AI', 'high', $3)`,
     [`WhatsApp from ${c.full_name || c.company || from}: follow up`, c.id, `The AI answered but they need a person.\n\nThey wrote: ${text.slice(0, 800)}\n\nAI replied: ${answer.slice(0, 800)}`]);
+}
+
+/* ---------- quotes and invoices ----------
+   Ghana tax from 1 January 2026 (Value Added Tax Act 2025): VAT 15%, NHIL 2.5% and GETFund 2.5%, each on the
+   same taxable value, so 20% together. The COVID-19 levy is gone. Rates live in settings so a future budget
+   is a settings change, not a code change; every invoice stores the rates it was made with.
+   Currency: cedis for everyone in Ghana. Bank of Ghana allows EUR/USD invoices only to non-residents or
+   expatriates, paid into a foreign exchange account, at a rate benchmarked to the BoG reference rate; the
+   invoice therefore records the rate and shows the cedi value, which is also what the VAT return needs. */
+const TAX_DEFAULT = { vat: 15, nhil: 2.5, getfund: 2.5, since: '2026-01-01' };
+const INV_KEYS = ['inv_co_name', 'inv_co_address', 'inv_tin', 'inv_vat_registered', 'inv_vat_number', 'inv_terms_days', 'inv_bank_ghs', 'inv_bank_usd', 'inv_bank_eur',
+  'inv_footer', 'inv_email', 'inv_tax_vat', 'inv_tax_nhil', 'inv_tax_getfund'];
+async function invSettings() {
+  const r = Object.fromEntries((await q("select key,value from settings where key = any($1) or key in ('momo_number','momo_name')", [INV_KEYS])).rows.map(x => [x.key, x.value]));
+  return { ...r, co_name: r.inv_co_name || 'Gotham Consult', vat_registered: r.inv_vat_registered === 'yes', terms: +r.inv_terms_days || 14,
+    rates: { vat: +(r.inv_tax_vat ?? TAX_DEFAULT.vat), nhil: +(r.inv_tax_nhil ?? TAX_DEFAULT.nhil), getfund: +(r.inv_tax_getfund ?? TAX_DEFAULT.getfund) } };
+}
+const r2 = n => Math.round((+n + Number.EPSILON) * 100) / 100;
+const CURRENCIES = ['GHS', 'EUR', 'USD'], TAX_MODES = ['standard', 'zero', 'exempt', 'none'];
+function cleanLines(list) {
+  return (Array.isArray(list) ? list : []).slice(0, 60).map(l => ({
+    description: clean(String(l && l.description || ''), 400), qty: Math.max(0, Math.min(1e6, +l.qty || 0)),
+    unit: r2(Math.max(0, Math.min(1e10, +l.unit || 0))), discount: Math.max(0, Math.min(100, +l.discount || 0)) })).filter(l => l.description || l.unit);
+}
+/* The sums. Prices are before tax; each tax is rounded to the pesewa/cent on its own line. */
+function invoiceTotals(inv, rates) {
+  const lines = inv.lines || [];
+  let subtotal = 0, discount = 0;
+  for (const l of lines) { const gross = r2(l.qty * l.unit), off = r2(gross * (l.discount || 0) / 100); subtotal += gross; discount += off; }
+  subtotal = r2(subtotal); discount = r2(discount);
+  const taxable = r2(subtotal - discount), std = inv.tax_mode === 'standard';
+  const vat = std ? r2(taxable * rates.vat / 100) : 0, nhil = std ? r2(taxable * rates.nhil / 100) : 0, getfund = std ? r2(taxable * rates.getfund / 100) : 0;
+  const total = r2(taxable + vat + nhil + getfund), fx = inv.currency === 'GHS' ? 1 : (+inv.fx_rate || 0);
+  return { subtotal, discount, taxable, vat, nhil, getfund, total, total_ghs: r2(total * fx), tax_ghs: r2((vat + nhil + getfund) * fx) };
+}
+/* Check an invoice against the rules before it is saved. Returns an error code or null. */
+function invoiceRules(inv, st) {
+  if (!CURRENCIES.includes(inv.currency)) return 'bad_currency';
+  if (inv.currency !== 'GHS') {
+    if (!inv.bill_to || !['non_resident', 'expatriate'].includes(inv.bill_to.residency)) return 'fx_needs_nonresident';
+    if (!(+inv.fx_rate > 0)) return 'fx_rate_required';
+  }
+  if (inv.tax_mode === 'standard' && !st.vat_registered) return 'not_vat_registered';
+  if (inv.tax_mode === 'zero' && !inv.tax_note) return 'zero_needs_reason';
+  if (inv.tax_mode === 'exempt' && !inv.tax_note) return 'exempt_needs_reason';
+  return null;
+}
+async function nextNumber(kind) {
+  const y = new Date().getFullYear();
+  const n = (await q(`insert into invoice_seq(kind, year, n) values ($1,$2,1) on conflict (kind, year) do update set n = invoice_seq.n + 1 returning n`, [kind, y])).rows[0].n;
+  return `${kind === 'quote' ? 'QUO' : 'INV'}-${y}-${String(n).padStart(4, '0')}`;
+}
+async function invoicePaid(id) {
+  const inv = (await q('select * from invoices where id=$1', [id])).rows[0]; if (!inv || inv.kind !== 'invoice' || inv.status === 'void') return inv;
+  const p = (await q('select coalesce(sum(amount + wht),0) as got from invoice_payments where invoice_id=$1', [id])).rows[0].got;
+  const status = +p >= +inv.total - 0.005 && +inv.total > 0 ? 'paid' : +p > 0 ? 'part_paid' : (inv.sent_at ? 'sent' : 'draft');
+  if (status !== inv.status) {
+    await q(`update invoices set status=$2, paid_at=case when $2='paid' then coalesce(paid_at, now()) else null end, updated_at=now() where id=$1`, [id, status]);
+    if (status === 'paid' && inv.deal_id) await q("insert into notes(deal_id, contact_id, kind, body, author) values ($1,$2,'note',$3,'invoices')", [inv.deal_id, inv.contact_id, `Invoice ${inv.number} paid in full (${inv.currency} ${(+inv.total).toFixed(2)}).`]);
+  }
+  return (await q('select * from invoices where id=$1', [id])).rows[0];
+}
+const money2 = (n, cur) => `${cur} ${(+n || 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+/* The page the client sees at /i/<token>: print it or save it as PDF from the browser. */
+function invoicePage(inv, pays, st, opts = {}) {
+  const b = inv.bill_to || {}, isQ = inv.kind === 'quote', cur = inv.currency, rates = inv.rates || st.rates;
+  const paid = pays.reduce((s, x) => s + (+x.amount) + (+x.wht), 0), balance = r2(+inv.total - paid);
+  const d = x => x ? new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+  const bank = cur === 'GHS' ? st.inv_bank_ghs : cur === 'USD' ? st.inv_bank_usd : st.inv_bank_eur;
+  const taxRows = inv.tax_mode === 'standard'
+    ? `<tr><td>VAT ${rates.vat}%</td><td>${money2(inv.vat, cur)}</td></tr><tr><td>NHIL ${rates.nhil}%</td><td>${money2(inv.nhil, cur)}</td></tr><tr><td>GETFund levy ${rates.getfund}%</td><td>${money2(inv.getfund, cur)}</td></tr>`
+    : `<tr><td>${inv.tax_mode === 'zero' ? 'VAT zero-rated' : inv.tax_mode === 'exempt' ? 'VAT exempt' : 'No VAT charged'}${inv.tax_note ? ` <small>(${esc(inv.tax_note)})</small>` : ''}</td><td>${money2(0, cur)}</td></tr>`;
+  const stamp = inv.status === 'paid' ? 'PAID' : inv.status === 'void' ? 'VOID' : inv.status === 'accepted' ? 'ACCEPTED' : '';
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>${esc((isQ ? 'Quotation ' : 'Invoice ') + (inv.number || 'draft'))} · ${esc(st.co_name)}</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#EDEDE8;font:15px/1.5 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:#0F1B2D}
+.bar{max-width:210mm;margin:16px auto;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding:0 12px}
+.btn{border:0;border-radius:999px;padding:12px 20px;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;min-height:44px}
+.dark{background:#0F1B2D;color:#fff}.gold{background:linear-gradient(135deg,#F4C66A,#C8963E);color:#1a1205}.line{background:#fff;color:#0F1B2D;border:1px solid #D9DCE1}
+.sheet{position:relative;max-width:210mm;margin:0 auto 24px;background:#fff;padding:16mm 16mm 12mm;box-shadow:0 10px 40px rgba(0,0,0,.08);overflow:hidden}
+.kente{height:6px;margin:-16mm -16mm 12mm;background:linear-gradient(90deg,#A9761F 0 25%,#0F1B2D 25% 50%,#1F6B4E 50% 75%,#C9A24B 75%)}
+.top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.co b{font-size:20px}.co div,.meta div{color:#5A6472;font-size:13.5px}
+h1{margin:0;font-size:26px;letter-spacing:.02em;text-align:right}.meta{text-align:right}
+.to{margin:22px 0 16px;display:flex;gap:24px;flex-wrap:wrap}.to div{flex:1 1 220px}.lab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8A6116;font-weight:700;margin-bottom:4px}
+table.items{width:100%;border-collapse:collapse;margin-top:8px}table.items th{text-align:left;font-size:12px;color:#5A6472;border-bottom:2px solid #0F1B2D;padding:8px 6px}table.items th.num{text-align:right}
+table.items td{border-bottom:1px solid #E2E4E7;padding:9px 6px;vertical-align:top}.num{text-align:right;white-space:nowrap}
+.sum{margin-left:auto;margin-top:12px;min-width:280px}.sum td{padding:5px 6px}.sum td:last-child{text-align:right;white-space:nowrap}
+.sum .tot td{border-top:2px solid #0F1B2D;font-weight:800;font-size:17px;padding-top:9px}.sum small{color:#5A6472}
+.box{margin-top:18px;border:1px solid #E2E4E7;border-radius:12px;padding:12px 14px;font-size:13.5px;white-space:pre-wrap}.box b{white-space:normal}
+.foot{margin-top:18px;font-size:12px;color:#8A93A0;border-top:1px solid #E2E4E7;padding-top:10px}
+.stamp{position:absolute;right:18mm;top:58mm;transform:rotate(-12deg);border:4px solid #1F6B4E;color:#1F6B4E;font-weight:900;font-size:34px;padding:4px 16px;border-radius:10px;opacity:.8}
+.stamp.void{border-color:#A1322B;color:#A1322B}.msg{max-width:210mm;margin:0 auto 12px;padding:12px 16px;border-radius:12px;background:#E1EFE8;color:#1F6B4E;font-weight:600}
+@media print{body{background:#fff}.bar,.msg{display:none}.sheet{box-shadow:none;margin:0;max-width:none}}
+@media(max-width:600px){.sheet{padding:18px 16px}.kente{margin:-18px -16px 18px}h1,.meta{text-align:left}.sum{min-width:0;width:100%}}
+</style></head><body>
+${opts.msg ? `<div class="msg">${esc(opts.msg)}</div>` : ''}
+<div class="bar"><button class="btn line" onclick="print()">Print or save as PDF</button>
+${!isQ && opts.payUrl && balance > 0 && inv.status !== 'void' ? `<form method="post" action="${opts.payUrl}" style="margin:0"><button class="btn gold">Pay ${esc(money2(balance, cur))} online</button></form>` : ''}
+${isQ && inv.status === 'sent' ? `<form method="post" action="/i/${inv.token}/accept" style="margin:0"><button class="btn dark">Accept this quotation</button></form>` : ''}</div>
+<div class="sheet"><div class="kente"></div>${stamp ? `<div class="stamp ${stamp === 'VOID' ? 'void' : ''}">${stamp}</div>` : ''}
+<div class="top"><div class="co"><b>${esc(st.co_name)}</b><div>${esc(st.inv_co_address || 'Accra, Ghana')}</div>
+${st.inv_tin ? `<div>TIN: ${esc(st.inv_tin)}</div>` : ''}${st.vat_registered && st.inv_vat_number ? `<div>VAT registration: ${esc(st.inv_vat_number)}</div>` : ''}
+<div>${esc(st.inv_email || 'info@gothamconsult.com')} · +233 55 041 6627</div></div>
+<div class="meta"><h1>${isQ ? 'QUOTATION' : inv.tax_mode === 'standard' ? 'TAX INVOICE' : 'INVOICE'}</h1>
+<div><b>${esc(inv.number || 'Draft')}</b></div><div>Date: ${d(inv.issue_date)}</div>
+${isQ ? (inv.valid_until ? `<div>Valid until: ${d(inv.valid_until)}</div>` : '') : (inv.due_date ? `<div>Due: ${d(inv.due_date)}</div>` : '')}
+${inv.evat_ref ? `<div>E-VAT ref: ${esc(inv.evat_ref)}</div>` : ''}</div></div>
+<div class="to"><div><div class="lab">${isQ ? 'Prepared for' : 'Bill to'}</div><b>${esc(b.company || b.name || '')}</b>${b.company && b.name ? `<div>${esc(b.name)}</div>` : ''}
+${b.address ? `<div style="white-space:pre-wrap">${esc(b.address)}</div>` : ''}${b.country ? `<div>${esc(b.country)}</div>` : ''}${b.tax_id ? `<div>Tax / VAT no.: ${esc(b.tax_id)}</div>` : ''}${b.email ? `<div>${esc(b.email)}</div>` : ''}</div>
+<div><div class="lab">Currency</div><b>${cur}</b>${cur !== 'GHS' ? `<div>Exchange rate: 1 ${cur} = GHS ${(+inv.fx_rate).toFixed(4)} (${d(inv.fx_date || inv.issue_date)})</div>` : ''}</div></div>
+<table class="items"><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead><tbody>
+${(inv.lines || []).map(l => { const g = r2(l.qty * l.unit), off = r2(g * (l.discount || 0) / 100);
+  return `<tr><td style="white-space:pre-wrap">${esc(l.description)}${l.discount ? `<div style="color:#5A6472;font-size:12.5px">Discount ${l.discount}%</div>` : ''}</td><td class="num">${l.qty}</td><td class="num">${money2(l.unit, cur)}</td><td class="num">${money2(g - off, cur)}</td></tr>`; }).join('')}
+</tbody></table>
+<table class="sum"><tr><td>Subtotal${+inv.discount ? ' after discounts' : ''}</td><td>${money2(inv.taxable, cur)}</td></tr>${taxRows}
+<tr class="tot"><td>Total</td><td>${money2(inv.total, cur)}</td></tr>
+${cur !== 'GHS' ? `<tr><td><small>Total in cedis (for VAT)</small></td><td><small>${money2(inv.total_ghs, 'GHS')}</small></td></tr>${inv.tax_mode === 'standard' ? `<tr><td><small>Tax in cedis</small></td><td><small>${money2(inv.tax_ghs, 'GHS')}</small></td></tr>` : ''}` : ''}
+${!isQ && paid > 0 ? `<tr><td>Paid</td><td>${money2(paid, cur)}</td></tr><tr><td><b>Balance due</b></td><td><b>${money2(Math.max(0, balance), cur)}</b></td></tr>` : ''}</table>
+${!isQ ? `<div class="box"><b>How to pay</b>
+${cur === 'GHS' ? `${st.momo_number ? `Mobile Money: ${esc(st.momo_number)} (${esc(st.momo_name || st.co_name)})\n` : ''}${st.inv_bank_ghs ? esc(st.inv_bank_ghs) : ''}` : bank ? esc(bank) : `Please ask us for the ${cur} account details.`}
+Reference: ${esc(inv.number || '')}${+inv.wht_rate ? `\nIf you are required to withhold tax, deduct ${(+inv.wht_rate).toString()}% withholding tax and send us the certificate.` : ''}</div>` : ''}
+${inv.notes ? `<div class="box">${esc(inv.notes)}</div>` : ''}
+<div class="foot">${esc(st.inv_footer || `${st.co_name} · Accra, Ghana · gothamconsult.com`)}${cur !== 'GHS' ? ' · Foreign-currency invoices are issued only to non-residents or expatriates, payable into our foreign exchange account (Bank of Ghana rules).' : ''}</div>
+</div></body></html>`;
+}
+/* Paystack: pay by card or mobile money. GHS and USD; EUR is paid by bank transfer. */
+const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY || '';
+const PAYSTACK = (process.env.PAYSTACK_API_BASE || 'https://api.paystack.co').replace(/\/$/, '');
+const paystackOn = cur => !!PAYSTACK_KEY && ['GHS', 'USD'].includes(cur);
+async function paystackRecord(ref) {
+  const r = await fetch(`${PAYSTACK}/transaction/verify/${encodeURIComponent(ref)}`, { headers: { authorization: 'Bearer ' + PAYSTACK_KEY }, signal: AbortSignal.timeout(15e3) });
+  const j = await r.json().catch(() => ({})), t = j.data || {};
+  if (!r.ok || t.status !== 'success') return null;
+  const id = +(t.metadata && t.metadata.invoice_id); const inv = id && (await q('select * from invoices where id=$1', [id])).rows[0];
+  if (!inv || String(t.currency).toUpperCase() !== inv.currency) return null;
+  await q(`insert into invoice_payments(invoice_id, paid_on, amount, method, reference, note, recorded_by) values ($1, current_date, $2, 'paystack', $3, $4, 'paystack')
+    on conflict (method, reference) where reference is not null and method = 'paystack' do nothing`, [inv.id, r2(t.amount / 100), ref, `Paystack ${t.channel || ''}`.trim()]);
+  return invoicePaid(inv.id);
 }
 
 /* ---------- calendar: every dated thing in one place ----------
