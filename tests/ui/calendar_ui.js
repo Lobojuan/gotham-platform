@@ -26,7 +26,7 @@ for (const [n,opt] of [['desk',{viewport:{width:1440,height:960}}],['phone',devi
   await p.click(`.cal-d[data-day="${td}"] .cal-n`); await p.waitForSelector('#cal-q'); await p.fill('#cal-qt','Calendar quick task'); await p.click('#cal-q button'); await p.waitForTimeout(900);
   console.log(n,'quick add', await p.evaluate(()=>[...document.querySelectorAll('.cal-e span')].some(s=>s.textContent==='Calendar quick task')));
   // open a task
-  await p.click('.cal-e.t-task'); await p.waitForTimeout(700); console.log(n,'task drawer', await p.isVisible('#tf-t'), await p.inputValue('#tf-t').catch(()=>'')); await p.keyboard.press('Escape');
+  await p.click('.cal-e.t-task'); await p.waitForSelector('#cal-pop'); await p.click('#cal-pop .cal-row.hl'); await p.waitForTimeout(700); console.log(n,'task drawer', await p.isVisible('#tf-t'), await p.inputValue('#tf-t').catch(()=>'')); await p.keyboard.press('Escape');
   // week + agenda
   await p.click('#cal-mode [data-m=week]'); await p.waitForTimeout(600); await p.screenshot({path:'/tmp/qa/cal-desk-week.png',fullPage:true});
   await p.click('#cal-mode [data-m=agenda]'); await p.waitForTimeout(600); console.log(n,'agenda days',await p.$$eval('.cal-ad',a=>a.length)); await p.screenshot({path:'/tmp/qa/cal-desk-agenda.png',fullPage:true});

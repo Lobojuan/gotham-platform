@@ -438,6 +438,8 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 .cal-pop-b{overflow:auto;flex:1;min-height:0;margin:0 -4px;padding:0 4px}
 .cal-pop .cal-q{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
 @media(prefers-reduced-motion:reduce){.cal-pop{transition:none}}
+.cal-pop .cal-row.hl{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 18%,transparent)}
+.cal-d .cal-e{pointer-events:auto}
 </style></head><body>
 <div class="kente"></div>
 
@@ -1490,7 +1492,12 @@ async function calView(){
  if($('#cal-mine'))$('#cal-mine').onchange=e=>{CAL.mine=e.target.checked;calSave();calView()};
  document.querySelectorAll('.cal-fc').forEach(b=>b.onclick=()=>{const t=b.dataset.t;CAL.off.has(t)?CAL.off.delete(t):CAL.off.add(t);calSave();calView()});
  const byKey={};rows.forEach(e=>byKey[e.key]=e);
- document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();calOpen(byKey[b.dataset.ck])});
+ /* in the month and week views a click anywhere on a day, even on one of its items, opens that day's pop-up;
+    the item itself opens from there. The agenda list opens items straight away. */
+ document.querySelectorAll('[data-ck]').forEach(b=>b.onclick=ev=>{ev.stopPropagation();const cell=b.closest('.cal-d,.cal-col');
+  if(cell){CAL.sel=cell.dataset.day;document.querySelectorAll('.cal-d.sel').forEach(x=>x.classList.remove('sel'));if(cell.classList.contains('cal-d'))cell.classList.add('sel');
+   calDay(cell.dataset.day,byDay[cell.dataset.day]||[],byKey,false,cell,b.dataset.ck)}
+  else calOpen(byKey[b.dataset.ck])});
  document.querySelectorAll('.cal-d,.cal-more').forEach(c=>c.onclick=ev=>{ev.stopPropagation();CAL.sel=c.dataset.day;
   document.querySelectorAll('.cal-d.sel').forEach(x=>x.classList.remove('sel'));document.querySelector(`.cal-d[data-day="${c.dataset.day}"]`)?.classList.add('sel');
   calDay(c.dataset.day,byDay[c.dataset.day]||[],byKey,false,c.closest('.cal-d')||c)});
@@ -1514,7 +1521,7 @@ async function calMove(e,d){
   toast('Moved to '+new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}));badges();calView();
  }catch(err){toast(err.error==='bad_time'?'A campaign can only move to a future time':'Could not move it')}
 }
-function calDay(d,L,byKey,focus,anchor){
+function calDay(d,L,byKey,focus,anchor,mark){
  const nice=new Date(d+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
  calPopClose();
  const pop=document.createElement('div');pop.id='cal-pop';pop.className='cal-pop';pop.setAttribute('role','dialog');pop.setAttribute('aria-label',nice);
@@ -1532,11 +1539,12 @@ function calDay(d,L,byKey,focus,anchor){
  else pop.classList.add('sheet');
  requestAnimationFrame(()=>pop.classList.add('in'));
  pop.querySelectorAll('[data-ck2]').forEach(b=>b.onclick=()=>{calPopClose();calOpen(byKey[b.dataset.ck2])});
+ if(mark){const m=pop.querySelector(`[data-ck2="${CSS.escape(mark)}"]`);if(m){m.classList.add('hl');m.scrollIntoView({block:'nearest'})}}
  $('#cal-dx').onclick=calPopClose;scrim.onclick=calPopClose;
  $('#cal-q').onsubmit=async ev=>{ev.preventDefault();const t=$('#cal-qt').value.trim();if(!t)return;
   const due=new Date(d+'T'+($('#cal-qh').value||'09:00')+':00');
   try{await api('/api/tasks',{method:'POST',body:JSON.stringify({title:t,due_at:due.toISOString()})});toast('Task added');badges();calPopClose();CAL.sel=d;calView()}catch(e){toast('Could not add it')}};
- (focus||!L.length?$('#cal-qt'):pop.querySelector('button,input')).focus({preventScroll:true});
+ (focus||!L.length?$('#cal-qt'):(mark&&pop.querySelector('.cal-row.hl'))||pop.querySelector('button,input')).focus({preventScroll:true});
 }
 function calPopClose(){$('#cal-pop')?.remove();$('#cal-scrim')?.remove()}
 addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#cal-pop'))calPopClose()});
