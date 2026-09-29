@@ -252,3 +252,11 @@ for reduced motion.
 - **Accountant**: `/api/invoices/pack.xlsx|xero.csv|quickbooks.csv?month=YYYY-MM` (Invoices → For the accountant).
 - **Live rates**: `/api/rates` (open.er-api, cached hourly in settings `fx_cache`), shown in the home ticker and on /invest; the chatbot knows them.
 - **Chatbot**: English questions answered in English; checked fact sheet in assistant.md; only numbers from the knowledge; temperature 0.2.
+- **Insights** (30 Sep): articles are data in `apps/site/content/insights/<slug>.json` (EN + `fr`), listed in `index.json`; rendered by
+  `apps/site/insights_fr.py` into /insights and /insights/<slug> with Article + FAQ JSON-LD. Add a guide = add a JSON file + its slug.
+- **French site**: build makes /fr/... from the English pages and `i18n-fr.js` (same dictionary as the switch); titles in `FR_META`;
+  hreflang both ways; `.fr-missing.txt` lists phrases still in English after a build. The switch moves between twins; Spanish stays in-page.
+- **Visitors**: `/api/hit` beacon from v2.js (no cookies; visitor = daily-salted hash; bots, /admin, signed-in team ignored), enquiries credited to
+  the landing page server-side; back office → Website visitors (`/api/web-stats`). Rows kept 400 days.
+- **Going direct (DNS)**: `scripts/go-direct.sh` after the A records for @ and www point to 84.12.73.59 (Namecheap hosting zone editor;
+  keep MX/mail/TXT). Adds the domains to GOTHAM_HOST in the oracle Caddy .env and www to REDIRECT_HOSTS; deploy-site then serves assets same-origin.

@@ -1,0 +1,115 @@
+{
+  "slug": "invoicing-foreign-currency-ghana",
+  "title": "Invoicing in Dollars or Euros in Ghana: Bank of Ghana Rules",
+  "h1": "Invoicing in dollars or euros in Ghana: the Bank of Ghana rules explained",
+  "description": "Who you may invoice in foreign currency in Ghana, where the money must go, which rate to use, and how to receive SWIFT payments safely and without surprises.",
+  "date": "2026-09-29",
+  "read_minutes": 4,
+  "summary": [
+    "The cedi is the sole legal tender for domestic transactions; a Bank of Ghana notice of late August 2025 allows foreign currency invoices only for expatriates and non-residents.",
+    "Foreign currency proceeds must be paid into a Foreign Exchange Account (FEA) with a licensed bank, and exchange rates must reflect commercial bank market rates benchmarked to the Bank of Ghana reference rate.",
+    "Foreign currency pricing is banned in areas such as domestic contracts, real estate, vehicles, school fees, hotels, airline tickets, retail and online sales.",
+    "For SWIFT payments, give your SWIFT/BIC and account number (Ghana does not use IBAN), agree who pays the charges, and verify any change of bank details by phone."
+  ],
+  "body_html": "<h2>The rule in one paragraph</h2>\n<p>In late August 2025 the Bank of Ghana (BoG) issued a notice to banks and the public on unauthorised foreign exchange transactions, under the Foreign Exchange Act, 2006 (Act 723). It restated that the Ghana cedi is the sole legal tender for domestic transactions, and that residents may not price, advertise, invoice or accept payment in foreign currency unless the BoG has specifically licensed them. The one practical exception for ordinary businesses is invoicing expatriates and non-residents, subject to conditions.</p>\n\n<h2>Who you may invoice in foreign currency</h2>\n<ul>\n<li>Non-residents, for example an overseas client paying for services from abroad.</li>\n<li>Expatriates (foreign nationals).</li>\n</ul>\n<p>Ghanaian resident companies and individuals must be invoiced in cedis, even where the underlying cost is in dollars. The notice specifically lists domestic contracts among the transactions that may not be priced in foreign currency. Where it is unclear whether a customer counts as an expatriate or non-resident, ask your bank how it applies the notice before you issue the invoice.</p>\n\n<h2>Where the money must go</h2>\n<p>Proceeds of foreign currency invoices must be paid into a Foreign Exchange Account (FEA) with a licensed bank in Ghana. Banks offer more than one type of foreign currency account, and the rules on what may be credited and withdrawn differ, so ask your bank to confirm that the account on your invoice is the right one for this purpose.</p>\n\n<h2>Which exchange rate to use</h2>\n<p>Exchange rates used on foreign currency invoices must reflect the prevailing market rates of commercial banks and be benchmarked against the BoG's published reference rate. In practice, state on the invoice the rate you used and its date, and keep a record of the BoG reference rate for that day.</p>\n\n<h2>Where foreign currency pricing is prohibited</h2>\n<p>The BoG named the following as areas where residents may not quote, invoice or accept payment in foreign currency:</p>\n<ul>\n<li>school fees;</li>\n<li>vehicle sales and rentals;</li>\n<li>real estate sales and rentals;</li>\n<li>airline tickets;</li>\n<li>domestic contracts;</li>\n<li>retail shopping and online sales;</li>\n<li>hotel accommodation.</li>\n</ul>\n<p>The BoG said it will strictly enforce compliance and that violators face sanctions and possible legal action under Act 723.</p>\n\n<h2>VAT on invoices to non-residents</h2>\n<p>Exports of goods and services are zero-rated for VAT. A service supplied to an overseas client may therefore carry no VAT, but only if it meets the conditions for an export. Confirm this with the Ghana Revenue Authority or your adviser, and issue the invoice through the E-VAT system if you are VAT-registered.</p>\n\n<h2>Receiving an international (SWIFT) payment</h2>\n<h3>Details to give your client</h3>\n<ul>\n<li>the exact account name as held by the bank;</li>\n<li>the account number;</li>\n<li>the bank's name and address;</li>\n<li>the bank's SWIFT/BIC code;</li>\n<li>the currency of the account;</li>\n<li>any intermediary (correspondent) bank details your bank gives you for that currency.</li>\n</ul>\n<p>Ghana does not use the IBAN format, and it does not appear on the lists of IBAN countries. If a client's payment system asks for an IBAN, they should use the account number field, or the option for countries without IBAN, together with your SWIFT/BIC.</p>\n<h3>Intermediary banks and charges</h3>\n<p>Dollar and euro payments to Ghana often pass through one or more correspondent banks. Who bears the charges depends on the option the sender chooses:</p>\n<table>\n<thead><tr><th>Option</th><th>Who pays</th><th>Effect for you</th></tr></thead>\n<tbody>\n<tr><td>OUR</td><td>Sender pays all charges</td><td>Full amount normally arrives, subject to your own bank's incoming fee</td></tr>\n<tr><td>SHA</td><td>Charges shared</td><td>Each intermediary may deduct its fee, so the payment can arrive short</td></tr>\n<tr><td>BEN</td><td>Recipient pays all charges</td><td>All fees are deducted from the amount you receive</td></tr>\n</tbody>\n</table>\n<p>SHA is the common default, which is why invoices are often paid a little short. Put a clause in your contract or invoice asking for payment \"OUR, all bank charges for the payer's account\", and agree how any shortfall will be handled.</p>\n\n<h2>Protect yourself against invoice-redirection fraud</h2>\n<p>Business email compromise is one of the most financially damaging online crimes. A typical scheme is a fake message, apparently from a supplier, asking for payment to an updated bank account. To protect your business and your clients:</p>\n<ul>\n<li>print your bank details on every invoice and tell clients they will never change by email alone;</li>\n<li>verify any change of bank details, in either direction, by calling a phone number you already hold, not one given in the message;</li>\n<li>check email addresses and domains carefully for small spelling changes;</li>\n<li>turn on multi-factor authentication for email and banking;</li>\n<li>treat urgent payment requests with extra suspicion.</li>\n</ul>\n\n<h2>How Gotham Consult can help</h2>\n<p>Gotham Consult helps businesses in Ghana structure their contracts and invoicing so that foreign currency is used only where permitted, sets up the right accounts with their bank, and designs simple payment verification procedures. Where a question needs a formal legal or Bank of Ghana view, we work with licensed advisers.</p>",
+  "faq": [
+    {
+      "q": "Can I invoice a Ghanaian company in dollars if our contract is in dollars?",
+      "a": "Under the BoG notice, foreign currency invoices are permitted only for expatriates and non-residents, and domestic contracts are listed among transactions that may not be priced in foreign currency. Price and invoice resident customers in cedis unless you hold a specific BoG licence."
+    },
+    {
+      "q": "What is the IBAN for my Ghanaian bank account?",
+      "a": "There is none. Ghana does not use IBAN; your client needs your account number and your bank's SWIFT/BIC code, plus any intermediary bank details your bank provides."
+    },
+    {
+      "q": "Why did I receive less than the invoiced amount?",
+      "a": "The payment was probably sent with shared (SHA) charges, so intermediary banks deducted fees along the way. Ask clients to pay with the OUR option and put this in your contract."
+    },
+    {
+      "q": "Which exchange rate should I use on a foreign currency invoice?",
+      "a": "The rate must reflect prevailing commercial bank market rates and be benchmarked against the Bank of Ghana's published reference rate. Record the rate and its date on the invoice."
+    },
+    {
+      "q": "A supplier has emailed new bank details. What should I do?",
+      "a": "Do not pay until you have confirmed the change by phoning the supplier on a number you already hold. Requests to change bank details by email are a classic sign of invoice-redirection fraud."
+    }
+  ],
+  "sources": [
+    {
+      "title": "Bank of Ghana: Notice No. BG/GOV/SEC/2025/26, notice on unauthorised foreign exchange transactions (PDF)",
+      "url": "https://www.bog.gov.gh/wp-content/uploads/2025/08/NOTICE-NO.-BG-GOV-SEC-2025-26-NOTICE-ON-UNAUTHORISED-FOREIGN-EXCHANGE-TRANSACTIONS.pdf"
+    },
+    {
+      "title": "Ghana News Agency: Bank of Ghana tightens rules on foreign currency invoicing, exempts expatriates and non-residents",
+      "url": "https://gna.org.gh/2025/08/bank-of-ghana-tightens-rules-on-foreign-currency-invoicing-exempts-expatriates-and-non-residents/"
+    },
+    {
+      "title": "GBC: BoG warns against dollar pricing, reiterates cedi as sole legal tender",
+      "url": "https://www.gbcghanaonline.com/news/business/bog-warns-against-dollar-pricing/2025/"
+    },
+    {
+      "title": "Ghana Business News: Bank of Ghana tightens rules on foreign currency invoicing (29 August 2025)",
+      "url": "https://www.ghanabusinessnews.com/2025/08/29/bank-of-ghana-tightens-rules-on-foreign-currency-invoicing-exempts-expatriates-and-non-residents/"
+    },
+    {
+      "title": "Modern Ghana: Use only the cedi for local transactions, BoG cautions",
+      "url": "https://www.modernghana.com/news/1427463/use-only-the-cedi-for-local-transactions-bog.html"
+    },
+    {
+      "title": "PwC Worldwide Tax Summaries: Ghana, corporate, other taxes (VAT on exports)",
+      "url": "https://taxsummaries.pwc.com/ghana/corporate/other-taxes"
+    },
+    {
+      "title": "IBAN.com: IBAN structure and country list",
+      "url": "https://www.iban.com/structure"
+    },
+    {
+      "title": "Wise: SWIFT/BIC codes in Ghana",
+      "url": "https://wise.com/gb/swift-codes/countries/ghana"
+    },
+    {
+      "title": "PaymentBrief: SWIFT OUR, SHA, BEN, why payments arrive short",
+      "url": "https://paymentbrief.com/articles/swift-charge-options-our-sha-ben/"
+    },
+    {
+      "title": "FBI: Business email compromise",
+      "url": "https://www.fbi.gov/how-we-can-help-you/scams-and-safety/common-frauds-and-scams/business-email-compromise"
+    }
+  ],
+  "last_reviewed": "Last reviewed: 29 September 2026. This is general information, not legal or tax advice.",
+  "fr": {
+    "title": "Facturer en dollars ou en euros au Ghana : règles de la BoG",
+    "h1": "Facturer en dollars ou en euros au Ghana : les règles de la Banque du Ghana",
+    "description": "Qui peut être facturé en devises au Ghana, sur quel compte encaisser, quel taux appliquer, et comment recevoir un virement SWIFT sans mauvaise surprise.",
+    "summary": [
+      "Le cedi est la seule monnaie ayant cours légal pour les transactions intérieures ; un avis de la Banque du Ghana de fin août 2025 n'autorise la facturation en devises qu'aux expatriés et aux non-résidents.",
+      "Les recettes en devises doivent être versées sur un compte en devises (Foreign Exchange Account, FEA) auprès d'une banque agréée, et le taux de change doit refléter les taux du marché bancaire, alignés sur le taux de référence de la Banque du Ghana.",
+      "La tarification en devises est interdite notamment pour les contrats domestiques, l'immobilier, les véhicules, les frais de scolarité, l'hôtellerie, les billets d'avion, le commerce de détail et la vente en ligne.",
+      "Pour un virement SWIFT, communiquez votre code SWIFT/BIC et votre numéro de compte (le Ghana n'utilise pas l'IBAN), convenez de qui supporte les frais et vérifiez par téléphone tout changement de coordonnées bancaires."
+    ],
+    "body_html": "<h2>La règle en un paragraphe</h2>\n<p>Fin août 2025, la Banque du Ghana (Bank of Ghana, BoG) a publié un avis aux banques et au public sur les opérations de change non autorisées, en application de la loi de 2006 sur les changes (Foreign Exchange Act, 2006, Act 723). Elle y rappelle que le cedi ghanéen est la seule monnaie ayant cours légal pour les transactions intérieures et que les résidents ne peuvent pas fixer de prix, faire de publicité, facturer ni accepter de paiement en devises sans licence spécifique de la BoG. La seule exception pratique pour une entreprise ordinaire est la facturation aux expatriés et aux non-résidents, sous conditions.</p>\n\n<h2>Qui peut être facturé en devises ?</h2>\n<ul>\n<li>Les non-résidents, par exemple un client établi à l'étranger qui paie des prestations depuis l'étranger.</li>\n<li>Les expatriés (ressortissants étrangers).</li>\n</ul>\n<p>Les sociétés et particuliers résidents au Ghana doivent être facturés en cedis, même lorsque le coût sous-jacent est en dollars. L'avis cite expressément les contrats domestiques parmi les transactions qui ne peuvent pas être libellées en devises. En cas de doute sur la qualité d'expatrié ou de non-résident d'un client, demandez à votre banque comment elle applique l'avis avant d'émettre la facture.</p>\n\n<h2>Sur quel compte encaisser ?</h2>\n<p>Le produit des factures en devises doit être versé sur un compte en devises (Foreign Exchange Account, FEA) ouvert auprès d'une banque agréée au Ghana. Les banques proposent plusieurs types de comptes en devises, avec des règles différentes sur ce qui peut y être crédité ou retiré : demandez à votre banque de confirmer que le compte indiqué sur votre facture est bien celui qui convient.</p>\n\n<h2>Quel taux de change appliquer ?</h2>\n<p>Les taux de change utilisés sur les factures en devises doivent refléter les taux du marché pratiqués par les banques commerciales et être alignés sur le taux de référence publié par la BoG. En pratique, indiquez sur la facture le taux retenu et sa date, et conservez une trace du taux de référence de la BoG du jour.</p>\n\n<h2>Où la tarification en devises est-elle interdite ?</h2>\n<p>La BoG a cité les domaines suivants, dans lesquels les résidents ne peuvent ni proposer de prix, ni facturer, ni accepter de paiement en devises :</p>\n<ul>\n<li>les frais de scolarité ;</li>\n<li>la vente et la location de véhicules ;</li>\n<li>la vente et la location immobilières ;</li>\n<li>les billets d'avion ;</li>\n<li>les contrats domestiques ;</li>\n<li>le commerce de détail et la vente en ligne ;</li>\n<li>l'hébergement hôtelier.</li>\n</ul>\n<p>La BoG a indiqué qu'elle veillerait strictement au respect de ces règles et que les contrevenants s'exposent à des sanctions et à d'éventuelles poursuites en vertu de la loi 723.</p>\n\n<h2>TVA sur les factures adressées à des non-résidents</h2>\n<p>Les exportations de biens et de services sont soumises à la TVA au taux zéro. Une prestation fournie à un client étranger peut donc être facturée sans TVA, mais seulement si elle remplit les conditions d'une exportation. Vérifiez ce point auprès de la Ghana Revenue Authority ou de votre conseiller, et émettez la facture via le système E-VAT si vous êtes immatriculé à la TVA.</p>\n\n<h2>Recevoir un virement international (SWIFT)</h2>\n<h3>Informations à communiquer à votre client</h3>\n<ul>\n<li>l'intitulé exact du compte tel qu'enregistré par la banque ;</li>\n<li>le numéro de compte ;</li>\n<li>le nom et l'adresse de la banque ;</li>\n<li>le code SWIFT/BIC de la banque ;</li>\n<li>la devise du compte ;</li>\n<li>les coordonnées de la banque intermédiaire (correspondante) que votre banque vous communique pour cette devise.</li>\n</ul>\n<p>Le Ghana n'utilise pas le format IBAN et ne figure pas sur les listes des pays IBAN. Si le système de paiement de votre client exige un IBAN, il doit utiliser le champ « numéro de compte », ou l'option prévue pour les pays sans IBAN, avec votre code SWIFT/BIC.</p>\n<h3>Banques intermédiaires et frais</h3>\n<p>Les virements en dollars et en euros vers le Ghana transitent souvent par une ou plusieurs banques correspondantes. La répartition des frais dépend de l'option choisie par l'émetteur :</p>\n<table>\n<thead><tr><th>Option</th><th>Qui paie</th><th>Conséquence pour vous</th></tr></thead>\n<tbody>\n<tr><td>OUR</td><td>L'émetteur paie tous les frais</td><td>Le montant intégral arrive normalement, sous réserve des frais de réception de votre propre banque</td></tr>\n<tr><td>SHA</td><td>Frais partagés</td><td>Chaque banque intermédiaire peut prélever ses frais : le montant reçu peut être inférieur</td></tr>\n<tr><td>BEN</td><td>Le bénéficiaire paie tous les frais</td><td>Tous les frais sont déduits du montant que vous recevez</td></tr>\n</tbody>\n</table>\n<p>L'option SHA est la plus courante par défaut, d'où des factures souvent réglées avec un léger manque. Prévoyez dans votre contrat ou sur votre facture une clause demandant un paiement « OUR, tous frais bancaires à la charge du payeur », et convenez du traitement d'un éventuel écart.</p>\n\n<h2>Se protéger contre la fraude au changement de RIB</h2>\n<p>La compromission de messagerie professionnelle (fraude au faux fournisseur) figure parmi les cybercrimes les plus coûteux. Un scénario classique est un faux message, apparemment envoyé par un fournisseur, demandant de payer sur un nouveau compte bancaire. Pour protéger votre entreprise et vos clients :</p>\n<ul>\n<li>imprimez vos coordonnées bancaires sur chaque facture et prévenez vos clients qu'elles ne changeront jamais par simple courriel ;</li>\n<li>vérifiez tout changement de coordonnées bancaires, dans un sens comme dans l'autre, en appelant un numéro que vous connaissez déjà, et non celui figurant dans le message ;</li>\n<li>examinez attentivement les adresses électroniques et les noms de domaine pour repérer de légères modifications d'orthographe ;</li>\n<li>activez l'authentification multifacteur pour la messagerie et la banque en ligne ;</li>\n<li>redoublez de méfiance face aux demandes de paiement urgentes.</li>\n</ul>\n\n<h2>Comment Gotham Consult peut vous aider</h2>\n<p>Gotham Consult aide les entreprises au Ghana à structurer leurs contrats et leur facturation afin que les devises ne soient utilisées que lorsque c'est autorisé, à ouvrir les bons comptes auprès de leur banque et à mettre en place des procédures simples de vérification des paiements. Lorsqu'une question exige un avis juridique formel ou une position de la Banque du Ghana, nous travaillons avec des conseillers agréés.</p>",
+    "faq": [
+      {
+        "q": "Puis-je facturer une société ghanéenne en dollars si notre contrat est en dollars ?",
+        "a": "Selon l'avis de la BoG, la facturation en devises n'est autorisée que pour les expatriés et les non-résidents, et les contrats domestiques figurent parmi les transactions qui ne peuvent pas être libellées en devises. Facturez vos clients résidents en cedis, sauf licence spécifique de la BoG."
+      },
+      {
+        "q": "Quel est l'IBAN de mon compte bancaire ghanéen ?",
+        "a": "Il n'y en a pas. Le Ghana n'utilise pas l'IBAN : votre client a besoin de votre numéro de compte et du code SWIFT/BIC de votre banque, ainsi que des coordonnées de la banque intermédiaire fournies par votre banque."
+      },
+      {
+        "q": "Pourquoi ai-je reçu moins que le montant facturé ?",
+        "a": "Le virement a probablement été émis avec l'option de frais partagés (SHA) : les banques intermédiaires ont prélevé leurs frais en chemin. Demandez à vos clients de payer avec l'option OUR et prévoyez-le dans votre contrat."
+      },
+      {
+        "q": "Quel taux de change utiliser sur une facture en devises ?",
+        "a": "Le taux doit refléter les taux du marché des banques commerciales et être aligné sur le taux de référence publié par la Banque du Ghana. Indiquez le taux et sa date sur la facture."
+      },
+      {
+        "q": "Un fournisseur m'a envoyé de nouvelles coordonnées bancaires par courriel. Que faire ?",
+        "a": "Ne payez pas avant d'avoir confirmé le changement en appelant le fournisseur à un numéro que vous connaissez déjà. Une demande de changement de coordonnées par courriel est un signe classique de fraude au changement de RIB."
+      }
+    ],
+    "last_reviewed": "Dernière mise à jour : 29 septembre 2026. Ces informations sont d'ordre général et ne constituent pas un conseil juridique ou fiscal."
+  }
+}

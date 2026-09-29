@@ -1,0 +1,119 @@
+{
+  "slug": "ghana-vat-2026-explained",
+  "title": "Ghana VAT in 2026: VAT, NHIL and GETFund Explained",
+  "h1": "Ghana VAT in 2026: VAT, NHIL and GETFund explained for businesses",
+  "description": "Ghana's VAT Act 2025 in practice: 15% VAT plus 2.5% NHIL and 2.5% GETFund on one base, who must register, E-VAT invoicing and withholding, with an example.",
+  "date": "2026-09-29",
+  "read_minutes": 4,
+  "summary": [
+    "Since 1 January 2026, the VAT Act, 2025 (Act 1151) applies VAT at 15%, NHIL at 2.5% and GETFund at 2.5% on the same base: 20% in total, down from an effective 21.9%.",
+    "The 1% COVID-19 levy and the VAT flat rate scheme are abolished, and NHIL and GETFund can now be claimed as input tax.",
+    "Suppliers of services must register for VAT regardless of turnover; the goods threshold rises to GHS 750,000 a year.",
+    "VAT invoices go through the GRA's certified invoicing system (E-VAT) or a fiscal electronic device; withholding VAT and withholding tax still apply."
+  ],
+  "body_html": "<h2>What changed on 1 January 2026</h2>\n<p>The Value Added Tax Act, 2025 (Act 1151) took effect on 1 January 2026. The Ghana Revenue Authority (GRA) summarises the main changes as follows:</p>\n<ul>\n<li>VAT stays at 15%, and the National Health Insurance Levy (NHIL) and Ghana Education Trust Fund (GETFund) Levy stay at 2.5% each, all computed on the same base. The total is 20%.</li>\n<li>The COVID-19 Health Recovery Levy has been abolished.</li>\n<li>NHIL and GETFund are recoupled with VAT, so registered businesses can deduct them as input tax.</li>\n<li>The VAT Flat Rate Scheme, previously 3% for retailers and 5% for real estate, has been abolished; affected businesses now charge the standard rate.</li>\n<li>The registration threshold for suppliers of goods rises from GHS 200,000 to GHS 750,000.</li>\n</ul>\n<p>Advisers put the effective rate before the reform at 21.9%. That figure came from charging VAT on top of the levies, which is no longer done.</p>\n\n<h2>Worked example: GHS 10,000 of services</h2>\n<p>A VAT-registered consultancy invoices a Ghanaian client GHS 10,000 before tax.</p>\n<table>\n<thead><tr><th>Line</th><th>Rate</th><th>2026 (Act 1151)</th><th>Before 2026 (for comparison)</th></tr></thead>\n<tbody>\n<tr><td>Fee</td><td></td><td>GHS 10,000</td><td>GHS 10,000</td></tr>\n<tr><td>NHIL</td><td>2.5%</td><td>GHS 250</td><td>GHS 250</td></tr>\n<tr><td>GETFund Levy</td><td>2.5%</td><td>GHS 250</td><td>GHS 250</td></tr>\n<tr><td>COVID-19 levy</td><td>1%</td><td>Abolished</td><td>GHS 100</td></tr>\n<tr><td>VAT</td><td>15%</td><td>GHS 1,500 (on GHS 10,000)</td><td>GHS 1,590 (on GHS 10,600)</td></tr>\n<tr><td>Invoice total</td><td></td><td>GHS 12,000</td><td>GHS 12,190</td></tr>\n</tbody>\n</table>\n<p>The invoice must show VAT, NHIL and GETFund on separate lines. A VAT-registered client can now normally claim the full GHS 2,000 as input tax, where before the levies were a cost.</p>\n<h3>If your client withholds tax</h3>\n<p>Two separate withholding regimes can reduce the cash you receive.</p>\n<ul>\n<li>Withholding VAT. Clients appointed by the GRA as VAT withholding agents withhold 7% of the taxable value on standard-rated supplies, here GHS 700. They issue a Withholding VAT Credit Certificate, which you use as a credit in your VAT return.</li>\n<li>Withholding income tax. A resident business paying for services above GHS 2,000 withholds 7.5%. Applied to the GHS 10,000 fee, that is GHS 750, credited against your income tax.</li>\n</ul>\n<p>In this example, a client who is a VAT withholding agent would pay GHS 10,550 (GHS 12,000 less GHS 700 and GHS 750) and give you two certificates. The example assumes income tax withholding applies to the fee before VAT; confirm the base with your adviser or the GRA. The GRA's withholding VAT guidance predates Act 1151, so check whether it has been updated. Payments to non-residents for services generally attract 20% withholding tax as a final tax.</p>\n\n<h2>Who must register for VAT</h2>\n<ul>\n<li>Suppliers of services: must register whatever their turnover, unless the Commissioner-General permits otherwise.</li>\n<li>Suppliers of goods: must register once taxable supplies exceed GHS 750,000 in any 12-month period. Registration is also triggered earlier if supplies exceed GHS 62,500 in one month, GHS 187,500 in three months or GHS 375,000 in six months.</li>\n<li>Non-resident suppliers of digital services must also register.</li>\n</ul>\n<p>Penalties are heavier. Failure to register now attracts a minimum of three times the tax that should have been paid. Unregistered importers pay upfront VAT of 20% of the customs value, up from 12.5%.</p>\n\n<h2>E-VAT and certified invoicing</h2>\n<p>E-VAT is the GRA's electronic invoicing system for VAT-registered businesses. Each E-VAT receipt carries the Commissioner-General's signature, a QR code, an exact timestamp, a serial number and a machine registration code. The GRA offers a complete invoicing system free of charge, or a version that integrates with your existing software. You request it by writing to your Taxpayer Service Centre.</p>\n<p>Under Act 1151, VAT returns are increasingly based on transaction data captured through these systems, so invoices issued outside them are a compliance risk.</p>\n\n<h2>Filing and payment</h2>\n<ul>\n<li>VAT returns and payment: by the last working day of the month following the month concerned.</li>\n<li>Withholding VAT returns: by the 15th of the following month.</li>\n<li>Income tax withholding: within 15 days after the end of the month.</li>\n</ul>\n\n<h2>Practical checklist</h2>\n<ul>\n<li>Update invoice templates to show VAT, NHIL and GETFund separately, and issue them through E-VAT.</li>\n<li>Quote prices exclusive of VAT in contracts and state the rate that applies.</li>\n<li>Reconcile withholding certificates monthly so that credits are not lost.</li>\n<li>Former flat rate businesses can claim input tax on declared inventory, but only within six months from the date the deduction accrued.</li>\n<li>Exports of goods and services are zero-rated; check that your export services meet the conditions.</li>\n</ul>\n\n<h2>How Gotham Consult can help</h2>\n<p>Gotham Consult registers new and foreign-owned businesses for TIN and VAT, sets up compliant E-VAT invoicing, and builds a monthly filing calendar for VAT, withholding and SSNIT. We work with licensed tax practitioners where a formal tax opinion is needed.</p>",
+  "faq": [
+    {
+      "q": "Is the effective VAT rate in Ghana 20% or 21.9%?",
+      "a": "Since 1 January 2026 it is 20%: VAT at 15% plus NHIL and GETFund at 2.5% each, all on the same base. The 21.9% figure applied before the reform."
+    },
+    {
+      "q": "My consultancy has low turnover. Must I register for VAT?",
+      "a": "Generally yes. Under Act 1151, suppliers of services must register regardless of turnover unless the Commissioner-General permits otherwise."
+    },
+    {
+      "q": "Can I claim NHIL and GETFund as input tax?",
+      "a": "Yes. Since the levies were recoupled with VAT on 1 January 2026, VAT-registered businesses can deduct them as input tax, subject to the normal rules."
+    },
+    {
+      "q": "What is withholding VAT?",
+      "a": "Clients appointed as VAT withholding agents withhold 7% of the taxable value of standard-rated supplies and give you a credit certificate. You offset it in your VAT return."
+    },
+    {
+      "q": "Do I charge VAT on services to overseas clients?",
+      "a": "Exports of goods and services are zero-rated, so no VAT is charged if the supply qualifies as an export. Confirm the conditions for your service with the GRA or your adviser."
+    }
+  ],
+  "sources": [
+    {
+      "title": "GRA: Notice to all VAT registered taxpayers",
+      "url": "https://gra.gov.gh/news/portfolio/notice-to-all-vat-registered-taxpayers/"
+    },
+    {
+      "title": "GRA: Value Added Tax",
+      "url": "https://gra.gov.gh/domestic-tax/tax-types/vat/"
+    },
+    {
+      "title": "GRA: E-VAT",
+      "url": "https://gra.gov.gh/e-services/e-vat/"
+    },
+    {
+      "title": "GRA: VAT withholding",
+      "url": "https://gra.gov.gh/domestic-tax/tax-types/vat-withholding/"
+    },
+    {
+      "title": "GRA: Withholding tax",
+      "url": "https://gra.gov.gh/domestic-tax/tax-types/withholding-tax/"
+    },
+    {
+      "title": "EY Ghana: Reference guide to the new VAT Act, 2025 (Act 1151), January 2026 (PDF)",
+      "url": "https://ukgcc.com.gh/wp-content/uploads/2026/01/EY-Ghana-Reference-Guide-to-the-new-VAT-Act-2025-Act-1151_Jan-2026.pdf"
+    },
+    {
+      "title": "KPMG Ghana: The new VAT Act (Act 1151) and all you need to know (PDF)",
+      "url": "https://assets.kpmg.com/content/dam/kpmg/gh/pdf/Tax%20Flash%20Alert-2026.pdf"
+    },
+    {
+      "title": "Crowe Ghana: Ghana VAT reform 2026, a practical guide for businesses",
+      "url": "https://www.crowe.com/gh/news/ghana-vat-reform-2026"
+    },
+    {
+      "title": "PwC Worldwide Tax Summaries: Ghana, corporate, other taxes",
+      "url": "https://taxsummaries.pwc.com/ghana/corporate/other-taxes"
+    },
+    {
+      "title": "PwC Worldwide Tax Summaries: Ghana, corporate, withholding taxes",
+      "url": "https://taxsummaries.pwc.com/ghana/corporate/withholding-taxes"
+    },
+    {
+      "title": "Graphic Online: GRA announces overhaul, VAT rate cut, flat rate scheme scrapped, COVID levy abolished",
+      "url": "https://www.graphic.com.gh/business/business-news/gra-announces-overhaul-vat-rate-cut-flat-rate-scheme-scrapped-covid-levy-abolished-from-jan-1.html"
+    }
+  ],
+  "last_reviewed": "Last reviewed: 29 September 2026. This is general information, not legal or tax advice.",
+  "fr": {
+    "title": "TVA au Ghana en 2026 : TVA, NHIL et GETFund expliqués",
+    "h1": "TVA au Ghana en 2026 : TVA, NHIL et GETFund expliqués aux entreprises",
+    "description": "La loi TVA 2025 du Ghana en pratique : TVA 15 % plus NHIL et GETFund 2,5 % sur une même base, qui doit s'immatriculer, E-VAT et retenues, avec un exemple.",
+    "summary": [
+      "Depuis le 1er janvier 2026, la loi TVA de 2025 (Act 1151) applique la TVA à 15 %, le NHIL à 2,5 % et le GETFund à 2,5 % sur une même base : 20 % au total, contre un taux effectif de 21,9 % auparavant.",
+      "Le prélèvement COVID-19 de 1 % et le régime forfaitaire de TVA sont supprimés, et le NHIL et le GETFund sont désormais déductibles comme TVA d'amont.",
+      "Les prestataires de services doivent s'immatriculer à la TVA quel que soit leur chiffre d'affaires ; le seuil pour les biens passe à 750 000 GHS par an.",
+      "Les factures passent par le système de facturation certifiée de la GRA (E-VAT) ou un dispositif fiscal électronique ; la retenue de TVA et la retenue à la source restent applicables."
+    ],
+    "body_html": "<h2>Ce qui a changé le 1er janvier 2026</h2>\n<p>La loi de 2025 sur la taxe sur la valeur ajoutée (Value Added Tax Act, 2025, Act 1151) est entrée en vigueur le 1er janvier 2026. La Ghana Revenue Authority (GRA) résume ainsi les principaux changements :</p>\n<ul>\n<li>La TVA reste à 15 %, et le prélèvement pour l'assurance maladie nationale (NHIL) ainsi que le prélèvement pour le fonds d'éducation (GETFund) restent à 2,5 % chacun, tous calculés sur la même base. Le total est de 20 %.</li>\n<li>Le prélèvement COVID-19 (COVID-19 Health Recovery Levy) est supprimé.</li>\n<li>Le NHIL et le GETFund sont réintégrés au mécanisme de la TVA : les entreprises immatriculées peuvent les déduire comme TVA d'amont.</li>\n<li>Le régime forfaitaire de TVA, auparavant de 3 % pour les détaillants et de 5 % pour l'immobilier, est supprimé ; les entreprises concernées appliquent désormais le taux normal.</li>\n<li>Le seuil d'immatriculation des fournisseurs de biens passe de 200 000 GHS à 750 000 GHS.</li>\n</ul>\n<p>Selon les cabinets de conseil, le taux effectif avant la réforme était de 21,9 %, car la TVA s'appliquait sur un montant incluant les prélèvements. Ce n'est plus le cas.</p>\n\n<h2>Exemple chiffré : 10 000 GHS de prestations de services</h2>\n<p>Un cabinet de conseil immatriculé à la TVA facture 10 000 GHS hors taxes à un client ghanéen.</p>\n<table>\n<thead><tr><th>Ligne</th><th>Taux</th><th>2026 (loi 1151)</th><th>Avant 2026 (comparaison)</th></tr></thead>\n<tbody>\n<tr><td>Honoraires</td><td></td><td>10 000 GHS</td><td>10 000 GHS</td></tr>\n<tr><td>NHIL</td><td>2,5 %</td><td>250 GHS</td><td>250 GHS</td></tr>\n<tr><td>GETFund</td><td>2,5 %</td><td>250 GHS</td><td>250 GHS</td></tr>\n<tr><td>Prélèvement COVID-19</td><td>1 %</td><td>Supprimé</td><td>100 GHS</td></tr>\n<tr><td>TVA</td><td>15 %</td><td>1 500 GHS (sur 10 000 GHS)</td><td>1 590 GHS (sur 10 600 GHS)</td></tr>\n<tr><td>Total facturé</td><td></td><td>12 000 GHS</td><td>12 190 GHS</td></tr>\n</tbody>\n</table>\n<p>La facture doit faire apparaître la TVA, le NHIL et le GETFund sur des lignes distinctes. Un client immatriculé peut désormais, en principe, déduire la totalité des 2 000 GHS comme TVA d'amont, alors qu'auparavant les prélèvements constituaient une charge.</p>\n<h3>Si votre client pratique une retenue</h3>\n<p>Deux régimes de retenue distincts peuvent réduire le montant encaissé.</p>\n<ul>\n<li>Retenue de TVA. Les clients désignés par la GRA comme agents de retenue de TVA retiennent 7 % de la valeur imposable des livraisons au taux normal, soit ici 700 GHS. Ils délivrent un certificat de crédit (Withholding VAT Credit Certificate), que vous imputez dans votre déclaration de TVA.</li>\n<li>Retenue à la source sur le revenu. Une entreprise résidente qui paie des services de plus de 2 000 GHS retient 7,5 %. Appliquée aux 10 000 GHS d'honoraires, la retenue est de 750 GHS, imputable sur votre impôt sur le revenu.</li>\n</ul>\n<p>Dans cet exemple, un client agent de retenue de TVA vous verserait 10 550 GHS (12 000 GHS moins 700 GHS et 750 GHS) et vous remettrait deux certificats. L'exemple suppose que la retenue à la source s'applique aux honoraires hors TVA ; confirmez l'assiette auprès de votre conseiller ou de la GRA. Les indications de la GRA sur la retenue de TVA sont antérieures à la loi 1151 : vérifiez qu'elles ont été mises à jour. Les paiements de services à des non-résidents supportent en général une retenue libératoire de 20 %.</p>\n\n<h2>Qui doit s'immatriculer à la TVA ?</h2>\n<ul>\n<li>Prestataires de services : immatriculation obligatoire quel que soit le chiffre d'affaires, sauf autorisation contraire du Commissioner-General.</li>\n<li>Fournisseurs de biens : immatriculation obligatoire dès que les livraisons taxables dépassent 750 000 GHS sur une période de 12 mois. L'obligation naît plus tôt si elles dépassent 62 500 GHS sur un mois, 187 500 GHS sur trois mois ou 375 000 GHS sur six mois.</li>\n<li>Fournisseurs non résidents de services numériques : immatriculation également obligatoire.</li>\n</ul>\n<p>Les sanctions sont alourdies : le défaut d'immatriculation est désormais puni d'une pénalité d'au moins trois fois la taxe qui aurait dû être payée. Les importateurs non immatriculés acquittent une TVA anticipée de 20 % de la valeur en douane, contre 12,5 % auparavant.</p>\n\n<h2>E-VAT et facturation certifiée</h2>\n<p>E-VAT est le système de facturation électronique de la GRA destiné aux entreprises immatriculées à la TVA. Chaque reçu E-VAT porte la signature du Commissioner-General, un code QR, un horodatage précis, un numéro de série et un code d'enregistrement de la machine. La GRA propose gratuitement un système de facturation complet, ou une version qui s'intègre à votre logiciel existant. La demande se fait par courrier adressé à votre centre des impôts (Taxpayer Service Centre).</p>\n<p>Avec la loi 1151, les déclarations de TVA s'appuient de plus en plus sur les données de transaction captées par ces systèmes : des factures émises en dehors de ces outils constituent un risque de non-conformité.</p>\n\n<h2>Déclarations et paiements</h2>\n<ul>\n<li>Déclaration et paiement de la TVA : au plus tard le dernier jour ouvrable du mois suivant le mois concerné.</li>\n<li>Déclarations de retenue de TVA : au plus tard le 15 du mois suivant.</li>\n<li>Retenue à la source sur le revenu : dans les 15 jours suivant la fin du mois.</li>\n</ul>\n\n<h2>Liste de contrôle pratique</h2>\n<ul>\n<li>Mettez à jour vos modèles de facture pour faire apparaître séparément la TVA, le NHIL et le GETFund, et émettez-les via E-VAT.</li>\n<li>Exprimez vos prix hors TVA dans les contrats et précisez le taux applicable.</li>\n<li>Rapprochez chaque mois les certificats de retenue pour ne perdre aucun crédit.</li>\n<li>Les anciens assujettis au régime forfaitaire peuvent déduire la TVA sur leurs stocks déclarés, mais uniquement dans les six mois suivant la naissance du droit à déduction.</li>\n<li>Les exportations de biens et de services sont soumises au taux zéro ; vérifiez que vos prestations à l'export remplissent les conditions.</li>\n</ul>\n\n<h2>Comment Gotham Consult peut vous aider</h2>\n<p>Gotham Consult immatricule les entreprises nouvelles et à capitaux étrangers au TIN et à la TVA, met en place une facturation E-VAT conforme et établit un calendrier mensuel des déclarations de TVA, de retenues et de SSNIT. Nous travaillons avec des praticiens fiscaux agréés lorsqu'un avis fiscal formel est nécessaire.</p>",
+    "faq": [
+      {
+        "q": "Le taux effectif de TVA au Ghana est-il de 20 % ou de 21,9 % ?",
+        "a": "Depuis le 1er janvier 2026, il est de 20 % : TVA à 15 % plus NHIL et GETFund à 2,5 % chacun, sur la même base. Le taux de 21,9 % s'appliquait avant la réforme."
+      },
+      {
+        "q": "Mon cabinet de conseil a un faible chiffre d'affaires. Dois-je m'immatriculer à la TVA ?",
+        "a": "En règle générale, oui. Selon la loi 1151, les prestataires de services doivent s'immatriculer quel que soit leur chiffre d'affaires, sauf autorisation contraire du Commissioner-General."
+      },
+      {
+        "q": "Puis-je déduire le NHIL et le GETFund comme TVA d'amont ?",
+        "a": "Oui. Depuis leur réintégration au mécanisme de la TVA le 1er janvier 2026, les entreprises immatriculées peuvent les déduire, dans les conditions habituelles."
+      },
+      {
+        "q": "Qu'est-ce que la retenue de TVA ?",
+        "a": "Les clients désignés comme agents de retenue retiennent 7 % de la valeur imposable des livraisons au taux normal et vous remettent un certificat de crédit, que vous imputez dans votre déclaration de TVA."
+      },
+      {
+        "q": "Dois-je facturer la TVA à mes clients étrangers ?",
+        "a": "Les exportations de biens et de services sont soumises au taux zéro : aucune TVA n'est facturée si la prestation constitue une exportation. Vérifiez les conditions applicables auprès de la GRA ou de votre conseiller."
+      }
+    ],
+    "last_reviewed": "Dernière mise à jour : 29 septembre 2026. Ces informations sont d'ordre général et ne constituent pas un conseil juridique ou fiscal."
+  }
+}

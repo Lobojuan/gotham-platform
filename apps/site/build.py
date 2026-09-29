@@ -8,6 +8,7 @@ tags a real website needs, and copies public/ over the top.
 import os, re, shutil, sys, json, html as htmlmod
 from datetime import date
 import chrome_css
+import insights_fr as IF
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
@@ -31,7 +32,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=16">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=17">\n'
   '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
@@ -83,6 +84,14 @@ META_REST = {
    og='img/og/boot2.jpg'),
 }
 META.update(META_REST)
+# Insights: articles written as data (content/insights), rendered here
+ARTS = IF.articles(); GEN = {}
+META['insights.html'] = dict(title=IF.L['en']['idx_title'], desc=IF.L['en']['idx_desc'], og='img/og/real-bog.jpg', extra=V2_EXTRA)
+GEN['insights.html'] = IF.index_body(ARTS, 'en')
+for _a in ARTS:
+    _n = f'insights/{_a["slug"]}.html'
+    META[_n] = dict(title=_a['title'], desc=_a['description'], og='img/og/real-bog.jpg', extra=V2_EXTRA + '\n' + IF.article_ld(_a, 'en', SITE))
+    GEN[_n] = IF.article_body(_a, 'en', [o for o in ARTS if o is not _a][:3])
 META['404.html'] = dict(title='Page not found | Gotham Consult', desc='This page is not here any more. Find our services, the Ghana investment guide, forums and contact details.', og='img/og/boot2.jpg', extra=V2_EXTRA + '\n<meta name="robots" content="noindex">')
 META['register.html']['extra'] = '<meta name="robots" content="noindex, follow">'
 META['register.html']['og'] = 'img/og/forum.jpg'
@@ -169,13 +178,13 @@ def main():
 
     # page bodies -> complete documents
     for name, m in META.items():
-        body = open(os.path.join(HERE, 'pages', name), encoding='utf-8').read()
+        body = GEN.get(name) or open(os.path.join(HERE, 'pages', name), encoding='utf-8').read()
         for part in ('top', 'bottom'):   # shared header/footer of the new design
             if f'<!--#{part}-->' in body:
                 body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
         os.makedirs(os.path.dirname(os.path.join(DIST, name)), exist_ok=True)
         mm = {'extra': '', **m}; mm.pop('crumb', None)
-        mm['extra'] = (mm['extra'] + '\n' + ld_for(name, m, body)) if name not in ('classic.html', 'register.html', '404.html') else mm['extra']
+        mm['extra'] = (mm['extra'] + '\n' + ld_for(name, m, body)) if name not in ('classic.html', 'register.html', '404.html') and not name.startswith('insights/') else mm['extra']
         ogsize = '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta property="og:image:alt" content="' + htmlmod.escape(m['title']) + '">\n' if m['og'].startswith('img/og/') else ''
         out = body if body.lstrip().lower().startswith('<!doctype') else \
               HEAD.format(site=SITE, path=('' if name == 'index.html' else name[:-5] if name.endswith('.html') else name), ogsize=ogsize, **mm) + body + '\n</body>\n</html>'
@@ -189,7 +198,7 @@ def main():
     bottom = open(os.path.join(HERE, 'pages', '_partials', '_bottom.html'), encoding='utf-8').read()
     head_add = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
                 '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=5">\n')
+                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=6">\n')
     # older scripts look for nav.main (#nav) to fill or to attach the old language switch: keep one, hidden
     keep = '<nav class="main" id="nav" hidden aria-hidden="true" style="display:none!important"><span class="navlog"></span></nav>\n'
     for name in ('classic.html', 'register.html', 'family.html', 'teaser.html', 'privacy.html', 'terms.html'):
@@ -233,6 +242,50 @@ def main():
     open(os.path.join(DIST, 'tools.html'), 'w', encoding='utf-8').write(h)
     print('  tools.html (from classic)')
 
+    # French pages: /fr/... made from the English pages and the same dictionary the language switch uses
+    d = IF.load_dict('fr')
+    fr_pages = ['index.html', 'services.html', *[f'services/{p}.html' for p in PRACTICES], 'invest.html', 'mining.html', 'forums.html', 'about.html']
+    def path_of(n): return '' if n == 'index.html' else n[:-5]
+    fr_paths = {('/' + path_of(n)).rstrip('/') or '/' for n in fr_pages} | {'/insights'} | {f'/insights/{a["slug"]}' for a in ARTS}
+    def set_meta(doc, n, title, desc):
+        pth = path_of(n); fr_url = f'{SITE}/fr' + (f'/{pth}' if pth else '')
+        doc = doc.replace('<html lang="en">', '<html lang="fr" data-page-lang="fr">', 1)
+        doc = re.sub(r'<title>.*?</title>', lambda m: f'<title>{title}</title>', doc, count=1, flags=re.S)
+        for k in ('name="description"', 'property="og:description"', 'name="twitter:description"'):
+            doc = re.sub(r'(<meta ' + re.escape(k) + r' content=")[^"]*"', lambda m: m.group(1) + desc.replace('"', '&quot;') + '"', doc)
+        for k in ('property="og:title"', 'name="twitter:title"'):
+            doc = re.sub(r'(<meta ' + re.escape(k) + r' content=")[^"]*"', lambda m: m.group(1) + title.replace('"', '&quot;') + '"', doc)
+        doc = re.sub(r'<link rel="canonical" href="[^"]*">', f'<link rel="canonical" href="{fr_url}">', doc, count=1)
+        doc = re.sub(r'(<meta property="og:url" content=")[^"]*"', lambda m: m.group(1) + fr_url + '"', doc)
+        doc = doc.replace('<meta property="og:locale" content="en_GB">', '<meta property="og:locale" content="fr_FR">')
+        doc = doc.replace('"inLanguage": "en"', '"inLanguage": "fr"')
+        return doc.replace('</head>', IF.alternates(SITE, pth) + '</head>', 1)
+    report = {}
+    for n in fr_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS]:
+        if n.startswith('insights'):
+            a = next((x for x in ARTS if f'insights/{x["slug"]}.html' == n), None)
+            body = IF.index_body(ARTS, 'fr') if a is None else IF.article_body(a, 'fr', [o for o in ARTS if o is not a][:3])
+            for part in ('top', 'bottom'):
+                body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
+            m = META[n]
+            extra = V2_EXTRA + ('\n' + IF.article_ld(a, 'fr', SITE) if a else '')
+            doc = HEAD.format(site=SITE, path=path_of(n), ogsize='', **{**{k: v for k, v in m.items() if k != 'crumb'}, 'extra': extra}) + body + '\n</body>\n</html>'
+            title, desc = (IF.L['fr']['idx_title'], IF.L['fr']['idx_desc']) if a is None else (a['fr']['title'], a['fr']['description'])
+        else:
+            doc = open(os.path.join(DIST, n), encoding='utf-8').read()
+            title, desc = IF.FR_META[n]
+        doc, miss = IF.translate_html(doc, d)
+        if not n.startswith('insights'): report[n] = miss
+        doc = IF.localise_links(set_meta(doc, n, title, desc), fr_paths)
+        out = os.path.join(DIST, 'fr', n); os.makedirs(os.path.dirname(out), exist_ok=True)
+        open(out, 'w', encoding='utf-8').write(doc)
+    for n in fr_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS]:   # English pages point to their French twin
+        fp = os.path.join(DIST, n); h = open(fp, encoding='utf-8').read()
+        if 'hreflang="fr"' not in h: open(fp, 'w', encoding='utf-8').write(h.replace('</head>', IF.alternates(SITE, path_of(n)) + '</head>', 1))
+    left = sorted({x for v in report.values() for x in v})
+    print(f'  fr/: {len(fr_pages) + 1 + len(ARTS)} French pages; {len(left)} phrases still in English')
+    open(os.path.join(HERE, '.fr-missing.txt'), 'w').write('\n'.join(left))
+
     # static files (css, js, images) from ASSET_URL when set: the page itself comes through the WordPress bridge, which is slow per request
     asset = os.environ.get('ASSET_URL', '').rstrip('/')
     if asset:
@@ -246,7 +299,8 @@ def main():
 
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /i/\nSitemap: {SITE}/sitemap.xml\n')
-    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'tools', 'family', 'teaser', 'privacy', 'terms']
+    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'tools', 'family', 'teaser', 'privacy', 'terms']
+    pages += ['fr', *[f'fr/{p}' for p in ['services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS]]]]
     today = date.today().isoformat()
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc><lastmod>{today}</lastmod></url>\n' for p in pages)
     open(os.path.join(DIST, 'sitemap.xml'), 'w').write(

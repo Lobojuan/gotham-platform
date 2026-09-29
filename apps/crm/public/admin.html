@@ -447,6 +447,11 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 .inv-sum{margin:10px 0 0 auto;min-width:300px;border-collapse:collapse}.inv-sum td{padding:5px 6px;border:0}.inv-sum td:last-child{text-align:right;white-space:nowrap}.inv-sum .tot td{border-top:2px solid #0F1B2D;font-weight:800;font-size:17px}
 .bk-c{display:grid;grid-template-columns:100px 1.3fr 120px 1.3fr 1fr;gap:8px;margin-bottom:8px}.t.bad{border-color:var(--red,#A1322B);background:#FFF3F2}
 @media(max-width:700px){.bk-c{grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:12px;padding:10px}.bk-c [data-k=bank],.bk-c [data-k=city]{grid-column:1/-1}}
+.wv-chart{display:flex;align-items:flex-end;gap:3px;height:160px;border-bottom:1px solid var(--line)}.wv-c{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;position:relative;min-width:3px}
+.wv-c i{display:block;background:linear-gradient(#C9A24B,#A9761F);border-radius:4px 4px 0 0}.wv-c em,.wv-dot{position:absolute;top:-2px;left:50%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#1F6B4E}
+.wv-dot{position:relative;display:inline-block;top:0;left:0;margin:0 4px 0 0}.wv-share{display:grid;grid-template-columns:1fr 90px 44px;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.wv-a{color:var(--ink);text-decoration:none;font-weight:600}.wv-a:hover{text-decoration:underline}.wv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}.wv-grid .card{margin:0}
+.wv-share.two{grid-template-columns:1fr auto}.wv-share:first-of-type{border-top:0}.wv-share span{overflow-wrap:anywhere}.wv-share b{text-align:right}.wv-share .bar{height:6px;margin:0}
 .rep{margin:14px 0;border:1px solid var(--line);border-radius:12px;padding:10px 14px}.rep summary{cursor:pointer;min-height:36px;display:flex;align-items:center;gap:8px}
 .tf-qr svg{width:200px;height:200px;margin:8px 0}.tf-rc{background:#F6F4EE;border-radius:12px;padding:12px 16px;font:600 15px/1.8 ui-monospace,Menlo,monospace;columns:2;max-width:360px}
 .inv-f{display:block;margin:0}.inv-f span{display:none}.inv-f .t{width:100%}
@@ -496,6 +501,7 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 <symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
 <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
 <symbol id="i-bill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></symbol>
+<symbol id="i-globe2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
 <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
 </defs></svg>
 
@@ -618,13 +624,13 @@ const ghsShort=n=>{n=Number(n||0);return n>=1e6?'GHS '+(n/1e6).toFixed(n>=1e7?0:
 const dshort=s=>s?new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
 const NAV=[
  ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt']]],
- ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1]]],
+ ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1],['web','Website visitors','globe2',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
  ['System',[['mail','Email outbox','mail','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
-const TITLES={dash:'Dashboard',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',rec:'Company record',reports:'Reports',
+const TITLES={dash:'Dashboard',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',web:'Website visitors',rec:'Company record',reports:'Reports',
  regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',
  out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
-const ADMIN_ONLY=new Set(['inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
+const ADMIN_ONLY=new Set(['web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
 let V='dash', ARG=null, USERS=[];
 function buildNav(){
  $('#nav').innerHTML=NAV.map(([g,items])=>{const it=items.filter(x=>!x[4]||isAdmin());
@@ -647,7 +653,7 @@ addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
 function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
- const m={dash:dashboard,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,inv:invoicesView,rec:()=>record(+ARG),reports:reportsView,
+ const m={dash:dashboard,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
   contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>',
@@ -2549,6 +2555,30 @@ function invShow(inv){
  document.querySelectorAll('[data-rp]').forEach(x=>x.onclick=async()=>{if(!confirm('Remove this payment?'))return;await act('payment/'+x.dataset.rp);toast('Payment removed');refreshInv();invOpen(inv.id)});
  $('#is-save').onclick=async()=>{try{await api('/api/invoices/'+inv.id,{method:'POST',body:JSON.stringify({bill_to:b,evat_ref:$('#is-ev')?.value||'',notes:$('#is-no').value,[isQ?'valid_until':'due_date']:$('#is-dd')?$('#is-dd').value:''})});toast('Saved');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
  if($('#is-void'))$('#is-void').onclick=async()=>{const reason=prompt((isQ?'Why is ':'Void only an invoice that never reached the client. Why is ')+inv.number+' being '+(isQ?'withdrawn':'voided')+'? (kept on record)');if(!reason)return;try{await act('void',{reason});toast(inv.number+' voided');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
+}
+let WEBD=30;
+async function webView(){
+ setTitle('Website visitors','Who comes to gothamconsult.com, from where, and which pages bring enquiries');
+ $('#view').innerHTML='<div class="empty">Loading…</div>';
+ const r=await api('/api/web-stats?days='+WEBD).catch(()=>null);if(!r||V!=='web')return;
+ const t=r.totals,conv=t.visitors?(t.enquiries/t.visitors*100):0,mx=Math.max(1,...r.series.map(x=>x.visitors));
+ const kp=(l,v,sub)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+ const PN={'/':'Home','/fr':'Home (French)'};const pn=p=>PN[p]||p;
+ const tbl=(head,rows)=>`<div class="wrapx" style="max-height:none"><table><thead><tr>${head.map((h,i)=>`<th${i?' class="num"':''}>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')||`<tr><td colspan="${head.length}"><div class="empty">No visits yet.</div></td></tr>`}</tbody></table></div>`;
+ const share=list=>{const tot=list.reduce((a,x)=>a+x.n,0)||1;return list.map(x=>`<div class="wv-share"><span>${esc(x.k||'—')}</span><div class="bar"><i style="width:${x.n/tot*100}%"></i></div><b>${Math.round(x.n/tot*100)}%</b></div>`).join('')||'<p class="note">No data yet.</p>'};
+ const EN={register:'Registrations',chat:'Chat: leave your details',sponsor:'Sponsor enquiries',family:'Family Desk'};
+ $('#view').innerHTML=`<div class="filters"><div class="seg" id="wv-d">${[[7,'7 days'],[30,'30 days'],[90,'90 days'],[365,'12 months']].map(([d,l])=>`<button data-d="${d}" class="${WEBD===d?'on':''}">${l}</button>`).join('')}</div></div>
+  <div class="kpis">${kp('Visitors',t.visitors.toLocaleString('en-GB'),'each person once a day')}${kp('Page views',t.views.toLocaleString('en-GB'),t.visitors?(t.views/t.visitors).toFixed(1)+' per visitor':'')}${kp('Enquiries',t.enquiries,'registrations, chat, sponsor, Family Desk')}${kp('Conversion',conv.toFixed(1)+'%','visitors who got in touch')}</div>
+  <div class="card"><h3 style="margin-bottom:10px">Visitors per day</h3><div class="wv-chart">${r.series.map(x=>`<div class="wv-c" title="${x.d}: ${x.visitors} visitors, ${x.enquiries} enquiries"><i style="height:${Math.max(2,x.visitors/mx*100)}%"></i>${x.enquiries?'<em></em>':''}</div>`).join('')||'<p class="note">No visits yet. Numbers start as soon as people open the website.</p>'}</div>
+   <p class="note" style="margin:8px 0 0"><span class="wv-dot"></span> a day with an enquiry</p></div>
+  <div class="card" style="padding:0"><div style="padding:16px 18px 0"><h3>Pages</h3><p class="note" style="margin:4px 0 8px">Enquiries count on the page the visitor first arrived on.</p></div>
+   ${tbl(['Page','Views','Visitors','Enquiries'],r.pages.map(x=>`<tr><td>${x.path.startsWith('/')?`<a class="wv-a" href="${esc(x.path)}" target="_blank" rel="noopener">${esc(pn(x.path))}</a>`:'<span class="note">Before counting started</span>'}</td><td class="num">${x.views}</td><td class="num">${x.visitors}</td><td class="num">${x.enquiries?`<b>${x.enquiries}</b>`:'—'}</td></tr>`))}</div>
+  <div class="wv-grid"><div class="card"><h3 style="margin-bottom:10px">Where they come from</h3>${r.sources.length?r.sources.map(x=>`<div class="wv-share two"><span>${esc(x.src)}</span><b>${x.visitors}</b></div>`).join(''):'<p class="note">No data yet.</p>'}</div>
+   <div class="card"><h3 style="margin-bottom:10px">Devices</h3>${share(r.devices)}</div>
+   <div class="card"><h3 style="margin-bottom:10px">Language</h3>${share(r.langs.map(x=>({...x,k:{en:'English',fr:'French',es:'Spanish'}[x.k]||x.k})))}</div>
+   <div class="card"><h3 style="margin-bottom:10px">Enquiries</h3>${r.enquiries.length?r.enquiries.map(x=>`<div class="wv-share two"><span>${esc(EN[x.k]||x.k)}</span><b>${x.n}</b></div>`).join(''):'<p class="note">None in this period.</p>'}</div></div>
+  <p class="note">Privacy-friendly: no cookies and no IP addresses stored. Each visitor is counted once a day with a code that changes every day, so nobody is followed across days. Search engines and people signed in to the back office are not counted.</p>`;
+ $('#wv-d').onclick=e=>{const b=e.target.closest('button');if(!b)return;WEBD=+b.dataset.d;webView()};
 }
 function acctPanel(){
  const m0=new Date();m0.setDate(1);m0.setMonth(m0.getMonth()-1);const last=m0.toISOString().slice(0,7);

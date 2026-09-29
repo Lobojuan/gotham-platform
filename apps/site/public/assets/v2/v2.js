@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=11';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=12';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -93,7 +93,17 @@
     const old = $('#gc-language-switch select');   // older pages: switch their own translation too
     if (old && old.value !== l) { old.value = l; old.dispatchEvent(new Event('change')); }
   };
-  $$('[data-lang]').forEach(b => b.addEventListener('click', () => { setLang(b.dataset.lang); closeLang(); }));
+  /* real French pages live at /fr/...: the switch moves between the twins; Spanish stays an in-page translation */
+  const pageLang = document.documentElement.dataset.pageLang || 'en';
+  const twin = l => { const t = $(`link[rel="alternate"][hreflang="${l}"]`); return t && new URL(t.href).pathname + location.search + location.hash; };   // same address the visitor is on
+  const choose = l => {
+    try { localStorage.setItem('gc-language', l); } catch {}
+    if (l === 'fr' && pageLang !== 'fr' && twin('fr')) return location.assign(twin('fr'));
+    if (pageLang === 'fr' && l !== 'fr' && twin('en')) return location.assign(twin('en'));
+    setLang(l);
+  };
+  $$('[data-lang]').forEach(b => b.addEventListener('click', () => { choose(b.dataset.lang); closeLang(); }));
+  if (pageLang === 'fr') current = 'fr';
   markLang(current); if (current !== 'en') setLang(current);
 
   document.addEventListener('click', () => { setMega(false); closeLang(); });
@@ -510,4 +520,13 @@
       fxBox.hidden = false;
     }
   }).catch(() => {});
+  /* ---- visitor count: one small request per page, no cookies, nothing stored in the browser ---- */
+  try {
+    if (!navigator.webdriver && !/^\/(admin|i)\b/.test(location.pathname) && window.top === window.self) {
+      const u = new URLSearchParams(location.search), utm = [u.get('utm_source'), u.get('utm_campaign')].filter(Boolean).join('/');
+      const hit = JSON.stringify({ p: location.pathname, r: document.referrer, u: utm, l: document.documentElement.lang || 'en', w: innerWidth });
+      if (!(navigator.sendBeacon && navigator.sendBeacon('/api/hit', new Blob([hit], { type: 'application/json' }))))
+        fetch('/api/hit', { method: 'POST', body: hit, keepalive: true, headers: { 'content-type': 'application/json' } }).catch(() => {});
+    }
+  } catch {}
 })();

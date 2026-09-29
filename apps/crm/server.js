@@ -1529,6 +1529,37 @@ const server = http.createServer(async (req, res) => {
       return res.end(body);
     }
 
+    if (p === '/api/hit' && req.method === 'POST') {
+      const ua = String(req.headers['user-agent'] || '');
+      if (BOT_RE.test(ua) || sess || rateLimited(ip, 120, 600e3, 'hit')) { res.writeHead(204); return res.end(); }
+      let b = {}; try { b = JSON.parse((await rawBody(req, 4000)).toString('utf8') || '{}'); } catch {}
+      const pth = String(b.p || '').slice(0, 160);
+      if (!/^\/[\w\-./]*$/.test(pth) || /^\/(admin|api|i)\b/.test(pth)) { res.writeHead(204); return res.end(); }
+      let ref = null; try { const h = new URL(String(b.r || '')).hostname.replace(/^www\./, ''); if (h && !/gothamconsult\.com$|sslip\.io$|^127\.|localhost/.test(h)) ref = h.slice(0, 80); } catch {}
+      const utm = String(b.u || '').replace(/[^\w\-./ ]/g, '').slice(0, 60) || null;
+      const w = +b.w || 0, device = w && w < 700 ? 'phone' : w && w < 1100 ? 'tablet' : 'desktop';
+      const lang = ['en', 'fr', 'es'].includes(b.l) ? b.l : 'en';
+      await q("insert into page_hits(path, ref, utm, device, lang, visitor, kind) values ($1,$2,$3,$4,$5,$6,'view')",
+        [pth.replace(/\/+$/, '') || '/', ref, utm, device, lang, visitorHash(ip, ua)]);
+      res.writeHead(204); return res.end();
+    }
+    if (p === '/api/web-stats' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const days = Math.max(1, Math.min(400, +url.searchParams.get('days') || 30));
+      const W = `day > current_date - $1::int`;
+      const one = async (sql) => (await q(sql, [days])).rows;
+      const [tot] = await one(`select count(*) filter (where kind='view')::int views, count(*) filter (where kind='enquiry')::int enquiries,
+        (select count(*)::int from (select distinct day, visitor from page_hits where ${W} and kind='view') x) visitors from page_hits where ${W}`);
+      const series = await one(`select to_char(day,'YYYY-MM-DD') d, count(distinct visitor) filter (where kind='view')::int visitors, count(*) filter (where kind='view')::int views,
+        count(*) filter (where kind='enquiry')::int enquiries from page_hits where ${W} group by day order by day`);
+      const pages = await one(`select path, count(*) filter (where kind='view')::int views, count(distinct (day, visitor)) filter (where kind='view')::int visitors,
+        count(*) filter (where kind='enquiry')::int enquiries from page_hits where ${W} group by path order by views desc limit 25`);
+      const sources = await one(`select coalesce(utm, ref, 'Direct / unknown') src, count(distinct (day, visitor))::int visitors from page_hits where ${W} and kind='view' group by 1 order by 2 desc limit 15`);
+      const devices = await one(`select device k, count(distinct (day, visitor))::int n from page_hits where ${W} and kind='view' group by 1 order by 2 desc`);
+      const langs = await one(`select lang k, count(distinct (day, visitor))::int n from page_hits where ${W} and kind='view' group by 1 order by 2 desc`);
+      const enq = await one(`select what k, count(*)::int n from page_hits where ${W} and kind='enquiry' group by 1 order by 2 desc`);
+      return json(res, 200, { days, totals: tot, series, pages, sources, devices, langs, enquiries: enq });
+    }
     if (p === '/api/rates' && req.method === 'GET') {
       const fx = await liveRates();
       if (!fx) { res.setHeader('cache-control', 'public, max-age=300'); return json(res, 200, { rates: null, unavailable: true }, cors); }   // the page simply hides the rates
@@ -1644,6 +1675,7 @@ ${await askKnowledge()}`;
             `Asked on the website chat to be contacted about: ${need || '(not said)'}` + (b.question ? `\nLast question: ${clean(b.question, 600)}` : '') + (b.language && b.language !== 'en' ? `\nLanguage: ${clean(b.language, 5)}` : '')]);
         }
       }
+      webEnquiry(req, ip, 'chat').catch(() => {});
       return json(res, 200, { ok: true }, cors);
     }
 
@@ -1667,6 +1699,7 @@ ${await askKnowledge()}`;
       await inboundDeal({ company, full_name: clean(b.contact_name, 120), email, phone: phoneGH(clean(b.phone, 40)), kind: 'sponsorship',
         title: `${company} · ${b.tier ? b.tier + ' sponsorship' : 'sponsorship'}`, source: 'Website sponsor enquiry', sponsor_lead_id: rows[0].id,
         task: `Send the sponsorship pack to ${clean(b.contact_name, 120) || company}` }).catch(e => console.error('inboundDeal', e.message));
+      webEnquiry(req, ip, 'sponsor').catch(() => {});
       return json(res, 200, { ok: true, id: rows[0].id }, cors);
     }
 
@@ -1740,6 +1773,7 @@ ${await askKnowledge()}`;
         ['website', 'family_interest', `${country} · ${region} · ${needs.join(', ')}`]);
       await inboundDeal({ full_name, email, phone, kind: 'family_desk', title: `Family Desk · ${full_name} (${region})`,
         source: 'Website Family Desk list', task: `Call ${firstName(full_name)} about Family Desk (${country})` }).catch(e => console.error('inboundDeal', e.message));
+      webEnquiry(req, ip, 'family').catch(() => {});
       return json(res, 200, { ok: true }, cors);
     }
 
@@ -1870,6 +1904,7 @@ ${await askKnowledge()}`;
           paidNow ? 'ticket' : 'registration_received', reg.id);
       }
       flushMail().catch(() => {});
+      webEnquiry(req, ip, 'register').catch(() => {});
       return json(res, 200, { reference: reg.reference, amount, currency: it.currency, paid: amount === 0,
         status, approval: !!it.approval, double_optin: it.code === 'BRIEF',
         payment_details: method === 'momo' && amount > 0 ? {
@@ -4696,6 +4731,18 @@ async function runJobs() {
   await watchdog().catch(e => console.error('watchdog', e.message));
 }
 
+/* ---------- website visitors, privacy-friendly ----------
+   No cookies, no IP addresses stored: a visitor is a hash of IP + browser with a salt that changes every day, so
+   people can be counted per day but never followed from one day to the next. Team members signed in are not counted. */
+const BOT_RE = /bot|crawl|spider|slurp|headless|lighthouse|preview|monitor|curl|wget|python|fetch|uptime/i;
+const dayKey = () => new Date().toISOString().slice(0, 10);
+const visitorOf = (ip, ua) => crypto.createHmac('sha256', SECRET).update('v:' + dayKey()).digest('hex').slice(0, 16) + ':' + crypto.createHash('sha256').update(ip + '|' + ua).digest('hex').slice(0, 16);
+const visitorHash = (ip, ua) => crypto.createHash('sha256').update(visitorOf(ip, ua)).digest('hex').slice(0, 20);
+async function webEnquiry(req, ip, what) {
+  const v = visitorHash(ip, String(req.headers['user-agent'] || ''));
+  const first = (await q("select path, ref from page_hits where day=current_date and visitor=$1 and kind='view' order by id limit 1", [v])).rows[0];
+  await q("insert into page_hits(path, ref, visitor, kind, what) values ($1,$2,$3,'enquiry',$4)", [first ? first.path : '(unknown)', first ? first.ref : null, v, what]);
+}
 /* ---------- safety net: backups, email delivery, certificate, off-site copies ----------
    backup.sh (cron on the server) writes backup_status; the Mac job writes backup_offsite. Every hour the
    watchdog looks at them and warns the people in Settings → Safety net (email, and WhatsApp once connected),
@@ -4740,6 +4787,7 @@ async function alertTeam(subject, lines) {
 async function watchdog() {
   const last = +(await getSetting('watchdog_at') || 0); if (Date.now() - last < 55 * 60e3) return;
   await setSetting('watchdog_at', String(Date.now()));
+  await q("delete from page_hits where day < current_date - 400");
   const r = await safetyReport();
   for (const [kind, text] of r.problems) {
     const k = 'alert_last_' + kind, prev = +(await getSetting(k) || 0);

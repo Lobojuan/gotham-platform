@@ -31,7 +31,7 @@ const DEVICES = [
 const SKIP = /^(mailto:|tel:|https?:|javascript:|data:)|^\/(admin|api|media)\b/;
 
 async function crawl(req) {
-  const seen = new Map(), queue = ['/', '/classic', '/teaser'], anchors = [];
+  const seen = new Map(), queue = ['/', '/classic', '/teaser', '/fr'], anchors = [];
   while (queue.length) {
     const path = queue.shift(); if (seen.has(path)) continue;
     const r = await req.get(B + path, { maxRedirects: 0 }); const html = r.status() === 200 ? await r.text() : '';
@@ -59,7 +59,7 @@ async function crawl(req) {
     check(`${page}: <title>`, /<title>[^<]{10,}<\/title>/.test(h));
     check(`${page}: meta description`, /<meta name="description" content="[^"]{40,}"/.test(h));
     check(`${page}: canonical`, /<link rel="canonical" href="https?:\/\/[^"]+"/.test(h));
-    check(`${page}: html lang`, /<html lang="en"/.test(h));
+    check(`${page}: html lang`, page === '/fr' || page.startsWith('/fr/') ? /<html lang="fr" data-page-lang="fr"/.test(h) : /<html lang="en"/.test(h));
     check(`${page}: exactly one h1`, (h.match(/<h1[\s>]/g) || []).length === 1, String((h.match(/<h1[\s>]/g) || []).length));
     check(`${page}: viewport meta`, /name="viewport" content="width=device-width/.test(h));
   }
@@ -258,7 +258,7 @@ async function journeys(browser) {
       }
       await q.evaluate(() => { try { localStorage.setItem('gc-language', 'en'); } catch {} }); await q.close();
     }
-    check('sitemap lists the ten practice pages and /tools', (sm.match(/\/services\/[a-z-]+</g) || []).length === 10 && /\/tools</.test(sm));
+    check('sitemap lists the ten practice pages and /tools, in English and French', (sm.match(/\.com\/services\/[a-z-]+</g) || []).length === 10 && (sm.match(/\/fr\/services\/[a-z-]+</g) || []).length === 10 && /\/tools</.test(sm));
     await ctx.close();
   }
   // ---------- phones ----------

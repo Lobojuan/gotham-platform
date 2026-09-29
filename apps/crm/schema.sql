@@ -476,3 +476,13 @@ create table if not exists invoice_schedules (
   runs int not null default 0,
   created_by text, created_at timestamptz default now(), updated_at timestamptz default now()
 );
+
+-- website visitors (no cookies; visitor = daily-salted hash, never an IP address)
+create table if not exists page_hits (
+  id bigserial primary key,
+  at timestamptz not null default now(), day date not null default current_date,
+  path text not null, ref text, utm text, device text, lang text,
+  visitor text not null, kind text not null default 'view' check (kind in ('view','enquiry')), what text
+);
+create index if not exists page_hits_day on page_hits (day, kind);
+create index if not exists page_hits_visitor on page_hits (day, visitor);

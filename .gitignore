@@ -7,3 +7,4 @@ apps/crm/.media/
 .DS_Store
 __pycache__/
 .backups/
+apps/site/.fr-missing.txt
