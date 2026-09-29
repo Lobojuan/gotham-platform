@@ -81,7 +81,7 @@ textarea.t{resize:vertical;font-family:inherit}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .f3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 label.l{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;z-index:20}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.25s;z-index:20;pointer-events:none}
 .toast.on{opacity:1}
 @media(max-width:820px){#app{grid-template-columns:1fr}aside{position:static;height:auto;flex-direction:row;flex-wrap:wrap;gap:6px}aside .brand,aside .who{display:none}main{padding:18px 14px 50px}.f2{grid-template-columns:1fr}}
 
@@ -312,11 +312,32 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
   .drawer{top:0;bottom:0}
 }
 @media(max-width:640px){.quick{grid-template-columns:repeat(3,1fr)}.hbar{grid-template-columns:100px minmax(0,1fr) auto}}
+.ip-steps{list-style:none;display:flex;gap:6px;margin:0 0 16px;padding:0;flex-wrap:wrap}
+.ip-steps li{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--mute);padding:6px 12px 6px 6px;border-radius:999px;background:var(--sunk)}
+.ip-steps li b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fff;border:1px solid var(--line);font-size:12px}
+.ip-steps li.on{color:var(--ink);background:var(--gold-soft)}.ip-steps li.on b{background:var(--gold);border-color:var(--gold);color:#fff}
+.ip-drop{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;border:2px dashed #CDD1D6;border-radius:14px;padding:30px 16px;cursor:pointer;background:var(--paper);transition:border-color .15s,background .15s}
+.ip-drop:hover,.ip-drop.over{border-color:var(--gold);background:var(--gold-soft)}
+.ip-drop input{position:absolute;width:1px;height:1px;opacity:0}.ip-drop:focus-within{outline:2px solid var(--gold);outline-offset:2px}
+.ip-ic{display:grid;place-items:center;width:44px;height:44px;border-radius:12px;background:#fff;border:1px solid var(--line);margin-bottom:6px}.ip-ic svg{width:22px;height:22px}
+.ip-fmts{margin:14px 0 0;line-height:1.6}
+.ip-map td{vertical-align:middle}.ip-map select.t{min-width:200px}.ip-map tr.hit td:first-child{box-shadow:inset 3px 0 0 var(--green)}
+.ip-eg{display:inline-block;background:var(--sunk);border-radius:6px;padding:1px 7px;margin:2px 4px 2px 0;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}
+.ip-cons{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+.ip-ck{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;font-weight:600;font-size:14px;min-height:44px}
+.ip-ck input{width:18px;height:18px;accent-color:var(--green)}
+.ip-go{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.ip-sum{margin-top:16px;border-top:1px solid var(--line);padding-top:14px}.ip-sum h4{margin:0 0 10px}
+.ip-stats{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
+.ip-n{flex:1 1 150px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}.ip-n b{display:block;font-size:24px;line-height:1.1}.ip-n span{font-size:13px;color:var(--mute)}
+.ip-n.g b{color:var(--green)}.ip-n.r b{color:var(--red)}
+.ip-bad{border-color:#E7C5C1;background:var(--red-soft)}.ip-done{border-color:#BFDCCD}
+@media(max-width:600px){.f3{grid-template-columns:1fr}.ip-map select.t{min-width:150px}}
 </style></head><body>
 <div class="kente"></div>
 
 <section id="login"><form class="lcard" id="lform">
-  <div style="display:flex;gap:12px;align-items:center"><div class="mark">G</div><div><b>Gotham CRM</b><div class="note">Gotham Consult · Carlson Capital Ltd</div></div></div>
+  <div style="display:flex;gap:12px;align-items:center"><div class="mark">G</div><div><b>Gotham CRM</b><div class="note">Gotham Consult back office</div></div></div>
   <label for="e">Email or username</label><input class="t" id="e" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
   <label for="pw">Password</label><input class="t" id="pw" type="password" autocomplete="current-password" required>
   <p class="err" id="lerr"></p>
@@ -350,12 +371,13 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
 <symbol id="i-wa" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.7-4.6A9 9 0 1 1 8 19.6z"/><path d="M9 9.5c.3 1.8 2.7 4.3 4.6 4.7l1.2-1.2 1.8.8-.4 1.7c-3 .5-7.3-3.6-7.2-6.8L10.6 8l.9 1.8z"/></symbol>
 <symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
+<symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
 <symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
 </defs></svg>
 
 <div id="app">
   <aside class="side" id="side">
-    <a class="brand" href="#dash"><div class="mark">G</div><div><b>Gotham CRM</b><small>Gotham Consult · Carlson Capital</small></div></a>
+    <a class="brand" href="#dash"><div class="mark">G</div><div><b>Gotham CRM</b><small>Gotham Consult</small></div></a>
     <nav class="nav" id="nav" aria-label="Back office"></nav>
     <div class="links"><a href="https://gothamconsult.com">View website ↗</a><a href="/register">Registration page ↗</a></div>
     <div class="me"><span class="av" id="meav">?</span><div style="min-width:0"><b id="mename"></b><small id="who"></small></div><button id="out" type="button">Sign out</button></div>
@@ -456,13 +478,13 @@ const ghsShort=n=>{n=Number(n||0);return n>=1e6?'GHS '+(n/1e6).toFixed(n>=1e7?0:
 const dshort=s=>s?new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
 const NAV=[
  ['Overview',[['dash','Dashboard','home'],['tasks','Tasks','check','tcnt']]],
- ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['reports','Reports','chart',null,1]]],
+ ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['reports','Reports','chart',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
  ['System',[['mail','Email outbox','mail','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
-const TITLES={dash:'Dashboard',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',rec:'Company record',reports:'Reports',
+const TITLES={dash:'Dashboard',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',rec:'Company record',reports:'Reports',
  regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',
  out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
-const ADMIN_ONLY=new Set(['pipe','contacts','rec','reports','out','spon','events','subs','qr','links','mail','data']);
+const ADMIN_ONLY=new Set(['pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
 let V='dash', ARG=null, USERS=[];
 function buildNav(){
  $('#nav').innerHTML=NAV.map(([g,items])=>{const it=items.filter(x=>!x[4]||isAdmin());
@@ -485,10 +507,10 @@ addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
 function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
- const m={dash:dashboard,tasks:tasksView,pipe:pipeline,contacts:contactsView,rec:()=>record(+ARG),reports:reportsView,
+ const m={dash:dashboard,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,rec:()=>record(+ARG),reports:reportsView,
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
-  contacts:'<button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>'};
+  contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>'};
  pageActions(acts[V]||'');
  const f=m[V];if(!f)return;const r=f();if(typeof r==='string')$('#view').innerHTML=r;
 }
@@ -1154,27 +1176,8 @@ async function outreach(){
     ||'<tr><td colspan="8" class="note">No campaigns yet.</td></tr>'}
    </tbody></table></div></div>
 
-  <div class="card"><h3>Add contacts from a spreadsheet</h3>
-   <p class="note">Drop in an Excel file or a CSV. We read every sheet, work out what each column is, and show you before anything is saved. Import the same file again later and it updates rather than duplicating — so keep working in your spreadsheet and re-upload whenever it changes.</p>
-   <div class="f2"><div><label class="l">Where did this list come from? <span class="note">— required, shown in the footer of every email</span></label>
-     <input class="t" id="xl-src" placeholder="Top Guide research, September 2026"></div>
-    <div><label class="l">Tag them all <span class="note">— optional</span></label><input class="t" id="xl-tags" placeholder="mining,sponsor-target"></div></div>
-   <input type="file" id="xl-f" accept=".xlsx,.xls,.csv" style="margin-top:10px">
-   <div id="xl-out"></div></div>
-
-  <div class="card"><h3>Or paste a list</h3>
-   <p class="note">Straight out of a chat or an email. Columns in any order; we work out which is which. Rows without an email are kept so you can call them.</p>
-   <div class="f2"><div><label class="l">Where did this list come from? <span class="note">— required, and shown in the footer of every email</span></label>
-     <input class="t" id="im-src" placeholder="Ghana Chamber of Mines member directory, September 2026"></div>
-    <div><label class="l">Tag them all <span class="note">— optional</span></label><input class="t" id="im-tags" placeholder="mining,tier-a"></div></div>
-   <label class="l">Sector for any row that does not state one</label><input class="t" id="im-sector" placeholder="Mining" style="max-width:280px">
-   <label class="l">Paste here</label>
-   <textarea class="t" id="im-text" rows="7" placeholder="Company, Name, Role, Email, Phone
-Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></textarea>
-   <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-    <button class="btn btn-line" id="im-check">Check it first</button>
-    <button class="btn btn-dark" id="im-go">Import</button></div>
-   <div id="im-out"></div></div>
+  <div class="card"><div class="ch"><h3>Add clients to write to</h3><a class="btn btn-dark" href="#imp">Import clients</a></div>
+   <p class="note" style="margin:0">Excel, CSV, vCard, JSON or a Google Sheet. You match the columns and check the result before anything is saved; importing the same list again updates it instead of doubling it.</p></div>
 
   <div class="card"><div class="ch"><h3>Contacts</h3>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -1207,68 +1210,6 @@ Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></te
  $('#c-fd').onclick=fd; $('#k-fd').onclick=fd;
  $('#c-fl').onclick=()=>{$('#c-find').value='forum-lead';draw();$('#c-find').scrollIntoView({behavior:'smooth',block:'center'})};
 
- $('#im-check').onclick=async()=>{const t=$('#im-text').value;if(!t.trim())return toast('Paste a list first');
-  const d=await api('/api/contacts/preview',{method:'POST',body:JSON.stringify({text:t})});
-  $('#im-out').innerHTML=`<div class="note" style="margin-top:12px"><b>${d.count}</b> rows recognised. First few:</div>
-   <div class="wrapx"><table><thead><tr><th>Company</th><th>Name</th><th>Role</th><th>Email</th><th>Phone</th></tr></thead><tbody>
-   ${d.sample.map(r=>`<tr><td>${esc(r.company||'')}</td><td>${esc(r.full_name||'')}</td><td>${esc(r.role||'')}</td><td>${esc(r.email||'')}</td><td>${esc(r.phone||'')}</td></tr>`).join('')}
-   </tbody></table></div>`};
- $('#im-go').onclick=async()=>{const t=$('#im-text').value, src=$('#im-src').value.trim();
-  if(!t.trim())return toast('Paste a list first');
-  if(!src)return toast('Say where the list came from — you need that on record');
-  try{const d=await api('/api/contacts/import',{method:'POST',body:JSON.stringify({text:t,source:src,tags:$('#im-tags').value,sector:$('#im-sector').value})});
-   toast(`${d.added} added, ${d.updated} updated`);$('#im-text').value='';outreach()}
-  catch(e){toast(e.error==='nothing_recognised'?'Could not read that list — check it has an email or company per line':'Import failed')}};
-
- /* --- spreadsheet upload: inspect, map, import --- */
- const FIELDS={ignore:'— skip this column —',company:'Company',full_name:'Person',role:'Job title',
-  email:'Email',phone:'Phone',website:'Website',sector:'Sector',city:'City',
-  priority:'Priority / tier',status:'Outreach status',notes:'Notes'};
- let XL=null;
- $('#xl-f').onchange=async e=>{const f=e.target.files[0];if(!f)return;
-  if(f.size>20*1048576)return toast('That file is over 20 MB');
-  toast('Reading…');
-  try{
-   const data=await readFile(f);
-   const d=await api('/api/contacts/inspect',{method:'POST',body:JSON.stringify({name:f.name,data})});
-   XL={name:f.name,data};
-   if(d.csv){$('#xl-out').innerHTML=`<p class="note" style="margin-top:12px">${d.count} rows found. Use the paste box below for CSV, or save it as .xlsx.</p>`;return}
-   XL.sheets=d.sheets;
-   drawSheets();
-  }catch(err){toast(err.error==='no_table_found'?'No table found in that file':err.error==='unreadable'?'Could not read that file':'Upload failed')}};
-
- function drawSheets(){
-  const pick=XL.sheets.length>1
-   ?`<label class="l">Which sheet</label><select class="t" id="xl-sheet" style="max-width:320px">${XL.sheets.map((sh,i)=>`<option value="${i}">${esc(sh.name)} — ${sh.rows} rows</option>`).join('')}</select>`
-   :`<p class="note">Sheet: <b>${esc(XL.sheets[0].name)}</b> — ${XL.sheets[0].rows} rows</p>`;
-  $('#xl-out').innerHTML=`<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:14px">${pick}<div id="xl-map"></div></div>`;
-  if($('#xl-sheet'))$('#xl-sheet').onchange=()=>drawMap(+$('#xl-sheet').value);
-  drawMap(0);
- }
- function drawMap(i){
-  const sh=XL.sheets[i]; XL.i=i;
-  const rows=sh.columns.map((c,n)=>{
-   if(!c)return '';
-   const cur=sh.mapping[n]??sh.mapping[String(n)]??'ignore';
-   const eg=(sh.sample[0]||[])[n]||'';
-   return `<tr><td><b>${esc(c)}</b><div class="note">${esc(String(eg).slice(0,46))}</div></td>
-    <td><select class="t" data-col="${n}" style="min-width:170px">${Object.entries(FIELDS).map(([k,t])=>`<option value="${k}" ${k===cur?'selected':''}>${t}</option>`).join('')}</select></td></tr>`}).join('');
-  $('#xl-map').innerHTML=`<p class="note" style="margin:12px 0 6px">Check we read your columns right. Anything set to skip is still kept on the contact as extra detail, just not used for emailing.</p>
-   <div class="wrapx" style="max-height:340px"><table><thead><tr><th>Your column</th><th>Goes to</th></tr></thead><tbody>${rows}</tbody></table></div>
-   <button class="btn btn-dark" id="xl-go" style="margin-top:12px">Import ${sh.rows} rows</button>`;
-  $('#xl-go').onclick=async()=>{
-   const src=$('#xl-src').value.trim();
-   if(!src)return toast('Say where the list came from — you need that on record');
-   const mapping={};document.querySelectorAll('[data-col]').forEach(sel=>{if(sel.value!=='ignore')mapping[sel.dataset.col]=sel.value});
-   if(!Object.values(mapping).includes('company')&&!Object.values(mapping).includes('full_name'))
-    return toast('Point at least one column at Company or Person');
-   toast('Importing…');
-   try{const d=await api('/api/contacts/import-sheet',{method:'POST',body:JSON.stringify({
-     name:XL.name,data:XL.data,sheet:XL.sheets[XL.i].name,mapping,source:src,tags:$('#xl-tags').value})});
-    toast(`${d.added} added, ${d.updated} updated`);XL=null;outreach()}
-   catch(e){toast(e.error==='source_required'?'Say where the list came from':'Import failed')}};
- }
-
  $('#c-new').onclick=()=>{CAM={template:'invitation',daily_limit:40,status:'draft',from_name:'Joy Anthony Preston'};outreach()};
  $('#c-sync').onclick=async()=>{const r=await api('/api/contacts/sync',{method:'POST',body:'{}'});toast(`${r.added} added, ${r.updated} updated`);outreach()};
  document.querySelectorAll('[data-msent],[data-mskip]').forEach(b=>b.onclick=async()=>{const id=b.dataset.msent||b.dataset.mskip;
@@ -1276,6 +1217,126 @@ Acme Mining Ghana, Ama Mensah, Managing Director, ama@acme.com, 0244000000"></te
  document.querySelectorAll('[data-cedit]').forEach(b=>b.onclick=()=>{CAM=JSON.parse(JSON.stringify(cams.find(x=>String(x.id)===b.dataset.cedit)));outreach()});
  document.querySelectorAll('[data-cpause]').forEach(b=>b.onclick=async()=>{
   await api('/api/campaigns/'+b.dataset.cpause+'/pause',{method:'POST',body:'{}'});toast('Paused');outreach()});
+}
+
+/* ===================== import clients ===================== */
+const IMP_FIELDS=[
+ ['Who',[['company','Company'],['full_name','Person (full name)'],['first_name','First name'],['last_name','Last name'],['role','Job title']]],
+ ['How to reach them',[['email','Email'],['phone','Phone / mobile'],['whatsapp','WhatsApp number'],['website','Website']]],
+ ['About them',[['client_type','Client type'],['country','Country'],['city','City'],['language','Language'],['sector','Sector'],['tags','Tags'],['priority','Priority / tier'],['status','Outreach status'],['notes','Notes']]],
+ ['Permission',[['consent_email','Agreed to email (yes/no)'],['consent_sms','Agreed to SMS (yes/no)'],['consent_whatsapp','Agreed to WhatsApp (yes/no)'],['opt_out','Opted out of everything (yes/no)']]]];
+const IMP_LANG={'':'As in the file (else English)',en:'English',fr:'French',es:'Spanish',de:'German',da:'Danish',pt:'Portuguese',zh:'Chinese',ar:'Arabic'};
+const IMP_ACCEPT='.xlsx,.xlsm,.xls,.ods,.numbers,.csv,.tsv,.txt,.tab,.vcf,.vcard,.json,.xml,.html';
+const IMP_ERR={no_table_found:'We could not find a table with column headings in that file.',unreadable:'That file could not be read. If it is a PDF or Word file, save the list as Excel or CSV first.',
+ encrypted:'That workbook has a password. Save a copy without the password and try again.',format_not_supported:'This server cannot read that format yet. Save it as .xlsx or .csv.',
+ bad_link:'That is not a Google Sheets link. It should start with https://docs.google.com/spreadsheets/d/',not_shared:'Google would not hand over that sheet. Share it as "Anyone with the link can view", then try again.',
+ file_too_large:'That file is over 20 MB. Split it into smaller files.',no_file:'Choose a file first.',source_required:'Say where the list came from — you need that on record.',
+ consent_source_required:'You ticked that they agreed to hear from Gotham. Say how they agreed.'};
+let IMP=null;
+async function importView(){
+ setTitle('Import clients','Excel, CSV, vCard, JSON or a Google Sheet — you check everything before it is saved');
+ IMP=null;
+ $('#view').innerHTML=`<div class="card ip">
+  <ol class="ip-steps" id="ip-steps"><li class="on"><b>1</b>Choose the list</li><li><b>2</b>Match the columns</li><li><b>3</b>Check and import</li></ol>
+  <div class="seg" id="ip-mode" role="tablist"><button data-m="file" class="on" type="button">A file</button><button data-m="paste" type="button">Paste rows</button><button data-m="link" type="button">Google Sheets link</button></div>
+  <div id="ip-in" style="margin-top:14px"></div>
+  <p class="note ip-fmts"><b>Reads</b> Excel (.xlsx, .xls) · LibreOffice (.ods) · Apple Numbers · CSV or TSV with any separator — including exports from Outlook, Google Contacts, LinkedIn, Mailchimp and HubSpot · vCard (.vcf) from iPhone, Android or Outlook · JSON.
+   <a href="#" id="ip-tpl">Download a blank template</a></p></div>
+  <div id="ip-2"></div>`;
+ const modes={
+  file:()=>`<label class="ip-drop" id="ip-drop"><input type="file" id="ip-f" accept="${IMP_ACCEPT}">
+    <span class="ip-ic">${ic('upload')}</span><b>Drop a file here</b><span class="note">or click to choose one · up to 20 MB</span></label>`,
+  paste:()=>`<textarea class="t" id="ip-text" rows="7" placeholder="Copy rows from Excel, a WhatsApp chat or an email and paste them here.
+Company, Name, Email, Phone
+Acme Ghana Ltd, Ama Mensah, ama@acme.com, 0244000000"></textarea>
+    <button class="btn btn-dark" id="ip-read" type="button" style="margin-top:10px">Read these rows</button>`,
+  link:()=>`<div class="row2" style="display:flex;gap:8px;flex-wrap:wrap"><input class="t" id="ip-url" placeholder="https://docs.google.com/spreadsheets/d/…" style="flex:1 1 320px">
+    <button class="btn btn-dark" id="ip-read" type="button">Read the sheet</button></div>
+    <p class="note">In Google Sheets: Share → General access → "Anyone with the link" (Viewer). You can switch it back once it is imported.</p>`};
+ const setMode=m=>{document.querySelectorAll('#ip-mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));$('#ip-in').innerHTML=modes[m]();wireIn(m)};
+ $('#ip-mode').onclick=e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.m)};
+ $('#ip-tpl').onclick=e=>{e.preventDefault();
+  const head=['Company','Person','Job title','Email','Phone','WhatsApp','Client type','Country','Language','Sector','City','Website','Tags','Email consent','SMS consent','WhatsApp consent','Notes'];
+  const eg=['Acme Ghana Ltd','Ama Mensah','Managing Director','ama@acme.example','0244000000','','Corporate','Ghana','English','Mining','Accra','acme.example','tier-a, mining','yes','','','Met at the September forum'];
+  const csv='﻿'+[head,eg].map(r=>r.map(v=>/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v).join(',')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='gotham-clients-template.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
+ function wireIn(m){
+  if(m==='file'){const d=$('#ip-drop'),f=$('#ip-f');
+   f.onchange=()=>f.files[0]&&readIt({file:f.files[0]});
+   ['dragenter','dragover'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.add('over')}));
+   ['dragleave','drop'].forEach(ev=>d.addEventListener(ev,e=>{e.preventDefault();d.classList.remove('over')}));
+   d.addEventListener('drop',e=>{const x=e.dataTransfer.files[0];if(x)readIt({file:x})});}
+  else $('#ip-read').onclick=()=>m==='paste'?($('#ip-text').value.trim()?readIt({text:$('#ip-text').value}):toast('Paste some rows first'))
+   :($('#ip-url').value.trim()?readIt({url:$('#ip-url').value.trim()}):toast('Paste the link first'));
+ }
+ setMode('file');
+}
+async function readIt(src){
+ let body;
+ if(src.file){if(src.file.size>20*1048576)return toast(IMP_ERR.file_too_large);
+  $('#ip-2').innerHTML='<div class="card"><div class="empty">Reading '+esc(src.file.name)+'…</div></div>';
+  body={name:src.file.name,data:await readFile(src.file)}}
+ else {body=src.text?{text:src.text}:{url:src.url};$('#ip-2').innerHTML='<div class="card"><div class="empty">Reading…</div></div>'}
+ try{const d=await api('/api/contacts/inspect',{method:'POST',body:JSON.stringify(body)});
+  IMP={body,kind:d.kind,sheets:d.sheets,i:0,label:src.file?src.file.name:src.text?'Pasted rows':'Google Sheet'};drawImp()}
+ catch(e){$('#ip-2').innerHTML=`<div class="card ip-bad"><b>Could not read that.</b><p class="note">${esc(IMP_ERR[e.error]||'Upload failed. Try again, or save the list as .xlsx.')}</p></div>`}
+}
+function impOpts(cur){return `<option value="ignore" ${cur==='ignore'?'selected':''}>— keep as extra detail —</option>`+IMP_FIELDS.map(([g,fs])=>`<optgroup label="${g}">${fs.map(([k,t])=>`<option value="${k}" ${k===cur?'selected':''}>${t}</option>`).join('')}</optgroup>`).join('')}
+function drawImp(){
+ const sh=IMP.sheets[IMP.i], KIND={xlsx:'Excel',xls:'Excel 97–2003',ods:'LibreOffice',numbers:'Numbers',csv:'CSV',tsv:'TSV',vcf:'vCard',json:'JSON',xml:'XML',xlsb:'Excel binary'};
+ document.querySelectorAll('#ip-steps li').forEach((l,n)=>l.classList.toggle('on',n<=1));
+ const auto=Object.keys(sh.mapping).length;
+ $('#ip-2').innerHTML=`<div class="card"><div class="ch"><h3>Match the columns</h3><span class="chip">${esc(KIND[IMP.kind]||IMP.kind||'')} · ${sh.rows} rows</span></div>
+  ${IMP.sheets.length>1?`<label class="l">Which sheet</label><select class="t" id="ip-sheet" style="max-width:360px">${IMP.sheets.map((s,n)=>`<option value="${n}" ${n===IMP.i?'selected':''}>${esc(s.name)} — ${s.rows} rows</option>`).join('')}</select>`:''}
+  <p class="note">We matched <b>${auto}</b> of ${sh.columns.filter(Boolean).length} columns. Check them, fix any that are wrong. Columns you keep as extra detail are saved on the contact, just not used for sending.</p>
+  <div class="wrapx" style="max-height:460px"><table class="ip-map"><thead><tr><th>Your column</th><th>Examples</th><th>Goes to</th></tr></thead><tbody>
+  ${sh.columns.map((c,n)=>c?`<tr class="${sh.mapping[n]?'hit':''}"><td><b>${esc(c)}</b></td><td class="note">${sh.sample.map(r=>r[n]).filter(Boolean).slice(0,3).map(v=>`<span class="ip-eg">${esc(String(v).slice(0,40))}</span>`).join('')||'<i>empty</i>'}</td>
+   <td><select class="t" data-col="${n}">${impOpts(sh.mapping[n]||'ignore')}</select></td></tr>`:'').join('')}
+  </tbody></table></div></div>
+  <div class="card"><h3>For every row</h3><p class="note">Used where the file does not say. What the file says per person always wins.</p>
+  <div class="f2"><div><label class="l">Where did this list come from? <span class="note">— required, shown in the footer of every email</span></label><input class="t" id="ip-src" placeholder="Ghana Chamber of Mines directory, September 2026"></div>
+   <div><label class="l">Tag them all</label><input class="t" id="ip-tags" placeholder="investors-2026, mining"></div></div>
+  <div class="f3" style="margin-top:4px"><div><label class="l">Client type</label><select class="t" id="ip-type"><option value="">As in the file</option>${Object.entries(CTYPE).map(([k,t])=>`<option value="${k}">${t}</option>`).join('')}</select></div>
+   <div><label class="l">Country</label><input class="t" id="ip-country" list="ip-cl" placeholder="As in the file"><datalist id="ip-cl">${['Ghana','Nigeria',"Côte d'Ivoire",'Togo','United Kingdom','United States','Denmark','Germany','France','Netherlands','China','United Arab Emirates','South Africa'].map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+   <div><label class="l">Language</label><select class="t" id="ip-lang">${Object.entries(IMP_LANG).map(([k,t])=>`<option value="${k}">${t}</option>`).join('')}</select></div></div>
+  <h4 class="sec">Permission to contact</h4>
+  <p class="note" style="margin-top:0">Tick only if these people actually agreed to hear from Gotham — they signed up, or asked to be kept informed. Yes/no columns in the file are used per person. A "no" already on record is never changed, and anyone who opted out is left alone.</p>
+  <div class="ip-cons">${[['email','Email'],['sms','SMS'],['whatsapp','WhatsApp']].map(([k,l])=>`<label class="ip-ck"><input type="checkbox" id="ip-c-${k}"> They agreed to ${l}</label>`).join('')}</div>
+  <div id="ip-how" hidden><label class="l">How did they agree? <span class="note">— required, kept with each contact</span></label><input class="t" id="ip-hows" placeholder="Signed up at the investor breakfast, 12 September 2026"></div>
+  <div class="ip-go"><button class="btn btn-line" id="ip-check" type="button">Check first</button><button class="btn btn-dark" id="ip-run" type="button">Import ${sh.rows} rows</button></div>
+  <div id="ip-res"></div></div>`;
+ if($('#ip-sheet'))$('#ip-sheet').onchange=()=>{IMP.i=+$('#ip-sheet').value;drawImp()};
+ document.querySelectorAll('.ip-map select').forEach(s=>s.onchange=()=>s.closest('tr').classList.toggle('hit',s.value!=='ignore'));
+ const cons=()=>['email','sms','whatsapp'].filter(k=>$('#ip-c-'+k).checked);
+ document.querySelectorAll('.ip-cons input').forEach(x=>x.onchange=()=>{$('#ip-how').hidden=!cons().length});
+ const payload=dry=>{const mapping={};document.querySelectorAll('.ip-map select').forEach(s=>{if(s.value!=='ignore')mapping[s.dataset.col]=s.value});
+  const b={...IMP.body,sheet:sh.name,mapping,dry,source:$('#ip-src').value.trim(),tags:$('#ip-tags').value,client_type:$('#ip-type').value,
+   country:$('#ip-country').value.trim(),language:$('#ip-lang').value,consent_source:$('#ip-hows').value.trim()};
+  cons().forEach(k=>b['consent_'+k]='yes');return {b,mapping}};
+ const check=async dry=>{const {b,mapping}=payload(dry),v=Object.values(mapping);
+  if(!b.source){$('#ip-src').focus();return toast(IMP_ERR.source_required)}
+  if(cons().length&&!b.consent_source){$('#ip-hows').focus();return toast(IMP_ERR.consent_source_required)}
+  if(!['company','full_name','first_name','last_name','email','phone','whatsapp'].some(f=>v.includes(f)))return toast('Point at least one column at Company, Person, Email or Phone');
+  const btn=dry?$('#ip-check'):$('#ip-run');btn.disabled=true;const was=btn.textContent;btn.textContent=dry?'Checking…':'Importing…';
+  try{const r=await api('/api/contacts/import-sheet',{method:'POST',body:JSON.stringify(b)});showRes(r,dry)}
+  catch(e){toast(IMP_ERR[e.error]||'Import failed')}finally{btn.disabled=false;btn.textContent=was}};
+ $('#ip-check').onclick=()=>check(true);
+ $('#ip-run').onclick=()=>check(false);
+}
+function showRes(r,dry){
+ const n=(x,t,cls)=>x?`<div class="ip-n ${cls||''}"><b>${x}</b><span>${t}</span></div>`:'';
+ const yn=v=>v==='yes'?'✓':v==='no'?'✕':'–';
+ const stats=`<div class="ip-stats">${n(r.added,dry?'new':'added','g')}${n(r.updated,dry?'already in your list — gaps filled, tags added':'updated')}${n(r.left_alone,'opted out — left alone','r')}${n(r.skipped,'skipped: no name, email or phone','r')}${n(r.email_unreadable,'emails we could not read — kept on the contact')}${n(r.consent_yes,'may be contacted')}</div>`;
+ if(dry){document.querySelectorAll('#ip-steps li').forEach(l=>l.classList.add('on'));
+  $('#ip-res').innerHTML=`<div class="ip-sum"><h4>If you import now</h4>${stats}
+   ${r.sample&&r.sample.length?`<p class="note">How the first rows will look:</p><div class="wrapx"><table><thead><tr><th>Company</th><th>Person</th><th>Email</th><th>Phone</th><th>Type · country</th><th title="Email, SMS, WhatsApp">Email/SMS/WA</th></tr></thead><tbody>
+   ${r.sample.map(s=>`<tr><td>${esc(s.company||'—')}</td><td>${esc(s.full_name||'')}<div class="note">${esc(s.role||'')}</div></td><td class="note">${esc(s.email||'—')}</td><td class="note">${esc(s.phone||'—')}</td><td class="note">${esc(CTYPE[s.client_type]||'—')}<div>${esc(s.country||'')}</div></td><td>${yn(s.consent.email)} ${yn(s.consent.sms)} ${yn(s.consent.whatsapp)}</td></tr>`).join('')}</tbody></table></div>`:''}</div>`;
+  $('#ip-res').scrollIntoView({behavior:'smooth',block:'nearest'});return}
+ $('#ip-2').innerHTML=`<div class="card ip-done"><h3>Imported</h3>${stats}<p class="note">Saved from ${esc(IMP.label)}${r.sheet&&IMP.sheets.length>1?' / '+esc(r.sheet):''}. It is in the audit log. Import the same file again whenever it changes: people are matched by email, then phone, then company and name, so nothing is doubled.</p>
+  <div class="ip-go"><button class="btn btn-dark" id="ip-see" type="button">See your clients</button><button class="btn btn-line" id="ip-more" type="button">Import another list</button><button class="btn btn-line" id="ip-out" type="button">Write to them</button></div></div>`;
+ $('#ip-2').scrollIntoView({behavior:'smooth',block:'start'});
+ $('#ip-see').onclick=()=>go('contacts');$('#ip-more').onclick=()=>importView();$('#ip-out').onclick=()=>go('out');
+
 }
 
 /* One form, whether you are adding a company or correcting one. */

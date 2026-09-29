@@ -159,10 +159,12 @@ async function journeys(browser) {
     await p.goto(B + '/', NAV); await settle(p);
     const t0 = await p.textContent('[data-car-title]'); await p.click('[data-car-next]'); await p.waitForTimeout(500);
     check('carousel next moves to another practice', (await p.textContent('[data-car-title]')) !== t0);
-    {  // mouse: moving across the cards turns the ring without clicking, then the nearest card settles in front
-      const sb = await p.locator('.car-stage').boundingBox(), y = sb.y + sb.height * .4, before = await p.textContent('[data-car-title]');
-      await p.mouse.move(sb.x + sb.width * .45, y); for (let i = 1; i <= 10; i++) await p.mouse.move(sb.x + sb.width * (.45 + i * .035), y, { steps: 2 });
-      await p.waitForTimeout(1100);
+    {  // mouse: pointing at a side card (no click) turns it to the front
+      const sb = await p.locator('.car-stage').boundingBox(), before = await p.textContent('[data-car-title]');
+      await p.mouse.move(sb.x + sb.width * .5, sb.y + sb.height * .5);
+      const side = await p.locator('.car-card.side').last().boundingBox();
+      await p.mouse.move(side.x + side.width / 2, side.y + side.height / 2, { steps: 8 });
+      await p.waitForTimeout(1300);
       check('carousel turns when the mouse moves across it (no click)', (await p.textContent('[data-car-title]')) !== before);
       check('carousel settles with one card in front', await p.$$eval('.car-card.front', a => a.length) === 1);
       await p.mouse.move(5, 5); await p.waitForTimeout(400);

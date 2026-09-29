@@ -424,69 +424,490 @@ function cellText(v) {
 const PLACEHOLDER = /^(to find|tofind|tbd|tba|t\.b\.d\.?|n\/?a|none|unknown|\?+|-+|—+)$/i;
 const realValue = t => (PLACEHOLDER.test(String(t || '').trim()) ? '' : String(t || '').trim());
 
-/* Read an uploaded workbook or CSV into { sheets: [{name, columns, rows}] }. */
-async function readSheet(buf, filename) {
-  const wb = new ExcelJS.Workbook();
-  if (/\.csv$/i.test(filename || '')) {
-    const { rows } = parseContacts(buf.toString('utf8'));   // csv path stays as it was
-    return { csv: true, rows };
+/* ---------- Reading client lists in any common format ----------
+   Everything becomes { sheets: [{ name, columns, rows }] }, so one mapping
+   step and one import path serve Excel, LibreOffice, Numbers, CSV/TSV (any
+   separator, any encoding), vCard, JSON and Google Sheets. */
+const MAX_IMPORT_ROWS = 20000;
+const EMAIL_RE = /^[^\s@<>(),;:"]+@[^\s@<>(),;:"]+\.[a-z]{2,}$/i;
+let XLSX_MOD;
+async function sheetjs() {
+  if (XLSX_MOD === undefined) XLSX_MOD = await import('xlsx').then(m => m.default || m).catch(() => null);
+  return XLSX_MOD;
+}
+const colName = i => { let s = ''; i++; while (i) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); } return s; };
+
+/* Rows of cells → a table: the header is the first row with two or more
+   filled cells. A "header" that holds an email address is really data, so
+   the columns get letters instead and we guess from the values. */
+function tableFrom(name, aoa) {
+  const rows = [];
+  for (const r of aoa) { if (rows.length > MAX_IMPORT_ROWS + 8) break; rows.push(Array.from(r || [], cellText)); }
+  let h = -1;
+  for (let i = 0; i < Math.min(8, rows.length); i++) if (rows[i].filter(Boolean).length >= 2) { h = i; break; }
+  if (h < 0) return null;
+  let columns = rows[h].slice(), body = rows.slice(h + 1);
+  if (columns.some(c => EMAIL_RE.test(c))) { body = rows.slice(h); columns = columns.map(() => ''); }
+  let width = columns.length;
+  for (const r of body.slice(0, 500)) width = Math.max(width, r.length);
+  body = body.filter(r => r.some(Boolean));
+  const seen = Object.create(null);
+  columns = Array.from({ length: width }, (_, i) => {
+    let c = String(columns[i] || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+    if (!c) c = body.some(r => r[i]) ? 'Column ' + colName(i) : '';
+    if (!c) return '';
+    const k = c.toLowerCase(); seen[k] = (seen[k] || 0) + 1;
+    return seen[k] > 1 ? `${c} (${seen[k]})` : c;
+  });
+  body = body.slice(0, MAX_IMPORT_ROWS);
+  return body.length && columns.filter(Boolean).length ? { name: String(name || 'Sheet').slice(0, 80), columns, rows: body } : null;
+}
+
+/* Text files: Excel saves CSV as Windows-1252 or UTF-16, Google as UTF-8. */
+function decodeText(buf) {
+  if (buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF) return buf.subarray(3).toString('utf8');
+  if (buf[0] === 0xFF && buf[1] === 0xFE) return buf.subarray(2).toString('utf16le');
+  if (buf[0] === 0xFE && buf[1] === 0xFF) { const b = Buffer.from(buf.subarray(2, 2 + ((buf.length - 2) & ~1))); return b.swap16().toString('utf16le'); }
+  let zOdd = 0; const n = Math.min(buf.length, 400);
+  for (let i = 1; i < n; i += 2) if (buf[i] === 0) zOdd++;
+  if (n > 20 && zOdd > n / 4) return buf.toString('utf16le');
+  const s = buf.toString('utf8');
+  if (!s.includes('�')) return s;
+  try { return new TextDecoder('windows-1252').decode(buf); } catch { return buf.toString('latin1'); }
+}
+
+/* CSV, TSV, semicolons (European Excel) or pipes, quoted fields with line breaks. */
+function parseDelimited(text) {
+  text = String(text || '').replace(/^﻿/, '');
+  let delim = null;
+  const sep = /^sep=(.)\s*\r?\n/i.exec(text);
+  if (sep) { delim = sep[1]; text = text.slice(sep[0].length); }
+  if (!delim) {
+    const sample = text.split(/\r?\n/).filter(l => l.trim()).slice(0, 8);
+    const count = (l, d) => { let n = 0, q = false; for (const ch of l) { if (ch === '"') q = !q; else if (!q && ch === d) n++; } return n; };
+    let best = ',', score = 0;
+    for (const d of [',', ';', '\t', '|']) {
+      /* the header's count, and how many lines agree with it (a quoted note
+         with a line break makes a few lines disagree, that is fine) */
+      const c = sample.map(l => count(l, d)); if (!c.length || !c[0]) continue;
+      const s = c.filter(x => x === c[0]).length * 100 + c[0];
+      if (s > score) { best = d; score = s; }
+    }
+    delim = best;
   }
+  const rows = []; let row = [], cur = '', q = false, wasQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (q) { if (ch === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; continue; }
+    if (ch === '"' && !cur.trim() && !wasQ) { q = true; wasQ = true; cur = ''; }
+    else if (ch === delim) { row.push(cur.trim()); cur = ''; wasQ = false; }
+    else if (ch === '\n' || ch === '\r') { if (ch === '\r' && text[i + 1] === '\n') i++; row.push(cur.trim()); rows.push(row); row = []; cur = ''; wasQ = false; if (rows.length > MAX_IMPORT_ROWS + 8) break; }
+    else cur += ch;
+  }
+  if (cur.trim() || row.length) { row.push(cur.trim()); rows.push(row); }
+  return rows;
+}
+
+/* vCard 2.1 / 3.0 / 4.0 — what iPhone, Android, Outlook and Google export. */
+function parseVcf(text) {
+  if (/QUOTED-PRINTABLE/i.test(text)) text = text.replace(/=\r?\n/g, '');
+  const lines = text.replace(/\r?\n[ \t]/g, '').split(/\r?\n/);
+  const cards = []; let c = null;
+  const un = s => String(s || '').replace(/\\n/gi, '\n').replace(/\\([,;:\\])/g, '$1').trim();
+  const parts = s => s.split(/(?<!\\);/).map(un);
+  for (const raw of lines) {
+    if (/^BEGIN:VCARD/i.test(raw)) { c = { emails: [], tels: [], cats: [] }; continue; }
+    if (/^END:VCARD/i.test(raw)) { if (c) cards.push(c); c = null; if (cards.length >= MAX_IMPORT_ROWS) break; continue; }
+    if (!c) continue;
+    const at = raw.indexOf(':'); if (at < 0) continue;
+    const keyParts = raw.slice(0, at).split(';');
+    const key = keyParts[0].toUpperCase().replace(/^ITEM\d+\./, ''), params = keyParts.slice(1).join(';').toUpperCase();
+    let val = raw.slice(at + 1);
+    if (/QUOTED-PRINTABLE/.test(params)) val = Buffer.from(val.replace(/=([0-9A-F]{2})/gi, (_, h) => String.fromCharCode(parseInt(h, 16))), 'latin1').toString('utf8');
+    if (key === 'FN') c.fn = un(val);
+    else if (key === 'N') { const [last, first, middle] = parts(val); c.first = [first, middle].filter(Boolean).join(' '); c.last = last; }
+    else if (key === 'ORG') c.org = parts(val).filter(Boolean).join(', ');
+    else if (key === 'TITLE' || (key === 'ROLE' && !c.title)) c.title = un(val);
+    else if (key === 'EMAIL') c.emails.push(un(val).replace(/^mailto:/i, ''));
+    else if (key === 'TEL') c.tels.push({ v: un(val).replace(/^tel:/i, ''), cell: /CELL|MOBILE|IPHONE/.test(params), wa: /WHATSAPP/.test(params) });
+    else if (key === 'URL' && !c.url) c.url = un(val);
+    else if (key === 'ADR') { const a = parts(val); c.city = c.city || a[3]; c.country = c.country || a[6]; }
+    else if (key === 'NOTE') c.note = un(val);
+    else if (key === 'CATEGORIES') c.cats.push(...val.split(/(?<!\\),/).map(un).filter(Boolean));
+    else if (key === 'X-WHATSAPP' || key === 'IMPP' && /whatsapp/i.test(val)) c.tels.push({ v: un(val).replace(/^[a-z-]+:/i, ''), wa: true });
+  }
+  const head = ['Name', 'Company', 'Job title', 'Email', 'Other email', 'Mobile', 'Other phone', 'WhatsApp', 'Website', 'City', 'Country', 'Categories', 'Notes'];
+  const rows = cards.map(k => {
+    const mob = k.tels.find(t => t.cell) || k.tels.find(t => !t.wa);
+    const other = k.tels.find(t => t !== mob && !t.wa);
+    const wa = k.tels.find(t => t.wa);
+    return [k.fn || [k.first, k.last].filter(Boolean).join(' '), k.org, k.title, k.emails[0], k.emails.slice(1).join(', '),
+      mob && mob.v, other && other.v, wa && wa.v, k.url, k.city, k.country, k.cats.join(', '), k.note].map(v => v || '');
+  });
+  return [head, ...rows];
+}
+
+/* JSON: a list of objects (or of rows), or an object holding such a list.
+   One level of nesting is flattened: {address:{city}} → "address.city". */
+function parseJsonTable(text) {
+  let d = JSON.parse(text);
+  if (d && !Array.isArray(d) && typeof d === 'object') {
+    const k = Object.keys(d).find(k => Array.isArray(d[k]) && d[k].some(x => x && typeof x === 'object'));
+    d = k ? d[k] : [d];
+  }
+  if (!Array.isArray(d)) return [];
+  if (d.every(x => Array.isArray(x))) return d;
+  const flatVal = v => Array.isArray(v) ? v.map(x => x && typeof x === 'object' ? (x.value || x.address || x.email || x.number || x.name || '') : x).filter(x => x !== '' && x != null).join(', ')
+    : v && typeof v === 'object' ? '' : v;
+  const cols = new Map(), objs = [];
+  for (const o of d.slice(0, MAX_IMPORT_ROWS)) {
+    if (!o || typeof o !== 'object' || Array.isArray(o)) continue;
+    const flat = new Map();
+    for (const [k, v] of Object.entries(o)) {
+      if (v && typeof v === 'object' && !Array.isArray(v)) { for (const [k2, v2] of Object.entries(v)) flat.set(k + '.' + k2, flatVal(v2)); }
+      else flat.set(k, flatVal(v));
+    }
+    for (const k of flat.keys()) if (!cols.has(k) && cols.size < 120) cols.set(k, cols.size);
+    objs.push(flat);
+  }
+  const head = [...cols.keys()];
+  return [head, ...objs.map(f => head.map(k => f.has(k) ? f.get(k) : ''))];
+}
+
+async function readWithSheetJS(buf) {
+  const X = await sheetjs();
+  if (!X) { const e = new Error('format_not_supported'); e.code = 'format_not_supported'; throw e; }
+  let wb;
+  try { wb = X.read(buf, { type: 'buffer', cellDates: true, dense: true, sheetRows: MAX_IMPORT_ROWS + 10 }); }
+  catch (e) { if (/password|encrypt/i.test(String(e && e.message))) { const x = new Error('encrypted'); x.code = 'encrypted'; throw x; } throw e; }
+  const sheets = [];
+  for (const name of wb.SheetNames) {
+    const aoa = X.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '', blankrows: false });
+    const t = tableFrom(name, aoa); if (t) sheets.push(t);
+  }
+  return sheets;
+}
+async function readWithExcelJS(buf) {
+  const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buf);
   const sheets = [];
   for (const ws of wb.worksheets) {
     if (ws.rowCount < 2) continue;
-    /* The header is the first row with two or more non-empty cells. */
-    let headRow = 1;
-    for (let i = 1; i <= Math.min(8, ws.rowCount); i++) {
-      const filled = (ws.getRow(i).values || []).slice(1).filter(v => cellText(v)).length;
-      if (filled >= 2) { headRow = i; break; }
-    }
-    const columns = (ws.getRow(headRow).values || []).slice(1).map(v => cellText(v));
-    if (columns.filter(Boolean).length < 2) continue;
-    const rows = [];
-    for (let i = headRow + 1; i <= ws.rowCount; i++) {
-      const vals = (ws.getRow(i).values || []).slice(1).map(cellText);
-      if (!vals.some(Boolean)) continue;
-      rows.push(vals);
-    }
-    if (rows.length) sheets.push({ name: ws.name, columns, rows });
+    const aoa = [];
+    for (let i = 1; i <= Math.min(ws.rowCount, MAX_IMPORT_ROWS + 10); i++) aoa.push((ws.getRow(i).values || []).slice(1));
+    const t = tableFrom(ws.name, aoa); if (t) sheets.push(t);
   }
-  return { sheets };
+  return sheets;
 }
 
-/* Guess which spreadsheet column is which CRM field. The user can override
-   every one of these in the mapping step. */
-const FIELD_HINTS = {
-  company:   [/company/i, /organisation/i, /organization/i, /\bfirm\b/i, /institution/i, /business/i, /entity/i],
-  full_name: [/ghana (md|ceo)/i, /\bmd\b/i, /\bceo\b/i, /leader/i, /contact name/i, /^name$/i, /person/i, /manager/i],
-  role:      [/role/i, /title/i, /position/i],
-  email:     [/e-?mail/i],
-  phone:     [/phone/i, /telephone/i, /mobile/i, /whatsapp/i, /\btel\b/i],
-  website:   [/website/i, /\bweb\b/i, /\burl\b/i, /domain/i],
-  sector:    [/sector/i, /industry/i, /mineral/i, /category/i],
-  city:      [/city/i, /town/i, /location/i],
-  priority:  [/priority/i, /tier/i, /rank/i],
-  status:    [/outreach status/i, /^status$/i],
-  notes:     [/notes/i, /sensitiv/i, /comment/i, /pitch/i, /next step/i]
+/* Read an uploaded file or pasted text into { kind, sheets }. The content
+   decides, not the file name, so a mislabelled export still reads. */
+async function readSheet(buf, filename) {
+  const ext = (String(filename || '').toLowerCase().match(/\.([a-z0-9]+)$/) || [])[1] || '';
+  const zip = buf[0] === 0x50 && buf[1] === 0x4B, ole = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
+  if (zip) {
+    if (['ods', 'numbers', 'xlsb'].includes(ext)) return { kind: ext, sheets: await readWithSheetJS(buf) };
+    try { const s = await readWithExcelJS(buf); if (s.length) return { kind: 'xlsx', sheets: s }; } catch {}
+    return { kind: ext || 'xlsx', sheets: await readWithSheetJS(buf) };
+  }
+  if (ole) return { kind: ext === 'xlsx' ? 'xlsx' : 'xls', sheets: await readWithSheetJS(buf) };
+  const text = decodeText(buf), head = text.slice(0, 2000).trimStart();
+  if (/^BEGIN:VCARD/im.test(head)) { const t = tableFrom('Contacts', parseVcf(text)); return { kind: 'vcf', sheets: t ? [t] : [] }; }
+  if (/^[\[{]/.test(head)) {
+    try { const t = tableFrom('Records', parseJsonTable(text)); return { kind: 'json', sheets: t ? [t] : [] }; } catch {}
+  }
+  if (/^<(\?xml|!doctype html|html|table|workbook)/i.test(head)) return { kind: ext || 'xml', sheets: await readWithSheetJS(Buffer.from(text, 'utf8')) };
+  const t = tableFrom(ext === 'tsv' ? 'TSV' : ext ? ext.toUpperCase() : 'Pasted rows', parseDelimited(text));
+  return { kind: ext === 'tsv' ? 'tsv' : 'csv', sheets: t ? [t] : [] };
+}
+
+/* Google Sheets shared as "anyone with the link": fetch the workbook. Only
+   that exact host and path shape, so this cannot be pointed anywhere else. */
+async function fetchGoogleSheet(url) {
+  const m = String(url || '').trim().match(/^https:\/\/docs\.google\.com\/spreadsheets\/d\/([A-Za-z0-9_-]{20,120})(?:[\/?#]|$)/);
+  if (!m) { const e = new Error('bad_link'); e.code = 'bad_link'; throw e; }
+  const r = await fetch(`https://docs.google.com/spreadsheets/d/${m[1]}/export?format=xlsx`, { redirect: 'follow', signal: AbortSignal.timeout(25000) });
+  const type = r.headers.get('content-type') || '';
+  if (!r.ok || /text\/html/.test(type)) { const e = new Error('not_shared'); e.code = 'not_shared'; throw e; }
+  const len = +r.headers.get('content-length') || 0;
+  if (len > 20 * 1048576) { const e = new Error('file_too_large'); e.code = 'file_too_large'; throw e; }
+  const buf = Buffer.from(await r.arrayBuffer());
+  if (buf.length > 20 * 1048576) { const e = new Error('file_too_large'); e.code = 'file_too_large'; throw e; }
+  return buf;
+}
+/* The body of /inspect and /import-sheet: a file (base64), pasted text or a Google Sheets link. */
+async function readImportBody(b) {
+  if (b.url) return readSheet(await fetchGoogleSheet(b.url), 'google.xlsx');
+  if (typeof b.text === 'string' && b.text.trim()) return readSheet(Buffer.from(b.text, 'utf8'), 'pasted.txt');
+  const raw = String(b.data || '').replace(/^data:[^;]*;base64,/, '');
+  if (!raw) { const e = new Error('no_file'); e.code = 'no_file'; throw e; }
+  return readSheet(Buffer.from(raw, 'base64'), b.name || '');
+}
+const importError = e => ['format_not_supported', 'encrypted', 'bad_link', 'not_shared', 'file_too_large', 'no_file'].includes(e && e.code) ? e.code : 'unreadable';
+
+/* Which column is which field. Exact names from the common exports first
+   (Outlook, Google Contacts, LinkedIn, Mailchimp, HubSpot, our own template),
+   then looser patterns, then the values themselves. */
+const IMPORT_FIELDS = ['company', 'full_name', 'first_name', 'last_name', 'role', 'email', 'phone', 'whatsapp', 'website',
+  'sector', 'city', 'country', 'language', 'client_type', 'tags', 'priority', 'status', 'notes',
+  'consent_email', 'consent_sms', 'consent_whatsapp', 'opt_out'];
+const hnorm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const EXACT_COLS = {
+  company: ['company', 'companyname', 'client', 'clientname', 'customer', 'customername', 'account', 'organization', 'organisation', 'organization1name', 'organizationname', 'employer', 'accountname', 'business', 'businessname', 'firm'],
+  full_name: ['name', 'fullname', 'contactname', 'displayname', 'person', 'contact', 'contactperson'],
+  first_name: ['firstname', 'givenname', 'forename', 'fname'],
+  last_name: ['lastname', 'surname', 'familyname', 'lname'],
+  role: ['jobtitle', 'position', 'role', 'organization1title', 'designation', 'occupation'],
+  email: ['email', 'emailaddress', 'email1value', 'mail', 'workemail', 'businessemail', 'primaryemail', 'emailaddress1'],
+  phone: ['mobile', 'mobilephone', 'mobilenumber', 'cell', 'cellphone', 'phone', 'phonenumber', 'phone1value', 'telephone', 'tel', 'primaryphone', 'businessphone'],
+  whatsapp: ['whatsapp', 'whatsappnumber', 'whatsappphone', 'wa'],
+  website: ['website', 'webpage', 'web', 'url', 'site', 'companywebsite'],
+  sector: ['sector', 'industry'],
+  city: ['city', 'town', 'businesscity', 'homecity', 'address1city'],
+  country: ['country', 'countryregion', 'businesscountryregion', 'homecountryregion', 'address1country', 'nationality'],
+  language: ['language', 'preferredlanguage', 'lang', 'locale'],
+  client_type: ['clienttype', 'customertype', 'typeofclient', 'clientcategory', 'segment', 'type'],
+  tags: ['tags', 'tag', 'labels', 'categories', 'groups', 'groupmembership', 'lists'],
+  priority: ['priority', 'tier'],
+  status: ['status', 'outreachstatus', 'leadstatus'],
+  notes: ['notes', 'note', 'comments', 'comment', 'remarks', 'description'],
+  consent_email: ['emailconsent', 'emailoptin', 'optin', 'marketingoptin', 'marketingconsent', 'consent', 'subscribed', 'newsletter', 'mayemail'],
+  consent_sms: ['smsconsent', 'smsoptin', 'textconsent', 'maysms'],
+  consent_whatsapp: ['whatsappconsent', 'whatsappoptin', 'maywhatsapp'],
+  opt_out: ['unsubscribed', 'optout', 'optedout', 'donotcontact', 'donotemail', 'dnc', 'emailoptout']
 };
-function guessMapping(columns) {
+const CONSENT_COL = /consent|opt[\s_-]?in|opted|permission|subscri|newsletter|may (contact|email)|gdpr/i;
+const OPTOUT_COL = /unsub|opt[\s_-]?out|do[\s_-]?not[\s_-]?(contact|email|call)|\bdnc\b/i;
+const FIELD_HINTS = {
+  company:     [/company/i, /organisation/i, /organization/i, /\bfirm\b/i, /institution/i, /business/i, /entity/i, /employer/i],
+  full_name:   [/ghana (md|ceo)/i, /\bmd\b/i, /\bceo\b/i, /leader/i, /contact name/i, /^name$/i, /person/i, /manager/i, /\bname\b/i],
+  first_name:  [/first ?name/i, /given/i, /forename/i],
+  last_name:   [/last ?name/i, /surname/i, /family ?name/i],
+  role:        [/role/i, /title/i, /position/i, /designation/i],
+  email:       [/e-?mail/i],
+  whatsapp:    [/whats ?app/i],
+  phone:       [/mobile/i, /phone/i, /telephone/i, /\btel\b/i, /\bcell\b/i, /contact (no|number)/i],
+  website:     [/website/i, /\bweb\b/i, /\burl\b/i, /domain/i],
+  sector:      [/sector/i, /industry/i, /mineral/i, /category/i],
+  city:        [/city/i, /town/i, /location/i],
+  country:     [/country/i, /nation/i],
+  language:    [/language/i, /\blang\b/i],
+  client_type: [/client ?type|customer ?type|type of client|client category|segment/i],
+  tags:        [/\btags?\b/i, /label/i, /group/i],
+  priority:    [/priority/i, /tier/i, /rank/i],
+  status:      [/outreach status/i, /^status$/i],
+  notes:       [/notes/i, /sensitiv/i, /comment/i, /pitch/i, /next step/i, /remark/i]
+};
+function guessMapping(columns, sample = []) {
   const map = {}, taken = new Set(), done = new Set();
-  /* Walk the hints one pattern at a time rather than one field at a time, so a
-     specific pattern ("Ghana MD") beats a loose one ("CEO") even when the loose
-     column comes first. Without this, a list of local managing directors gets
-     mapped to the group chief executive in another country. */
+  const put = (i, f) => { map[i] = f; taken.add(i); done.add(f); };
+  /* 1. consent and opt-out columns first, so "Email opt-in" is never read as the address */
+  columns.forEach((c, i) => {
+    if (!c) return;
+    if (OPTOUT_COL.test(c)) { if (!done.has('opt_out')) put(i, 'opt_out'); else taken.add(i); return; }
+    if (CONSENT_COL.test(c)) {
+      const f = /sms|text/i.test(c) ? 'consent_sms' : /whats ?app/i.test(c) ? 'consent_whatsapp' : 'consent_email';
+      if (!done.has(f)) put(i, f); else taken.add(i);
+    }
+  });
+  /* 2. exact names, in order of preference ("Mobile Phone" before "Business Phone") */
+  const normed = columns.map(hnorm);
+  for (const [f, names] of Object.entries(EXACT_COLS)) {
+    if (done.has(f)) continue;
+    for (const n of names) { const i = normed.findIndex((c, j) => c === n && !taken.has(j)); if (i >= 0) { put(i, f); break; } }
+  }
+  /* 3. patterns, one pattern at a time across all fields, so a specific
+     pattern ("Ghana MD") beats a loose one ("CEO") even when the loose
+     column comes first. */
   const depth = Math.max(...Object.values(FIELD_HINTS).map(p => p.length));
   for (let round = 0; round < depth; round++) {
     for (const [field, pats] of Object.entries(FIELD_HINTS)) {
       if (done.has(field) || !pats[round]) continue;
       for (let i = 0; i < columns.length; i++) {
         if (taken.has(i) || !columns[i]) continue;
-        if (pats[round].test(columns[i])) { map[i] = field; taken.add(i); done.add(field); break; }
+        if (pats[round].test(columns[i])) { put(i, field); break; }
       }
     }
   }
+  /* 4. whatever is left: look at the values */
+  const PHONE_V = /^\+?[\d\s().-]{8,20}$/, WEB_V = /^(https?:\/\/)?(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/\S*)?$/i;
+  columns.forEach((c, i) => {
+    if (!c || taken.has(i)) return;
+    const vals = sample.map(r => String(r[i] || '').trim()).filter(Boolean).slice(0, 30);
+    if (vals.length < 2) return;
+    const share = re => vals.filter(v => re.test(v)).length / vals.length;
+    if (!done.has('email') && share(EMAIL_RE) >= .6) put(i, 'email');
+    else if (!done.has('phone') && share(PHONE_V) >= .6 && vals.some(v => v.replace(/\D/g, '').length >= 9)) put(i, 'phone');
+    else if (!done.has('website') && share(WEB_V) >= .6 && !vals.some(v => v.includes('@'))) put(i, 'website');
+  });
+  /* A full name wins over first + last; both stay mapped so nothing is lost. */
   return map;
 }
+
+/* Normalising what people type into those columns. */
+const TYPE_WORDS = [
+  ['international', /international|foreign|multinational|intl|overseas|embassy|diaspora|global/i],
+  ['government', /government|ministry|\bgov\b|public sector|state|agency|authority|municipal|assembly/i],
+  ['investor', /investor|\bfund\b|capital|\bvc\b|private equity|\bpe\b|angel|bank|financ/i],
+  ['media', /media|press|journalist|news|tv|radio|publisher/i],
+  ['partner', /partner|alliance|association|chamber|ngo|non-?profit/i],
+  ['sme', /\bsme\b|small|startup|start-up|entrepreneur|micro/i],
+  ['corporate', /corporate|corporation|company|enterprise|\bltd\b|\bplc\b|business|firm/i],
+  ['other', /^other$/i]
+];
+const normType = v => { v = String(v || '').trim(); if (!v) return null; if (CLIENT_TYPES.includes(v.toLowerCase())) return v.toLowerCase(); const hit = TYPE_WORDS.find(([, re]) => re.test(v)); return hit ? hit[0] : null; };
+const LANG_WORDS = { english: 'en', anglais: 'en', french: 'fr', francais: 'fr', 'français': 'fr', spanish: 'es', espanol: 'es', 'español': 'es', german: 'de', deutsch: 'de',
+  danish: 'da', dansk: 'da', portuguese: 'pt', 'português': 'pt', chinese: 'zh', mandarin: 'zh', arabic: 'ar', italian: 'it', dutch: 'nl', swedish: 'sv', norwegian: 'no',
+  twi: 'tw', akan: 'ak', ewe: 'ee', ga: 'gaa', hausa: 'ha', yoruba: 'yo', igbo: 'ig', swahili: 'sw', japanese: 'ja', korean: 'ko', russian: 'ru', turkish: 'tr', hindi: 'hi' };
+const normLang = v => { v = String(v || '').trim().toLowerCase(); if (!v) return null; if (LANG_WORDS[v]) return LANG_WORDS[v]; const m = v.match(/^([a-z]{2,3})([-_][a-z]{2})?$/); return m ? m[1] : null; };
+const COUNTRY_CODES = { gh: 'Ghana', gha: 'Ghana', ng: 'Nigeria', nga: 'Nigeria', ci: "Côte d'Ivoire", tg: 'Togo', bf: 'Burkina Faso', sn: 'Senegal', ke: 'Kenya', za: 'South Africa',
+  us: 'United States', usa: 'United States', uk: 'United Kingdom', gb: 'United Kingdom', dk: 'Denmark', de: 'Germany', fr: 'France', nl: 'Netherlands', se: 'Sweden', no: 'Norway',
+  ch: 'Switzerland', es: 'Spain', it: 'Italy', be: 'Belgium', ca: 'Canada', cn: 'China', in: 'India', jp: 'Japan', ae: 'United Arab Emirates', uae: 'United Arab Emirates',
+  sa: 'Saudi Arabia', tr: 'Turkey', au: 'Australia', br: 'Brazil', ma: 'Morocco', eg: 'Egypt', rw: 'Rwanda', ug: 'Uganda', tz: 'Tanzania', lr: 'Liberia', sl: 'Sierra Leone', cm: 'Cameroon' };
+const normCountry = v => { v = String(v || '').trim().replace(/\s+/g, ' '); if (!v) return null;
+  const c = COUNTRY_CODES[v.toLowerCase().replace(/\./g, '')]; if (c) return c; if (v.length > 60) return null;
+  return (v === v.toLowerCase() || v === v.toUpperCase()) ? v.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (m, s, a) => s + a.toUpperCase()) : v; };
+const YES_V = /^(y|yes|true|1|x|✓|✔|ja|oui|si|sí|opted[\s_-]?in|opt[\s_-]?in|subscribed|agreed|granted|confirmed|active)$/i;
+const NO_V = /^(n|no|false|0|nej|non|opted[\s_-]?out|opt[\s_-]?out|unsubscribed|refused|declined|revoked|cleaned|bounced)$/i;
+const yesNo = v => { v = String(v || '').trim(); return !v ? null : YES_V.test(v) ? 'yes' : NO_V.test(v) ? 'no' : null; };
+const splitTags = v => String(v || '').split(/[,;|]| ::: /).map(t => t.replace(/^\*\s*/, '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9._-]/g, '').slice(0, 40)).filter(t => t && t !== 'mycontacts');
+const mergeTags = (...lists) => [...new Set(lists.flatMap(l => Array.isArray(l) ? l : splitTags(l)))].join(',').slice(0, 400);
+
+/* Import one table. With dry=true nothing is written and the answer says
+   what would happen, row by row counts, so the admin can check first. */
+async function importTable(sh, b, u, fileLabel) {
+  const map = Object.create(null);
+  const given = (b.mapping && typeof b.mapping === 'object') ? b.mapping : guessMapping(sh.columns, sh.rows.slice(0, 30));
+  for (const [k, v] of Object.entries(given)) if (/^\d+$/.test(k) && IMPORT_FIELDS.includes(v)) map[+k] = v;
+  const source = clean(b.source, 120);
+  const D = {
+    client_type: CLIENT_TYPES.includes(b.client_type) ? b.client_type : null,
+    country: normCountry(clean(b.country, 60)), language: normLang(clean(b.language, 20)),
+    tags: splitTags(clean(b.tags, 200)), sector: clean(b.sector, 60) || null,
+    consent: Object.fromEntries(CHANNELS.map(ch => [ch, b['consent_' + ch] === 'yes' ? 'yes' : null])),
+    consent_source: clean(b.consent_source, 200)
+  };
+  const colOf = f => { const i = Object.keys(map).find(k => map[k] === f); return i === undefined ? '' : sh.columns[i]; };
+  const R = { added: 0, updated: 0, skipped: 0, no_name: 0, email_unreadable: 0, left_alone: 0, opted_out: 0, consent_yes: 0, seen: sh.rows.length, sample: [] };
+  /* Everyone already in the CRM, looked up in memory: a 20,000-row list
+     would otherwise mean 60,000 table scans. Writes go in one transaction,
+     so a failure half-way saves nothing. */
+  const byEmail = new Map(), byPhone = new Map(), byName = new Map();
+  const nameKey = (co, n) => String(co || '').toLowerCase() + '|' + String(n || '').toLowerCase();
+  const index = c => {
+    if (c.email) byEmail.set(c.email.toLowerCase(), c);
+    for (const ph of [c.phone, c.whatsapp]) if (ph && !byPhone.has(ph)) byPhone.set(ph, c);
+    const nk = nameKey(c.company, c.full_name); if (nk !== '|' && !byName.has(nk)) byName.set(nk, c);
+  };
+  (await q('select * from contacts order by id')).rows.forEach(index);
+  const client = b.dry ? null : await pool.connect();
+  const cq = (t, p) => client.query(t, p);
+  try {
+  if (client) await cq('begin');
+  for (const cells of sh.rows.slice(0, MAX_IMPORT_ROWS)) {
+    const f = Object.create(null), extra = Object.create(null), emails = [];
+    cells.forEach((v, i) => {
+      const val = realValue(v), field = map[i];
+      if (!val) return;
+      if (field === 'email') emails.push(...val.split(/[\s,;]+/).filter(Boolean));
+      else if (field) f[field] = f[field] ? f[field] + ' · ' + val : val;
+      else if (sh.columns[i]) extra[sh.columns[i].slice(0, 80)] = val.slice(0, 1000);
+    });
+    const good = emails.map(e => e.replace(/^mailto:/i, '').toLowerCase()).filter(e => EMAIL_RE.test(e));
+    const email = good[0] || null;
+    if (good.length > 1) extra['Other emails'] = good.slice(1).join(', ');
+    if (emails.length && !email) { extra['Email as given'] = emails.join(' ').slice(0, 200); R.email_unreadable++; }
+    const company = clean(f.company, 160);
+    let full_name = clean(f.full_name, 160) || clean([f.first_name, f.last_name].filter(Boolean).join(' '), 160), role = clean(f.role, 140);
+    if (full_name && !role) {           /* "Ama Mensah – Managing Director" in one cell */
+      const m = full_name.match(/^(.*?)\s+[–—-]\s+(.+)$/);
+      if (m && m[2].length < 90) { full_name = m[1].trim(); role = m[2].trim(); }
+    }
+    const phone = phoneGH(clean(f.phone, 60).split(/\s*[,;\/]\s*|\s+·\s+/)[0]) || '';
+    const whatsapp = f.whatsapp ? phoneGH(clean(f.whatsapp, 60).split(/\s*[,;\/]\s*|\s+·\s+/)[0]) : '';
+    if (!company && !full_name && !email && !phone && !whatsapp) { R.skipped++; R.no_name++; continue; }
+    const optOut = yesNo(f.opt_out) === 'yes';
+    const cons = {};
+    for (const ch of CHANNELS) {
+      const own = optOut ? 'no' : yesNo(f['consent_' + ch]);
+      cons[ch] = own || D.consent[ch];
+    }
+    if (optOut) R.opted_out++;
+    const anyYes = CHANNELS.some(ch => cons[ch] === 'yes');
+    if (anyYes) R.consent_yes++;
+    const consentSrc = CHANNELS.some(ch => cons[ch] === 'yes' && yesNo(f['consent_' + ch]) === 'yes')
+      ? `${fileLabel}: column "${CHANNELS.map(ch => colOf('consent_' + ch)).filter(Boolean).join('", "')}"`.slice(0, 200)
+      : D.consent_source;
+    const client_type = normType(f.client_type) || D.client_type;
+    const country = normCountry(f.country) || D.country;
+    const vals = {
+      company, full_name: full_name.slice(0, 120), role, email, phone, whatsapp,
+      sector: clean(f.sector, 60) || D.sector, city: clean(f.city, 80), website: clean(f.website, 200), priority: clean(f.priority, 40),
+      tags: mergeTags(D.tags, splitTags(f.tags), f.priority ? splitTags(f.priority) : []),
+      notes: clean(f.notes, 4000), client_type, country, language: normLang(f.language) || D.language,
+      status: STATUS_WORDS[String(f.status || '').toLowerCase().trim()] || (optOut ? 'do_not_contact' : null)
+    };
+    if (R.sample.length < 6) R.sample.push({ company: vals.company, full_name: vals.full_name, role: vals.role, email, phone: vals.phone || vals.whatsapp,
+      country, client_type, consent: cons, tags: vals.tags });
+
+    /* Same person? email first, then phone, then company plus person. Rows
+       with none of those are new. The same key twice in one file merges. */
+    const fits = c => c && (!email || !c.email || c.email.toLowerCase() === email) ? c : null;
+    const ph = vals.phone || vals.whatsapp;
+    let found = (email && byEmail.get(email)) || (ph && fits(byPhone.get(ph))) || ((company || vals.full_name) && fits(byName.get(nameKey(company, vals.full_name)))) || null;
+    if (b.dry) {
+      if (found) { if (found.status === 'do_not_contact' || found.unsubscribed_at) R.left_alone++; else R.updated++; }
+      else { R.added++; index({ email, phone: vals.phone, whatsapp: vals.whatsapp, company, full_name: vals.full_name, status: 'new' }); }
+      continue;
+    }
+    if (found) {
+      if (found.status === 'do_not_contact' || found.unsubscribed_at) { R.left_alone++; continue; }
+      /* Fill gaps, add tags, never overwrite what someone typed in the CRM,
+         and never turn a "no" into a "yes". */
+      const nc = {};
+      let newYes = false;
+      for (const ch of CHANNELS) {
+        const cur = found['consent_' + ch] || 'unknown';
+        nc[ch] = cur === 'no' ? 'no' : cons[ch] === 'no' ? 'no' : cons[ch] === 'yes' ? 'yes' : cur;
+        if (nc[ch] === 'yes' && cur !== 'yes') newYes = true;
+      }
+      let ex = {}; try { ex = typeof found.extra === 'string' ? JSON.parse(found.extra) : (found.extra || {}); } catch {}
+      const upd = await cq(`update contacts set
+          company=coalesce(nullif(company,''),nullif($1,'')), full_name=coalesce(nullif(full_name,''),nullif($2,'')),
+          role=coalesce(nullif(role,''),nullif($3,'')), email=coalesce(email,$4), phone=coalesce(nullif(phone,''),nullif($5,'')),
+          whatsapp=coalesce(nullif(whatsapp,''),nullif($6,'')), sector=coalesce(nullif(sector,''),nullif($7,'')), city=coalesce(nullif(city,''),nullif($8,'')),
+          website=coalesce(nullif(website,''),nullif($9,'')), priority=coalesce(nullif($10,''),priority), tags=$11,
+          notes=case when coalesce(notes,'')='' then nullif($12,'') when $12<>'' and position($12 in notes)=0 then notes||E'\n'||$12 else notes end,
+          extra=$13::jsonb, client_type=coalesce(client_type,$14), country=case when $15::text is not null and (country is null or country='' or (country='Ghana' and $15<>'Ghana' and source is not distinct from $22)) then $15 else country end,
+          language=case when $16::text is not null and coalesce(language,'en')='en' then $16 else language end,
+          consent_email=$17, consent_sms=$18, consent_whatsapp=$19,
+          consent_source=case when $20 then coalesce($21,consent_source) else consent_source end,
+          consent_at=case when $20 then now() else consent_at end,
+          status=case when $23::text is not null and status='new' then $23 else status end
+        where id=$24 returning *`,
+        [vals.company, vals.full_name, vals.role, email, vals.phone, vals.whatsapp, vals.sector, vals.city, vals.website, vals.priority,
+          mergeTags(found.tags, vals.tags), vals.notes, JSON.stringify({ ...extra, ...ex }), vals.client_type, vals.country, vals.language,
+          nc.email, nc.sms, nc.whatsapp, newYes, consentSrc || null, source, vals.status, found.id]);
+      Object.assign(found, upd.rows[0]); index(found);
+      R.updated++;
+    } else {
+      const ins = await cq(`insert into contacts(company,full_name,role,email,phone,whatsapp,sector,city,website,priority,tags,notes,source,extra,status,
+          client_type,country,language,consent_email,consent_sms,consent_whatsapp,consent_source,consent_at)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14::jsonb,coalesce($15,'new'),$16,$17,$18,$19,$20,$21,$22,$23) returning *`,
+        [vals.company || null, vals.full_name || null, vals.role || null, email, vals.phone || null, vals.whatsapp || null, vals.sector, vals.city || null,
+          vals.website || null, vals.priority || null, vals.tags || null, vals.notes || null, source, JSON.stringify(extra), vals.status,
+          vals.client_type, vals.country || (vals.client_type === 'international' ? null : 'Ghana'), vals.language || 'en',
+          cons.email || 'unknown', cons.sms || 'unknown', cons.whatsapp || 'unknown', anyYes ? consentSrc : null, anyYes ? new Date() : null]);
+      index(ins.rows[0]);
+      R.added++;
+    }
+  }
+  if (client) await cq('commit');
+  } catch (e) { if (client) await cq('rollback').catch(() => {}); throw e; }
+  finally { if (client) client.release(); }
+  return R;
+}
+
 const STATUS_WORDS = {
   'not contacted': 'new', 'new': 'new', 'to contact': 'new',
   'contacted': 'contacted', 'emailed': 'contacted', 'sent': 'contacted',
@@ -1815,102 +2236,43 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
 
 
-    /* Step 1: hand us the file, we tell you what is in it and what we think
-       each column is. Nothing is saved yet. */
+    /* Step 1: hand us a file (Excel, LibreOffice, Numbers, CSV/TSV, vCard,
+       JSON), pasted rows or a Google Sheets link. We say what is in it and
+       what we think each column is. Nothing is saved yet. */
     if (p === '/api/contacts/inspect' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       let b; try { b = await bodyBig(req, 28 * 1024 * 1024); } catch { return json(res, 413, { error: 'file_too_large' }); }
-      const raw = String(b.data || '').replace(/^data:[^;]+;base64,/, '');
-      if (!raw) return json(res, 400, { error: 'no_file' });
       let out;
-      try { out = await readSheet(Buffer.from(raw, 'base64'), b.name || ''); }
-      catch { return json(res, 400, { error: 'unreadable' }); }
-      if (out.csv) return json(res, 200, { csv: true, count: out.rows.length, sample: out.rows.slice(0, 5) });
+      try { out = await readImportBody(b); } catch (e) { return json(res, 400, { error: importError(e) }); }
       if (!out.sheets.length) return json(res, 400, { error: 'no_table_found' });
       return json(res, 200, {
+        kind: out.kind,
         sheets: out.sheets.map(sh => ({
           name: sh.name, rows: sh.rows.length, columns: sh.columns,
-          mapping: guessMapping(sh.columns),
+          mapping: guessMapping(sh.columns, sh.rows.slice(0, 30)),
           sample: sh.rows.slice(0, 3)
         }))
       });
     }
 
-    /* Step 2: import one sheet with a mapping you have confirmed. */
+    /* Step 2: import one sheet with the mapping and the defaults you confirmed.
+       dry:true answers "what would happen" without saving anything. */
     if (p === '/api/contacts/import-sheet' && req.method === 'POST') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       let b; try { b = await bodyBig(req, 28 * 1024 * 1024); } catch { return json(res, 413, { error: 'file_too_large' }); }
       const source = clean(b.source, 120);
       if (!source) return json(res, 400, { error: 'source_required' });
-      const raw = String(b.data || '').replace(/^data:[^;]+;base64,/, '');
+      if (CHANNELS.some(ch => b['consent_' + ch] === 'yes') && !clean(b.consent_source, 200))
+        return json(res, 400, { error: 'consent_source_required' });
       let out;
-      try { out = await readSheet(Buffer.from(raw, 'base64'), b.name || ''); }
-      catch { return json(res, 400, { error: 'unreadable' }); }
-      const sh = (out.sheets || []).find(x => x.name === b.sheet) || (out.sheets || [])[0];
+      try { out = await readImportBody(b); } catch (e) { return json(res, 400, { error: importError(e) }); }
+      const sh = out.sheets.find(x => x.name === b.sheet) || out.sheets[0];
       if (!sh) return json(res, 400, { error: 'no_table_found' });
-      const map = (b.mapping && typeof b.mapping === 'object') ? b.mapping : guessMapping(sh.columns);
-      const tags = clean(b.tags, 200), sector = clean(b.sector, 60);
-
-      let added = 0, updated = 0, skipped = 0;
-      for (const cells of sh.rows.slice(0, 5000)) {
-        const f = {}, extra = {};
-        cells.forEach((v, i) => {
-          const val = realValue(v);
-          const field = map[i] ?? map[String(i)];
-          if (field && field !== 'ignore') f[field] = [f[field], val].filter(Boolean).join(' · ');
-          else if (val && sh.columns[i]) extra[sh.columns[i]] = val;
-        });
-        const company = clean(f.company, 160);
-        /* "Ama Mensah – Managing Director" in one cell: split it. */
-        let full_name = clean(f.full_name, 160), role = clean(f.role, 140);
-        if (full_name && !role) {
-          const m = full_name.match(/^(.*?)\s*[–—-]\s*(.+)$/);
-          if (m && m[2].length < 90) { full_name = m[1].trim(); role = m[2].trim(); }
-        }
-        const email = clean(f.email, 160).toLowerCase();
-        if (email && !/^\S+@\S+\.\S+$/.test(email)) { skipped++; continue; }
-        if (!company && !full_name && !email) { skipped++; continue; }
-        const status = STATUS_WORDS[String(f.status || '').toLowerCase().trim()] || null;
-        const vals = {
-          company, full_name: full_name.slice(0, 120), role,
-          email: email || null, phone: phoneGH(clean(f.phone, 60)),
-          sector: clean(f.sector, 60) || sector || null, city: clean(f.city, 80),
-          website: clean(f.website, 200), priority: clean(f.priority, 40),
-          tags: [tags, clean(f.priority, 40)].filter(Boolean).join(','),
-          notes: clean(f.notes, 4000), source, extra: JSON.stringify(extra), status
-        };
-
-        /* Match on email when we have one; otherwise on company plus person,
-           because a list of leads often has no addresses yet and importing
-           the same sheet twice must not double it. */
-        const found = email
-          ? await q('select id from contacts where lower(email)=lower($1)', [email])
-          : await q(`select id from contacts where lower(coalesce(company,''))=lower($1)
-                     and lower(coalesce(full_name,''))=lower($2)`, [company, vals.full_name]);
-        if (found.rows.length) {
-          await q(`update contacts set
-              company=coalesce(nullif($1,''),company), full_name=coalesce(nullif($2,''),full_name),
-              role=coalesce(nullif($3,''),role), email=coalesce($4,email), phone=coalesce(nullif($5,''),phone),
-              sector=coalesce(nullif($6,''),sector), city=coalesce(nullif($7,''),city),
-              website=coalesce(nullif($8,''),website), priority=coalesce(nullif($9,''),priority),
-              tags=coalesce(nullif($10,''),tags), notes=coalesce(nullif($11,''),notes),
-              extra = coalesce(extra,'{}'::jsonb) || $12::jsonb,
-              status = case when status in ('do_not_contact') then status else coalesce($13,status) end
-            where id=$14 and unsubscribed_at is null and status <> 'do_not_contact'`,
-            [vals.company, vals.full_name, vals.role, vals.email, vals.phone, vals.sector, vals.city,
-              vals.website, vals.priority, vals.tags, vals.notes, vals.extra, vals.status, found.rows[0].id]);
-          updated++;
-        } else {
-          await q(`insert into contacts(company,full_name,role,email,phone,sector,city,website,priority,tags,notes,source,extra,status)
-            values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13::jsonb,coalesce($14,'new'))`,
-            [vals.company, vals.full_name, vals.role, vals.email, vals.phone, vals.sector, vals.city,
-              vals.website, vals.priority, vals.tags, vals.notes, vals.source, vals.extra, vals.status]);
-          added++;
-        }
-      }
-      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
-        [u.email, 'contacts_import', `${sh.name}: ${added} added, ${updated} updated, ${skipped} skipped — source: ${source}`]);
-      return json(res, 200, { added, updated, skipped, sheet: sh.name });
+      const label = (b.url ? 'Google Sheet' : b.text ? 'pasted list' : clean(b.name, 120) || 'file') + (out.sheets.length > 1 ? ' / ' + sh.name : '');
+      const r = await importTable(sh, b, u, label);
+      if (!b.dry) await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+        [u.email, 'contacts_import', `${label}: ${r.added} added, ${r.updated} updated, ${r.skipped} skipped, ${r.left_alone} opted out left alone — source: ${source}`]);
+      return json(res, 200, { ...r, dry: !!b.dry, sheet: sh.name, kind: out.kind });
     }
 
     const mCon = p.match(/^\/api\/contacts\/(\d+)$/);

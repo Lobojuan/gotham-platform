@@ -184,3 +184,10 @@ for reduced motion.
   opted-in lists; bulk invitations to imported lists should go through Resend.
 - Test: `tests/api/14_broadcast_channels.py` (mock SMTP, Arkesel and Meta).
 
+
+## Importing client lists (back office → Import clients, `#imp`)
+- One path for every format: `.xlsx` (ExcelJS), `.xls` / `.ods` / `.numbers` / `.xlsb` (SheetJS 0.20.3, installed from cdn.sheetjs.com, pinned by integrity in package-lock), CSV/TSV with any separator and encoding (UTF-8, UTF-16, Windows-1252), vCard 2.1–4.0, JSON, pasted rows, Google Sheets links shared as "anyone with the link".
+- `POST /api/contacts/inspect` → sheets, columns, guessed mapping, samples. `POST /api/contacts/import-sheet` with `dry:true` answers what would happen; without it, one transaction.
+- Matching: email, then phone/WhatsApp, then company + person. Re-importing fills gaps and adds tags; it never overwrites CRM edits, never turns a consent "no" into "yes", and leaves opted-out contacts alone.
+- Consent "yes" for a whole list needs a written reason (`consent_source`); yes/no columns in the file are used per person and recorded as "<file>: column …".
+- Tests: `tests/api/15_import_formats.py`. 20,000 rows ≈ 15 s.
