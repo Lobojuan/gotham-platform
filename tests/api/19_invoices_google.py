@@ -43,7 +43,7 @@ env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', '
 os.makedirs('/tmp/mediatest', exist_ok=True)
 srv = subprocess.Popen(['node', 'server.js'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 atexit.register(lambda: srv.poll() is None and srv.terminate())
-B = 'http://127.0.0.1:4199'
+B = B_URL = 'http://127.0.0.1:4199'
 def call(path, data=None, method=None, cookie=None, headers=None, raw=None, text=False):
     req = urllib.request.Request(B + path, data=raw if raw is not None else (json.dumps(data).encode() if data is not None else None), method=method or ('POST' if (data is not None or raw is not None) else 'GET'))
     req.add_header('content-type', 'application/json')
@@ -143,7 +143,7 @@ for want in ['TAX INVOICE', 'INV-%s-0001' % Y, 'C0012345678', 'VAT', 'NHIL', 'GE
 st, x = call('/i/' + 'A' * 24, text=True); assert st == 404
 draft_tok = psql("select token from invoices where id=%d" % inv_usd); st, x = call('/i/' + draft_tok, text=True); assert st == 404, 'drafts are not public'
 st, html = call('/i/' + psql("select token from invoices where id=%d" % inv_eur), text=True)
-for want in ['EUR 2,000.00', '17.5', 'GHS 35,000.00', 'Export of services', 'foreign exchange account']:
+for want in ['EUR 2,000.00', '17.5', 'GHS 35,000.00', 'Export of services', 'non-residents or expatriates']:
     assert want in html, want
 assert '/pay' not in html.split('</style>')[1] or 'Pay online' not in html, 'no Paystack for EUR'
 ok('send emails the link; the client page shows TIN/VAT no., each tax line, how to pay (MoMo, bank), WHT note, E-VAT ref; EUR shows the cedi value and rate; drafts are not public')
@@ -228,10 +228,59 @@ else: raise AssertionError('webhook did not mark paid')
 s_, loc, *_ = raw_req('POST', '/i/%s/pay' % ptok); assert s_ == 303 and loc == '/i/%s' % ptok
 ok('Paystack: pay online in GHS or USD (amount in pesewas/cents), verified on return and by signed webhook, never counted twice; bad signatures refused')
 
+# ---------- bank details: in Ghana and from abroad (made-up numbers) ----------
+BANK = {'bank_name': 'TEST BANK GHANA LIMITED', 'swift': 'tstbghac', 'branch': 'Osu', 'branch_code': '200116', 'account_name': 'GOTHAM CONSULT', 'account_ghs': '0202 0900 0099 9',
+        'bank_address': 'Oxford Street, Osu, Accra, Ghana', 'charges': 'OUR', 'fx': {'USD': '', 'EUR': '', 'GBP': ''},
+        'corr': [{'currency': 'EUR', 'bank': 'Test Correspondent AG', 'swift': 'TSTCDEFF', 'city': 'Frankfurt, Germany', 'account': '111122223333'},
+                 {'currency': 'USD', 'bank': 'Test Trust Americas', 'swift': 'TSTAUS33', 'city': 'New York, USA', 'account': '44445555'},
+                 {'currency': 'USD', 'bank': 'Other US Bank', 'swift': 'OTHRUS33', 'city': 'New York, USA', 'account': '66667777'},
+                 {'currency': 'GBP', 'bank': 'Test London Bank', 'swift': 'TSTLGB2L', 'city': 'London, UK', 'account': '88889999'},
+                 {'currency': '', 'bank': '', 'swift': '', 'city': '', 'account': ''}]}
+st, e = call('/api/invoice-settings', {'inv_bank': {**BANK, 'swift': 'NOTASWIFT!'}}, cookie=ck); assert st == 400 and e['error'] == 'bad_bank' and 'swift' in e['fields'], e
+st, e = call('/api/invoice-settings', {'inv_bank': {**BANK, 'corr': [{**BANK['corr'][0], 'swift': 'x'}]}}, cookie=ck); assert st == 400 and e['fields'] == ['corr_0_swift'], e
+st, s = call('/api/invoice-settings', {'inv_bank': BANK}, cookie=ck); assert st == 200, s
+BK = s['inv_bank']; assert BK['swift'] == 'TSTBGHAC' and BK['account_ghs'] == '0202090000999' and len(BK['corr']) == 4 and BK['fx'] == {}, BK
+tokof = lambda i: psql("select token from invoices where id=%d" % i)
+st, html = call('/i/' + tokof(pinv) + '?x', text=True)   # paid: no payment block
+assert 'How to pay' not in html
+st, d = call('/api/invoices', {'bill_to': {'name': 'Kojo', 'email': 'kojo@t.test'}, 'lines': [{'description': 'Advisory', 'qty': 1, 'unit': 100}]}, cookie=ck)
+gid = d['id']; call('/api/invoices/%d/issue' % gid, {}, cookie=ck)
+st, html = call('/i/' + tokof(gid), text=True)
+for want in ['Mobile Money', 'Bank transfer in Ghana', '0202090000999', 'TEST BANK GHANA LIMITED', 'code 200116', 'Paying from abroad (SWIFT)', 'TSTBGHAC', 'TSTAUS33', 'OTHRUS33', 'TSTCDEFF', 'TSTLGB2L',
+             'Ghana has no IBAN', 'OUR: please pay all bank charges', 'never change by email', 'data-c="0202090000999"']:
+    assert want in html, want
+st, d = call('/api/invoices', {'bill_to': {'name': 'Anna Schmidt', 'company': 'Solar GmbH', 'country': 'Germany', 'residency': 'non_resident', 'email': 'anna@solar.test'}, 'currency': 'EUR', 'fx_rate': 17,
+    'tax_mode': 'zero', 'tax_note': 'Export of services', 'lines': [{'description': 'Market study', 'qty': 1, 'unit': 1000}]}, cookie=ck)
+eid = d['id']; call('/api/invoices/%d/issue' % eid, {}, cookie=ck)
+st, html = call('/i/' + tokof(eid), text=True)
+assert 'International bank transfer in EUR' in html and 'TSTCDEFF' in html and '111122223333' in html and 'TSTAUS33' not in html and 'converted by the bank' in html and 'payable into our foreign exchange account' not in html, 'EUR without FEA'
+call('/api/invoice-settings', {'inv_bank': {**BANK, 'fx': {'EUR': 'EUR-0099-1'}}}, cookie=ck)
+st, html = call('/i/' + tokof(eid), text=True)
+assert 'EUR-0099-1' in html and 'converted by the bank' not in html and 'payable into our foreign exchange account' in html, 'EUR with FEA'
+st, d = call('/api/invoices', {'bill_to': {'name': 'Tom Brown', 'country': 'United Kingdom', 'residency': 'non_resident'}, 'currency': 'GBP', 'fx_rate': 20, 'lines': [{'description': 'Briefing', 'qty': 1, 'unit': 500}]}, cookie=ck)
+assert st == 200 and d['totals']['total_ghs'] == 12000, d
+gbp = d['id']; call('/api/invoices/%d/issue' % gbp, {}, cookie=ck); st, html = call('/i/' + tokof(gbp), text=True); assert 'TSTLGB2L' in html and 'Pay GBP' not in html
+st, fx = call('/api/fx?c=GBP', cookie=ck); assert st == 200, fx
+req = urllib.request.Request(B_URL + '/api/invoices/preview?c=USD'); req.add_header('cookie', ck); prev = urllib.request.urlopen(req).read().decode()
+assert 'SAMPLE' in prev and 'TSTAUS33' in prev and 'Sample only' in prev
+st, x = call('/api/invoices/preview?c=USD'); assert st == 401
+ok('bank details from the bank letter: SWIFT and account checks; the client page shows MoMo, bank transfer in Ghana and SWIFT from abroad with the right intermediary bank per currency, copy buttons, OUR charges, no-IBAN note and a fraud warning; FEA used when opened; pounds supported; sample preview for the team')
+
+# ---------- registration paid by invoice: a draft invoice is waiting ----------
+item = {'code': 'INV1', 'kind': 'event', 'title': 'Investor roundtable', 'starts_at': '2026-12-01T10:00:00Z', 'currency': 'GHS', 'price': 750, 'published': True, 'capacity': 50, 'phase': 'open'}
+st, d = call('/api/items', item, cookie=ck); assert st == 200, d
+st, r = call('/api/register', {'item_code': 'INV1', 'full_name': 'Ingrid Berg', 'company': 'Nordic Wind AS', 'email': 'ingrid@nw.test', 'phone': '+4791234567', 'country': 'Norway', 'seats': 2,
+    'consent': True, 'payment_method': 'invoice'}, headers={'x-real-ip': '10.77.1.1'})
+assert st == 200, r
+dr = json.loads(psql("select row_to_json(i) from invoices i where notes='Registration %s'" % r['reference']))
+assert dr['number'] is None and dr['status'] == 'draft' and dr['bill_to']['residency'] == 'non_resident' and dr['bill_to']['company'] == 'Nordic Wind AS' and float(dr['taxable']) == 1500, dr
+assert psql("select count(*) from tasks where title like 'Send the invoice to Nordic Wind AS%%'") == '1'
+ok('a registration paid by invoice arrives as a draft invoice (client abroad marked non-resident) plus a task to send it')
+
 # ---------- public settings stay private ----------
 st, it = call('/api/items')
 leak = json.dumps(it)
-assert 'C0012345678' not in leak and 'GCB Bank' not in leak, 'tax and bank details must not be public'
+assert 'C0012345678' not in leak and 'GCB Bank' not in leak and '0202090000999' not in leak and 'TSTBGHAC' not in leak, 'tax and bank details must not be public'
 ok('bank details and TIN never appear in the public items feed')
 
 # ---------- Sign in with Google ----------

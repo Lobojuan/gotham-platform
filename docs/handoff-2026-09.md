@@ -231,3 +231,8 @@ for reduced motion.
   invest FAQ, 1200×630 JPG share images (public/img/og), sitemap with lastmod (register left out, noindex), robots disallows /admin and /i/, site 404 page,
   server 301s: `/x/` and `/x.html` → `/x`, www (via bridge X-Forwarded-Host) → apex.
 - Tests: `tests/api/19_invoices_google.py` (mock Paystack, Google, FX), `tests/ui/invoices_ui.js`.
+- **Bank details (30 Sep)**: Settings → Company & invoicing → Bank account for payments, structured as on the bank's letter (bank, SWIFT, branch + code,
+  account name, GHS account, optional USD/EUR/GBP foreign exchange accounts, correspondent banks per currency with the bank's account there, charges OUR/SHA),
+  stored as settings key `inv_bank` (JSON; never in git, never on public pages). The client page shows Mobile Money, bank transfer in Ghana and
+  international transfer (SWIFT) with the intermediary bank for the currency, copy buttons, no-IBAN note and a fraud warning. `/api/invoices/preview?c=GHS|USD|EUR|GBP`
+  (admin) renders a sample. GBP added. A registration with "Invoice & bank transfer" now creates a draft invoice + task.

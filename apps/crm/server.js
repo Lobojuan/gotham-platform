@@ -1786,6 +1786,7 @@ ${await askKnowledge()}`;
             [`Follow up: ${full_name} said ${follow} at ${it.title}`, it.starts_at, cid.id, reg.id, follow === 'yes' ? 'high' : 'normal']);
       }
 
+      if (method === 'invoice' && amount > 0) await draftFromRegistration(reg, it, { full_name, company, email, phone, country: clean(b.country, 60), seats, amount }).catch(e => console.error('draft invoice', e.message));
       const confirmUrl = BASE + '/confirm/' + reg.confirm_token;
       const unsubUrl = BASE + '/unsubscribe/' + reg.unsub_token;
       const paymentSettings = Object.fromEntries((await q("select key,value from settings where key in ('momo_number','momo_name')")).rows.map(x => [x.key, x.value]));
@@ -3151,14 +3152,31 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           if (k === 'inv_terms_days' && v !== '' && !(+v >= 0 && +v <= 180)) return json(res, 400, { error: 'bad_terms', fields: [k] });
           await q(`insert into settings(key,value) values ($1,$2) on conflict (key) do update set value=excluded.value`, [k, v]);
         }
+        if (b.inv_bank !== undefined) {
+          const bank = cleanBank(b.inv_bank), bad = bankErrors(bank);
+          if (bad.length) return json(res, 400, { error: 'bad_bank', fields: bad });
+          await q(`insert into settings(key,value) values ('inv_bank',$1) on conflict (key) do update set value=excluded.value`, [JSON.stringify(bank)]);
+        }
         await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'invoice_settings', Object.keys(b).join(', ').slice(0, 300)]);
       }
       const st = await invSettings();
-      return json(res, 200, { ...Object.fromEntries(INV_KEYS.map(k => [k, st[k] ?? ''])), rates: st.rates, tax_default: TAX_DEFAULT, paystack: !!PAYSTACK_KEY });
+      return json(res, 200, { ...Object.fromEntries(INV_KEYS.map(k => [k, st[k] ?? ''])), inv_bank: st.bank, rates: st.rates, tax_default: TAX_DEFAULT, paystack: !!PAYSTACK_KEY });
+    }
+    /* a sample client page, so the team can check the bank details exactly as a client will see them */
+    if (p === '/api/invoices/preview' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const st = await invSettings(), cur = CURRENCIES.includes(url.searchParams.get('c')) ? url.searchParams.get('c') : 'GHS';
+      const inv = { kind: 'invoice', number: 'SAMPLE', status: 'sent', currency: cur, fx_rate: cur === 'GHS' ? null : 16, issue_date: new Date(), due_date: new Date(Date.now() + st.terms * 864e5),
+        bill_to: { name: 'Sample client', company: cur === 'GHS' ? 'Sample Company Ltd' : 'Sample Company GmbH', country: cur === 'GHS' ? 'Ghana' : 'Germany', residency: cur === 'GHS' ? 'resident' : 'non_resident' },
+        tax_mode: cur === 'GHS' && st.vat_registered ? 'standard' : cur === 'GHS' ? 'none' : 'zero', tax_note: cur === 'GHS' ? '' : 'Export of services to a non-resident', rates: st.rates,
+        lines: [{ description: 'Sample line: advisory services', qty: 1, unit: 1000, discount: 0 }], wht_rate: 0, token: 'sample', notes: 'This is a sample to check the payment details. It is not an invoice.' };
+      Object.assign(inv, invoiceTotals(inv, st.rates));
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' });
+      return res.end(invoicePage(inv, [], st, { msg: 'Sample only: check that every bank detail matches the bank’s letter.' }));
     }
     if (p === '/api/fx' && req.method === 'GET') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
-      const c = String(url.searchParams.get('c') || '').toUpperCase(); if (!['EUR', 'USD'].includes(c)) return json(res, 400, { error: 'bad_currency' });
+      const c = String(url.searchParams.get('c') || '').toUpperCase(); if (!['EUR', 'USD', 'GBP'].includes(c)) return json(res, 400, { error: 'bad_currency' });
       try {
         const r = await fetch(`${process.env.FX_API || 'https://open.er-api.com/v6/latest'}/${c}`, { signal: AbortSignal.timeout(8000) }); const j = await r.json();
         const rate = j && j.rates && +j.rates.GHS; if (!rate) throw new Error('no rate');
@@ -3866,13 +3884,37 @@ Registration links: gothamconsult.com/register?e=CODE.\n\n${await askKnowledge()
 const TAX_DEFAULT = { vat: 15, nhil: 2.5, getfund: 2.5, since: '2026-01-01' };
 const INV_KEYS = ['inv_co_name', 'inv_co_address', 'inv_tin', 'inv_vat_registered', 'inv_vat_number', 'inv_terms_days', 'inv_bank_ghs', 'inv_bank_usd', 'inv_bank_eur',
   'inv_footer', 'inv_email', 'inv_tax_vat', 'inv_tax_nhil', 'inv_tax_getfund'];
+/* Bank details, entered once in Settings exactly as on the bank's letter: the cedi account, optional
+   foreign exchange accounts, and the bank's correspondent banks abroad (what a sender in Europe,
+   the US or the UK types into a SWIFT transfer as the intermediary bank). */
+const BANK_CURS = ['USD', 'EUR', 'GBP'];
+const SWIFT_RE = /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/, ACCT_RE = /^[A-Z0-9-]{4,34}$/;
+function cleanBank(o) {
+  o = o && typeof o === 'object' ? o : {};
+  const t = (v, n = 120) => clean(String(v ?? ''), n), acct = v => t(v, 40).toUpperCase().replace(/\s+/g, ''), sw = v => t(v, 14).toUpperCase().replace(/\s+/g, '');
+  const out = { bank_name: t(o.bank_name), bank_address: t(o.bank_address, 300), branch: t(o.branch, 80), branch_code: t(o.branch_code, 20), swift: sw(o.swift),
+    account_name: t(o.account_name), account_ghs: acct(o.account_ghs), charges: o.charges === 'SHA' ? 'SHA' : 'OUR', fx: {}, corr: [] };
+  for (const c of BANK_CURS) { const a = acct(o.fx && o.fx[c]); if (a) out.fx[c] = a; }
+  out.corr = (Array.isArray(o.corr) ? o.corr : []).slice(0, 6).map(x => ({ currency: BANK_CURS.includes(x && x.currency) ? x.currency : '', bank: t(x && x.bank), swift: sw(x && x.swift),
+    city: t(x && x.city, 160), account: acct(x && x.account) })).filter(x => x.currency && (x.bank || x.swift));
+  return out;
+}
+function bankErrors(b) {
+  const f = [];
+  if (b.swift && !SWIFT_RE.test(b.swift)) f.push('swift');
+  if (b.account_ghs && !ACCT_RE.test(b.account_ghs)) f.push('account_ghs');
+  for (const c of Object.keys(b.fx)) if (!ACCT_RE.test(b.fx[c])) f.push('fx_' + c);
+  b.corr.forEach((x, i) => { if (x.swift && !SWIFT_RE.test(x.swift)) f.push(`corr_${i}_swift`); if (x.account && !ACCT_RE.test(x.account)) f.push(`corr_${i}_account`); });
+  return f;
+}
 async function invSettings() {
-  const r = Object.fromEntries((await q("select key,value from settings where key = any($1) or key in ('momo_number','momo_name')", [INV_KEYS])).rows.map(x => [x.key, x.value]));
-  return { ...r, co_name: r.inv_co_name || 'Gotham Consult', vat_registered: r.inv_vat_registered === 'yes', terms: +r.inv_terms_days || 14,
+  const r = Object.fromEntries((await q("select key,value from settings where key = any($1) or key in ('momo_number','momo_name','inv_bank')", [INV_KEYS])).rows.map(x => [x.key, x.value]));
+  let bank = {}; try { bank = JSON.parse(r.inv_bank || '{}'); } catch {}
+  return { ...r, bank: cleanBank(bank), co_name: r.inv_co_name || 'Gotham Consult', vat_registered: r.inv_vat_registered === 'yes', terms: +r.inv_terms_days || 14,
     rates: { vat: +(r.inv_tax_vat ?? TAX_DEFAULT.vat), nhil: +(r.inv_tax_nhil ?? TAX_DEFAULT.nhil), getfund: +(r.inv_tax_getfund ?? TAX_DEFAULT.getfund) } };
 }
 const r2 = n => Math.round((+n + Number.EPSILON) * 100) / 100;
-const CURRENCIES = ['GHS', 'EUR', 'USD'], TAX_MODES = ['standard', 'zero', 'exempt', 'none'];
+const CURRENCIES = ['GHS', 'EUR', 'USD', 'GBP'], TAX_MODES = ['standard', 'zero', 'exempt', 'none'];
 function cleanLines(list) {
   return (Array.isArray(list) ? list : []).slice(0, 60).map(l => ({
     description: clean(String(l && l.description || ''), 400), qty: Math.max(0, Math.min(1e6, +l.qty || 0)),
@@ -3923,7 +3965,7 @@ function invoicePage(inv, pays, st, opts = {}) {
   const b = inv.bill_to || {}, isQ = inv.kind === 'quote', cur = inv.currency, rates = inv.rates || st.rates;
   const paid = pays.reduce((s, x) => s + (+x.amount) + (+x.wht), 0), balance = r2(+inv.total - paid);
   const d = x => x ? new Date(x).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
-  const bank = cur === 'GHS' ? st.inv_bank_ghs : cur === 'USD' ? st.inv_bank_usd : st.inv_bank_eur;
+  const legacy = cur === 'GHS' ? st.inv_bank_ghs : cur === 'USD' ? st.inv_bank_usd : cur === 'EUR' ? st.inv_bank_eur : '';
   const taxRows = inv.tax_mode === 'standard'
     ? `<tr><td>VAT ${rates.vat}%</td><td>${money2(inv.vat, cur)}</td></tr><tr><td>NHIL ${rates.nhil}%</td><td>${money2(inv.nhil, cur)}</td></tr><tr><td>GETFund levy ${rates.getfund}%</td><td>${money2(inv.getfund, cur)}</td></tr>`
     : `<tr><td>${inv.tax_mode === 'zero' ? 'VAT zero-rated' : inv.tax_mode === 'exempt' ? 'VAT exempt' : 'No VAT charged'}${inv.tax_note ? ` <small>(${esc(inv.tax_note)})</small>` : ''}</td><td>${money2(0, cur)}</td></tr>`;
@@ -3946,6 +3988,12 @@ table.items td{border-bottom:1px solid #E2E4E7;padding:9px 6px;vertical-align:to
 .sum .tot td{border-top:2px solid #0F1B2D;font-weight:800;font-size:17px;padding-top:9px}.sum small{color:#5A6472}
 .box{margin-top:18px;border:1px solid #E2E4E7;border-radius:12px;padding:12px 14px;font-size:13.5px;white-space:pre-wrap}.box b{white-space:normal}
 .foot{margin-top:18px;font-size:12px;color:#8A93A0;border-top:1px solid #E2E4E7;padding-top:10px}
+.pay{margin-top:20px}.pay h2{font-size:15px;margin:0 0 8px;letter-spacing:.02em}.pays{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.pc{border:1px solid #E2E4E7;border-radius:12px;padding:12px 14px;font-size:13.5px;break-inside:avoid}.pc b.t{display:block;margin-bottom:6px;font-size:14px}.pc p{margin:0 0 8px;color:#5A6472}
+.pc dl{display:grid;grid-template-columns:minmax(92px,38%) minmax(0,1fr);gap:4px 10px;margin:0}.pc dt{color:#5A6472}.pc dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.pc .via{margin-top:8px;padding-top:8px;border-top:1px dashed #E2E4E7}.cp{margin-left:6px;border:1px solid #D9DCE1;background:#fff;border-radius:6px;font:600 11px/1 inherit;padding:3px 6px;cursor:pointer;color:#5A6472;vertical-align:1px}
+.safe{margin-top:10px;font-size:12.5px;color:#7A5310;background:#FFF7E8;border-radius:10px;padding:8px 12px}
+@media print{.cp{display:none}}
 .stamp{position:absolute;right:18mm;top:58mm;transform:rotate(-12deg);border:4px solid #1F6B4E;color:#1F6B4E;font-weight:900;font-size:34px;padding:4px 16px;border-radius:10px;opacity:.8}
 .stamp.void{border-color:#A1322B;color:#A1322B}.msg{max-width:210mm;margin:0 auto 12px;padding:12px 16px;border-radius:12px;background:#E1EFE8;color:#1F6B4E;font-weight:600}
 @media print{body{background:#fff}.bar,.msg{display:none}.sheet{box-shadow:none;margin:0;max-width:none}}
@@ -3974,12 +4022,62 @@ ${(inv.lines || []).map(l => { const g = r2(l.qty * l.unit), off = r2(g * (l.dis
 <tr class="tot"><td>Total</td><td>${money2(inv.total, cur)}</td></tr>
 ${cur !== 'GHS' ? `<tr><td><small>Total in cedis (for VAT)</small></td><td><small>${money2(inv.total_ghs, 'GHS')}</small></td></tr>${inv.tax_mode === 'standard' ? `<tr><td><small>Tax in cedis</small></td><td><small>${money2(inv.tax_ghs, 'GHS')}</small></td></tr>` : ''}` : ''}
 ${!isQ && paid > 0 ? `<tr><td>Paid</td><td>${money2(paid, cur)}</td></tr><tr><td><b>Balance due</b></td><td><b>${money2(Math.max(0, balance), cur)}</b></td></tr>` : ''}</table>
-${!isQ ? `<div class="box"><b>How to pay</b>
-${cur === 'GHS' ? `${st.momo_number ? `Mobile Money: ${esc(st.momo_number)} (${esc(st.momo_name || st.co_name)})\n` : ''}${st.inv_bank_ghs ? esc(st.inv_bank_ghs) : ''}` : bank ? esc(bank) : `Please ask us for the ${cur} account details.`}
-Reference: ${esc(inv.number || '')}${+inv.wht_rate ? `\nIf you are required to withhold tax, deduct ${(+inv.wht_rate).toString()}% withholding tax and send us the certificate.` : ''}</div>` : ''}
+${!isQ && inv.status !== 'void' && inv.status !== 'paid' ? payBlocks(inv, st, legacy, Math.max(0, balance)) : ''}
 ${inv.notes ? `<div class="box">${esc(inv.notes)}</div>` : ''}
-<div class="foot">${esc(st.inv_footer || `${st.co_name} · Accra, Ghana · gothamconsult.com`)}${cur !== 'GHS' ? ' · Foreign-currency invoices are issued only to non-residents or expatriates, payable into our foreign exchange account (Bank of Ghana rules).' : ''}</div>
+<div class="foot">${esc(st.inv_footer || `${st.co_name} · Accra, Ghana · gothamconsult.com`)}${cur !== 'GHS' ? ` · Foreign-currency invoices are issued only to non-residents or expatriates${st.bank && st.bank.fx[cur] ? ', payable into our foreign exchange account' : ''} (Bank of Ghana rules).` : ''}</div>
 </div></body></html>`;
+}
+/* Someone registered and chose "Invoice & bank transfer": prepare the invoice as a draft (the team checks
+   and issues it, so numbering and tax stay in human hands) and put a task on tomorrow's list. */
+async function draftFromRegistration(reg, it, g) {
+  const st = await invSettings();
+  const c = (g.email ? (await q('select id from contacts where lower(email)=lower($1)', [g.email])).rows[0] : null)
+         || (await q('select id from contacts where phone=$1 order by id desc limit 1', [g.phone])).rows[0];
+  const abroad = g.country && !/^(gh|ghana)$/i.test(g.country.trim());
+  const inv = { kind: 'invoice', currency: CURRENCIES.includes(it.currency) ? it.currency : 'GHS', fx_rate: null, tax_mode: st.vat_registered ? 'standard' : 'none',
+    lines: [{ description: `${it.title}${g.seats > 1 ? ` (${g.seats} seats)` : ''} · registration ${reg.reference}`, qty: g.seats || 1, unit: r2(g.amount / (g.seats || 1)), discount: 0 }] };
+  const t = invoiceTotals(inv, st.rates);
+  const bill = { name: g.full_name, company: g.company === 'Not given' ? '' : g.company, address: '', country: g.country || 'Ghana', email: g.email || '', tax_id: '', residency: abroad ? 'non_resident' : 'resident' };
+  const id = (await q(`insert into invoices(kind, contact_id, bill_to, currency, tax_mode, rates, lines, subtotal, discount, taxable, vat, nhil, getfund, total, total_ghs, tax_ghs, notes, created_by, token)
+      values ('invoice',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'website',$17) returning id`,
+    [c ? c.id : null, JSON.stringify(bill), inv.currency, inv.tax_mode, JSON.stringify(st.rates), JSON.stringify(inv.lines), t.subtotal, t.discount, t.taxable, t.vat, t.nhil, t.getfund, t.total,
+     inv.currency === 'GHS' ? t.total : null, inv.currency === 'GHS' ? t.tax_ghs : null, `Registration ${reg.reference}`, crypto.randomBytes(18).toString('base64url')])).rows[0].id;
+  await q(`insert into tasks(title, due_at, contact_id, reg_id, created_by, priority) values ($1, now() + interval '1 day', $2, $3, 'website', 'high')`,
+    [`Send the invoice to ${g.company !== 'Not given' ? g.company : g.full_name} for ${it.title} (draft ready in Invoices & quotes${st.vat_registered ? '; check whether the price included VAT' : ''})`, c ? c.id : null, reg.id]);
+  return id;
+}
+/* "How to pay" on the client page: mobile money, bank transfer in Ghana, and international transfer (SWIFT)
+   with the correspondent bank for the currency. Every value has a copy button; the reference is the invoice number. */
+function payBlocks(inv, st, legacy, due) {
+  const B = st.bank || {}, cur = inv.currency, ref = inv.number || '';
+  const row = (k, v, copy = true) => v ? `<dt>${esc(k)}</dt><dd>${esc(v)}${copy ? ` <button type="button" class="cp" data-c="${esc(v)}" aria-label="Copy ${esc(k)}">Copy</button>` : ''}</dd>` : '';
+  const cards = [];
+  const bankRows = acct => row('Account name', B.account_name || st.co_name) + row('Account number', acct) + row('Bank', B.bank_name, false)
+    + row('Branch', [B.branch, B.branch_code ? 'code ' + B.branch_code : ''].filter(Boolean).join(', '), false);
+  const swiftCard = (c, title, lead) => {
+    const acct = B.fx[c] || B.account_ghs, via = B.corr.filter(x => x.currency === c);
+    return `<div class="pc"><b class="t">${title}</b><p>${lead}</p><dl>${row('Beneficiary', B.account_name || st.co_name)}${row('Account number', acct)}
+      ${row('Beneficiary bank', B.bank_name, false)}${row('SWIFT / BIC', B.swift)}${row('Bank address', B.bank_address, false)}${row('Reference', ref)}
+      <dt>Charges</dt><dd>${B.charges === 'SHA' ? 'SHA (shared)' : 'OUR: please pay all bank charges so the full amount arrives'}</dd></dl>
+      ${via.map((x, i) => `<div class="via"><dl>${row(i ? 'Or intermediary bank' : 'Intermediary bank', x.bank, false)}${row('Intermediary SWIFT', x.swift)}${row('Location', x.city, false)}
+        ${row('Our bank’s account there', x.account)}</dl></div>`).join('')}
+      <p style="margin:8px 0 0">Ghana has no IBAN: enter the account number and SWIFT/BIC code.${!B.fx[c] ? ` Payments arrive in our cedi account, converted by the bank on the day.` : ''}</p></div>`;
+  };
+  if (B.account_ghs && B.swift) {
+    if (cur === 'GHS') {
+      if (st.momo_number) cards.push(`<div class="pc"><b class="t">Mobile Money</b><dl>${row('Number', st.momo_number)}${row('Name', st.momo_name || st.co_name, false)}${row('Amount', money2(due, 'GHS'))}${row('Reference', ref)}</dl></div>`);
+      cards.push(`<div class="pc"><b class="t">Bank transfer in Ghana</b><dl>${bankRows(B.account_ghs)}${row('Amount', money2(due, 'GHS'))}${row('Reference', ref)}</dl></div>`);
+      const cs = BANK_CURS.filter(c => B.fx[c] || B.corr.some(x => x.currency === c));
+      if (cs.length) cards.push(swiftCard(cs[0], 'Paying from abroad (SWIFT)', `Send US dollars, euros or pounds; this invoice is settled when ${esc(money2(due, 'GHS'))} arrives.${cs.length > 1 ? ' Intermediary banks for other currencies below.' : ''}`)
+        + cs.slice(1).map(c => `<div class="pc"><b class="t">Sending ${c}</b><dl>${B.corr.filter(x => x.currency === c).map((x, i) => row(i ? 'Or intermediary' : 'Intermediary bank', x.bank, false) + row('Intermediary SWIFT', x.swift) + row('Account there', x.account)).join('')}</dl></div>`).join(''));
+    } else cards.push(swiftCard(cur, `International bank transfer in ${cur}`, `Amount <b>${esc(money2(due, cur))}</b>. Use the invoice number as the reference.`));
+  }
+  const body = cards.length ? `<div class="pays">${cards.join('')}</div>`
+    : `<div class="pc">${cur === 'GHS' && st.momo_number ? `Mobile Money: ${esc(st.momo_number)} (${esc(st.momo_name || st.co_name)})<br>` : ''}${legacy ? esc(legacy).replace(/\n/g, '<br>') : cur === 'GHS' ? '' : `Please ask us for the ${cur} account details.`}<br>Reference: ${esc(ref)}</div>`;
+  return `<div class="pay"><h2>How to pay</h2>${body}
+${+inv.wht_rate ? `<p style="font-size:13px;color:#5A6472;margin:8px 0 0">If you are required to withhold tax, deduct ${(+inv.wht_rate).toString()}% withholding tax and send us the certificate.</p>` : ''}
+<div class="safe">Our bank details never change by email or WhatsApp. If a message tells you otherwise, call +233 55 041 6627 before you pay.</div></div>
+<script>document.addEventListener('click',function(e){var b=e.target.closest('.cp');if(!b)return;navigator.clipboard&&navigator.clipboard.writeText(b.dataset.c).then(function(){b.textContent='Copied';setTimeout(function(){b.textContent='Copy'},1500)})})</script>`;
 }
 /* Paystack: pay by card or mobile money. GHS and USD; EUR is paid by bank transfer. */
 const PAYSTACK_KEY = process.env.PAYSTACK_SECRET_KEY || '';

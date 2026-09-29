@@ -443,3 +443,7 @@ create table if not exists invoice_payments (
 );
 create unique index if not exists invoice_payments_ref_uq on invoice_payments (method, reference) where reference is not null and method = 'paystack';
 create table if not exists invoice_seq (kind text not null, year int not null, n int not null default 0, primary key (kind, year));
+
+-- pounds too: FirstBank's correspondent in London takes GBP
+alter table invoices drop constraint if exists invoices_currency_check;
+alter table invoices add constraint invoices_currency_check check (currency in ('GHS','EUR','USD','GBP'));

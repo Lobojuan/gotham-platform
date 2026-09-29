@@ -267,7 +267,7 @@ let ITEMS=[
 const PAYS=[
  {id:'online',t:'Pay online',s:'Card (Visa, Mastercard) or mobile money, secure checkout',on:()=>!!PAYL},
  {id:'momo',t:'Mobile money (Ghana)',s:'MTN MoMo, Telecel Cash or AirtelTigo Money',on:()=>true},
- {id:'inv',t:'Invoice & bank transfer',s:'For companies and clients abroad. Invoiced in Ghana cedis; your bank converts',on:()=>true}];
+ {id:'inv',t:'Invoice & bank transfer',s:'For companies and clients abroad: an invoice with bank details for transfers in Ghana or from abroad (SWIFT)',on:()=>true}];
 let sel=ITEMS[0],qty=1,pay='momo',ref='',OKT='Registration received';
 const newRef=()=>ref='GC-'+sel.id+'-'+Math.random().toString(36).slice(2,6).toUpperCase();
 
@@ -337,7 +337,7 @@ function render(){
   <li>Amount: <b>${gh}</b> · Reference: <span class="ref">${ref}</span></li>
   <li>Add the transaction ID from your MoMo SMS to your WhatsApp message.</li></ol>
 </div>`}
- else info=`<div class="box"><b style="color:var(--ink)">Invoice & bank transfer</b><br>We email a proforma invoice from Gotham Consult within one working day, in Ghana cedis, with bank details and reference <span class="ref">${ref}</span>. Your place is confirmed when payment arrives.</div>`;
+ else info=`<div class="box"><b style="color:var(--ink)">Invoice & bank transfer</b><br>We email an invoice from Gotham Consult within one working day, with bank details for a transfer in Ghana or from abroad (SWIFT), and reference <span class="ref">${ref}</span>. Your place is confirmed when payment arrives.</div>`;
  $('#payInfo').innerHTML=info;
  $('#goWa').textContent=free?'Reserve via WhatsApp':'Register via WhatsApp';
  $('#goSend').textContent=sel.appr?'Request my invitation':(free?'Reserve my seat':'Complete registration');
@@ -408,7 +408,7 @@ $('#goSend').onclick=async()=>{
   }else if(pay==='online'&&PAYL){
    extra=`<a class="btn btn-dark" href="${PAYL}" target="_blank" rel="noopener">Open secure payment →</a>`;
   }else{
-   extra=`<p class="note" style="margin-top:6px">We email a proforma invoice from Gotham Consult within one working day, with bank details and your reference.</p>`;
+   extra=`<p class="note" style="margin-top:6px">We email an invoice from Gotham Consult within one working day, with bank details for a transfer in Ghana or from abroad (SWIFT), and your reference.</p>`;
   }
   OKT = d.status==='pending' ? 'Application received' : 'Registration received';
   done(extra);
