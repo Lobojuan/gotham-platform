@@ -175,6 +175,13 @@ async function journeys(browser) {
     await p.click('#chatO'); await p.locator('#chatChips button').first().click();
     check('home chat chip gets an answer', await waitAnswer(p, 2) && isAnswer(await lastBot(p)));
     await p.click('#chatX');
+    // the Earth: real pictures load, the card tells you something and moves on when asked
+    await p.waitForFunction(() => performance.getEntriesByType('resource').some(r => /\/img\/earth\/day-\dk\.webp/.test(r.name)), null, { timeout: 15000 }).catch(() => {});
+    check('globe loads the Earth pictures (day, night, clouds)', await p.evaluate(() => ['day-', 'night-', 'clouds-'].every(k => performance.getEntriesByType('resource').some(r => r.name.includes('/img/earth/' + k)))));
+    const g1 = (await p.textContent('.globe-card .gc-t').catch(() => '')).trim();
+    await p.click('.globe-card .gc-next'); await p.waitForTimeout(400);
+    const g2 = (await p.textContent('.globe-card .gc-t').catch(() => '')).trim();
+    check('globe card shows a fact and the next one on request', !!g1 && !!g2 && g1 !== g2, g1 + ' → ' + g2);
     // language: French, carried to the next page, then back to English
     const h1en = (await p.textContent('h1')).trim();
     await p.click('.langb'); await p.click('#langp [data-lang="fr"]');

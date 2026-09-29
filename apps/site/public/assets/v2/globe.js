@@ -1,142 +1,308 @@
-/* Gotham Consult · hero globe
-   A light, dependency-free canvas globe: land dots, Ghana in gold, and live arcs from Accra to the
-   cities our partners and investors come from. Built for phones first:
-   - Canvas 2D (works on every iPhone and Android browser, no WebGL needed)
-   - half the dots and fewer arcs on small screens, pixel ratio capped at 2
-   - stops drawing when off screen or in a background tab
-   - one still frame when the visitor prefers reduced motion */
+/* Gotham Consult · hero globe: the real Earth, turning.
+   NASA Blue Marble by day, NASA city lights by night, and clouds. Day and night follow the
+   sun's real position at this moment. Gold routes run from Accra to the cities our partners
+   come from, and a card beside the globe tells you something about each: how far it is from
+   Accra and what time it is there now.
+   - Canvas 2D, no WebGL and no library: every pixel is looked up from the image, so it runs
+     on any iPhone or Android browser. Only the turning changes per frame; everything else
+     about each pixel (where it sits on the sphere, its shading) is worked out once.
+   - Pictures load after the page is up; until then a dark globe with the routes is shown.
+   - Smaller pictures and a lower frame rate on phones; stops when off screen or in a
+     background tab; one still frame when the visitor prefers reduced motion. */
 (() => {
-  const LAND = '9Wv0TvRl81fzbvOq80nyYPJS8WnxpfFb8EzwifDF8GPwVe9s70fvXu9Q74zuyO5n7ljub+1h7TztU+1q7UXsXOyv7GXsP+xW68/rbeuq61/rOurJ6mjqQ+pa6unqxOpj6T3pL+nN6WvpqOm/6V3oKujH6GboWOhv6MLoYOfZ52nnpee851vn0+Yo5sXmZOYw5s7mbeZH5uXmwOZe5jnm1+Wy5cnlZ+VC5brlWeU05dHlS+Xo5cPlYuUA5D3k2uS15C7kzORr5KfkReTj5L7kXOTV5BLksORO5OzkxuRl493juOOT4zLjz+NJ4+bjweNg49jjFePv48riaOLh4rziWuKW4jXi0+IQ4kzi6uIn4sTiY+I+4tviGeK24vLikeIw4s3ibOHk4SHhv+Fe4fvhOOHW4RPhseHt4YzhKuHI4WbhQeHf4RzhuuH24ZThM+HR4Q7gq+Do4CXgwuBh4P/g2eAX4PDgj+Au4MvgauCm4EXg4uAf4L3gXOD54JjgNuDU4BHgr+BN4OvfKN/G32TfA98/393fGt+33/Tfkt8x387fDN+p3+XfI9/A31/f/N+b3zrf198U37LfUd/u343fK9/J3qTeQt7g3h3eu9733pbeNN7S3g/erd7p3ibexN5i3gHePd7b3hjetd7y3pDeL97M3qfe490h3b7dXd363Tjd1d0S3bDdT93s3YvdKd3H3QTdot1A3d7dG9253fXdlN0y3dDdDd2r3efdJN3C3WDd/t2c3Tvc2dwW3LPcUtzw3I7cLdzK3KXc4dwf3LzcW9z43JfcNtzT3HLcENyu3E3c6tyJ3Cfcxdyg3D7c3NwZ3Lfc89yR2zDbztsL26jb5dsi27/bXtv825rbOdvW23XbFNux21Db7duM2yvbyNuj29/bHNu62/bbldsz29HbDtus2+jaJdrD2mHanto82traF9q12vHaLtrM2qba49og2r3aXNr62pjaN9rU2nPaEtqv2k7a69qK2inaxtqh2t3aGtq42fTZk9kx2c/ZqtlI2ebZI9nB2V/Z/dmc2TrZ2NkV2bPZUdnv2SzZytmk2eHZHtm72fjZltk12dLZENmt2enYiNgn2MTYn9g+2NvYGNi22PLYkdgv2M3YqNjk2CHYv9hd2PvYmdg42NbYE9iw2E/Y7diL2CrYx9ii2N7YHNi51/XXlNcz19DXDder10rX59eG1yTXwtdh153XO9fZ1xbXtNct18vXptfi1x/Xvdf515fXNtfU1xHXrtfr14nXKNfF1qDW3NYa1rfWktYx1s7WC9ap1uXWItbA1l/Wm9Y51tfWFNay1u7WK9bJ1qTW4NYd1rvW99aV1jTW0tUP1azVS9Xp1YfVJtXD1Z7V2tW11ZDVL9XM1afV49Ug1b7VmdU31dXVEtWw1ezVitUp1cfVodXe1bjUMtTP1KrUSdTm1IXUJNTB1JzUO9TY1LPUUtQs1MrUpdTh1B7UvNSX1DXU09QQ1K7UTNSI1CfUxdSf09zTttPz05HTMNPN06jTItO/05rTOdPW07HTjNMq08jTo9Pf07rTldMz09HTrNNK0iXSw9Kd0jzS2tK00lPS8dKP0i7Sy9Km0uLSvdKY0jfS1NIR0q/STdKK0ijSxtKh0t3SuNKS0jHSz9Kp0SPRwNGb0TrR19Gy0VHRLNHJ0aTR4NG70ZbRNNHS0a3RS9Em0cTRn9E90dvRttHy0S/RzdCn0L7QmdA40NXQE9Cw0E/Qi9Aq0MfQotDe0H3QudCU0DLQ0NCr0EnQhtAk0MLQndA70NnQtNBS0PDQLdDLz6XPvM+XzzbP08+uz03Pic8nz8XPoM8+z9zPt8+SzzDPzs+pz0fPIs/Az5rPOc/Xz7HPUM8rz8jOo85Czt/Ofs66zpXONM7Rzg7OrM5LzofOJc7Dzp7OPM7azrXOU87xzpDOLs7MzqfOvs6YzjfO1c6vzk7Ois4pzsbNoc1Azd3NfM24zZPNMs3PzarNSc0jzcHNnM06zdjNs81Rze/NLM3KzaXNQ828zZbNNc3Tza3NTM0nzcTNn8w+zNvMesy2zFXMkcwvzM3MCsyozCHMv8yazDjM1syxzE/Mi8wqzMjMosxBzN/MucyUzDPM0MyrzErMhswlzMLMncw8zNnLtMtTy/DLj8sty8vLpstEy+LLvcuYyzbL1Muvy03Licsoy8bLoMs/y93Lt8tWy5LLMcvOy6nLSMuEy8DLm8s6y9fLsstRy+7KjcorysnKpMpCyuDKf8q7ypbKNMrSyq3KS8qHyibKxMqeyj3K28p5yrXKVMqQyi/KzMqnykbK48q+ypnKN8rVyrDKTsqLyinKx8oEyaLJQMneyXzJuclXyZPJMsnQyarJScmFycHJnMk7ydjJs8lSye/JjsktycrJpclEyeHJgMm8yZfJNcnTya7JTMmJySfJxcmgyT7J3Mm3yFXIkcgwyM7IqMjlyIPIv8iayDnI1sixyFDIjMgryMjIo8hCyN/Ifsi6yJXIM8jRyKzISsiHyMPInsg8yNrItchTyI/ILsjMx6bHRcfix4HHvceYxzfH1Mevx07Hiscox8bHocc/x93HuMeTxzHHz8eqx0jHhMfBx5vHOsfYx7LHjccsx8nHpMdDx+DHu8aWxjXG0satxkzGiMYmxsTGn8Y9xtvGtsaRxi/GzcaoxkbGgsa/xpnGOMbWxrDGT8aLxirGx8aixkHG3sa5xljGlMYzxtDGq8ZKxYbFwsWdxTvF2cW0xY/FLcXLxabFRMXixYDFvcWXxTbF08WuxU3FicUoxcXFoMU/xdzFt8WSxTDFzsWpxUfFhMXAxZvFOcXXxLLEUMSMxCvEycSjxELE4MR+xLrEWcSVxDTE0cSsxEvEh8TDxJ7EPcTaxLXEkMQuxMzEp8RFxILEvsSZxDfE1cSwxIrEKcTHxKHEQMPew7jDV8OTwzLDz8Oqw0nDhcPBw5zDO8PYw7PDUsOOwyzDysOlw0PD4cOAw7zDl8M1w9PDrsNMw4jDxMOfwz7D28O2w5HDMMPNwqjCR8LkwoPCv8KawjjC1sKxwk/CjMIqwsjCo8JBwt/CusJYwpTCM8LRwqvCSsKGwsLCncI8wtnCtMKPwi7Cy8KmwkXCgcK9wpjCNsLUwa/BTcGKwSjBxsGhwT/B3cG4wZLBMcHPwanBSMGEwcDBm8E6wdfBssFRwY3BLMHJwaTBQ8HgwX/Bu8E0wdLBrcFLwYjBxMGewT3B28C1wFTAkMAvwMzAp8BGwILAvsA4wNXAsMBPwIvAKcDHwKLAQMDewLnAlMAywNDAq8BJwIXAwsCcwDvA2cCzwI7ALcDKwKXARMCAwLy/Nr/Tv66/Tb/Fv6C/Pr/cv7e/kr8wv86/qb9Hv4O/wL+avzm/17+xv1C/jL8rv8i/o79Cv9+/ur80v9G/rL9Lv4e/w76evjy+2r61vo++Lr7Mvqa+Rb6Bvr2+N77Uvq++Tr4pvsa+ob5Avt2+uL6TvjG+z76qvki+hb7Bvpy+Or7YvrO+Ub6Nviy+yr6kvkO9f727vTW90r2tvUy9iL3EvZ+9Pr3bvXq9tr2RvS+9zb2ovUa95L2/vTi91r2xvYu9Kr3IvaK9Qb3fvX29ub0zvdC9q71KvcK8nbw8vNm8tLyPvC28y7ymvES8gLy9vDa81LyuvE28ibwovMW8oLw/vNy8e7y3vJK8MbzOvKm8SLzAvDm817yyvCu8ybykvEK7fru7uzS70rusu0u7w7ueuz272ru1u5C7L7vMu6e7Rrvju767N7vVu7C7i7spu8e7ortAu3y7ubuTuzK70Luqu0m7wbo7uti6s7qOui26yrqlukS6gLq8upe6NbrTuq66TLrFup+6Prp6ura6kbowus26qLpHur+6ObrWurG6KrrIuqO6Qbp+urq5lbkzudG5rLlKucO5nbk8udq5tLmPuS65y7mmuUW5vbmYuTe51LmvuSi5xrmhuT+5fLm4uZO5MbnPuaq5SLnBuZu5OrnYuLK4LLjJuKS4Q7h/uLu4lrg1uNK4rbjEuJ+4Pbh5uLa4L7jNuKe4RrjkuL64mbg4uLC4i7gquMe4orhBuH24ubiUuDK40Lert0m3hrfCt523O7fZt7S3jrctt8u3pbdEt7y3l7c2t9O3rrfFt6C3P7d7t7e3MLfOt6m3R7fAt5u3Obeytyu3ybajtkK2fra6tpW2NLbRtqy2w7aetjy22ra1tpC2LrbMtqe2Rbbjtr62mLY3tq+2KbbGtqG2QLZ8tri2k7Yyts+2qrZJtsG2nLU6tdi1s7Ustcq1pbVDtby1lrU1tdO1rbXEtZ+1PrV6tba1MLXNtai1R7W/tZq1OLWxtSq1yLWjtUG1fbW6tZS1M7XRtKu0wrSdtDy0tLSPtC20y7SmtES04rS9tJi0NrTUtK+0xrSgtD+0e7S3tDG0zrSptEi0hLTAtJu0OrSytCu0ybOks0Kzu7M0s9KzrbPEs56zPbPbs7WzL7PMs6ezRrOCs76zmbM4s7CzKbPHs6KzQLO5szKz0LOrs0mzhbPCs5yzO7Kzsi2yyrKlskSy4bKAsryyNbLTsq6yxbKgsj6yt7Iwss6yqLJHsoOyv7KasjmysbIrssiyo7JCst+yurIzstGyrLGHscOxnrE8sdqxtbEuscyxprFFseOxgbG9sTexr7HGsaGxQLHdsXyxuLExsc+xqrFIsYWxwbGcsTqxs7EsscqxpLFDsX+xu7A1sNKwrbDEsJ+wPbC2sC+wzbCosEawgrC/sJmwOLCwsMeworBBsN6wfbC5sDOw0LCrsIawwrCdsDuwtLAtsMuvpq9Er4Cvva82r9Svrq/Fr6CvP697r7evMa/Or6mvSK+Er8Cvm685r7Kvya+kr0Kvfq+7rzSv0a+sr4evw6+erz2vta4ursyup65FroKuvq6Zrjeu1a6wrseuoa5Art6ufK64rjKuz66qroWuwa6crjuus67KrqWuQ66ArryuNa7Trq6uiK7FrZ+tPq16rbatMK3Nraitg62/rZqtOa2xrcito61BrX6tuq0zrdGtq62GrcKtna08rbStj60urcutpq1FrYGtva02rdStr6yKrMasoaw/rHusuKwxrM+sqayErMCsm6w6rLKsyaykrEOsf6y7rJasNKzSrK2siKzErJ+sPax5rLaskKzNrKesgqy+rJmsOKzVq7Cri6vHq6KrQat9q7mrlKsyq9Crq6uGq8KrnKs7q7OrjqvKq6WrRKuAq7yrl6s2q9OrrquJq8WroKs+q3urt6uSqzCrzqupq4OrwKqaqjmqsaqMqsiqo6p+qrqqlao0qtGqrKqHqsOqnqo8qrWqkKouqsyqp6pFqoGqvqqYqjeq1aqvqoqqxqqhqkCqfKq4qpOqMqrPqqqphanBqZypOqmzqY2pyqmkqX+pu6mWqTWp0qmtqYipxKmfqXqptqmRqc2pqKmDqb+pmqk4qdapsamLqcipfam5qZSpM6nQqKuohqjCqJ2oPKi0qI+oy6imqIGovaiYqDao1KivqImoxqigqHuot6iSqDGozqipqISowKibqDqosqiNqMmofqi7qJWoNKfSp6ynh6fDp56neae1p5CnL6fMp6enRqeCp76nmac3p9WnsKeLp8enoqd8p7mnk6cyp9CnqqeFp8GnnKd3p7OnjqfKp6WngKe8ppemNabTpq6miabFpqCmeqa3ppGmMKbOpqimg6a/ppqmOaaxpoymyKZ+prqmlaYzptGmrKaGpsOmnaZ4prSmj6bLpqamgaa9pTel1KWvpYqlxqWhpXyluKWTpc+lqqWEpcGlm6U6pXalsqWNpcmlf6W7pZalNaXSpa2liKXEpZ+leqW2pZGlzaVGpYKlv6Q4pLCki6THpKKkfaS5pJSkMqTQpKukhqTCpJ2kd6S0pI6ky6SApLykl6Q2pNOkrqSJpMWkoKR7pLekkqQwpM6khKTAo5ujOaN1o7KjjKPJo36juqOVozSj0aOHo8OjnqN5o7WjkKPMo6ejgqO+ozejsKOKo8ejoaN8o7ijk6PPo4WjwaKconeis6KOosqif6K8opaiNaLTooiixKKfonqitqKRos2ig6K/ojiidaKxooyiyKKjon2iuqKUotGihqLCoZ2heKG0oY+hy6GmoYGhvaGYoTahiqHGoaGhe6G4oZKhz6GEocChm6E6oXahsqGNocmhpKF/obuhlqE0odKhh6HEoJ6geaC1oJCgzKCnoIKgvqA4oNWgi6DHoKKgfaC5oJSg0KCFoMKgnKB3oLOgjqDKoKWggKC8oJegNqCJoMWgoJ97n7efkp/On6mfR5+Dn8CfOZ91n7GfjJ/In6Offp+6n5Wfh5/Dn56feJ+1n4+fzJ+mn4GfvZ+Ynzefip/Gn6GffJ64npOez55InoWewZ6cnjqedp6zno2eyp6knn+eu56WnhCeiJ7Enp+eep62npGeqJ6DnpqeOJ50noueyJ6inkGefZ65nZSdhp3CnZ2deJ20nY+dy52mnYCdvZ2XnTadEZ2JncWdoJ17nbedkp2pnYSdOZ12nY2dyZ2knX6du52VnIecw5yenHmctZyQnKecgpyZnDeci5zHnKKcQJx8nLick5xJnIWcO5x3nLOcjpzKnKWcgJy8nJecNZtMm4ibxZufm3qbtpuRm82bqJuDmzmbdZuMm8ibo5tBm36bupuVm4abw5udm3ibtJuPm6abgZuYmzebEZtOm4qaxpqhmj+afJq4mpOahJo6mnaajZrJmqSaf5q7mpaaiJrEmp+aeZq2mpCazZqnmoKamZo4mtWaT5qLmseaoplBmX2ZuZmUmYaZO5l3mbSZjpnLmaWZgJmXmU2ZiZnFmaCZP5l7mbeZkpmEmZqZOZl1mYyZyJmjmX6ZupiVmIeYw5iemDyYeZi1mJCYp5iBmJiYipjGmKGYQJh8mLiYk5iFmDqYd5iOmMqYpZh/mJaXiJeflz6Xepe2l5GXg5eal9aXdJeLl8iXopd9l7mXlJeGlzyXeJe0l4+Xy5eBl5iWiZbGlqCWP5Z7lreWkpaElpuWdpaNlsmWpJZ/lpaWh5aelnmWtZaQlsyWgpaZltWWi5bHlqKVQJV8lZOVhZV3lY6VypVElYCVl5WJlcWVoJU+lXqVt5WRlYOVmpV1lYyVyJWjlUKVfpSVlIeUeJS1lI+UzJSBlJiUipTGlKGUP5R8lLiUk5SElJuUdpSNlMmUQ5R/lJaTiJOfk3qTtpORk82TgpOZk9aTdJOLk8eTQZN9k5SThpOdk3iTj5PLk0STgJOXk4mTxZJ7kreSkpKEkpuS15J1koySyZJCkn6SlZKHknmStZKQksySgpKZkoqSfJGTkYWRnJF3kY6RypFDkYCRl5GIkXqRtpGRkYORmpF1kYyRfZGUkIaQnZB4kI+Qy5CBkJiQipDGkHuQuJCSkISQm5B2kI2QyZBDkH+QlpCIj3mPto+Qj82Pgo+Zj0+Pi4+ij32PlI+Fj5yPd4+Oj8qPRI+Aj5ePTY+Jj6CPe4+3jpKOg46ajteOUI6MjqOOfo6VjkuOh46ejnmOkI6BjpiOTo6KjqGOfI6TjYWNnI12jVGNjY1/jZaNTI2IjZ+Neo22jZGNg42ajU+Ni42ijX2NlI1KjYaNnYx4jFOMj4xEjIGMmIxNjImMxYygjHuMkoxIjISMm4xQjI2MfoyVjEuMh4yejHmMVIyQi0aLgouZi06Li4uii3yLuYuTi0mLhYuci9iLd4tSi46LgIuXi0yLiYugi3qLVYuRi4OKmorWilCKjIp+ipWKSoqGip2KeIpTio+KgYqYik6KioqhinyKk4qEipuK2IpRiY2Jf4mWiUyJiImfiXqJVImRiYKJmYlPiYuJx4miiX2JuYmUiUmJhomdidmJUomOiYCIl4hNiImIoIh7iFaIkoiEiJuIUIiMiH6IlYhLiIeInoh5iFSIkIiYh06Hioehh3yHV4eTh0mHhYech1GHjoeWh9OHTIeIh5+HeodVh5GHmodPh4yHyIZYhpSGSoaGhp2GU4aPhpiGTYaJhqCGVoaShoSGm4ZRho2GWYaWhdKFS4WHhcSFnoVUhZCFmYVPhYuFx4VXhZSFSYWchVKFjoVbhZeFTYWJhcWEoIRVhJGEmoRQhIyEyIRZhJWE0YRKhIeEnoRThI+EmIROhIqExoRXg5ODz4Ocg1GDjYNag5aD0oNMg4iDn4NUg5GDmYNPg4uDWIOUg9CDSoKdglKCj4JbgpeCTYKJgsWCVoKSgpuCUIKNgsmCWYKVgtKCS4KHgp6BVIGQgZmBToGKgceBV4GTgc+BSYGcgVKBjoFagZeB04FMgYiBVYGRgc2BR4CagNaAUICMgMiAWICVgNGASoCGgJ2AU4CPgJiATYCKgFaAkoDPgEiAm39Rf41/Wn+Wf9J/S3+If1R/kH9df5l/T3+Lf8d/WH+Uf9B/SX+df1J/jn5bfpd+TX6Jftx+VX6Sfs5+R35efpp+UH6Mfsh+WX6VftF+S36HflN+kH5cfph91X1OfYp93X1XfZN9z31JfWB9nH1RfY59Wn2WfUx9iH1VfZF9Rn1dfZp9T32Lfch8WHyUfNB8SnxTfI984nxbfJh8TXyJfFZ8knzOfEh8X3ybfFF8jXzJfOB8WXuWe9J7S3uHe9p7VHuQe+N7XXuZe057i3vee1d7k3tJe2B7UnuOe8p74Xtbe5d7THuJemN63HpVepF6R3rlel56mnpQeox6yHrfell6lXrRekp6YXpTeo964npceph61HpOeut6inlWeZN5SHnmeV95m3lReY15yXngeVp5lnlMeWN5VHmReUZ55HldeZl5T3mLeVh5lHlKeGF4UniOeOJ4W3iXeE14iXhkeFZ4knhHeOV4XnibeFB4jHhZeJV4S3hid1R3kHfjd1x3mXdOd4p3ZXfed1d3k3dJd+Z3YHdSd453WneWd0x36neId2N3VXeRdkd25HZedpp2T3aMdmZ2WHaUdkp26HZhdlN2j3bLduJ2XHaYdk12inZkdlZ2knbPdkh25nZfdZt1UXWNdVp1lnVLdWJ1VHWQdcx143VddZl1T3WLdWZ1V3WUdUl153VgdVJ1jnThdFt0l3RNdGR0VXSSdM505XRedJp013RQdIx0WXSVdNF0SnTodGF0U3SPc1xzmHPUc05zinNlc1dzk3NIc19zUXONc1pzlnPSc0xzY3NVc5Fz5HNdc5pyT3KLcmZyWHKUckpyYXJSco9yW3KXck1yiXJkclZyknJfcptyUHKNcR1xWXGVcUtx6XFicVRxkHFdcZlx1XFOcYtxZXFXcZNxSXFgcZxxUnGOcVpwl3BMcOpwY3BVcJFw5HBecJpwUHCMcFhwlXBKcGFwU3CPcFxwmHBOb4pvZW9Wb5NvX2+bb1FvjW9ab5ZvS29ib1RvkG9db5lvT2+Lbt5uWG6UbkluYG5Sbo5uW26Xbk1uZG5WbpJu5W5ebptuUG6MbuBuWW6VbUttYm1TbZBtXG2YbU5tim3dbVdtk21gbZxtUW2ObVptlm1MbGNsVWyRbORsXmyabE9sjGyjbN9sWGyUbEpsYWxTbI9sW2yYbE1siWvda1Zrkmtfa5trUWuNa1lrlmtLa2JrVGuQa11rmWtPa4tromvea1drlGpgapxq2GpSao5qW2qXakxqiWpjatxqVWqRauVqXmqaalBqjGqjat9qWWqVaWFp2mlTaY9pXGmYaU5pimmhad1pV2mTaeZpX2mcaVFpjWngaVpplmlMaWNo22hUaJFo5GhdaJloT2iLaKJo3mhYaJRoYWj+aNloUmiPaFtol2hNaIlooGjcZ1ZnkmflZ19nm2dQZ4xn4GdZZ5VnYmfaZ1RnkGdcZ5lnTmeKZ6Fn3mdXZ5Nm5mZgZv1m2GZSZo5m4WZaZpdmiGZjZp9m3GZVZpFm5GZeZlBmjGbfZlhmlGVhZdllU2WPZeJlXGWYZYploWXdZVZlkmXmZV9l12VRZY1l4GVaZZZkYmTbZFRkkGTkZF1kT2SLZKJk3mRXZJRk52RgZNlkUmSOZOFkW2SXZIlkoGPcY1VjkmPlY15j12NQY4xj32NZY5Vj6GNiY9pjU2OQY+NjXGPVY05jimOhY91iV2KTYuZiX2LYYlFijWLhYlpilmLSYp9i22JVYpFi5GJdYtZiT2KLYt9iWGKUYedhYWHZYVNhj2HiYVthmGHUYYlhoGHdYVZhkmHlYV9h12FQYY1h4GFZYZVh0mDpYGJgnmDaYFRgkGDjYF1g1WBOYItg3mBXYJNg52BgYNhgUmCOYOFgW2CXYNNf6l+gX9xfVV+RX+VfXl/WX1BfjF/fX1hflV/RX+hf2l9TX49f4l9cX5hf1F9OXopeoV7dXlZek17mXl9e2F5RXo1e4F5aXpZe0l7pXp9e215UXpFe5F5dXtZeT16LXd5dWF2UXdBd513ZXVJdjl3iXVtdl13TXepdoF3cXVZdkl3lXdddUF2MXOBcWVyVXNFc6FzaXFRckFzjXFxc1VxOXIpc3VxXXJNc5lzYXFFcjlvhW1pbllvTW+pb21tVW5Fb5FvWW09bjFvfW1hblFvRW+hb2VtTW49a4lpcWtRa61rdWlZaklrlWtdaUVqNWuBaWVqWWtJa6VrbWlRakFnjWV1Z1VlPWYtZ3llXWZRZ51nZWVJZjlnhWVtZ01nqWdxZVViSWOVY1lhQWIxY31hZWJVY0VjoWNpYU1iPWONYXFjUWE5Y61jdV1dXk1fmV9hXUVeNV+FXWleWV9JX6VfbV1VXkVfkV9ZXT1eLV95WWFaUVudW2VZSVo9W4lZbVtRWTVbrVtxWVlaSVuVW11ZQVo1V4FVZVZVV0lXpVdpVVFWQVeNV1VVOVexV3lVXVZNV5lXYVVJVjlThVFpU01TqVNxUVVSRVORU1lRQVN9UWFSVVOhU2lNTU49T4lPUU05T61PdU1ZTklPmU9dTUVONU+BTWlPSU+lSVFKQUuRS1VJPUt5SWFKUUudS2VJSUo5S4lLTUupRVVGSUeVR11FQUYxR31FZUehRU1GQUeNQ1VBOUFdQ5lBRUI5Q01DqUFVQkVDkT09PWE/nT1NPj0/iT9RPTU9WTuVOUU7pTlRO4076Tk5N501STUxNVU3lTFBM6ExTTONMTkxWTOZLUUvpS1RL5EtPSudKUkpNSlZK5Ur8SlBJVElOSP1IUkhMSPtIT0dTR01H/UZRRktGT0VNRfxFUEToRPpETkNRQ09C50L5Qk1BUEH3QUtBTkD4QEw/UD/2Pk4+9z5MPU88TTxQO0s7TjpMOrE6TzlNOEs2TDZVNU40TDNPMlAxTiGmIcYh3SHPIeYgwSDYIFEgySCkIOAguyDSIK0gxB/bH80fqB/kH78f1h+wH+0fxx+iH94euR7QHqse5x7CHp0e2R5SHssepR7iHbwdlx3THa4dTR3qHcUdoB3cHbcdzh2pHeUcwBzXHFAc7hzJHKMc4By6HJUc0RysHOgbwxueG9obtRtUG/EbkBvMG6cb4xuCG74bmRvVG7AbThrsGooaxxqhGt4afBq4GvUakxrPGqoa5hqFGsEanBrYGbMZURnvGY4ZyhmlGeEZfxm8GZYZ0xmtGUwZ6hmIGcQYnxjbGHoYthjyGJEYzRioGEcY5BiDGL8Ymhg4GNYYdRixGE8Y7ReMF8gXoxdBF98XfRe6F5QX0RerF0oX6BeGF8IXnRc8FtkWeBa0FlMW8BaPFssWphZFFuIWgRa9FpgW1BavFk0V6xWKFSgVxhWhFT8V3RV7FbgVkhUxFc8VqRVIFeYVhBUjFcAUmxQ6FNcUdhSyFFEU7hSNFCsUyRSkFEIU4BR/FB0UuxSWEzQT0hNwE60TSxPpE4cTJhPEE54TPRPbE3kTtRPyE5ATLxPMEmsSpxJGEuMSghIhEr4SmRI4EtUSdBISErAS7BKLEikSxxGiEUAR3hF9ERsRuRGUETIR0BFuEasR5xGFESQRwhBgEJwQOxDZEHcQFhCzEPAQjhAtEMoQaRClEEQQ4RCAEB8PvA+XDzYP0w9yD64P6g+JDycPxQ+gDz4O3A57DhkOtw6SDjAOzg5sDqkORw7lDoMOIg7ADV4Nmg05DdcNdQ2xDe4NjA0rDcgNZwyjDEIM3wx+DBwMugyVDDMM0QxwDKwMSgvoC4cLJQvDC2ELngs8C9oLeAsXC7UK8QqPCi4KzApqCqYKRQrjCoEKIAq9CVwJmAk3CdQJcwkSCa8JTgnrCYoIKQjGCGUIoQhACN0IfAgaCLgHVwf0B5MHMQfPB24HDAeqBkgG5gaFBiMGwQZfBv0GnAU6BdgFdgUVBbMFUQTvBI0ELATKBGgDBwOkA0MC4QJ/Ah4Buw==';
   const canvas = document.getElementById('globe');
   if (!canvas || !canvas.getContext) return;
   const ctx = canvas.getContext('2d', { alpha: true });
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const small = () => innerWidth < 700;
-  const rad = d => d * Math.PI / 180;
+  const rad = d => d * Math.PI / 180, TAU = Math.PI * 2;
+  const HERE = (document.currentScript && document.currentScript.src) || location.href;
+  const IMG = f => new URL('/img/earth/' + f, HERE).href;
 
-  const raw = atob(LAND); const pts = [];
-  for (let i = 0; i < raw.length; i += 2) {
-    const lat = raw.charCodeAt(i) / 255 * 180 - 90, lon = raw.charCodeAt(i + 1) / 255 * 360 - 180;
-    const gh = lat > 4.3 && lat < 11.4 && lon > -3.4 && lon < 1.4;
-    pts.push([rad(lat), rad(lon), gh]);
-  }
   const ACCRA = [5.6, -0.19];
   const CITIES = [
-    ['London', 51.5, -0.13], ['Copenhagen', 55.7, 12.6], ['Berlin', 52.5, 13.4], ['Dubai', 25.2, 55.3],
-    ['New York', 40.7, -74.0], ['Shanghai', 31.2, 121.5], ['Lagos', 6.5, 3.4], ['Johannesburg', -26.2, 28.0],
-    ['Abidjan', 5.35, -4.0], ['Toronto', 43.7, -79.4]];
-  const NOLABEL = ['Berlin', 'Lagos', 'Abidjan'];
+    ['London', 51.5, -0.13, 'Europe/London'], ['Copenhagen', 55.68, 12.57, 'Europe/Copenhagen'], ['Berlin', 52.52, 13.4, 'Europe/Berlin'],
+    ['Dubai', 25.2, 55.27, 'Asia/Dubai'], ['New York', 40.71, -74.0, 'America/New_York'], ['Shanghai', 31.23, 121.47, 'Asia/Shanghai'],
+    ['Lagos', 6.52, 3.38, 'Africa/Lagos'], ['Johannesburg', -26.2, 28.05, 'Africa/Johannesburg'], ['Abidjan', 5.36, -4.01, 'Africa/Abidjan'],
+    ['Toronto', 43.65, -79.38, 'America/Toronto']];
   const MOBILE_CITIES = ['London', 'Copenhagen', 'Dubai', 'New York', 'Johannesburg', 'Lagos'];
+  const NOLABEL = ['Berlin', 'Lagos', 'Abidjan'];   // too close to London and Accra to label all the time
 
+  /* ---- words (the site's translator cannot see inside a canvas, so the card carries its own) ---- */
+  const lang = () => { try { return localStorage.getItem('gc-language') || 'en'; } catch { return 'en'; } };
+  const T = {
+    en: { km: 'km from Accra', local: 'Local time', same: 'same time as Accra', ahead: n => `${n} h ahead of Accra`, behind: n => `${n} h behind Accra`,
+      route: 'Partner route', live: 'Live', f1t: 'Accra · 5.6°N, 0.2°W', f1: 'The capital closest to 0° 0°, where the Equator meets the Prime Meridian.',
+      f2t: 'Accra time', f2: 'Ghana keeps GMT all year. No daylight saving, easy to plan calls from Europe.',
+      f3t: 'Home of the AfCFTA Secretariat', f3: 'The African Continental Free Trade Area is run from Accra.',
+      f4t: 'Real sunlight', f4: 'Day and night on this globe follow the sun right now. The lights are cities.',
+      aria: 'The Earth turning, with day and night as they are now and routes from Accra to London, Copenhagen, Berlin, Dubai, New York, Shanghai, Lagos, Johannesburg, Abidjan and Toronto', next: 'Next' },
+    fr: { km: 'km d’Accra', local: 'Heure locale', same: 'même heure qu’Accra', ahead: n => `${n} h de plus qu’Accra`, behind: n => `${n} h de moins qu’Accra`,
+      route: 'Route partenaire', live: 'En direct', f1t: 'Accra · 5,6°N, 0,2°O', f1: 'La capitale la plus proche de 0° 0°, où l’Équateur croise le méridien de Greenwich.',
+      f2t: 'Heure d’Accra', f2: 'Le Ghana reste à l’heure GMT toute l’année, sans heure d’été : simple pour caler des appels depuis l’Europe.',
+      f3t: 'Siège du Secrétariat de la ZLECAf', f3: 'La Zone de libre-échange continentale africaine est pilotée depuis Accra.',
+      f4t: 'Lumière réelle', f4: 'Le jour et la nuit sur ce globe suivent le soleil en ce moment. Les lumières sont des villes.',
+      aria: 'La Terre qui tourne, avec le jour et la nuit en ce moment et les routes depuis Accra', next: 'Suivant' },
+    es: { km: 'km de Accra', local: 'Hora local', same: 'misma hora que Accra', ahead: n => `${n} h más que Accra`, behind: n => `${n} h menos que Accra`,
+      route: 'Ruta de socios', live: 'En directo', f1t: 'Accra · 5,6°N, 0,2°O', f1: 'La capital más cercana a 0° 0°, donde el Ecuador cruza el meridiano de Greenwich.',
+      f2t: 'Hora de Accra', f2: 'Ghana mantiene GMT todo el año, sin horario de verano: fácil para planificar llamadas desde Europa.',
+      f3t: 'Sede de la Secretaría de la AfCFTA', f3: 'El Área de Libre Comercio Continental Africana se dirige desde Accra.',
+      f4t: 'Luz real', f4: 'El día y la noche en este globo siguen al sol ahora mismo. Las luces son ciudades.',
+      aria: 'La Tierra girando, con el día y la noche de ahora y rutas desde Accra', next: 'Siguiente' } };
+  const L = () => T[lang()] || T.en;
+  const LOC = () => ({ fr: 'fr-FR', es: 'es-ES' })[lang()] || 'en-GB';
+
+  /* ---- geometry ---- */
   const vec = (lat, lon) => [Math.cos(rad(lat)) * Math.cos(rad(lon)), Math.cos(rad(lat)) * Math.sin(rad(lon)), Math.sin(rad(lat))];
+  const km = (a, b) => { const [p1, l1] = a.map(rad), [p2, l2] = b.map(rad);
+    const h = Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin((l2 - l1) / 2) ** 2; return 6371 * 2 * Math.asin(Math.sqrt(h)); };
   function slerp(a, b, t) {
     const d = Math.acos(Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])), s = Math.sin(d) || 1;
     const k1 = Math.sin((1 - t) * d) / s, k2 = Math.sin(t * d) / s;
     return [a[0] * k1 + b[0] * k2, a[1] * k1 + b[1] * k2, a[2] * k1 + b[2] * k2, d];
   }
-  const arcs = CITIES.map(([name, lat, lon], i) => {
-    const a = vec(...ACCRA), b = vec(lat, lon), d = slerp(a, b, 0)[3];
-    const steps = 48, path = [];
-    for (let s = 0; s <= steps; s++) {
-      const t = s / steps, p = slerp(a, b, t), h = 1 + Math.sin(Math.PI * t) * (0.06 + d * 0.16);
-      path.push([p[0] * h, p[1] * h, p[2] * h]);
-    }
-    return { name, lat, lon, path, phase: i * 0.37 };
+  const arcs = CITIES.map(([name, lat, lon, tz], i) => {
+    const a = vec(...ACCRA), b = vec(lat, lon), d = slerp(a, b, 0)[3], steps = 56, path = [];
+    for (let s = 0; s <= steps; s++) { const t = s / steps, p = slerp(a, b, t), h = 1 + Math.sin(Math.PI * t) * (0.04 + d * 0.075); path.push([p[0] * h, p[1] * h, p[2] * h]); }
+    return { name, lat, lon, tz, path, phase: i * 0.37, dist: Math.round(km(ACCRA, [lat, lon]) / 10) * 10 };
   });
 
-  let W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1, lon0 = rad(-8), lat0 = rad(14), t0 = performance.now();
-  let dragX = null, dragLon = 0, userLon = 0, running = false, visible = true;
+  /* The view: turn about the pole by lonC, then tip towards the viewer by TILT.
+     x right, y up, z towards the viewer. */
+  const TILT = rad(12), ca = Math.cos(TILT), sa = Math.sin(TILT);
+  let lonC = rad(14);
+  function view(p) {
+    const cl = Math.cos(lonC), sl = Math.sin(lonC);
+    const x1 = p[0] * cl + p[1] * sl, y1 = -p[0] * sl + p[1] * cl, z1 = p[2];
+    return [y1, z1 * ca - x1 * sa, z1 * sa + x1 * ca];
+  }
 
+  /* ---- the sun, from the date and time (good to about a degree, plenty for day and night) ---- */
+  let sD = 0, cD = 1, sunLon = 0, sunAt = 0;
+  function sun(now) {
+    if (now - sunAt < 30000 && sunAt) return; sunAt = now;
+    const d = new Date(), start = Date.UTC(d.getUTCFullYear(), 0, 0), doy = (d - start) / 864e5;
+    const decl = rad(-23.44 * Math.cos(TAU / 365.24 * (doy + 10)));
+    const g = TAU / 365.24 * (doy - 81), eot = 9.87 * Math.sin(2 * g) - 7.53 * Math.cos(g) - 1.5 * Math.sin(g);   // minutes
+    const utcH = d.getUTCHours() + d.getUTCMinutes() / 60 + d.getUTCSeconds() / 3600;
+    sunLon = rad(-15 * (utcH - 12 + eot / 60)); sD = Math.sin(decl); cD = Math.cos(decl);
+  }
+
+  /* ---- pictures ---- */
+  let tex = null;   // { day, night, cloud, TW, TH, CW, CH }
+  const pixels = (img, w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h); return x.getImageData(0, 0, w, h).data; };
+  const load = src => new Promise((ok, no) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.decoding = 'async'; i.onload = () => ok(i); i.onerror = no; i.src = src; });
+  async function loadTextures() {
+    const big = canvas.getBoundingClientRect().width * Math.min(2, devicePixelRatio || 1) > 620;
+    try {
+      const [d, n, c] = await Promise.all([load(IMG(big ? 'day-2k.webp' : 'day-1k.webp')), load(IMG(big ? 'night-2k.webp' : 'night-1k.webp')), load(IMG('clouds-1k.webp'))]);
+      const TW = d.naturalWidth, TH = d.naturalHeight;
+      tex = { day: pixels(d, TW, TH), night: pixels(n, TW, TH), cloud: pixels(c, 1024, 512), TW, TH, CW: 1024, CH: 512, born: performance.now() };
+      sphere = null; draw(performance.now());
+    } catch { /* keep the dark globe */ }
+  }
+
+  /* ---- the sphere as pixels: worked out once per size ---- */
+  let sphere = null, sp = document.createElement('canvas'), spx = sp.getContext('2d');
+  function buildSphere(S) {
+    const n = S * S, idx = new Int32Array(n), uB = new Float32Array(n), row = new Int32Array(n), crow = new Int32Array(n),
+      sLat = new Float32Array(n), cLat = new Float32Array(n), shade = new Float32Array(n), alpha = new Uint8ClampedArray(n);
+    const { TW, TH, CW, CH } = tex; let k = 0; const r = S / 2;
+    for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+      const X = (x + 0.5 - r) / r, Y = (r - y - 0.5) / r, q = X * X + Y * Y;
+      if (q > 1.0 + 2 / r) continue;
+      const Z = Math.sqrt(Math.max(0, 1 - q));
+      const y1 = X, x1 = Z * ca - Y * sa, z1 = Y * ca + Z * sa;   // back to the Earth's own frame
+      const lat = Math.asin(Math.max(-1, Math.min(1, z1))), lonRel = Math.atan2(y1, x1);
+      idx[k] = (y * S + x) * 4;
+      uB[k] = (lonRel + Math.PI) / TAU * TW;
+      row[k] = Math.min(TH - 1, Math.floor((Math.PI / 2 - lat) / Math.PI * TH)) * TW;
+      crow[k] = Math.min(CH - 1, Math.floor((Math.PI / 2 - lat) / Math.PI * CH)) * CW;
+      sLat[k] = Math.sin(lat); cLat[k] = Math.cos(lat);
+      shade[k] = 0.62 + 0.38 * Math.pow(Z, 0.55);                          // edge darkening
+      alpha[k] = Math.max(0, Math.min(255, (1 - Math.sqrt(q)) * r * 255 + 255)); k++;
+    }
+    sp.width = S; sp.height = S;
+    const img = spx.createImageData(S, S);
+    const cosCol = new Float32Array(TW);
+    return { S, k, idx, uB, row, crow, sLat, cLat, shade, alpha, img, cosCol };
+  }
+  let cloudLon = 0;
+  function paintEarth(now) {
+    const S = Math.max(160, Math.min(small() ? 380 : 700, Math.round(2 * R * dpr)));
+    if (!sphere || sphere.S !== S) sphere = buildSphere(S);
+    sun(now);
+    const { k, idx, uB, row, crow, sLat, cLat, shade, alpha, img, cosCol } = sphere, buf = img.data;
+    const { day, night, cloud, TW, CW } = tex;
+    const du = lonC / TAU * TW, cdu = (lonC + cloudLon) / TAU * CW, cs = CW / TW;
+    for (let u = 0; u < TW; u++) cosCol[u] = Math.cos((u + 0.5) / TW * TAU - Math.PI - sunLon);
+    for (let i = 0; i < k; i++) {
+      let u = uB[i] + du; u -= Math.floor(u / TW) * TW; const ui = u | 0;
+      const d = sLat[i] * sD + cLat[i] * cD * cosCol[ui];
+      let t = (d + 0.1) / 0.24; t = t < 0 ? 0 : t > 1 ? 1 : t * t * (3 - 2 * t);           // soft line between day and night
+      const light = (d > 0 ? Math.min(1.08, 0.3 + d * 1.1) : 0.3) * t;
+      const o = (row[i] + ui) * 4;
+      let cu = ui * cs + cdu; cu -= Math.floor(cu / CW) * CW;
+      const c = cloud[(crow[i] + (cu | 0)) * 4] / 255 * 0.78;
+      const nt = (1 - t) * 1.7, s = shade[i];
+      const r = (day[o] * light + night[o] * nt), g = (day[o + 1] * light + night[o + 1] * nt), b = (day[o + 2] * light + night[o + 2] * nt);
+      const cl = 245 * light + 14 * (1 - t);                                               // clouds: bright by day, faint by night
+      const p = idx[i];
+      buf[p] = (r * (1 - c) + cl * c) * s; buf[p + 1] = (g * (1 - c) + cl * c) * s; buf[p + 2] = (b * (1 - c) + (cl + 6) * c) * s + (1 - s) * 40;
+      buf[p + 3] = alpha[i];
+    }
+    spx.putImageData(img, 0, 0);
+    const fade = Math.min(1, (now - tex.born) / 700);
+    ctx.globalAlpha = fade; ctx.drawImage(sp, cx - R, cy - R, 2 * R, 2 * R); ctx.globalAlpha = 1;
+  }
+
+  /* ---- drawing ---- */
+  let W = 0, H = 0, R = 0, cx = 0, cy = 0, dpr = 1, last = 0, running = false, visible = true, spin = 0, dragX = null, dragLon = 0, moved = 0, focus = null;
   function resize() {
     const r = canvas.getBoundingClientRect();
     dpr = Math.min(2, devicePixelRatio || 1);
     W = r.width; H = r.height;
     canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    R = Math.min(W, H) * 0.40; cx = W / 2; cy = H / 2;
+    R = Math.min(W, H) * 0.41; cx = W / 2; cy = H / 2;
     draw(performance.now());
   }
-  // world vector -> view (x right, y up, z towards viewer)
-  function view(p) {
-    const cl = Math.cos(lon0), sl = Math.sin(lon0), ca = Math.cos(lat0), sa = Math.sin(lat0);
-    const x1 = p[0] * cl + p[1] * sl, y1 = -p[0] * sl + p[1] * cl, z1 = p[2];
-    return [y1, z1 * ca - x1 * sa, z1 * sa + x1 * ca];
-  }
-
   function draw(now) {
-    const t = (now - t0) / 1000;
-    if (!reduce) lon0 = rad(-8 + Math.sin(t * 0.09) * 26) + userLon;
+    const t = now / 1000;
     ctx.clearRect(0, 0, W, H);
-
-    // atmosphere and body
-    const g = ctx.createRadialGradient(cx, cy, R * 0.92, cx, cy, R * 1.24);
-    g.addColorStop(0, 'rgba(64,196,170,.22)'); g.addColorStop(1, 'rgba(64,196,170,0)');
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.24, 0, 7); ctx.fill();
-    const b = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R);
-    b.addColorStop(0, '#1C2E4A'); b.addColorStop(1, '#0A1424');
-    ctx.fillStyle = b; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.fill();
-    ctx.strokeStyle = 'rgba(160,190,230,.18)'; ctx.lineWidth = 1; ctx.stroke();
-
-    // land dots
-    const step = small() ? 2 : 1, ds = Math.max(1.1, R / 170);
-    for (let i = 0; i < pts.length; i += step) {
-      const [la, lo, gh] = pts[i];
-      const v = view([Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)]);
-      if (v[2] <= 0) continue;
-      const a = 0.25 + v[2] * 0.7;
-      ctx.fillStyle = gh ? `rgba(240,190,90,${Math.min(1, a + .2)})` : `rgba(206,220,240,${a * .78})`;
-      const s = (gh ? ds * 1.7 : ds) * (0.6 + v[2] * 0.5);
-      ctx.fillRect(cx + v[0] * R - s / 2, cy - v[1] * R - s / 2, s, s);
+    // atmosphere
+    const g = ctx.createRadialGradient(cx, cy, R * 0.96, cx, cy, R * 1.2);
+    g.addColorStop(0, 'rgba(120,180,255,.38)'); g.addColorStop(0.35, 'rgba(90,150,240,.14)'); g.addColorStop(1, 'rgba(64,120,220,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.2, 0, TAU); ctx.fill();
+    if (!tex || (now - tex.born) < 700) {
+      const b = ctx.createRadialGradient(cx - R * .35, cy - R * .4, R * .1, cx, cy, R);
+      b.addColorStop(0, '#1C2E4A'); b.addColorStop(1, '#0A1424');
+      ctx.fillStyle = b; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
     }
-
-    // arcs with a travelling light
-    const list = small() ? arcs.filter(a => MOBILE_CITIES.includes(a.name)) : arcs;
+    if (tex) paintEarth(now);
+    // routes
+    const list = small() ? arcs.filter(a => MOBILE_CITIES.includes(a.name) || a === focus) : arcs;
     ctx.lineCap = 'round';
     for (const arc of list) {
-      const P = arc.path.map(view), n = P.length - 1;
-      ctx.lineWidth = 1.1; ctx.strokeStyle = 'rgba(240,190,90,.28)';
+      const P = arc.path.map(view), n = P.length - 1, on = arc === focus;
+      ctx.lineWidth = on ? 2.2 : 1.2; ctx.strokeStyle = on ? 'rgba(244,198,106,.95)' : 'rgba(244,198,106,.5)';
       ctx.beginPath(); let pen = false;
-      for (const p of P) { if (p[2] > -0.05) { const X = cx + p[0] * R, Y = cy - p[1] * R; pen ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); pen = true; } else pen = false; }
+      for (const p of P) { if (p[2] > 0 || p[0] * p[0] + p[1] * p[1] > 1.0005) {   /* in front, or lifted clear of the rim */ const X = cx + p[0] * R, Y = cy - p[1] * R; pen ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); pen = true; } else pen = false; }
       ctx.stroke();
       const head = reduce ? 1 : ((t * 0.28 + arc.phase) % 1.4) / 1.2;
       if (head > 0 && head <= 1.05) {
         const h = Math.min(n, Math.round(head * n)), tail = Math.max(0, h - 12);
         for (let k = tail; k < h; k++) {
-          const p = P[k], q = P[k + 1]; if (!q || p[2] < 0 || q[2] < 0) continue;
-          ctx.strokeStyle = `rgba(110,232,200,${(k - tail) / 12})`; ctx.lineWidth = 2.2;
+          const p = P[k], q = P[k + 1]; if (!q || !(p[2] > 0 || p[0] * p[0] + p[1] * p[1] > 1.0005) || !(q[2] > 0 || q[0] * q[0] + q[1] * q[1] > 1.0005)) continue;
+          ctx.strokeStyle = `rgba(150,245,215,${(k - tail) / 12})`; ctx.lineWidth = 2.4;
           ctx.beginPath(); ctx.moveTo(cx + p[0] * R, cy - p[1] * R); ctx.lineTo(cx + q[0] * R, cy - q[1] * R); ctx.stroke();
         }
       }
       const end = P[n];
       if (end[2] > 0) {
         const X = cx + end[0] * R, Y = cy - end[1] * R, pulse = reduce ? .6 : (Math.sin(t * 2 + arc.phase * 9) + 1) / 2;
-        ctx.fillStyle = `rgba(110,232,200,${.15 + pulse * .2})`; ctx.beginPath(); ctx.arc(X, Y, 3 + pulse * 5, 0, 7); ctx.fill();
-        ctx.fillStyle = '#6EE8C8'; ctx.beginPath(); ctx.arc(X, Y, 2.2, 0, 7); ctx.fill();
-        if (!small() && end[2] > .35 && !NOLABEL.includes(arc.name)) { ctx.fillStyle = 'rgba(220,230,245,.75)'; ctx.font = '500 11px "Hanken Grotesk",system-ui,sans-serif'; ctx.fillText(arc.name, X + 7, Y + 4); }
+        ctx.fillStyle = `rgba(110,232,200,${.18 + pulse * .22})`; ctx.beginPath(); ctx.arc(X, Y, (on ? 5 : 3) + pulse * 5, 0, TAU); ctx.fill();
+        ctx.fillStyle = on ? '#F4C66A' : '#6EE8C8'; ctx.beginPath(); ctx.arc(X, Y, on ? 3.2 : 2.3, 0, TAU); ctx.fill();
+        if ((on || (!small() && !NOLABEL.includes(arc.name))) && end[2] > .3) label(arc.name, X + 8, Y + 4, on);
       }
     }
     // Accra
     const A = view(vec(...ACCRA));
     if (A[2] > 0) {
       const X = cx + A[0] * R, Y = cy - A[1] * R, p = reduce ? .5 : (Math.sin(t * 2.4) + 1) / 2;
-      ctx.fillStyle = `rgba(240,190,90,${.18 + p * .22})`; ctx.beginPath(); ctx.arc(X, Y, 6 + p * 9, 0, 7); ctx.fill();
-      ctx.fillStyle = '#F4C66A'; ctx.beginPath(); ctx.arc(X, Y, 3.6, 0, 7); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.font = '600 12px "Hanken Grotesk",system-ui,sans-serif'; ctx.fillText('Accra', X + 9, Y - 7);
+      ctx.fillStyle = `rgba(240,190,90,${.2 + p * .25})`; ctx.beginPath(); ctx.arc(X, Y, 6 + p * 9, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#F4C66A'; ctx.beginPath(); ctx.arc(X, Y, 3.8, 0, TAU); ctx.fill();
+      label('Accra', X + 9, Y - 8, true);
     }
   }
+  function label(text, x, y, strong) {
+    ctx.font = `${strong ? 700 : 500} ${strong ? 12 : 11}px "Hanken Grotesk",system-ui,sans-serif`;
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(5,10,20,.75)'; ctx.strokeText(text, x, y);
+    ctx.fillStyle = strong ? '#fff' : 'rgba(225,235,248,.9)'; ctx.fillText(text, x, y);
+  }
 
-  function loop(now) { if (!running) return; draw(now); requestAnimationFrame(loop); }
+  /* ---- turning ---- */
+  const SPEED = TAU / 70;           // one turn in 70 seconds, west to east like the real thing
+  function loop(now) {
+    if (!running) return;
+    const dt = Math.min(0.1, (now - (last || now)) / 1000);
+    if (now - last >= (small() ? 40 : 30) || !last) {        // about 25 frames a second on phones, 33 on computers
+      if (dragX === null) { spin *= 0.94; lonC -= (SPEED + spin) * Math.max(dt, 0.016) ; }
+      cloudLon += 0.004 * dt;
+      last = now; draw(now);
+    }
+    requestAnimationFrame(loop);
+  }
   function setRunning(on) {
     on = on && !reduce && visible && !document.hidden;
     if (on === running) return;
-    running = on; if (on) requestAnimationFrame(loop);
+    running = on; last = 0; if (on) requestAnimationFrame(loop);
   }
   new ResizeObserver(resize).observe(canvas);
   new IntersectionObserver(e => { visible = e[0].isIntersecting; setRunning(true); }).observe(canvas);
   document.addEventListener('visibilitychange', () => setRunning(true));
-  // drag to turn (mouse only: on phones a swipe must keep scrolling the page)
-  canvas.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') return; dragX = e.clientX; dragLon = userLon; canvas.setPointerCapture(e.pointerId); });
-  canvas.addEventListener('pointermove', e => { if (dragX === null) return; userLon = dragLon - (e.clientX - dragX) / 180; if (!running) draw(performance.now()); });
-  canvas.addEventListener('pointerup', () => { dragX = null; });
-  resize(); setRunning(true);
+  // drag to spin it (a sideways swipe on phones; up and down still scrolls the page)
+  canvas.addEventListener('pointerdown', e => { dragX = e.clientX; dragLon = lonC; moved = 0; spin = 0; canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener('pointermove', e => {
+    if (dragX === null) return;
+    const nl = dragLon - (e.clientX - dragX) / (R * 1.1); spin = (lonC - nl) * 8; lonC = nl; moved += Math.abs(e.movementX || 1);
+    if (!running) draw(performance.now());
+  });
+  const up = () => { if (dragX !== null && moved < 4) card(1); dragX = null; spin = Math.max(-1.5, Math.min(1.5, spin)); };
+  canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', () => { dragX = null; });
+
+  /* ---- the card: one thing worth knowing, every few seconds ---- */
+  const wrap = canvas.parentElement, box = document.createElement('div');
+  box.className = 'globe-card'; box.setAttribute('aria-live', 'polite'); box.setAttribute('translate', 'no');
+  wrap.appendChild(box); wrap.querySelector('.globe-tag')?.remove();
+  const tzDiff = tz => { try {
+      const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(x => x.type === 'timeZoneName').value;
+      const m = p.match(/GMT([+-]\d+)(?::(\d+))?/); return m ? (+m[1]) + (m[2] ? Math.sign(+m[1]) * (+m[2]) / 60 : 0) : 0;
+    } catch { return null; } };
+  const clock = tz => new Date().toLocaleTimeString(LOC(), { hour: '2-digit', minute: '2-digit', timeZone: tz });
+  const facts = () => { const w = L(); return [
+    { t: w.f1t, b: w.f1 },
+    { t: `${w.f2t} · ${clock('Africa/Accra')}`, b: w.f2, live: true },
+    { t: w.f3t, b: w.f3 },
+    { t: w.f4t, b: w.f4, live: true }]; };
+  const order = []; { const f = [0, 1, 2, 3], c = arcs.map((_, i) => i); let a = 0, b = 0; while (a < f.length || b < c.length) { if (b < c.length) order.push(['c', c[b++]]); if (b < c.length) order.push(['c', c[b++]]); if (a < f.length) order.push(['f', f[a++]]); } }
+  let at = -1, cardTimer = 0;
+  function card(step) {
+    at = (at + step + order.length) % order.length;
+    const [kind, i] = order[at], w = L(); let html;
+    if (kind === 'c') {
+      const a = arcs[i]; focus = a;
+      const d = tzDiff(a.tz), diff = d === null ? '' : d === 0 ? w.same : d > 0 ? w.ahead(String(d)) : w.behind(String(-d));
+      html = `<p class="gc-k">${w.route}</p><p class="gc-t">${a.name}</p>
+        <p class="gc-b"><b>${a.dist.toLocaleString(LOC())}</b> ${w.km}</p>
+        <p class="gc-b">${w.local} <b>${clock(a.tz)}</b>${diff ? ' · ' + diff : ''}</p>`;
+      // turn the globe so the route is in view
+      const mid = Math.atan2((vec(...ACCRA)[1] + vec(a.lat, a.lon)[1]), (vec(...ACCRA)[0] + vec(a.lat, a.lon)[0]));
+      target = mid;
+    } else {
+      focus = null; const f = facts()[i];
+      html = `<p class="gc-k">${f.live ? `<span class="gc-live"></span>${w.live}` : 'Accra'}</p><p class="gc-t">${f.t}</p><p class="gc-b">${f.b}</p>`;
+      target = rad(ACCRA[1]) + rad(10);
+    }
+    box.innerHTML = html + `<button type="button" class="gc-next" aria-label="${w.next}">›</button>`;
+    box.querySelector('.gc-next').addEventListener('click', e => { e.stopPropagation(); card(1); restart(); });
+    canvas.setAttribute('aria-label', w.aria);
+    box.classList.remove('in'); void box.offsetWidth; box.classList.add('in');
+    if (!running) draw(performance.now());
+  }
+  /* glide towards the featured place, then carry on turning */
+  let target = null;
+  const glide = () => {
+    if (target !== null && dragX === null && !reduce) {
+      let d = ((target - lonC) % TAU + TAU * 1.5) % TAU - Math.PI;
+      if (Math.abs(d) < 0.01) target = null; else lonC += d * 0.06;
+    } else if (reduce && target !== null) { lonC = target; target = null; draw(performance.now()); }
+    requestAnimationFrame(glide);
+  };
+  const restart = () => { clearInterval(cardTimer); cardTimer = setInterval(() => { if (visible && !document.hidden) card(1); }, 6500); };
+  document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => setTimeout(() => card(0), 120)));
+
+  resize(); setRunning(true); card(1); restart(); glide();
+  const go = () => loadTextures();
+  if (document.readyState === 'complete') setTimeout(go, 200); else addEventListener('load', () => ('requestIdleCallback' in window ? requestIdleCallback(go, { timeout: 1500 }) : setTimeout(go, 300)), { once: true });
 })();
