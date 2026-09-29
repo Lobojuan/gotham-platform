@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=5';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=6';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -130,24 +130,31 @@
   const car = $('[data-car]');
   if (car) {
     const stage = $('.car-stage', car), ring = $('.car-ring', car), cards = $$('.car-card', car), N = cards.length, step = 360 / N;
+    const chips = $$('.car-rail [data-go]', car), rail = $('.car-rail', car), askBtn = $('[data-car-ask]', car);
     let idx = 0, rot = 0, timer = null, drag = null, moved = false;
     // Safari does not start lazy images inside a 3D ring: load them once the carousel comes near the screen
     const wake = () => cards.forEach(c => { const im = $('img', c); if (im && im.loading === 'lazy') im.loading = 'eager'; });
     if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { wake(); io.disconnect(); } }, { rootMargin: '600px 0px' }); io.observe(stage); } else wake();
-    /* one animation loop drives the ring: buttons, auto-play, drag, mouse and trackpad all just set a target angle */
+    /* one animation loop drives the ring: buttons, auto-play, pointing, rail, drag and trackpad all just set a target angle */
     const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
-    let cur = 0, tilt = 0, tiltT = 0, raf = 0, shown = -1, scrub = null, idle = 0;
+    let cur = 0, tilt = 0, tiltT = 0, raf = 0, shown = -1, idle = 0;
     const nearest = r => ((Math.round(-r / step) % N) + N) % N;
+    const shortName = i => (chips[i] && $('span', chips[i]).textContent) || $('b', cards[i]).textContent;
     const faces = n => {
       cards.forEach((c, i) => { const d = Math.min((i - n + N) % N, (n - i + N) % N);
         c.classList.toggle('front', d === 0); c.classList.toggle('side', d === 1); c.classList.toggle('far', d === 2); c.classList.toggle('back', d > 2);
-        c.tabIndex = d === 0 ? 0 : -1; c.setAttribute('aria-hidden', d > 1); });
+        c.tabIndex = d === 0 ? 0 : -1; c.setAttribute('aria-hidden', d > 1);
+        if (d !== 0) { c.style.removeProperty('--tx'); c.style.removeProperty('--ty'); } });
+      chips.forEach((b, i) => { b.setAttribute('aria-pressed', i === n); b.classList.toggle('on', i === n); });
+      const on = chips[n];
+      if (on && rail && rail.scrollWidth > rail.clientWidth) rail.scrollTo({ left: on.offsetLeft - rail.clientWidth / 2 + on.offsetWidth / 2, behavior: reduce ? 'auto' : 'smooth' });
       $('[data-car-num]', car).textContent = String(n + 1).padStart(2, '0');
       $('[data-car-title]', car).textContent = $('b', cards[n]).textContent;
+      const an = $('[data-car-askname]', car); if (an) an.textContent = shortName(n);
     };
     const loop = () => {
-      const k = reduce ? 1 : .13;
-      cur += (rot - cur) * k; tilt += (tiltT - tilt) * (reduce ? 1 : .09);
+      const k = reduce ? 1 : .12;
+      cur += (rot - cur) * k; tilt += (tiltT - tilt) * (reduce ? 1 : .08);
       ring.style.setProperty('--rot', cur.toFixed(3) + 'deg'); ring.style.setProperty('--tilt', tilt.toFixed(3) + 'deg');
       const n = nearest(cur); if (n !== shown) { shown = n; faces(n); }
       raf = (Math.abs(rot - cur) > .02 || Math.abs(tiltT - tilt) > .02) ? requestAnimationFrame(loop) : 0;
@@ -155,34 +162,49 @@
     };
     const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
     const render = () => kick();
-    // after the mouse or trackpad rests, the nearest card glides to the front
-    const settle = (ms = 260) => { clearTimeout(idle); idle = setTimeout(() => { rot = Math.round(rot / step) * step; idx = nearest(rot); scrub = null; kick(); }, ms); };
-    const go = n => { const diff = ((n - idx) % N + N + N / 2) % N - N / 2; idx = (idx + diff + N) % N; rot = Math.round(rot / step) * step - diff * step; scrub = null; render(); };
-    const auto = on => { clearInterval(timer); if (on && !reduce) timer = setInterval(() => go(idx + 1), 3800); };
+    const settle = (ms = 220) => { clearTimeout(idle); idle = setTimeout(() => { rot = Math.round(rot / step) * step; idx = nearest(rot); kick(); }, ms); };
+    const go = n => { const base = Math.round(rot / step) * step, from = nearest(base); const diff = ((n - from) % N + N + N / 2) % N - N / 2; idx = ((n % N) + N) % N; rot = base - diff * step; render(); };
+    const auto = on => { clearInterval(timer); if (on && !reduce) timer = setInterval(() => go(idx + 1), 5000); };
     $('[data-car-prev]', car).addEventListener('click', () => { go(idx - 1); auto(false); });
     $('[data-car-next]', car).addEventListener('click', () => { go(idx + 1); auto(false); });
     car.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { go(idx + 1); auto(false); } if (e.key === 'ArrowLeft') { go(idx - 1); auto(false); } });
-    ['mouseenter', 'focusin'].forEach(ev => car.addEventListener(ev, () => auto(false)));
+    ['mouseenter', 'focusin', 'touchstart'].forEach(ev => car.addEventListener(ev, () => auto(false), { passive: true }));
     car.addEventListener('mouseleave', () => auto(true));
-    // mouse: move across the cards to turn the ring (no click), tilt with height, spotlight on the front card
+    // the rail: every practice by name; tap or point at one and the ring turns to it
+    let chipT = 0;
+    chips.forEach((b, i) => {
+      b.addEventListener('click', () => { go(i); auto(false); });
+      if (fine) { b.addEventListener('pointerenter', () => { clearTimeout(chipT); chipT = setTimeout(() => go(i), 140); }); b.addEventListener('pointerleave', () => clearTimeout(chipT)); }
+    });
+    // Ask AI about the practice in front: opens the chat with the question already asked
+    askBtn?.addEventListener('click', () => { const t = $('b', cards[nearest(cur)]).textContent; openChat(); ask(`What can Gotham Consult do for me in ${t}?`); });
+    // mouse: point at a card and it turns to you; the front card leans toward the cursor and catches the light
     if (fine && !reduce) {
-      stage.addEventListener('pointermove', e => {
-        if (e.pointerType !== 'mouse' || drag?.active || e.buttons) return;
-        const r = stage.getBoundingClientRect();
-        if (!scrub) scrub = { x: e.clientX, rot };
-        rot = scrub.rot + (e.clientX - scrub.x) / r.width * 360 * .5;
-        tiltT = ((e.clientY - r.top) / r.height - .5) * -9;
-        const fc = cards[shown] || cards[idx], fr = fc.getBoundingClientRect();
-        const pc = (v, a, l) => Math.max(0, Math.min(100, (v - a) / l * 100)).toFixed(1) + '%';
-        fc.style.setProperty('--mx', pc(e.clientX, fr.left, fr.width)); fc.style.setProperty('--my', pc(e.clientY, fr.top, fr.height));
-        kick(); settle();
+      /* after a card turns to you, the next one only turns once the mouse has really moved (no runaway spinning) */
+      let dwell = 0, anchor = null, mx = 0, my = 0;
+      stage.addEventListener('pointermove', e => { mx = e.clientX; my = e.clientY; }, { passive: true });
+      cards.forEach((c, i) => {
+        c.addEventListener('pointerenter', e => { if (e.pointerType !== 'mouse' || drag?.active) return; clearTimeout(dwell);
+          if (i === idx) return;
+          dwell = setTimeout(() => {
+            if (anchor && Math.hypot(mx - anchor.x, my - anchor.y) < 40) return;
+            anchor = { x: mx, y: my }; go(i); auto(false);
+          }, 260); });
+        c.addEventListener('pointerleave', () => { clearTimeout(dwell); c.style.removeProperty('--tx'); c.style.removeProperty('--ty'); });
+        c.addEventListener('pointermove', e => {
+          if (e.pointerType !== 'mouse' || i !== nearest(cur)) return;
+          const r = c.getBoundingClientRect(), x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+          c.style.setProperty('--tx', ((.5 - y) * 12).toFixed(2) + 'deg'); c.style.setProperty('--ty', ((x - .5) * 16).toFixed(2) + 'deg');
+          c.style.setProperty('--mx', (x * 100).toFixed(1) + '%'); c.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+        });
       });
-      stage.addEventListener('pointerleave', () => { tiltT = 0; settle(0); });
+      stage.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const r = stage.getBoundingClientRect(); tiltT = ((e.clientY - r.top) / r.height - .5) * -5; kick(); });
+      stage.addEventListener('pointerleave', () => { tiltT = 0; kick(); });
     }
     // trackpad: a sideways two-finger swipe turns the ring; up/down still scrolls the page
     stage.addEventListener('wheel', e => {
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY) * 1.2) return;
-      e.preventDefault(); auto(false); scrub = null; rot -= e.deltaX * .22; kick(); settle(180);
+      e.preventDefault(); auto(false); rot -= e.deltaX * .22; kick(); settle(180);
     }, { passive: false });
     // drag / swipe: horizontal moves turn the ring, vertical swipes still scroll the page
     stage.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, rot, idx, active: false }; moved = false; auto(false); clearTimeout(idle); });
@@ -192,9 +214,9 @@
       moved = true; rot = drag.rot + dx / (stage.clientWidth / 1.4) * step * 2; kick();
     });
     const end = () => { if (!drag) return; const was = drag; drag = null; stage.classList.remove('drag'); if (!was.active) return;
-      rot = Math.round(rot / step) * step; idx = nearest(rot); scrub = null; kick(); };
+      rot = Math.round(rot / step) * step; idx = nearest(rot); kick(); };
     stage.addEventListener('pointerup', end); stage.addEventListener('pointercancel', end);
-    cards.forEach((c, i) => c.addEventListener('click', e => { if (moved) { e.preventDefault(); moved = false; return; } if (i !== nearest(cur)) { e.preventDefault(); idx = nearest(cur); go(i); } }));
+    cards.forEach((c, i) => c.addEventListener('click', e => { if (moved) { e.preventDefault(); moved = false; return; } if (i !== nearest(cur)) { e.preventDefault(); go(i); } }));
     if ('IntersectionObserver' in window) new IntersectionObserver(es => auto(es[0].isIntersecting)).observe(car); else auto(true);
     render();
   }
