@@ -1,0 +1,11 @@
+# Files that already show the Gotham logo in the picture itself.
+# The build does not add a second logo to these. One path per line, relative to public/img.
+# Tip: a file whose name contains ".branded." (e.g. promo.branded.mp4) is skipped automatically.
+boot1.webp
+boot2.webp
+boot3.webp
+boot4.webp
+recap.mp4
+recap.webp
+og/boot2.jpg
+og/boot3.jpg

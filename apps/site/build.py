@@ -33,7 +33,6 @@ META = {
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
   '<link rel="stylesheet" href="/assets/v2/v2.css?v=17">\n'
-  '<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23E0AE55%22/%3E%3Ctext x=%2232%22 y=%2244%22 font-family=%22Arial%22 font-weight=%22800%22 font-size=%2234%22 text-anchor=%22middle%22 fill=%22%231a1205%22%3EG%3C/text%3E%3C/svg%3E">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 # Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
@@ -143,6 +142,7 @@ HEAD = '''<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>{title}</title>
+<link rel="icon" href="/img/brand/icon-64.png" type="image/png"><link rel="apple-touch-icon" href="/img/brand/icon-180.png">
 <meta name="description" content="{desc}">
 <meta name="theme-color" content="#0F1B2D">
 <link rel="canonical" href="{site}/{path}">
@@ -198,7 +198,8 @@ def main():
     bottom = open(os.path.join(HERE, 'pages', '_partials', '_bottom.html'), encoding='utf-8').read()
     head_add = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
                 '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=6">\n')
+                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=7">\n'
+                + ('<link rel="icon" href="/img/brand/icon-64.png" type="image/png"><link rel="apple-touch-icon" href="/img/brand/icon-180.png">\n'))
     # older scripts look for nav.main (#nav) to fill or to attach the old language switch: keep one, hidden
     keep = '<nav class="main" id="nav" hidden aria-hidden="true" style="display:none!important"><span class="navlog"></span></nav>\n'
     for name in ('classic.html', 'register.html', 'family.html', 'teaser.html', 'privacy.html', 'terms.html'):
@@ -206,6 +207,7 @@ def main():
         if not os.path.exists(path): continue
         h = open(path, encoding='utf-8').read()
         h = re.sub(r'<link rel="stylesheet" href="https://fonts\.googleapis\.com/css2\?[^"]*">\s*', '', h)   # their own font link blocked the first paint; head_add loads the same fonts without blocking
+        h = re.sub(r'<link rel="(?:icon|shortcut icon|apple-touch-icon)"[^>]*>\s*', '', h)   # one icon everywhere: the logo
         h = h.replace('</head>', head_add + '</head>', 1)
         h = re.sub(r'(<body.*?)<title>.*?</title>', r'\1', h, count=1, flags=re.S)   # their own <title> sat in the body, a second title for Google
         h = re.sub(r'<header(?: id="hdr")?><div class="wrap bar">.*?</header>', '', h, count=1, flags=re.S)   # old top bar
@@ -285,6 +287,9 @@ def main():
     left = sorted({x for v in report.values() for x in v})
     print(f'  fr/: {len(fr_pages) + 1 + len(ARTS)} French pages; {len(left)} phrases still in English')
     open(os.path.join(HERE, '.fr-missing.txt'), 'w').write('\n'.join(left))
+
+    # the logo on every photo, share image and video (dist copies only; public/img keeps the clean originals)
+    import brand_media; brand_media.run(DIST)
 
     # static files (css, js, images) from ASSET_URL when set: the page itself comes through the WordPress bridge, which is slow per request
     asset = os.environ.get('ASSET_URL', '').rstrip('/')
