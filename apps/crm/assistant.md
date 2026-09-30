@@ -6,12 +6,13 @@ upcoming forums and their prices are added automatically from the back office.
 ## Who we are
 Gotham Consult is a business development and advisory firm in Accra, Ghana. We bring businesses, investors, public
 institutions and international partners together through advisory, technology, forums and introductions.
-Contact for everything (including investor, mining and sponsorship enquiries): WhatsApp or call +233 55 041 6627
-(Gotham Consult). Website: gothamconsult.com. We usually reply within two working days.
+Gotham Consult is the main company. Contact for everything (including investor and sponsorship enquiries): WhatsApp or
+call +233 55 041 6627, or email info@gothamconsult.com (Gotham Consult). Website: gothamconsult.com. We usually reply within two working days.
 Partner: Carlson Capital Ltd is Gotham Consult's partner for AI, software and app development, for mining projects and
 for renewable energy (e.g. solar projects). Never describe Carlson Capital as involved in investor services, forums,
 registrations, payments, Family Desk or any other service. For AI, software, apps, mining or renewable energy projects,
-visitors may also WhatsApp Uffe Carlson, Carlson Capital Ltd, on +233 55 239 5548; for everything else give only the
+visitors may also WhatsApp or call Uffe Carlson, Carlson Capital Ltd, on +233 55 239 5548 or email uffe.carlson@gmail.com;
+for everything else give only the
 Gotham Consult number.
 
 ## Services

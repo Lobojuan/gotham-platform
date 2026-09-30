@@ -1090,8 +1090,8 @@ function parseContacts(text) {
 /* Carlson Capital Ltd is Gotham's partner for AI, software, apps and mining (renewable energy projects too). Only campaigns
    marked as such name it, with Uffe's number; everything else carries Gotham Consult and its own number. */
 const partnerFoot = cam => cam && cam.carlson
-  ? 'Gotham Consult, Accra · AI, software, apps &amp; mining partner: Carlson Capital Ltd · WhatsApp or call +233 55 239 5548'
-  : 'Gotham Consult, Accra · WhatsApp or call +233 55 041 6627';
+  ? 'Gotham Consult, Accra · WhatsApp or call +233 55 041 6627 · info@gothamconsult.com<br>Partner for AI, software, apps &amp; mining: Carlson Capital Ltd · +233 55 239 5548 · uffe.carlson@gmail.com'
+  : 'Gotham Consult, Accra · WhatsApp or call +233 55 041 6627 · info@gothamconsult.com';
 function campaignHtml(cam, c, item, links) {
   if (cam.template === 'designer') return mailDoc(merge(cam.subject, c), designerBody(cam, c, item && item.designer ? item : { media: {}, events: {}, sponsors: [] }, links, !!links.preview));
   return mailDoc(merge(cam.subject, c), campaignBody(cam, c, item, links));
@@ -1111,7 +1111,7 @@ function campaignBody(cam, c, item, links) {
       ${paras(body, 'margin:0 0 14px')}
       ${cam.cta_label ? `<p style="margin:0 0 14px"><a href="${links.cta}" style="color:#0F1B2D">${esc(merge(cam.cta_label, c))}</a></p>` : ''}
       <p style="margin:0 0 4px">${esc(cam.from_name || 'Joy Anthony Preston')}<br>
-      <span style="color:#555">Gotham Consult · +233 55 041 6627${cam.carlson ? '<br>AI, software, apps &amp; mining partner: Carlson Capital Ltd · +233 55 239 5548' : ''}</span></p>
+      <span style="color:#555">Gotham Consult · +233 55 041 6627 · info@gothamconsult.com${cam.carlson ? '<br>Partner for AI, software, apps &amp; mining: Carlson Capital Ltd · +233 55 239 5548 · uffe.carlson@gmail.com' : ''}</span></p>
       <p style="margin:18px 0 0;color:#999;font-size:12px">
         If you would rather not hear from us, <a href="${links.unsub}" style="color:#999">say so here</a>.</p></div>`;
   }
@@ -1135,7 +1135,7 @@ function campaignBody(cam, c, item, links) {
     <tr><td style="padding:26px 34px 0">
       <table role="presentation" width="100%"><tr>
         <td style="font-size:15px;font-weight:700;color:#0F1B2D;letter-spacing:.01em"><img src="${brandUrl()}" width="30" height="30" alt="" style="display:inline-block;vertical-align:middle;border-radius:7px;margin-right:9px">Gotham Consult</td>
-        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'AI, software, apps &amp; mining: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
+        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'with partner Carlson Capital Ltd' : 'Accra, Ghana'}</td>
       </tr></table></td></tr>
     <tr><td style="padding:22px 34px 0">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -1265,7 +1265,7 @@ function designerBody(cam, c, data, links, preview) {
     <tr><td style="padding:22px 32px 18px">
       <table role="presentation" width="100%"><tr>
         <td style="font-size:15px;font-weight:700;color:#0F1B2D"><img src="${brandUrl()}" width="30" height="30" alt="" style="display:inline-block;vertical-align:middle;border-radius:7px;margin-right:9px">Gotham Consult</td>
-        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'AI, software, apps &amp; mining: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
+        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'with partner Carlson Capital Ltd' : 'Accra, Ghana'}</td>
       </tr></table></td></tr>
     ${out.join('\n')}
     <tr><td style="padding:10px 32px 26px"><div style="border-top:1px solid #E2E4E7;padding-top:18px;color:#8A93A0;font-size:12px;line-height:1.6">

@@ -915,3 +915,10 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .gh-sun .lbl { font-style: normal; display: none; }
 @media (min-width: 1280px) { .gh-sun .lbl { display: inline; } }
 @media (min-width: 900px) and (max-width: 1150px) { .globe-hud { gap: 4px; } .globe-hud span { font-size: 11px; padding: 3px 8px; } }
+/* the partner, with its own contacts, under Gotham's on the About page and on service pages */
+.cl-sub { margin: 20px 0 4px; font-size: 13px; line-height: 1.5; color: rgba(255,255,255,.62); }
+.cl-sub img { display: inline-block; vertical-align: -2px; margin-right: 6px; }
+.cl-sub b { color: var(--gold-2); }
+.pn-or { display: inline-block; margin: 12px 0 0 10px; font-size: 14.5px; color: var(--mute); }
+.pn-or a { color: var(--ink); font-weight: 600; }
+.pn-or a { display: inline-flex; align-items: center; min-height: 44px; }
