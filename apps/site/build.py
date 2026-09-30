@@ -91,6 +91,10 @@ for _a in ARTS:
     _n = f'insights/{_a["slug"]}.html'
     META[_n] = dict(title=_a['title'], desc=_a['description'], og='img/og/real-bog.jpg', extra=V2_EXTRA + '\n' + IF.article_ld(_a, 'en', SITE))
     GEN[_n] = IF.article_body(_a, 'en', [o for o in ARTS if o is not _a][:3])
+# the partner's page
+META['carlson-capital.html'] = dict(title='Carlson Capital Ltd, Partner of Gotham Consult | Africa Since 2005',
+  desc="Carlson Capital Ltd, Gotham Consult's partner for company set-up and market entry for large companies, AI, software, apps and mining. Africa since 2005.",
+  og='img/og/real-tema.jpg', extra=V2_EXTRA)
 # case studies
 META['projects/dawa-solar.html'] = dict(title='Case Study: 130 MW Dawa Solar Project, Ghana | Gotham Consult',
   desc='How a 130 MWp solar project at Dawa, Greater Accra, was taken from an old licence to build-ready: EPC tender, permits, PPA renewal and financing.',
@@ -311,7 +315,7 @@ def main():
 
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /i/\nSitemap: {SITE}/sitemap.xml\n')
-    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'tools', 'family', 'teaser', 'privacy', 'terms']
+    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'tools', 'family', 'teaser', 'privacy', 'terms']
     pages += ['fr', *[f'fr/{p}' for p in ['services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS]]]]
     today = date.today().isoformat()
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc><lastmod>{today}</lastmod></url>\n' for p in pages)

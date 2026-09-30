@@ -922,3 +922,17 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .pn-or { display: inline-block; margin: 12px 0 0 10px; font-size: 14.5px; color: var(--mute); }
 .pn-or a { color: var(--ink); font-weight: 600; }
 .pn-or a { display: inline-flex; align-items: center; min-height: 44px; }
+/* Carlson Capital partner page */
+.cc-nums { margin-top: 28px; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.cc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.cc-grid .card h3 { font-size: 18px; margin: 0 0 8px; }
+.cc-grid .card p { margin: 0; color: var(--mute); font-size: 15px; }
+.cc-time { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; border-left: 2px solid var(--line); }
+.cc-time li { position: relative; padding: 4px 0 22px 26px; display: grid; gap: 4px; }
+.cc-time li::before { content: ""; position: absolute; left: -7px; top: 8px; width: 12px; height: 12px; border-radius: 50%; background: var(--gold-2); box-shadow: 0 0 0 4px var(--paper); }
+.cc-time b { font-size: 14px; letter-spacing: .02em; }
+.cc-time span { color: var(--mute); max-width: 70ch; }
+@media (max-width: 700px) { .cc-nums { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.partner a.cc { color: var(--gold-2); font-weight: 700; text-decoration: none; }
+.partner a.cc:hover { text-decoration: underline; }
+.gf-made a { color: inherit; }
