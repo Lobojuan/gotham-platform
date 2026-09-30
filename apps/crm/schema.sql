@@ -497,3 +497,6 @@ alter table media drop constraint if exists media_kind_check;
 alter table media add constraint media_kind_check check (kind in ('image','logo','doc','email','video'));
 alter table items add column if not exists recap text;                   -- after the event: what happened, in a few paragraphs
 alter table tasks add column if not exists item_code text;   -- a task that belongs to an event (its promo plan)
+-- investors who join the list on /invest/join get their own deal kind
+alter table deals drop constraint if exists deals_kind_check;
+alter table deals add constraint deals_kind_check check (kind in ('sponsorship','consulting','family_desk','investor','membership','event','other'));

@@ -825,8 +825,8 @@ function taskForm(t){
 
 /* ===================== pipeline ===================== */
 const STAGE_NAME={lead:'Lead',contacted:'Contacted',meeting:'Meeting',proposal:'Proposal',won:'Won',lost:'Lost'};
-const KIND_NAME={sponsorship:'Sponsorship',consulting:'Consulting',family_desk:'Family Desk',membership:'Membership',event:'Event',other:'Other'};
-const KIND_CHIP={sponsorship:'gold',consulting:'blue',family_desk:'green',membership:'',event:'',other:''};
+const KIND_NAME={sponsorship:'Sponsorship',consulting:'Consulting',family_desk:'Family Desk',investor:'Investor',membership:'Membership',event:'Event',other:'Other'};
+const KIND_CHIP={sponsorship:'gold',consulting:'blue',family_desk:'green',investor:'gold',membership:'',event:'',other:''};
 let PF={kind:'',owner:'',q:'',closed:false},DEALS=[];
 async function pipeline(){
  setTitle('Pipeline','Every deal from first contact to won · drag cards between stages');
@@ -1012,7 +1012,7 @@ async function reportsView(){
  const ml=m=>{const s=new Date(m+'-01').toLocaleDateString('en-GB',{month:'short'});return months.length>7?s.slice(0,1)+(m.endsWith('-01')?" '"+m.slice(2,4):''):s+(m.endsWith('-01')?" '"+m.slice(2,4):'')};
  const get=(arr,m,key='v')=>arr.filter(r=>r.m===m).reduce((a,r)=>a+r[key],0);
  const recv=months.map(m=>[get(d.revenue_registrations,m),get(d.revenue_sponsors,m)]);
- const kinds=Object.keys(KIND_NAME),KC={sponsorship:'#A9761F',consulting:'#2F5D8C',family_desk:'#1F6B4E',membership:'#0F1B2D',event:'#8A6FB0',other:'#9AA6B6'};
+ const kinds=Object.keys(KIND_NAME),KC={sponsorship:'#A9761F',consulting:'#2F5D8C',family_desk:'#1F6B4E',investor:'#C9A24B',membership:'#0F1B2D',event:'#8A6FB0',other:'#9AA6B6'};
  const won=months.map(m=>kinds.map(k=>d.won_by_month.filter(r=>r.m===m&&r.kind===k).reduce((a,r)=>a+r.v,0)));
  const bars=(data,colors,fmt=ghsShort)=>{const mx=Math.max(1,...data.map(r=>r.reduce((a,b)=>a+b,0)));
   return `<div class="bars">${data.map((r,i)=>{const tot=r.reduce((a,b)=>a+b,0);return `<div class="bc"><span class="bv">${tot?fmt(tot):''}</span><div class="stk" style="height:${tot/mx*150}px">${r.map((v2,j)=>v2?`<i style="height:${v2/tot*100}%;background:${colors[j]}"></i>`:'').join('')}</div><span class="bl">${ml(months[i])}</span></div>`}).join('')}</div>`};

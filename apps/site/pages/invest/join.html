@@ -1,0 +1,180 @@
+<!--#top-->
+<style>
+.ij-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:900px){.ij-grid{grid-template-columns:1fr}}
+.ij-form{background:#fff;border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:0 18px 50px rgba(15,27,45,.08)}
+@media (max-width:560px){.ij-form{padding:20px 16px}}
+.ij-form h2{font-size:24px;margin:0 0 4px}
+.ij-form .sub{color:var(--mute);margin:0 0 20px;font-size:15px}
+.ij-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:560px){.ij-row{grid-template-columns:1fr}}
+.ij-f{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;min-width:0}
+.ij-f label,.ij-f legend{font-weight:600;font-size:14.5px;color:var(--ink)}
+.ij-f .opt{font-weight:400;color:var(--mute)}
+.ij-f input,.ij-f select,.ij-f textarea{width:100%;border:1px solid #C9CFD6;border-radius:12px;padding:12px 14px;font:inherit;font-size:16px;background:#fff;color:var(--ink);min-height:48px}
+.ij-f textarea{min-height:92px;resize:vertical}
+.ij-f input:focus,.ij-f select:focus,.ij-f textarea:focus{outline:3px solid var(--gold-2);outline-offset:1px;border-color:var(--gold)}
+.ij-f .hint{font-size:13px;color:var(--mute)}
+.ij-f[data-bad] input,.ij-f[data-bad] select,.ij-f[data-bad] .ij-chips{border-color:#A1322B}
+.ij-f .err{display:none;color:#A1322B;font-size:13.5px}
+.ij-f[data-bad] .err{display:block}
+fieldset.ij-f{border:0;padding:0;margin:0 0 16px}
+.ij-chips{display:flex;flex-wrap:wrap;gap:8px;border:1px solid transparent;border-radius:14px}
+.ij-chips label{display:inline-flex;align-items:center;gap:8px;border:1px solid #C9CFD6;border-radius:999px;padding:10px 14px;font-weight:500;font-size:14.5px;cursor:pointer;min-height:44px;background:#fff}
+.ij-chips input{width:18px;height:18px;min-height:0;margin:0;accent-color:var(--navy)}
+.ij-chips label:has(input:checked){background:var(--navy);border-color:var(--navy);color:#fff}
+.ij-f .ij-consent{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;font-weight:400;color:var(--ink);margin:4px 0 18px}
+.ij-consent input{width:20px;height:20px;margin-top:3px;flex:none;accent-color:var(--navy)}
+.ij-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.ij-note{font-size:13.5px;color:var(--mute);margin-top:12px}
+.ij-ok{text-align:left}
+.ij-ok h2{font-size:26px;margin:6px 0 10px}
+.ij-side{display:flex;flex-direction:column;gap:16px}
+.ij-side .box{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px}
+.ij-side h3{font-size:18px;margin:0 0 12px}
+.ij-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.ij-list li{display:flex;gap:12px;font-size:15px;line-height:1.5}
+.ij-list li b{display:block}
+.ij-list .n{flex:none;width:28px;height:28px;border-radius:50%;background:rgba(240,190,90,.18);color:#8A6116;display:grid;place-items:center;font-weight:700;font-size:13px}
+.ij-proof a{display:flex;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--line);text-decoration:none;color:var(--ink);font-size:15px}
+.ij-proof a:first-of-type{border-top:0}
+.ij-proof a span{color:var(--mute);font-size:13.5px;display:block}
+.ij-proof a:hover b{text-decoration:underline}
+.ij-promise{background:var(--navy)!important;color:#fff;border-color:var(--navy)!important}
+.ij-promise p{margin:0;color:rgba(255,255,255,.85);font-size:15px;line-height:1.55}
+.ij-promise h3{color:var(--gold-2)}
+</style>
+<main id="main">
+  <section class="phero" aria-labelledby="h1"><img class="bgimg" src="/img/real-airportcity.webp" alt="" fetchpriority="high">
+    <div class="wrap">
+      <nav class="crumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/invest">Invest in Ghana</a><span aria-hidden="true">/</span><span>Investor list</span></nav>
+      <p class="eyebrow">Investor list · free</p>
+      <h1 id="h1">Invest in Ghana <span class="serif">with people on the ground.</span></h1>
+      <p class="lead">Tell us what you look for. We send you checked opportunities that match your sectors and ticket size, invite you to our investor round tables in Accra and set up the meetings. Joining takes two minutes, is free and commits you to nothing.</p>
+    </div>
+  </section>
+
+  <section class="sec" aria-label="Join the investor list"><div class="wrap">
+    <div class="ij-grid">
+      <div class="ij-form" id="ij-card">
+        <form id="ij" novalidate>
+          <h2>Join the investor list</h2>
+          <p class="sub">Fields marked <span class="opt">(optional)</span> can stay empty.</p>
+          <div class="ij-row">
+            <div class="ij-f"><label for="ij-name">Full name</label><input id="ij-name" name="full_name" autocomplete="name" required><span class="err">Please give your name.</span></div>
+            <div class="ij-f"><label for="ij-email">Email</label><input id="ij-email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" required><span class="err">Please give an email we can reach you on.</span></div>
+          </div>
+          <div class="ij-row">
+            <div class="ij-f"><label for="ij-phone">WhatsApp <span class="opt">(optional)</span></label><input id="ij-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="+45 20 12 34 56"><span class="hint">With the country code.</span><span class="err">Please add the country code, e.g. +44 7700 900123.</span></div>
+            <div class="ij-f"><label for="ij-co">Company or fund <span class="opt">(optional)</span></label><input id="ij-co" name="company" autocomplete="organization"></div>
+          </div>
+          <div class="ij-row">
+            <div class="ij-f"><label for="ij-country">You invest from</label>
+              <select id="ij-country" name="country" required><option value="">Choose a country</option></select><span class="err">Please choose a country.</span></div>
+            <div class="ij-f"><label for="ij-type">You invest as</label>
+              <select id="ij-type" name="investor_type" required><option value="">Choose</option><option>Individual investor</option><option>Diaspora investor</option><option>Family office</option><option>Company (strategic investor)</option><option>Fund (PE / VC)</option><option>Development finance institution</option></select><span class="err">Please choose one.</span></div>
+          </div>
+          <div class="ij-row">
+            <div class="ij-f"><label for="ij-ticket">Typical ticket size</label>
+              <select id="ij-ticket" name="ticket" required><option value="">Choose</option><option>Under USD 100,000</option><option>USD 100,000 – 1 million</option><option>USD 1 – 10 million</option><option>Over USD 10 million</option><option>Not sure yet</option></select><span class="err">Please choose one.</span></div>
+            <div class="ij-f"><label for="ij-when">Timing <span class="opt">(optional)</span></label>
+              <select id="ij-when" name="timeline"><option value="">Choose</option><option>Ready now</option><option>Within 6 months</option><option>Within 12 months</option><option>Just exploring</option></select></div>
+          </div>
+          <fieldset class="ij-f" id="ij-sec"><legend>Sectors you are interested in</legend>
+            <div class="ij-chips">
+              <label><input type="checkbox" name="sectors" value="Energy and solar">Energy &amp; solar</label>
+              <label><input type="checkbox" name="sectors" value="Mining">Mining</label>
+              <label><input type="checkbox" name="sectors" value="Agriculture and agro-processing">Agriculture &amp; agro-processing</label>
+              <label><input type="checkbox" name="sectors" value="Real estate">Real estate</label>
+              <label><input type="checkbox" name="sectors" value="Technology and fintech">Technology &amp; fintech</label>
+              <label><input type="checkbox" name="sectors" value="Manufacturing">Manufacturing</label>
+              <label><input type="checkbox" name="sectors" value="Healthcare">Healthcare</label>
+              <label><input type="checkbox" name="sectors" value="Other">Other</label>
+            </div><span class="err">Please pick at least one sector.</span></fieldset>
+          <div class="ij-f"><label for="ij-msg">Anything specific? <span class="opt">(optional)</span></label><textarea id="ij-msg" name="message" maxlength="800" placeholder="e.g. Looking for a solar or agro-processing project with a local partner, USD 2–5 million."></textarea></div>
+          <div class="ij-hp" aria-hidden="true"><label for="ij-web">Website</label><input id="ij-web" name="website" tabindex="-1" autocomplete="off"></div>
+          <div class="ij-f" id="ij-cons-f" style="margin-bottom:0"><label class="ij-consent" for="ij-cons"><input type="checkbox" id="ij-cons" required><span>Gotham Consult may contact me about investment opportunities in Ghana. I can leave the list at any time. See our <a href="/privacy">privacy notice</a>.</span></label><span class="err" style="margin:-10px 0 14px">Please tick the box so we may contact you.</span></div>
+          <button class="btn btn-gold" type="submit" id="ij-go" style="width:100%">Join the investor list <span class="arrow">→</span></button>
+          <p class="ij-note" id="ij-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <aside class="ij-side" aria-label="What you get">
+        <div class="box">
+          <h3>What you get</h3>
+          <ol class="ij-list">
+            <li><span class="n">1</span><span><b>Opportunities that match</b>Only projects in your sectors and ticket size, after we have checked the licences, the land and the people behind them.</span></li>
+            <li><span class="n">2</span><span><b>Investor round tables in Accra</b>Invitations to our forums with GIPA, banks and Ghanaian companies looking for partners.</span></li>
+            <li><span class="n">3</span><span><b>The right meetings</b>Introductions to agencies, banks and partners, always through formal channels.</span></li>
+            <li><span class="n">4</span><span><b>A local desk when you are ready</b>Company set-up, due diligence and representation, with a written proposal and fixed fee first.</span></li>
+          </ol>
+        </div>
+        <div class="box ij-proof">
+          <h3>What we have done</h3>
+          <a href="/projects/dawa-solar"><span><b>130 MW Dawa solar, Ghana</b><span>From an old licence to a build-ready project</span></span><span aria-hidden="true">→</span></a>
+          <a href="/carlson-capital"><span><b>Company set-up across Africa since 2005</b><span>Our partner Carlson Capital Ltd</span></span><span aria-hidden="true">→</span></a>
+          <a href="/invest#gipa"><span><b>What the GIPA Act 2026 changes</b><span>Minimum capital, reserved sectors, registration</span></span><span aria-hidden="true">→</span></a>
+        </div>
+        <div class="box ij-promise">
+          <h3>Our promise</h3>
+          <p>Joining is free. We never charge for access to officials, and we only put forward opportunities we have checked ourselves. Your details stay with Gotham Consult.</p>
+        </div>
+      </aside>
+    </div>
+  </div></section>
+
+  <section class="sec cta" aria-label="Contact">
+    <div class="wrap"><div class="cta-box rv">
+      <h2>Rather talk first? <span class="serif" style="color:var(--gold-2)">Our investor desk.</span></h2><p class="lead">Gotham Consult replies on WhatsApp, usually the same day.</p><div class="cta-row"><a class="btn btn-wa" href="https://wa.me/233550416627?text=Hello%20Gotham%20Consult%2C%20I%20am%20an%20investor%20interested%20in%20Ghana." target="_blank" rel="noopener"><svg class="icon"><use href="#i-wa"/></svg>WhatsApp +233 55 041 6627</a><a class="btn btn-ghost" href="mailto:info@gothamconsult.com">info@gothamconsult.com</a></div>
+    </div></div>
+  </section>
+</main>
+<script>
+(() => {
+  const C = ['Denmark','Norway','Sweden','Finland','Iceland','United Kingdom','Ireland','Germany','Netherlands','Belgium','France','Switzerland','Italy','Spain','Portugal',
+    'United States','Canada','United Arab Emirates','Saudi Arabia','Qatar','Turkey','China','India','Japan','South Korea','Singapore','Australia',
+    'Ghana','Nigeria','Côte d\'Ivoire','Togo','Benin','Burkina Faso','Senegal','Cameroon','Kenya','South Africa','Morocco','Egypt','Other'];
+  const sel = document.getElementById('ij-country');
+  C.forEach(c => { const o = document.createElement('option'); o.textContent = c; sel.appendChild(o); });
+  const f = document.getElementById('ij'), st = document.getElementById('ij-status'), go = document.getElementById('ij-go');
+  const box = id => document.getElementById(id).closest('.ij-f');
+  const mark = (el, bad) => bad ? el.setAttribute('data-bad', '') : el.removeAttribute('data-bad');
+  f.addEventListener('change', e => { const x = e.target.closest('.ij-f'); if (x) mark(x, false); });
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const v = id => document.getElementById(id).value.trim();
+    const sectors = [...f.querySelectorAll('input[name=sectors]:checked')].map(i => i.value);
+    const phone = v('ij-phone');
+    const checks = [[box('ij-name'), !v('ij-name')], [box('ij-email'), !/^\S+@\S+\.\S+$/.test(v('ij-email'))],
+      [box('ij-phone'), !!phone && !/^(\+|00)?[\d\s().-]{8,20}$/.test(phone)],
+      [box('ij-country'), !v('ij-country')], [box('ij-type'), !v('ij-type')], [box('ij-ticket'), !v('ij-ticket')],
+      [document.getElementById('ij-sec'), !sectors.length], [document.getElementById('ij-cons-f'), !document.getElementById('ij-cons').checked]];
+    checks.forEach(([el, bad]) => mark(el, bad));
+    const first = checks.find(c => c[1]);
+    if (first) { st.textContent = 'Please check the highlighted fields.'; (first[0].querySelector('input,select') || first[0]).focus(); return; }
+    go.disabled = true; st.textContent = 'Sending…';
+    const body = { full_name: v('ij-name'), email: v('ij-email'), phone, company: v('ij-co'), country: v('ij-country'),
+      investor_type: v('ij-type'), ticket: v('ij-ticket'), timeline: v('ij-when'), sectors, message: v('ij-msg'),
+      website: v('ij-web'), consent: true };
+    try {
+      const r = await fetch('/api/investor-interest', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json().catch(() => ({}));
+      if (r.ok && j.ok) {
+        const n = body.full_name.split(/\s+/)[0];
+        document.getElementById('ij-card').innerHTML = '<div class="ij-ok" role="status"><p class="eyebrow">You are on the list</p><h2>Thank you, ' + n.replace(/[<>&"]/g, '') + '.</h2>'
+          + '<p style="color:var(--mute);margin:0 0 18px">We will contact you within two working days. A confirmation is on its way to your email.</p>'
+          + '<div style="display:flex;flex-wrap:wrap;gap:10px"><a class="btn btn-wa" href="https://wa.me/233550416627?text=Hello%20Gotham%20Consult%2C%20I%20just%20joined%20the%20investor%20list." target="_blank" rel="noopener">WhatsApp us now</a>'
+          + '<a class="btn btn-line" href="/projects/dawa-solar">See the Dawa case study</a></div></div>';
+        return;
+      }
+      if (r.status === 429) st.textContent = 'Too many tries from this connection. Please wait a few minutes, or WhatsApp +233 55 041 6627.';
+      else if (j.fields) { j.fields.forEach(k => { const m = { full_name: 'ij-name', email: 'ij-email', phone: 'ij-phone', country: 'ij-country', investor_type: 'ij-type', ticket: 'ij-ticket' }[k];
+          mark(m ? box(m) : k === 'sectors' ? document.getElementById('ij-sec') : document.getElementById('ij-cons-f'), true); });
+        st.textContent = 'Please check the highlighted fields.'; }
+      else st.textContent = 'Something went wrong on our side. Please try again, or WhatsApp +233 55 041 6627.';
+    } catch { st.textContent = 'No connection. Please try again, or WhatsApp +233 55 041 6627.'; }
+    go.disabled = false;
+  });
+})();
+</script>
+<!--#bottom-->

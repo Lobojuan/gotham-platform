@@ -37,6 +37,8 @@ Business owners:
 - Export & AfCFTA readiness: GHS 6,000 one-off.
 - Tenders & 24-Hour Economy: from GHS 3,000 per bid or application.
 Investors:
+- Investor list (free, no obligation): gothamconsult.com/invest/join. Two minutes; they get checked opportunities matching
+  their sectors and ticket size, invitations to investor round tables in Accra, and introductions. Suggest it first to any investor.
 - Ghana briefing (60-minute call): GHS 2,900, credited to follow-on work.
 - Market entry & company setup: from GHS 28,500 plus government fees.
 - Partner & project due diligence: from GHS 40,000 per target.

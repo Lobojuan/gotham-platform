@@ -1889,6 +1889,80 @@ ${await askKnowledge()}`;
       return json(res, 200, { ok: true }, cors);
     }
 
+    /* ---- Investor list: free sign-up from /invest/join ----
+       An investor is not an SME at a forum, so they get their own short form. Free and without
+       obligation: paid work only starts after a written proposal. Each sign-up becomes a contact
+       tagged "investor", an investor deal with a call task for tomorrow, a thank-you email, and an
+       alert to Gotham (info@) with a copy to the partner. */
+    if (p === '/api/investor-interest' && req.method === 'POST') {
+      if (rateLimited(ip, 5, 600e3, 'investor')) return json(res, 429, { error: 'too_many' }, cors);
+      const b = await body(req);
+      if (clean(b.website, 200)) return json(res, 200, { ok: true }, cors);      // honeypot: pretend success
+      const TYPES = ['Individual investor', 'Diaspora investor', 'Family office', 'Company (strategic investor)', 'Fund (PE / VC)', 'Development finance institution'];
+      const TICKETS = ['Under USD 100,000', 'USD 100,000 – 1 million', 'USD 1 – 10 million', 'Over USD 10 million', 'Not sure yet'];
+      const SECTORS = ['Energy and solar', 'Mining', 'Agriculture and agro-processing', 'Real estate', 'Technology and fintech', 'Manufacturing', 'Healthcare', 'Other'];
+      const WHEN = ['Ready now', 'Within 6 months', 'Within 12 months', 'Just exploring'];
+      const full_name = clean(b.full_name, 120), email = clean(b.email, 160).toLowerCase(), country = clean(b.country, 60);
+      const rawPhone = clean(b.phone, 40), digits = rawPhone.replace(/[^0-9+]/g, '');
+      const phone0 = !digits ? '' : digits.startsWith('+') ? digits : digits.startsWith('00') ? '+' + digits.slice(2) : phoneGH(digits);
+      const phone = /^\+\d{8,15}$/.test(phone0) ? phone0 : '';     // anything else is a typo we ask them to fix
+      const type = TYPES.includes(b.investor_type) ? b.investor_type : '';
+      const ticket = TICKETS.includes(b.ticket) ? b.ticket : '';
+      const sectors = (Array.isArray(b.sectors) ? b.sectors : []).filter(x => SECTORS.includes(x)).slice(0, 8);
+      const when = WHEN.includes(b.timeline) ? b.timeline : '';
+      const errors = [];
+      if (!full_name) errors.push('full_name');
+      if (!/^\S+@\S+\.\S+$/.test(email)) errors.push('email');
+      if (rawPhone && !phone) errors.push('phone');
+      if (!country) errors.push('country');
+      if (!type) errors.push('investor_type');
+      if (!ticket) errors.push('ticket');
+      if (!sectors.length) errors.push('sectors');
+      if (b.consent !== true) errors.push('consent');
+      if (errors.length) return json(res, 400, { error: 'missing_fields', fields: errors }, cors);
+      const company = clean(b.company, 160), message = clean(b.message, 800);
+      const extra = { 'Investor list': 'signed up on the website', 'Invests as': type, 'Ticket size': ticket,
+        'Sectors': sectors.join(', '), 'Timeline': when, 'Invests from': country, 'Message': message };
+      Object.keys(extra).forEach(k => { if (!extra[k]) delete extra[k]; });
+      const notes = `Investor list: ${type}, ${ticket}, ${sectors.join(', ')}${when ? ', ' + when.toLowerCase() : ''}.` + (message ? ` Says: ${message}` : '');
+
+      const ex = await q('select id, tags, status from contacts where lower(email)=lower($1)', [email]);
+      if (ex.rows.length) {
+        await q(`update contacts set full_name=coalesce(nullif($1,''),full_name), phone=coalesce(nullif($2,''),phone),
+            country=coalesce(nullif($3,''),country), company=coalesce(nullif(company,''),nullif($4,'')), tags=$5,
+            extra=coalesce(extra,'{}'::jsonb) || $6::jsonb, notes=concat_ws(E'\\n', nullif(notes,''), $7::text)
+          where id=$8 and unsubscribed_at is null and status <> 'do_not_contact'`,
+          [full_name, phone, country, company, mergeTags(ex.rows[0].tags, ['investor', 'investor-list']), JSON.stringify(extra), notes, ex.rows[0].id]);
+      } else {
+        await q(`insert into contacts(company,full_name,email,phone,country,sector,tags,source,notes,extra,status)
+                 values ($1,$2,$3,$4,$5,'Investor','investor,investor-list','Website: investor list',$6,$7::jsonb,'new')`,
+          [company || null, full_name, email, phone || null, country, notes, JSON.stringify(extra)]);
+      }
+      await inboundDeal({ company: company || null, full_name, email, phone: phone || null, kind: 'investor',
+        title: `Investor · ${company || full_name} (${country})`, source: 'Website investor list',
+        task: `Call ${firstName(full_name)} (investor list): ${sectors.slice(0, 3).join(', ')}, ${ticket}` }).catch(e => console.error('inboundDeal', e.message));
+
+      await queueMail(email, full_name, 'You are on the Gotham Consult investor list',
+        wrapMail('Thank you, ' + esc(firstName(full_name)),
+          `<p style="color:#5A6472;font-size:15px;line-height:1.6">You are on our investor list for ${esc(sectors.join(', ').toLowerCase())}. We will contact you within two working days to hear what you are looking for in Ghana.</p>
+           <p style="color:#5A6472;font-size:15px;line-height:1.6">From then on we send you only opportunities that match your sectors and ticket size, after we have checked the licences, the land and the people behind them, and we invite you to our investor round tables in Accra.</p>
+           <p style="color:#5A6472;font-size:15px;line-height:1.6">Joining is free and commits you to nothing. If you want us to work for you, you get a written proposal with a fixed fee first. If it is urgent, WhatsApp or call +233 55 041 6627.</p>`),
+        'investor_ack', null);
+      const rows = [['Name', full_name], ['Email', email], ['WhatsApp / phone', phone || '(not given)'], ['Company / fund', company || '(not given)'],
+        ['Invests from', country], ['Invests as', type], ['Ticket size', ticket], ['Sectors', sectors.join(', ')], ['Timeline', when || '(not given)'], ['Message', message || '(none)']];
+      const alert = wrapMail('New investor on the list',
+        `<table style="font-size:14px;color:#0F1B2D;border-collapse:collapse">${rows.map(([k, v]) =>
+          `<tr><td style="padding:4px 14px 4px 0;color:#5A6472;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>`).join('')}</table>
+         <p style="color:#5A6472;font-size:14px;margin-top:14px">It is in the back office under Deals (kind: Investor), with a call task for tomorrow.</p>`);
+      const subject = `New investor: ${full_name}${company ? ' (' + company + ')' : ''}, ${ticket}`;
+      await queueMail('info@gothamconsult.com', 'Gotham Consult', subject, alert, 'staff_alert', null);
+      await queueMail('uffe.carlson@gmail.com', 'Uffe Carlson', subject, alert, 'staff_alert', null);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+        ['website', 'investor_interest', `${country} · ${type} · ${ticket} · ${sectors.join(', ')}`]);
+      webEnquiry(req, ip, 'investor').catch(() => {});
+      return json(res, 200, { ok: true }, cors);
+    }
+
     if (p === '/api/register' && req.method === 'POST') {
       if (rateLimited(ip, 10, 60e3, 'register')) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
@@ -3339,7 +3413,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
 
     /* =================== CRM: pipeline, tasks, notes, records, reports =================== */
     const STAGES = ['lead', 'contacted', 'meeting', 'proposal', 'won', 'lost'];
-    const KINDS = ['sponsorship', 'consulting', 'family_desk', 'membership', 'event', 'other'];
+    const KINDS = ['sponsorship', 'consulting', 'family_desk', 'investor', 'membership', 'event', 'other'];
     const NOTE_KINDS = ['note', 'call', 'whatsapp', 'meeting', 'email'];
     const day = s => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? s : null);
     const money = v => { const n = Math.round(Number(String(v ?? '').replace(/[^\d.]/g, '')) * 100) / 100; return isFinite(n) && n >= 0 ? Math.min(n, 1e12) : 0; };
