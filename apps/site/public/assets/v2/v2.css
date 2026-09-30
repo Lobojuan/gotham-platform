@@ -908,7 +908,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .gc-sun.n { background: transparent; box-shadow: inset -3px -1px 0 0 #C8D6EE; }
 @media (prefers-reduced-motion: reduce) { .gh-live i { animation: none; } }
 @media (max-width: 899px) {
-  .globe-hud { position: relative; margin: 2px 0 8px; flex-wrap: wrap; }
+  .globe-hud { display: none; }   /* phones: the card below the globe already carries the live details; the headline stays in view */
   .globe-hud span { font-size: 11px; padding: 4px 8px; }
   .globe-hud .gh-sun { display: none; }
 }

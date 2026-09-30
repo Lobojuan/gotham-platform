@@ -246,6 +246,7 @@
   }
   function label(text, x, y, strong) {
     ctx.font = `${strong ? 700 : 500} ${strong ? 12 : 11}px "Hanken Grotesk",system-ui,sans-serif`;
+    const tw = ctx.measureText(text).width; if (x + tw > W - 4) x = x - tw - 16;   // near the right edge: write it on the left of the dot
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(5,10,20,.75)'; ctx.strokeText(text, x, y);
     ctx.fillStyle = strong ? '#fff' : 'rgba(225,235,248,.9)'; ctx.fillText(text, x, y);
   }
