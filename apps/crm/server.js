@@ -1087,10 +1087,10 @@ function parseContacts(text) {
 /* The four email designs. Plain is deliberately undesigned: for a managing
    director, a message that looks like a newsletter is a message that gets
    deleted. */
-/* Carlson Capital Ltd is Gotham's partner only for renewable energy and AI/software. Only campaigns
+/* Carlson Capital Ltd is Gotham's partner for AI, software, apps and mining (renewable energy projects too). Only campaigns
    marked as such name it, with Uffe's number; everything else carries Gotham Consult and its own number. */
 const partnerFoot = cam => cam && cam.carlson
-  ? 'Gotham Consult, Accra · Renewable energy &amp; AI/software partner: Carlson Capital Ltd · WhatsApp or call +233 55 239 5548'
+  ? 'Gotham Consult, Accra · AI, software, apps &amp; mining partner: Carlson Capital Ltd · WhatsApp or call +233 55 239 5548'
   : 'Gotham Consult, Accra · WhatsApp or call +233 55 041 6627';
 function campaignHtml(cam, c, item, links) {
   if (cam.template === 'designer') return mailDoc(merge(cam.subject, c), designerBody(cam, c, item && item.designer ? item : { media: {}, events: {}, sponsors: [] }, links, !!links.preview));
@@ -1111,7 +1111,7 @@ function campaignBody(cam, c, item, links) {
       ${paras(body, 'margin:0 0 14px')}
       ${cam.cta_label ? `<p style="margin:0 0 14px"><a href="${links.cta}" style="color:#0F1B2D">${esc(merge(cam.cta_label, c))}</a></p>` : ''}
       <p style="margin:0 0 4px">${esc(cam.from_name || 'Joy Anthony Preston')}<br>
-      <span style="color:#555">Gotham Consult · +233 55 041 6627${cam.carlson ? '<br>Renewable energy &amp; AI partner: Carlson Capital Ltd · +233 55 239 5548' : ''}</span></p>
+      <span style="color:#555">Gotham Consult · +233 55 041 6627${cam.carlson ? '<br>AI, software, apps &amp; mining partner: Carlson Capital Ltd · +233 55 239 5548' : ''}</span></p>
       <p style="margin:18px 0 0;color:#999;font-size:12px">
         If you would rather not hear from us, <a href="${links.unsub}" style="color:#999">say so here</a>.</p></div>`;
   }
@@ -1135,7 +1135,7 @@ function campaignBody(cam, c, item, links) {
     <tr><td style="padding:26px 34px 0">
       <table role="presentation" width="100%"><tr>
         <td style="font-size:15px;font-weight:700;color:#0F1B2D;letter-spacing:.01em"><img src="${brandUrl()}" width="30" height="30" alt="" style="display:inline-block;vertical-align:middle;border-radius:7px;margin-right:9px">Gotham Consult</td>
-        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'Renewable energy &amp; AI partner: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
+        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'AI, software, apps &amp; mining: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
       </tr></table></td></tr>
     <tr><td style="padding:22px 34px 0">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
@@ -1265,7 +1265,7 @@ function designerBody(cam, c, data, links, preview) {
     <tr><td style="padding:22px 32px 18px">
       <table role="presentation" width="100%"><tr>
         <td style="font-size:15px;font-weight:700;color:#0F1B2D"><img src="${brandUrl()}" width="30" height="30" alt="" style="display:inline-block;vertical-align:middle;border-radius:7px;margin-right:9px">Gotham Consult</td>
-        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'Renewable energy &amp; AI partner: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
+        <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'AI, software, apps &amp; mining: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
       </tr></table></td></tr>
     ${out.join('\n')}
     <tr><td style="padding:10px 32px 26px"><div style="border-top:1px solid #E2E4E7;padding-top:18px;color:#8A93A0;font-size:12px;line-height:1.6">
@@ -1407,14 +1407,18 @@ let askKnow = { at: 0, text: '' };
    daily from central-bank and market feeds), fetched at most once an hour and kept in settings, so a restart or an
    outage still shows the last good rates with their date. The page says it is a market rate, not the BoG rate. */
 let fxMem = null;
+const FX_MORE = ['DKK', 'SEK', 'NOK', 'CHF', 'CAD', 'AED', 'SAR', 'CNY', 'HKD', 'JPY', 'SGD', 'INR', 'ZAR', 'NGN', 'XOF', 'KES', 'EGP', 'MAD', 'RWF', 'BRL', 'AUD', 'TRY'];
 async function liveRates(force = false) {
   if (!fxMem) { try { fxMem = JSON.parse((await q("select value from settings where key='fx_cache'")).rows[0]?.value || 'null'); } catch { fxMem = null; } }
-  if (!force && fxMem && Date.now() - fxMem.fetched < 3600e3) return fxMem;
+  if (!force && fxMem && fxMem.more && Date.now() - fxMem.fetched < 3600e3) return fxMem;
   try {
     const r = await fetch(`${process.env.FX_API || 'https://open.er-api.com/v6/latest'}/USD`, { signal: AbortSignal.timeout(8000) }); const j = await r.json();
     const g = +(j && j.rates && j.rates.GHS); if (!(g > 1) || !(+j.rates.EUR > 0) || !(+j.rates.GBP > 0)) throw new Error('bad rates');
     const r4 = n => Math.round(n * 10000) / 10000;
-    fxMem = { base: 'GHS', rates: { USD: r4(g), EUR: r4(g / j.rates.EUR), GBP: r4(g / j.rates.GBP) },
+    /* the cities on the home-page globe: what one unit of their money is worth in cedis */
+    const more = {};
+    for (const c of FX_MORE) { const v = +j.rates[c]; if (v > 0) more[c] = r4(g / v); }
+    fxMem = { base: 'GHS', rates: { USD: r4(g), EUR: r4(g / j.rates.EUR), GBP: r4(g / j.rates.GBP) }, more,
       updated: j.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString(), fetched: Date.now(),
       source: 'Market mid-rate (open.er-api.com). Official reference: Bank of Ghana.' };
     await q(`insert into settings(key,value) values ('fx_cache',$1) on conflict (key) do update set value=excluded.value`, [JSON.stringify(fxMem)]);
@@ -1658,7 +1662,7 @@ const server = http.createServer(async (req, res) => {
       const fx = await liveRates();
       if (!fx) { res.setHeader('cache-control', 'public, max-age=300'); return json(res, 200, { rates: null, unavailable: true }, cors); }   // the page simply hides the rates
       res.setHeader('cache-control', 'public, max-age=900');
-      return json(res, 200, { base: fx.base, rates: fx.rates, updated: fx.updated, source: fx.source }, cors);
+      return json(res, 200, { base: fx.base, rates: fx.rates, more: fx.more || {}, updated: fx.updated, source: fx.source }, cors);
     }
     if (p === '/api/items' && req.method === 'GET') {
       const { rows } = await itemsPublic();
@@ -4028,7 +4032,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     }
 
     /* ---- the logo for the back office, emails and documents (from the brand folder, nothing else) ---- */
-    const mBrand = p.match(/^\/admin\/brand\/(mark-tile|mark-white-256|icon-64|icon-180)\.png$/);
+    const mBrand = p.match(/^\/admin\/brand\/(mark-tile|mark-white-256|icon-64|icon-180|carlson-tile-64|carlson-mark-128)\.png$/);
     if (mBrand && (req.method === 'GET' || req.method === 'HEAD')) {
       res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'public, max-age=604800' });
       return res.end(req.method === 'HEAD' ? '' : BRAND_PNG(mBrand[1]));
@@ -4230,7 +4234,7 @@ const aiDay = { day: '', n: 0 };
 const AI_RULES = `You write for Gotham Consult, a business-development and advisory firm in Accra, Ghana.
 Plain, warm, professional English (or the language asked). Short sentences. No hype, no emojis, no markdown.
 Prices only in Ghana cedis (GHS). Never invent facts, prices, dates, names or results: use only what you are given.
-Carlson Capital Ltd is Gotham's partner only for renewable energy and AI/software; mention it only for those topics.
+Carlson Capital Ltd is Gotham's partner for AI, software, apps, mining and renewable energy projects; mention it only for those topics.
 Gotham's WhatsApp: +233 55 041 6627. Website: gothamconsult.com.`;
 const jsonFrom = t => { const m = String(t || '').match(/\{[\s\S]*\}/); if (!m) return null; try { return JSON.parse(m[0]); } catch { return null; } };
 async function aiHelp(u, b) {

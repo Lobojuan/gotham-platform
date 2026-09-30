@@ -891,3 +891,27 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .partner { padding: 8px 16px; gap: 6px 8px; }
 .partner .ps:first-child { font-weight: 500; letter-spacing: 0; }
 .evp-box.soon a { display: inline-flex; align-items: center; min-height: 44px; color: var(--ink); font-weight: 600; }
+/* Carlson Capital's mark (gold "Ascend") where the partner is named: the home pill, the about page, the website credit */
+.partner .cl { width: 18px; height: 18px; display: block; flex: none; }
+.gf-made .cl { width: 14px; height: 14px; display: inline-block; vertical-align: -2px; margin: 0 2px 0 4px; }
+
+/* ---- hero Earth: the live strip (Accra's clock, where the sun is overhead right now, the cedi) ---- */
+.globe-hud { position: absolute; left: 0; right: 0; top: 0; display: flex; flex-wrap: nowrap; gap: 6px; justify-content: center; pointer-events: none; z-index: 1; }
+.globe-hud span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11.5px; line-height: 1.3; color: rgba(255,255,255,.72);
+  background: rgba(8,16,30,.6); border: 1px solid rgba(255,255,255,.1); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.globe-hud b { color: #fff; font-weight: 700; }
+.globe-hud .gh-fx b { color: var(--gold-2); }
+.gh-live i { width: 7px; height: 7px; border-radius: 50%; background: #6EE8C8; animation: gcPulse 1.8s infinite; }
+.gh-sun em { width: 9px; height: 9px; border-radius: 50%; background: #F4C66A; box-shadow: 0 0 8px rgba(244,198,106,.9); }
+.gc-sun { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+.gc-sun.d { background: #F4C66A; box-shadow: 0 0 8px rgba(244,198,106,.8); }
+.gc-sun.n { background: transparent; box-shadow: inset -3px -1px 0 0 #C8D6EE; }
+@media (prefers-reduced-motion: reduce) { .gh-live i { animation: none; } }
+@media (max-width: 899px) {
+  .globe-hud { position: relative; margin: 2px 0 8px; flex-wrap: wrap; }
+  .globe-hud span { font-size: 11px; padding: 4px 8px; }
+  .globe-hud .gh-sun { display: none; }
+}
+.gh-sun .lbl { font-style: normal; display: none; }
+@media (min-width: 1280px) { .gh-sun .lbl { display: inline; } }
+@media (min-width: 900px) and (max-width: 1150px) { .globe-hud { gap: 4px; } .globe-hud span { font-size: 11px; padding: 3px 8px; } }

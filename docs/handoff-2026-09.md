@@ -292,3 +292,17 @@ for reduced motion.
   - The Business Boot Camp (BOOT1): 9 café photos, 2 frames and the recap video. The date and venue are unknown; add them in the back office.
   - The Business Pitch Deck Round Table (PDRT1): the flyer and the invitation video.
   - The SMEs at the Centre content calendar as 30 tasks, plus 7 SMS/email drafts (not sent) for F1.
+
+## Carlson Capital logo, cleaner partner line, the globe turning a full circle (30 Sep 2026)
+- **Carlson Capital mark "Ascend"**: three rising gold bars and a white chip, drawn with the same slant, corners and gap as the Gotham mark.
+  - Files are in `apps/site/public/img/brand/carlson-*` (SVG, PNG, tile for app icons, an "ink" version for light backgrounds). A copy is in `apps/crm/public/brand/`.
+  - The Carlson line reads "AI, software, apps & mining" (Uffe's choice, 30 Sep). It is used in the home-page pill, the About section, the footer credit, the Carlson campaign footer, the chatbot fact sheet and the back-office campaign checkbox.
+- **Header and footer brand**: Gotham only (logo and name). The partner is named once, in the home pill and in the website credit.
+- **Globe** (`apps/site/public/assets/v2/globe.js`):
+  - A full 360° turn every 48 s. The card no longer steers the globe.
+  - 30 business cities linked to Accra across Europe, the Gulf, Asia, the Americas and Africa.
+  - A faint latitude/longitude grid, with the Equator and Greenwich in gold (they cross just off Accra).
+  - City labels show the local time.
+  - A live strip shows Accra's clock and GHS against USD/EUR/GBP.
+  - Each city card shows distance, local time, the difference from Accra, whether it is day or night there now, and what 1 unit of its currency is worth in cedis.
+  - `/api/rates` now also returns `more` for those currencies.

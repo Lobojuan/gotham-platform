@@ -20,13 +20,22 @@
   const IMG = f => new URL('/img/earth/' + f, HERE).href;
 
   const ACCRA = [5.6, -0.19];
+  /* [name, lat, lon, time zone, currency]: the main business cities of the world, all linked to Accra */
   const CITIES = [
-    ['London', 51.5, -0.13, 'Europe/London'], ['Copenhagen', 55.68, 12.57, 'Europe/Copenhagen'], ['Berlin', 52.52, 13.4, 'Europe/Berlin'],
-    ['Dubai', 25.2, 55.27, 'Asia/Dubai'], ['New York', 40.71, -74.0, 'America/New_York'], ['Shanghai', 31.23, 121.47, 'Asia/Shanghai'],
-    ['Lagos', 6.52, 3.38, 'Africa/Lagos'], ['Johannesburg', -26.2, 28.05, 'Africa/Johannesburg'], ['Abidjan', 5.36, -4.01, 'Africa/Abidjan'],
-    ['Toronto', 43.65, -79.38, 'America/Toronto']];
-  const MOBILE_CITIES = ['London', 'Copenhagen', 'Dubai', 'New York', 'Johannesburg', 'Lagos'];
-  const NOLABEL = ['Berlin', 'Lagos', 'Abidjan'];   // too close to London and Accra to label all the time
+    ['London', 51.5, -0.13, 'Europe/London', 'GBP'], ['Copenhagen', 55.68, 12.57, 'Europe/Copenhagen', 'DKK'], ['Berlin', 52.52, 13.4, 'Europe/Berlin', 'EUR'],
+    ['Paris', 48.86, 2.35, 'Europe/Paris', 'EUR'], ['Amsterdam', 52.37, 4.9, 'Europe/Amsterdam', 'EUR'], ['Stockholm', 59.33, 18.07, 'Europe/Stockholm', 'SEK'],
+    ['Zurich', 47.37, 8.54, 'Europe/Zurich', 'CHF'], ['Madrid', 40.42, -3.7, 'Europe/Madrid', 'EUR'], ['Istanbul', 41.01, 28.98, 'Europe/Istanbul', 'TRY'],
+    ['Dubai', 25.2, 55.27, 'Asia/Dubai', 'AED'], ['Riyadh', 24.71, 46.68, 'Asia/Riyadh', 'SAR'], ['Mumbai', 19.08, 72.88, 'Asia/Kolkata', 'INR'],
+    ['Singapore', 1.35, 103.82, 'Asia/Singapore', 'SGD'], ['Shanghai', 31.23, 121.47, 'Asia/Shanghai', 'CNY'], ['Hong Kong', 22.32, 114.17, 'Asia/Hong_Kong', 'HKD'],
+    ['Tokyo', 35.68, 139.69, 'Asia/Tokyo', 'JPY'], ['Sydney', -33.87, 151.21, 'Australia/Sydney', 'AUD'],
+    ['New York', 40.71, -74.0, 'America/New_York', 'USD'], ['Washington', 38.9, -77.04, 'America/New_York', 'USD'], ['Toronto', 43.65, -79.38, 'America/Toronto', 'CAD'],
+    ['Houston', 29.76, -95.37, 'America/Chicago', 'USD'], ['São Paulo', -23.55, -46.63, 'America/Sao_Paulo', 'BRL'],
+    ['Lagos', 6.52, 3.38, 'Africa/Lagos', 'NGN'], ['Abidjan', 5.36, -4.01, 'Africa/Abidjan', 'XOF'], ['Dakar', 14.72, -17.47, 'Africa/Dakar', 'XOF'],
+    ['Casablanca', 33.57, -7.59, 'Africa/Casablanca', 'MAD'], ['Cairo', 30.04, 31.24, 'Africa/Cairo', 'EGP'], ['Nairobi', -1.29, 36.82, 'Africa/Nairobi', 'KES'],
+    ['Kigali', -1.95, 30.06, 'Africa/Kigali', 'RWF'], ['Johannesburg', -26.2, 28.05, 'Africa/Johannesburg', 'ZAR']];
+  const MOBILE_CITIES = ['London', 'Copenhagen', 'Paris', 'Dubai', 'New York', 'Shanghai', 'Tokyo', 'São Paulo', 'Johannesburg', 'Nairobi', 'Lagos', 'Singapore'];
+  const LABEL = ['London', 'Copenhagen', 'Dubai', 'Mumbai', 'Singapore', 'Shanghai', 'Tokyo', 'Sydney', 'New York', 'Houston', 'São Paulo',
+    'Dakar', 'Cairo', 'Nairobi', 'Johannesburg'];   // the rest sit too close to a neighbour to label all the time
 
   /* ---- words (the site's translator cannot see inside a canvas, so the card carries its own) ---- */
   const lang = () => { try { return localStorage.getItem('gc-language') || 'en'; } catch { return 'en'; } };
@@ -36,19 +45,22 @@
       f2t: 'Accra time', f2: 'Ghana keeps GMT all year. No daylight saving, easy to plan calls from Europe.',
       f3t: 'Home of the AfCFTA Secretariat', f3: 'The African Continental Free Trade Area is run from Accra.',
       f4t: 'Real sunlight', f4: 'Day and night on this globe follow the sun right now. The lights are cities.',
-      aria: 'The Earth turning, with day and night as they are now and routes from Accra to London, Copenhagen, Berlin, Dubai, New York, Shanghai, Lagos, Johannesburg, Abidjan and Toronto', next: 'Next' },
+      aria: 'The Earth turning a full circle, with day and night as they are now and routes from Accra to 30 business cities worldwide', next: 'Next',
+      day: 'Daylight there now', night: 'Night there now', sunB: 'The point on Earth where the sun is straight overhead at this minute. It crosses the whole planet every 24 hours.', fx: n => `1 ${n} =`, sunAt: 'Sun overhead', cities: n => `${n} cities linked`, routes: 'of routes', gmt: 'GMT' },
     fr: { km: 'km d’Accra', local: 'Heure locale', same: 'même heure qu’Accra', ahead: n => `${n} h de plus qu’Accra`, behind: n => `${n} h de moins qu’Accra`,
       route: 'Route partenaire', live: 'En direct', f1t: 'Accra · 5,6°N, 0,2°O', f1: 'La capitale la plus proche de 0° 0°, où l’Équateur croise le méridien de Greenwich.',
       f2t: 'Heure d’Accra', f2: 'Le Ghana reste à l’heure GMT toute l’année, sans heure d’été : simple pour caler des appels depuis l’Europe.',
       f3t: 'Siège du Secrétariat de la ZLECAf', f3: 'La Zone de libre-échange continentale africaine est pilotée depuis Accra.',
       f4t: 'Lumière réelle', f4: 'Le jour et la nuit sur ce globe suivent le soleil en ce moment. Les lumières sont des villes.',
-      aria: 'La Terre qui tourne, avec le jour et la nuit en ce moment et les routes depuis Accra', next: 'Suivant' },
+      aria: 'La Terre qui fait un tour complet, avec le jour et la nuit en ce moment et les routes depuis Accra', next: 'Suivant',
+      day: 'Il fait jour là-bas', night: 'Il fait nuit là-bas', sunB: 'Le point de la Terre où le soleil est au zénith en ce moment. Il fait le tour de la planète en 24 heures.', fx: n => `1 ${n} =`, sunAt: 'Soleil au zénith', cities: n => `${n} villes reliées`, routes: 'de routes', gmt: 'GMT' },
     es: { km: 'km de Accra', local: 'Hora local', same: 'misma hora que Accra', ahead: n => `${n} h más que Accra`, behind: n => `${n} h menos que Accra`,
       route: 'Ruta de socios', live: 'En directo', f1t: 'Accra · 5,6°N, 0,2°O', f1: 'La capital más cercana a 0° 0°, donde el Ecuador cruza el meridiano de Greenwich.',
       f2t: 'Hora de Accra', f2: 'Ghana mantiene GMT todo el año, sin horario de verano: fácil para planificar llamadas desde Europa.',
       f3t: 'Sede de la Secretaría de la AfCFTA', f3: 'El Área de Libre Comercio Continental Africana se dirige desde Accra.',
       f4t: 'Luz real', f4: 'El día y la noche en este globo siguen al sol ahora mismo. Las luces son ciudades.',
-      aria: 'La Tierra girando, con el día y la noche de ahora y rutas desde Accra', next: 'Siguiente' } };
+      aria: 'La Tierra dando una vuelta completa, con el día y la noche de ahora y rutas desde Accra', next: 'Siguiente',
+      day: 'Allí es de día', night: 'Allí es de noche', sunB: 'El punto de la Tierra donde el sol está en el cenit en este momento. Da la vuelta al planeta cada 24 horas.', fx: n => `1 ${n} =`, sunAt: 'Sol en el cenit', cities: n => `${n} ciudades conectadas`, routes: 'de rutas', gmt: 'GMT' } };
   const L = () => T[lang()] || T.en;
   const LOC = () => ({ fr: 'fr-FR', es: 'es-ES' })[lang()] || 'en-GB';
 
@@ -61,12 +73,15 @@
     const k1 = Math.sin((1 - t) * d) / s, k2 = Math.sin(t * d) / s;
     return [a[0] * k1 + b[0] * k2, a[1] * k1 + b[1] * k2, a[2] * k1 + b[2] * k2, d];
   }
-  const arcs = CITIES.map(([name, lat, lon, tz], i) => {
+  const arcs = CITIES.map(([name, lat, lon, tz, cur], i) => {
     const a = vec(...ACCRA), b = vec(lat, lon), d = slerp(a, b, 0)[3], steps = 56, path = [];
     for (let s = 0; s <= steps; s++) { const t = s / steps, p = slerp(a, b, t), h = 1 + Math.sin(Math.PI * t) * (0.04 + d * 0.075); path.push([p[0] * h, p[1] * h, p[2] * h]); }
-    return { name, lat, lon, tz, path, phase: i * 0.37, dist: Math.round(km(ACCRA, [lat, lon]) / 10) * 10 };
+    return { name, lat, lon, tz, cur, path, phase: i * 0.37, dist: Math.round(km(ACCRA, [lat, lon]) / 10) * 10 };
   });
 
+  const GRID = [];
+  for (let la = -60; la <= 60; la += 30) { const pts = []; for (let lo = -180; lo <= 180; lo += 6) pts.push(vec(la, lo)); GRID.push({ pts, key: la === 0 }); }
+  for (let lo = -180; lo < 180; lo += 30) { const pts = []; for (let la = -84; la <= 84; la += 6) pts.push(vec(la, lo)); GRID.push({ pts, key: lo === 0 }); }
   /* The view: turn about the pole by lonC, then tip towards the viewer by TILT.
      x right, y up, z towards the viewer. */
   const TILT = rad(12), ca = Math.cos(TILT), sa = Math.sin(TILT);
@@ -180,12 +195,21 @@
       ctx.fillStyle = b; ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
     }
     if (tex) paintEarth(now);
+    // the grid of latitude and longitude; the Equator and Greenwich meet at 0° 0°, a short way off Accra
+    ctx.lineWidth = 0.7;
+    for (const gl of GRID) {
+      ctx.strokeStyle = gl.key ? 'rgba(240,190,90,.42)' : 'rgba(170,205,255,.11)'; ctx.setLineDash(gl.key ? [3, 4] : []);
+      ctx.beginPath(); let pen = false;
+      for (const q of gl.pts) { const v = view(q); if (v[2] > 0.02) { const X = cx + v[0] * R, Y = cy - v[1] * R; pen ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); pen = true; } else pen = false; }
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
     // routes
     const list = small() ? arcs.filter(a => MOBILE_CITIES.includes(a.name) || a === focus) : arcs;
     ctx.lineCap = 'round';
     for (const arc of list) {
       const P = arc.path.map(view), n = P.length - 1, on = arc === focus;
-      ctx.lineWidth = on ? 2.2 : 1.2; ctx.strokeStyle = on ? 'rgba(244,198,106,.95)' : 'rgba(244,198,106,.5)';
+      ctx.lineWidth = on ? 2.2 : 1; ctx.strokeStyle = on ? 'rgba(244,198,106,.95)' : 'rgba(244,198,106,.3)';
       ctx.beginPath(); let pen = false;
       for (const p of P) { if (p[2] > 0 || p[0] * p[0] + p[1] * p[1] > 1.0005) {   /* in front, or lifted clear of the rim */ const X = cx + p[0] * R, Y = cy - p[1] * R; pen ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); pen = true; } else pen = false; }
       ctx.stroke();
@@ -203,7 +227,7 @@
         const X = cx + end[0] * R, Y = cy - end[1] * R, pulse = reduce ? .6 : (Math.sin(t * 2 + arc.phase * 9) + 1) / 2;
         ctx.fillStyle = `rgba(110,232,200,${.18 + pulse * .22})`; ctx.beginPath(); ctx.arc(X, Y, (on ? 5 : 3) + pulse * 5, 0, TAU); ctx.fill();
         ctx.fillStyle = on ? '#F4C66A' : '#6EE8C8'; ctx.beginPath(); ctx.arc(X, Y, on ? 3.2 : 2.3, 0, TAU); ctx.fill();
-        if ((on || (!small() && !NOLABEL.includes(arc.name))) && end[2] > .3) label(arc.name, X + 8, Y + 4, on);
+        if ((on || (!small() && LABEL.includes(arc.name))) && end[2] > .3) label(small() ? arc.name : `${arc.name} ${clockOf(arc.tz)}`, X + 8, Y + 4, on);
       }
     }
     // Accra
@@ -215,6 +239,11 @@
       label('Accra', X + 9, Y - 8, true);
     }
   }
+  const clocks = {}; let clockAt = 0;
+  function clockOf(tz) {   // local time, worked out once a minute rather than every frame
+    const m = Math.floor(Date.now() / 60000); if (m !== clockAt) { clockAt = m; for (const k in clocks) delete clocks[k]; }
+    return clocks[tz] ||= new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+  }
   function label(text, x, y, strong) {
     ctx.font = `${strong ? 700 : 500} ${strong ? 12 : 11}px "Hanken Grotesk",system-ui,sans-serif`;
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(5,10,20,.75)'; ctx.strokeText(text, x, y);
@@ -222,7 +251,7 @@
   }
 
   /* ---- turning ---- */
-  const SPEED = TAU / 70;           // one turn in 70 seconds, west to east like the real thing
+  const SPEED = TAU / 48;           // a full 360° turn every 48 seconds, west to east like the real thing
   function loop(now) {
     if (!running) return;
     const dt = Math.min(0.1, (now - (last || now)) / 1000);
@@ -251,6 +280,7 @@
   const up = () => { if (dragX !== null && moved < 4) card(1); dragX = null; spin = Math.max(-1.5, Math.min(1.5, spin)); };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', () => { dragX = null; });
 
+  const total = arcs.reduce((n, a) => n + a.dist, 0);
   /* ---- the card: one thing worth knowing, every few seconds ---- */
   const wrap = canvas.parentElement, box = document.createElement('div');
   box.className = 'globe-card'; box.setAttribute('aria-live', 'polite'); box.setAttribute('translate', 'no');
@@ -264,8 +294,12 @@
     { t: w.f1t, b: w.f1 },
     { t: `${w.f2t} · ${clock('Africa/Accra')}`, b: w.f2, live: true },
     { t: w.f3t, b: w.f3 },
-    { t: w.f4t, b: w.f4, live: true }]; };
-  const order = []; { const f = [0, 1, 2, 3], c = arcs.map((_, i) => i); let a = 0, b = 0; while (a < f.length || b < c.length) { if (b < c.length) order.push(['c', c[b++]]); if (b < c.length) order.push(['c', c[b++]]); if (a < f.length) order.push(['f', f[a++]]); } }
+    { t: w.f4t, b: w.f4, live: true },
+    (() => { sun(performance.now()); const sl = Math.asin(sD) * 180 / Math.PI, so = ((sunLon * 180 / Math.PI + 540) % 360) - 180;
+      const deg = (v, p, n) => `${Math.abs(v).toFixed(1)}°${v >= 0 ? p : n}`;
+      return { t: `${w.sunAt} · ${deg(sl, 'N', 'S')}, ${deg(so, 'E', 'W')}`, b: w.sunB, live: true }; })(),
+    { t: w.cities(arcs.length), b: `${Math.round(total / 1000).toLocaleString(LOC())} 000 km ${w.routes}: Europe, the Gulf, Asia, the Americas and Africa.` }]; };
+  const order = []; { const f = [0, 1, 5, 4, 2, 3], c = arcs.map((_, i) => i); let a = 0, b = 0; while (a < f.length || b < c.length) { if (b < c.length) order.push(['c', c[b++]]); if (b < c.length) order.push(['c', c[b++]]); if (a < f.length) order.push(['f', f[a++]]); } }
   let at = -1, cardTimer = 0;
   function card(step) {
     at = (at + step + order.length) % order.length;
@@ -273,16 +307,17 @@
     if (kind === 'c') {
       const a = arcs[i]; focus = a;
       const d = tzDiff(a.tz), diff = d === null ? '' : d === 0 ? w.same : d > 0 ? w.ahead(String(d)) : w.behind(String(-d));
+      sun(performance.now());
+      const up = Math.sin(rad(a.lat)) * sD + Math.cos(rad(a.lat)) * cD * Math.cos(rad(a.lon) - sunLon) > 0;
+      const fx = RATES && (RATES[a.cur] || (RATES.more || {})[a.cur]);
       html = `<p class="gc-k">${w.route}</p><p class="gc-t">${a.name}</p>
         <p class="gc-b"><b>${a.dist.toLocaleString(LOC())}</b> ${w.km}</p>
-        <p class="gc-b">${w.local} <b>${clock(a.tz)}</b>${diff ? ' · ' + diff : ''}</p>`;
-      // turn the globe so the route is in view
-      const mid = Math.atan2((vec(...ACCRA)[1] + vec(a.lat, a.lon)[1]), (vec(...ACCRA)[0] + vec(a.lat, a.lon)[0]));
-      target = mid;
+        <p class="gc-b">${w.local} <b>${clock(a.tz)}</b>${diff ? ' · ' + diff : ''}</p>
+        <p class="gc-b"><span class="gc-sun ${up ? 'd' : 'n'}" aria-hidden="true"></span>${up ? w.day : w.night}${fx ? ` · ${w.fx(a.cur)} <b>GHS ${fx.toLocaleString(LOC(), { maximumFractionDigits: fx < 1 ? 4 : 2 })}</b>` : ''}</p>`;
     } else {
       focus = null; const f = facts()[i];
       html = `<p class="gc-k">${f.live ? `<span class="gc-live"></span>${w.live}` : 'Accra'}</p><p class="gc-t">${f.t}</p><p class="gc-b">${f.b}</p>`;
-      target = rad(ACCRA[1]) + rad(10);
+
     }
     box.innerHTML = html + `<button type="button" class="gc-next" aria-label="${w.next}">›</button>`;
     box.querySelector('.gc-next').addEventListener('click', e => { e.stopPropagation(); card(1); restart(); });
@@ -301,6 +336,19 @@
   };
   const restart = () => { clearInterval(cardTimer); cardTimer = setInterval(() => { if (visible && !document.hidden) card(1); }, 6500); };
   document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => setTimeout(() => card(0), 120)));
+
+  /* ---- the live strip over the globe: Accra's clock, where the sun is overhead right now, the routes, the cedi ---- */
+  let RATES = null;
+  fetch('/api/rates').then(r => r.json()).then(j => { if (j && j.rates) { RATES = { ...j.rates, more: j.more || {} }; hud(); if (focus) card(0); } }).catch(() => {});
+  const hudBox = document.createElement('div'); hudBox.className = 'globe-hud'; hudBox.setAttribute('translate', 'no'); wrap.appendChild(hudBox);
+  function hud() {
+    sun(performance.now()); const w = L();
+    hudBox.innerHTML = `<span class="gh-live"><i></i>Accra <b>${clock('Africa/Accra')}</b> ${w.gmt}</span>
+      ${RATES ? `<span class="gh-fx">GHS <b>$${RATES.USD.toFixed(2)}</b> <b>€${RATES.EUR.toFixed(2)}</b> <b>£${RATES.GBP.toFixed(2)}</b></span>` : ''}`;
+
+  }
+  hud(); setInterval(() => { if (visible && !document.hidden) hud(); }, 30000);
+  document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => setTimeout(hud, 120)));
 
   resize(); setRunning(true); card(1); restart(); glide();
   const go = () => loadTextures();
