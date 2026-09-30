@@ -1090,7 +1090,7 @@ function parseContacts(text) {
 /* Carlson Capital Ltd is Gotham's partner for AI, software, apps and mining (renewable energy projects too). Only campaigns
    marked as such name it, with Uffe's number; everything else carries Gotham Consult and its own number. */
 const partnerFoot = cam => cam && cam.carlson
-  ? 'Gotham Consult, Accra · WhatsApp or call +233 55 041 6627 · info@gothamconsult.com<br>Partner for AI, software, apps &amp; mining: Carlson Capital Ltd · +233 55 239 5548 · uffe.carlson@gmail.com'
+  ? 'Gotham Consult, Accra · WhatsApp or call +233 55 041 6627 · info@gothamconsult.com<br>Partner for company set-up, AI, software, apps &amp; mining: Carlson Capital Ltd · +233 55 239 5548 · uffe.carlson@gmail.com'
   : 'Gotham Consult, Accra · WhatsApp or call +233 55 041 6627 · info@gothamconsult.com';
 function campaignHtml(cam, c, item, links) {
   if (cam.template === 'designer') return mailDoc(merge(cam.subject, c), designerBody(cam, c, item && item.designer ? item : { media: {}, events: {}, sponsors: [] }, links, !!links.preview));
@@ -1111,7 +1111,7 @@ function campaignBody(cam, c, item, links) {
       ${paras(body, 'margin:0 0 14px')}
       ${cam.cta_label ? `<p style="margin:0 0 14px"><a href="${links.cta}" style="color:#0F1B2D">${esc(merge(cam.cta_label, c))}</a></p>` : ''}
       <p style="margin:0 0 4px">${esc(cam.from_name || 'Joy Anthony Preston')}<br>
-      <span style="color:#555">Gotham Consult · +233 55 041 6627 · info@gothamconsult.com${cam.carlson ? '<br>Partner for AI, software, apps &amp; mining: Carlson Capital Ltd · +233 55 239 5548 · uffe.carlson@gmail.com' : ''}</span></p>
+      <span style="color:#555">Gotham Consult · +233 55 041 6627 · info@gothamconsult.com${cam.carlson ? '<br>Partner for company set-up, AI, software, apps &amp; mining: Carlson Capital Ltd · +233 55 239 5548 · uffe.carlson@gmail.com' : ''}</span></p>
       <p style="margin:18px 0 0;color:#999;font-size:12px">
         If you would rather not hear from us, <a href="${links.unsub}" style="color:#999">say so here</a>.</p></div>`;
   }
@@ -4234,7 +4234,7 @@ const aiDay = { day: '', n: 0 };
 const AI_RULES = `You write for Gotham Consult, a business-development and advisory firm in Accra, Ghana.
 Plain, warm, professional English (or the language asked). Short sentences. No hype, no emojis, no markdown.
 Prices only in Ghana cedis (GHS). Never invent facts, prices, dates, names or results: use only what you are given.
-Carlson Capital Ltd is Gotham's partner for AI, software, apps, mining and renewable energy projects; mention it only for those topics.
+Carlson Capital Ltd is Gotham's partner for company set-up and market entry for large companies, AI, software, apps, mining and renewable energy projects; mention it only for those topics.
 Gotham's WhatsApp: +233 55 041 6627. Website: gothamconsult.com.`;
 const jsonFrom = t => { const m = String(t || '').match(/\{[\s\S]*\}/); if (!m) return null; try { return JSON.parse(m[0]); } catch { return null; } };
 async function aiHelp(u, b) {
