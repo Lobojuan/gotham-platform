@@ -260,3 +260,35 @@ for reduced motion.
   the landing page server-side; back office → Website visitors (`/api/web-stats`). Rows kept 400 days.
 - **Going direct (DNS)**: `scripts/go-direct.sh` after the A records for @ and www point to 84.12.73.59 (Namecheap hosting zone editor;
   keep MX/mail/TXT). Adds the domains to GOTHAM_HOST in the oracle Caddy .env and www to REDIRECT_HOSTS; deploy-site then serves assets same-origin.
+
+## The logo everywhere, dates on uploads, event pages (30 Sep 2026)
+- **Logo files**: `apps/site/public/img/brand/` (website) and `apps/crm/public/brand/` (back office, emails, documents; served at `/admin/brand/*.png`).
+- **Website build** (`apps/site/brand_media.py`): every photo, share image and video in `dist/img` gets the white logo with a soft shadow, bottom right. Files that already show the logo are listed in `public/img/already-branded.txt`, or have `.branded.` in the name. Needs ffmpeg; Homebrew's ffmpeg cannot write WebP, so `cwebp` is used (`brew install webp`). Results are cached in `~/.cache/gotham-brand`.
+- **Back office and documents**: sign-in, sidebar, tab icon, all emails (`wrapMail`, the campaign designs), invoices/quotes/credit notes, receipts, confirmation pages, the QR poster, the accountant Excel (Summary sheet). The "plain personal email" campaign template stays plain on purpose.
+- **Uploads** (`apps/crm/media-tools.js`):
+  - Pictures, email pictures and PDFs get the logo unless "already shows our logo" is ticked. Partner and sponsor logos never do.
+  - The unbranded original is kept (`<id>-orig.*`), never public.
+  - Location is never published: pictures are re-encoded without metadata, videos with `-map_metadata -1`.
+  - **Date taken**, stored in `media.taken_at` + `date_source`, best source first:
+    1. `camera` (EXIF, with time zone), `video` (recording date), or `pdf`;
+    2. `whatsapp` (the date in a WhatsApp file name = when it was sent);
+    3. `filename`;
+    4. `manual`.
+
+    WhatsApp strips the real date, so the event gallery asks for it where missing. The public page shows only real dates, never the WhatsApp send date.
+- **Videos**:
+  - Upload in 4 MB pieces (`POST /api/uploads`, `PUT /api/uploads/:id?at=N`, `POST /api/uploads/:id/done`).
+  - They are then converted one at a time with ffmpeg (in the Docker image): H.264 MP4 at most 1920 px, logo, poster frame.
+  - `/media/*.mp4` answers byte ranges. Limit: `MAX_VIDEO_MB` (600).
+- **Older pictures**: Settings → "Logo on pictures" adds the logo to pictures uploaded before, keeping `*.pre-logo` copies.
+- **Event pages** (`apps/crm/events-pages.js`, frame = `dist/event-shell.html` from the site build):
+  - `/events` lists upcoming and past events; `/events/<slug>` shows one.
+  - Before an event: countdown, register, add to calendar, programme, speakers, downloads.
+  - After it: the "What happened" recap (`items.recap`), a gallery with lightbox, and the videos.
+  - Search data: Event + Breadcrumb JSON-LD, and `/sitemap.xml` gets the event URLs added live.
+  - The past-events strip on home and /forums comes from `/api/items`.
+- **Drafts with gaps** like `[Speaker 1]` or `[time]` cannot be started or scheduled (`placeholder_left`).
+- **Content import**: `bash scripts/import-content.sh <folder>` runs `node server.js --import manifest.json` inside the container. It is safe to repeat. It was used to load:
+  - The Business Boot Camp (BOOT1): 9 café photos, 2 frames and the recap video. The date and venue are unknown; add them in the back office.
+  - The Business Pitch Deck Round Table (PDRT1): the flyer and the invitation video.
+  - The SMEs at the Centre content calendar as 30 tasks, plus 7 SMS/email drafts (not sent) for F1.

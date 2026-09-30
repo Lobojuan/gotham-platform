@@ -32,7 +32,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=17">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=18">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 # Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
@@ -91,6 +91,9 @@ for _a in ARTS:
     _n = f'insights/{_a["slug"]}.html'
     META[_n] = dict(title=_a['title'], desc=_a['description'], og='img/og/real-bog.jpg', extra=V2_EXTRA + '\n' + IF.article_ld(_a, 'en', SITE))
     GEN[_n] = IF.article_body(_a, 'en', [o for o in ARTS if o is not _a][:3])
+# /events and /events/<slug> are drawn by the server from the back office; this is their frame (header, footer, styles)
+META['event-shell.html'] = dict(title='%%TITLE%%', desc='%%DESC%%', og='%%OG%%', extra=V2_EXTRA + '\n%%HEAD%%')
+GEN['event-shell.html'] = '<!--#top-->\n<main id="main">%%BODY%%</main>\n<!--#bottom-->\n'
 META['404.html'] = dict(title='Page not found | Gotham Consult', desc='This page is not here any more. Find our services, the Ghana investment guide, forums and contact details.', og='img/og/boot2.jpg', extra=V2_EXTRA + '\n<meta name="robots" content="noindex">')
 META['register.html']['extra'] = '<meta name="robots" content="noindex, follow">'
 META['register.html']['og'] = 'img/og/forum.jpg'
@@ -184,7 +187,7 @@ def main():
                 body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
         os.makedirs(os.path.dirname(os.path.join(DIST, name)), exist_ok=True)
         mm = {'extra': '', **m}; mm.pop('crumb', None)
-        mm['extra'] = (mm['extra'] + '\n' + ld_for(name, m, body)) if name not in ('classic.html', 'register.html', '404.html') and not name.startswith('insights/') else mm['extra']
+        mm['extra'] = (mm['extra'] + '\n' + ld_for(name, m, body)) if name not in ('classic.html', 'register.html', '404.html', 'event-shell.html') and not name.startswith('insights/') else mm['extra']
         ogsize = '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta property="og:image:alt" content="' + htmlmod.escape(m['title']) + '">\n' if m['og'].startswith('img/og/') else ''
         out = body if body.lstrip().lower().startswith('<!doctype') else \
               HEAD.format(site=SITE, path=('' if name == 'index.html' else name[:-5] if name.endswith('.html') else name), ogsize=ogsize, **mm) + body + '\n</body>\n</html>'

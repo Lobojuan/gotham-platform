@@ -1,5 +1,6 @@
 <!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Gotham CRM</title>
+<link rel="icon" type="image/png" sizes="64x64" href="/admin/brand/icon-64.png"><link rel="apple-touch-icon" href="/admin/brand/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
 <style>
@@ -15,7 +16,8 @@ input.t:focus,select.t:focus,textarea.t:focus{border-color:var(--ink);box-shadow
 /* login */
 #login{min-height:100vh;display:grid;place-items:center;padding:24px}
 .lcard{background:#fff;border:1px solid var(--line);border-radius:20px;padding:32px;width:min(400px,100%);box-shadow:0 18px 50px rgba(15,27,45,.08)}
-.mark{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700}
+.mark{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.mark img{width:56%;height:auto;display:block}
 .lcard label{display:block;font-size:13px;font-weight:600;margin:14px 0 5px}
 .err{color:var(--red);font-size:13.5px;min-height:1.2em;margin-top:10px}
 /* components */
@@ -56,6 +58,16 @@ h4.sec .note{text-transform:none;letter-spacing:0;color:var(--mute);font-weight:
 .thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
 .th{position:relative;width:104px;aspect-ratio:16/9;border-radius:9px;overflow:hidden;border:1px solid var(--line)}
 .th img{width:100%;height:100%;object-fit:cover;display:block}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:8px}
+.gi{border:1px solid var(--line);border-radius:12px;padding:8px;background:#fff;display:flex;flex-direction:column;gap:6px}
+.gi-p{position:relative;aspect-ratio:16/10;border-radius:8px;overflow:hidden;background:var(--sunk);display:grid;place-items:center;font-size:13px;color:var(--mute)}
+.gi-p img{width:100%;height:100%;object-fit:cover;display:block}
+.gi-d{position:absolute;left:6px;bottom:6px;background:rgba(15,27,45,.8);color:#fff;font-size:12px;border-radius:99px;padding:2px 8px}
+.gi-x{position:absolute;top:6px;right:6px;width:28px;height:28px;border-radius:50%;border:0;background:rgba(15,27,45,.75);color:#fff;cursor:pointer}
+.gi-date{font-size:12.5px;color:var(--mute)}.gi-date.miss{color:#8a5a00;background:#FFF6E0;border-radius:8px;padding:4px 6px}
+.gi-date input{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:6px;padding:2px 4px;margin-top:2px}
+input.t.sm{padding:6px 9px;font-size:13.5px}
+label.own{display:flex;gap:8px;align-items:center;font-size:13.5px;margin-top:8px;color:var(--mute)}
 .th button{position:absolute;top:3px;right:3px;border:0;border-radius:99px;width:20px;height:20px;background:rgba(15,27,45,.82);color:#fff;cursor:pointer;font-size:11px;line-height:1}
 .row2,.row3{display:flex;gap:8px;margin-bottom:7px;align-items:center;flex-wrap:wrap}
 .row2>input.t{flex:1 1 200px;min-width:0}
@@ -461,7 +473,7 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 <div class="kente"></div>
 
 <section id="login"><form class="lcard" id="lform">
-  <div style="display:flex;gap:12px;align-items:center"><div class="mark">G</div><div><b>Gotham CRM</b><div class="note">Gotham Consult back office</div></div></div>
+  <div style="display:flex;gap:12px;align-items:center"><div class="mark"><img src="/admin/brand/mark-white-256.png" alt=""></div><div><b>Gotham CRM</b><div class="note">Gotham Consult back office</div></div></div>
   <label for="e">Email or username</label><input class="t" id="e" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
   <label for="pw">Password</label><input class="t" id="pw" type="password" autocomplete="current-password" required>
   <div id="codewrap" hidden><label for="lcode">6-digit code from your authenticator app</label><input class="t" id="lcode" inputmode="numeric" autocomplete="one-time-code" maxlength="11" placeholder="123 456">
@@ -507,7 +519,7 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 
 <div id="app">
   <aside class="side" id="side">
-    <a class="brand" href="#dash"><div class="mark">G</div><div><b>Gotham CRM</b><small>Gotham Consult</small></div></a>
+    <a class="brand" href="#dash"><div class="mark"><img src="/admin/brand/mark-white-256.png" alt=""></div><div><b>Gotham CRM</b><small>Gotham Consult</small></div></a>
     <nav class="nav" id="nav" aria-label="Back office"></nav>
     <div class="links"><a href="https://gothamconsult.com">View website ↗</a><a href="/register">Registration page ↗</a></div>
     <div class="me"><span class="av" id="meav">?</span><div style="min-width:0"><b id="mename"></b><small id="who"></small></div><button id="out" type="button">Sign out</button></div>
@@ -593,7 +605,7 @@ async function changePassword(cur,np,np2,out){
 function firstPassword(){
  const s=$('#pwfirst');s.style.display='grid';
  s.innerHTML=`<form class="lcard" id="pwform" novalidate>
-  <div style="display:flex;gap:12px;align-items:center"><div class="mark">G</div><div><b>Choose your own password</b><div class="note">Signed in as ${esc(ME.email)}</div></div></div>
+  <div style="display:flex;gap:12px;align-items:center"><div class="mark"><img src="/admin/brand/mark-white-256.png" alt=""></div><div><b>Choose your own password</b><div class="note">Signed in as ${esc(ME.email)}</div></div></div>
   <p class="note" style="margin:14px 0 0">You are using a password someone gave you. Pick your own before you continue. Only you will know it: nobody at Gotham Consult can see it, only reset it.</p>
   ${pwField('fp-cur','The password you were given','current-password')}
   ${pwField('fp-new','New password · 10 characters or more','new-password')}
@@ -1145,7 +1157,25 @@ async function upload(file,kind,extra={}){
  const data=await readFile(file);
  return api('/api/media',{method:'POST',body:JSON.stringify({kind,name:file.name,data,...extra})});
 }
-const UPERR={file_too_large:'That file is too large.',not_a_pdf:'That is not a PDF file.',not_an_image:'That image could not be read.',process_failed:'Could not process that file.'};
+/* videos go up in 4 MB pieces (a phone connection or the website bridge would drop one huge request), then the server converts them */
+async function uploadVideo(file,extra={},progress=()=>{}){
+ const st=await api('/api/uploads',{method:'POST',body:JSON.stringify({name:file.name,size:file.size,...extra})});
+ const step=st.chunk||4194304;
+ for(let at=0;at<file.size;){
+  const piece=file.slice(at,at+step);let r,tries=0;
+  for(;;){try{r=await fetch('/api/uploads/'+st.id+'?at='+at,{method:'PUT',body:piece,credentials:'same-origin',headers:{'content-type':'application/octet-stream'}});
+    if(r.ok)break;const j=await r.json().catch(()=>({}));if(r.status===409&&j.got!=null){at=j.got;break}throw new Error(j.error||'upload_failed')}
+   catch(e){if(++tries>3)throw e;await new Promise(ok=>setTimeout(ok,1500*tries))}}
+  if(r.ok){at=(await r.json()).got}
+  progress(Math.min(100,Math.round(at/file.size*100)));
+ }
+ return api('/api/uploads/'+st.id+'/done',{method:'POST',body:'{}'});
+}
+/* where a date came from, in plain words */
+const DSRC={camera:'from the camera',video:'from the video file',pdf:'from the PDF',whatsapp:'sent on WhatsApp, taken earlier',filename:'from the file name',manual:'entered by hand'};
+const dateLabel=m=>m&&m.taken_at?new Date(m.taken_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'Africa/Accra'})+' · '+(DSRC[m.date_source]||''):'';
+const dur=s=>s?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):'';
+const UPERR={file_too_large:'That file is too large.',video_tools_missing:'Video conversion is not installed on the server yet.',not_a_video:'That video could not be read.',not_a_pdf:'That is not a PDF file.',not_an_image:'That image could not be read.',process_failed:'Could not process that file.'};
 
 function evEditor(){
  const i=EV, local=d=>{if(!d)return '';const t=new Date(d);return new Date(t.getTime()-t.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
@@ -1187,16 +1217,34 @@ function evEditor(){
    <div class="upl-c"><input type="file" id="i-cover-f" accept="image/png,image/jpeg,image/webp,image/avif">
     <label class="l" style="margin-top:8px">Describe the picture <span class="note">— for screen readers and search</span></label>
     <input class="t" id="i-alt" value="${esc(i.cover_image?i.cover_image.alt:'')}" placeholder="Panel speakers at the 2026 Boot Camp">
+    <label class="own"><input type="checkbox" id="i-cover-own"> This picture already shows our logo (don't add it again)</label>
+    ${i.cover_image&&i.cover_image.taken_at?`<div class="note">Taken ${esc(dateLabel(i.cover_image))}</div>`:''}
     ${i.cover?'<button class="btn btn-line" id="i-cover-x" style="margin-top:8px">Remove cover</button>':''}
     ${sizeNote(i.cover_image)}</div></div>
 
-  <h4 class="sec">Extra pictures <span class="note">— optional, shown as a strip</span></h4>
-  <div class="thumbs" id="i-gal">${(i.images||[]).map((m,n)=>`<div class="th"><img src="${m.sizes.thumb.webp}" alt=""><button data-galdel="${n}">✕</button></div>`).join('')}</div>
-  <input type="file" id="i-gal-f" accept="image/png,image/jpeg,image/webp,image/avif" multiple style="margin-top:8px">
+  <h4 class="sec">Photos and videos <span class="note">— the gallery on the event page</span></h4>
+  <p class="note">Pick several at once. Each one gets our logo in the corner and loses any location data. The date it was taken is read from the file;
+   photos sent through WhatsApp have lost it, so add the date by hand where it says so. Videos are converted on the server (a few minutes for a long one).</p>
+  <div class="gal" id="i-gal">${(i.images||[]).map((m,n)=>{const vid=m.kind==='video',th=m.sizes&&m.sizes.thumb;
+   return `<div class="gi${vid?' vid':''}" data-gi="${n}"><div class="gi-p">${th?`<img src="${th.webp}" alt="">`:`<span>${m.status==='failed'?'Could not convert':'Converting…'}</span>`}
+    ${vid&&m.duration?`<b class="gi-d">▶ ${dur(m.duration)}</b>`:''}<button class="gi-x" data-galdel="${n}" title="Remove from the gallery">✕</button></div>
+    ${m.status==='failed'?`<div class="note" style="color:var(--red)">${esc(m.error||'Conversion failed')}</div>`:''}
+    <input class="t sm" data-galcap="${m.id}" value="${esc(m.caption||'')}" placeholder="Caption (optional)">
+    ${m.taken_at?`<div class="gi-date">${esc(dateLabel(m))} <a href="#" data-galredate="${m.id}">change</a></div>`
+     :`<label class="gi-date miss">No date in the file: <input type="date" data-galdate="${m.id}"></label>`}
+    <div class="gi-date" hidden data-galedit="${m.id}"><input type="date" data-galdate="${m.id}" value="${m.taken_at?String(m.taken_at).slice(0,10):''}"></div></div>`}).join('')}</div>
+  <label class="own"><input type="checkbox" id="i-gal-own"> These already show our logo (don't add it again)</label>
+  <input type="file" id="i-gal-f" accept="image/png,image/jpeg,image/webp,image/avif,video/mp4,video/quicktime,video/webm,video/*" multiple style="margin-top:8px">
+  <div class="note" id="i-gal-prog"></div>
+
+  <h4 class="sec">After the event <span class="note">— the recap on the event page</span></h4>
+  <label class="l">What happened <span class="note">— a few paragraphs: who came, what was discussed, what comes next. Blank line between paragraphs.</span></label>
+  <textarea class="t" id="i-recap" rows="6" placeholder="Forty founders spent the afternoon on investor-ready pitch decks…">${esc(i.recap||'')}</textarea>
 
   <h4 class="sec">Brochures and PDFs to download</h4>
   <p class="note">Agenda, sponsorship pack, concept note, past report. These appear as download buttons on the site.</p>
   <div id="i-docs">${(i.documents||[]).map(docRow).join('')||'<p class="note">Nothing attached.</p>'}</div>
+  <label class="own"><input type="checkbox" id="i-doc-own"> This PDF already shows our logo (don't add it again)</label>
   <input type="file" id="i-doc-f" accept="application/pdf" style="margin-top:8px">
 
   <h4 class="sec">Programme <span class="note">— optional</span></h4>
@@ -1224,7 +1272,8 @@ function evEditor(){
   <div class="ch" style="margin-top:20px;border-top:1px solid var(--line);padding-top:16px">
    <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-dark" id="ev-save2">Save</button>
-    ${i.__new?'':`<a class="btn btn-line" href="${SITEBASE}/register.html?e=${encodeURIComponent(i.code)}" target="_blank">Preview on the site ↗</a>`}
+    ${i.__new?'':`<a class="btn btn-line" href="${SITEBASE}/events/${encodeURIComponent(i.slug||'')}" target="_blank">Event page ↗</a>`}
+    ${i.__new?'':`<a class="btn btn-line" href="${SITEBASE}/register.html?e=${encodeURIComponent(i.code)}" target="_blank">Registration form ↗</a>`}
     ${i.__new?'':`<button class="btn btn-line" id="ev-qr">Make a scan code</button>`}</div>
    ${i.__new||ME.role==='staff'?'':`<button class="btn btn-line" id="ev-del" style="color:var(--red)">Delete item</button>`}</div>
  </div>`;
@@ -1238,7 +1287,7 @@ function evEditor(){
   EV.ends_at=g('#i-end')?new Date(g('#i-end')).toISOString():null;
   EV.currency=g('#i-cur');EV.price=g('#i-price');EV.per=g('#i-per');
   EV.capacity=g('#i-cap')||null;EV.published=g('#i-pub')==='true';EV.sort=g('#i-sort')||0;
-  EV.approval=g('#i-appr')==='true';EV.phase=g('#i-phase');EV.audiences=g('#i-aud');
+  EV.approval=g('#i-appr')==='true';EV.phase=g('#i-phase');EV.audiences=g('#i-aud');EV.recap=g('#i-recap');
   document.querySelectorAll('[data-doclabel]').forEach(el=>{const n=+el.dataset.doclabel;
    if(EV.documents[n]){EV.documents[n].label=el.value;EV.docs[n]={id:EV.documents[n].id,label:el.value}}});
   EV.agenda=[...document.querySelectorAll('[data-agtime]')].map((el,n)=>({time:el.value,what:(document.querySelector('[data-agwhat="'+n+'"]')||{}).value||''})).filter(a=>a.time||a.what);
@@ -1259,14 +1308,33 @@ function evEditor(){
  $('#ev-back').onclick=()=>{EV=null;events()};
 
  $('#i-cover-f').onchange=async e=>{const f=e.target.files[0];if(!f)return;collect();toast('Resizing…');
-  try{const m=await upload(f,'image',{alt:$('#i-alt').value});EV.cover=m.id;EV.cover_image=m;toast('Cover set');redraw()}
+  try{const m=await upload(f,'image',{alt:$('#i-alt').value,brand:!$('#i-cover-own').checked});EV.cover=m.id;EV.cover_image=m;toast('Cover set');redraw()}
   catch(err){toast(UPERR[err.message]||err.message||'Upload failed')}};
  if($('#i-cover-x'))$('#i-cover-x').onclick=()=>{collect();EV.cover=null;EV.cover_image=null;redraw()};
- $('#i-gal-f').onchange=async e=>{collect();for(const f of e.target.files){
-   try{const m=await upload(f,'image',{});EV.gallery.push(m.id);EV.images.push(m)}catch(err){toast(UPERR[err.message]||'Upload failed')}}
-  toast('Pictures added');redraw()};
+ $('#i-gal-f').onchange=async e=>{collect();const own=$('#i-gal-own').checked,files=[...e.target.files],prog=$('#i-gal-prog');let n=0,nodate=0,loc=0;
+  for(const f of files){n++;
+   try{let m;
+    if(/^video\//.test(f.type)||/\.(mp4|mov|m4v|webm)$/i.test(f.name)){
+     m=await uploadVideo(f,{brand:!own},pc=>{prog.textContent=`Uploading ${f.name}: ${pc}%`});
+    }else{prog.textContent=`Adding ${n} of ${files.length}: ${f.name}`;m=await upload(f,'image',{brand:!own})}
+    if(!m.taken_at)nodate++; if(m.had_location)loc++;
+    EV.gallery.push(m.id);EV.images.push(m)}catch(err){toast((err.message&&UPERR[err.message])||UPERR[err.error]||('Upload failed: '+f.name))}}
+  prog.textContent='';
+  toast(`${files.length} added${nodate?`. ${nodate} without a date: add it below`:''}${loc?`. Location removed from ${loc}`:''}. Press Save to keep the gallery.`);redraw()};
+ document.querySelectorAll('[data-galcap]').forEach(el=>el.onchange=async()=>{try{await api('/api/media/'+el.dataset.galcap,{method:'PATCH',body:JSON.stringify({caption:el.value})});
+   const m=EV.images.find(x=>x.id===el.dataset.galcap);if(m)m.caption=el.value;toast('Caption saved')}catch{toast('Could not save the caption')}});
+ document.querySelectorAll('[data-galdate]').forEach(el=>el.onchange=async()=>{if(!el.value)return;
+   try{const r=await api('/api/media/'+el.dataset.galdate,{method:'PATCH',body:JSON.stringify({taken_at:el.value+'T12:00:00Z'})});
+    const m=EV.images.find(x=>x.id===el.dataset.galdate);if(m){m.taken_at=r.taken_at;m.date_source=r.date_source}collect();toast('Date saved');redraw()}catch{toast('That date was not accepted')}});
+ document.querySelectorAll('[data-galredate]').forEach(a=>a.onclick=e=>{e.preventDefault();const b=document.querySelector(`[data-galedit="${a.dataset.galredate}"]`);if(b)b.hidden=false});
+ /* videos still converting: look again every few seconds, redraw only when one is done */
+ const poll=()=>{clearTimeout(window.__vpoll);window.__vpoll=setTimeout(async()=>{
+   if(!EV||!$('#i-gal'))return;let changed=false;
+   for(const m of EV.images.filter(x=>x.kind==='video'&&x.status==='processing')){try{const r=await api('/api/media/'+m.id);if(r.status!=='processing'){Object.assign(m,r);changed=true}}catch{}}
+   if(changed){collect();redraw();toast('Video ready')}else poll()},6000)};
+ if((EV.images||[]).some(m=>m.kind==='video'&&m.status==='processing'))poll();
  $('#i-doc-f').onchange=async e=>{const f=e.target.files[0];if(!f)return;collect();toast('Uploading…');
-  try{const m=await upload(f,'doc',{label:f.name.replace(/\.pdf$/i,'')});
+  try{const m=await upload(f,'doc',{label:f.name.replace(/\.pdf$/i,''),brand:!$('#i-doc-own').checked});
    EV.docs.push({id:m.id,label:m.label});EV.documents.push(m);toast('PDF attached');redraw()}
   catch(err){toast(UPERR[err.message]||'Upload failed')}};
  document.querySelectorAll('[data-docdel]').forEach(b=>b.onclick=()=>{collect();const n=+b.dataset.docdel;
@@ -1934,12 +2002,12 @@ function campaignEditor(){
   if(!confirm(`Send "${CAM.name}" by ${d.channel} to ${d.audience} people, ${CAM.daily_limit} a day?\n\nEveryone gets an opt-out link and nobody is written to twice.`))return;
   try{const r=await api('/api/campaigns/'+CAM.id+'/start',{method:'POST',body:'{}'});
    toast(`Started — ${r.queued} queued, ${r.sent_now} going out now`);CAM=null;outreach()}
-  catch(e){toast(e.error==='empty_audience'?'Nobody matches that filter':e.error==='wa_template_missing'?'Add the approved WhatsApp template name':'Could not start')}};
+  catch(e){toast(e.error==='placeholder_left'?('Fill in '+e.gap+' first: it is still in the text'):e.error==='empty_audience'?'Nobody matches that filter':e.error==='wa_template_missing'?'Add the approved WhatsApp template name':'Could not start')}};
  if($('#c-schedule'))$('#c-schedule').onclick=async()=>{const v=$('#c-at').value;if(!v)return toast('Pick the day and time to start');
   await save();const d=await api('/api/campaigns/'+CAM.id+'/preview');
   if(!confirm(`Start "${CAM.name}" on ${dt(new Date(v))}, by ${d.channel}, to about ${d.audience} people, ${CAM.daily_limit} a day?\n\nThe audience is fixed when it starts. It shows in the Calendar until then.`))return;
   try{await api('/api/campaigns/'+CAM.id+'/start',{method:'POST',body:JSON.stringify({at:new Date(v).toISOString()})});toast('Scheduled');CAM=null;outreach()}
-  catch(e){toast(e.error==='bad_time'?'Pick a time in the future':e.error==='empty_audience'?'Nobody matches that filter':'Could not schedule it')}};
+  catch(e){toast(e.error==='placeholder_left'?('Fill in '+e.gap+' first: it is still in the text'):e.error==='bad_time'?'Pick a time in the future':e.error==='empty_audience'?'Nobody matches that filter':'Could not schedule it')}};
  if($('#c-pause'))$('#c-pause').onclick=async()=>{await api('/api/campaigns/'+CAM.id+'/pause',{method:'POST',body:'{}'});
   toast('Paused');CAM=null;outreach()};
  if($('#c-del'))$('#c-del').onclick=async()=>{if(!confirm('Delete this campaign and its send history?'))return;
@@ -2284,7 +2352,7 @@ async function settings(){
  ${isAdmin()?`<div class="card" id="wa-ai"><div class="ch"><h3>WhatsApp: AI replies</h3><label class="cal-mine"><input type="checkbox" id="wa-on"> On</label></div>
   <p class="note" style="margin-top:0">When someone writes to the Gotham WhatsApp, the AI answers from the same knowledge as the website chat, in their language. Complaints, requests for a person, voice notes and pictures go to the team as a task instead. Every message is saved on the client's record.</p>
   <div id="wa-st" class="note"></div><div id="wa-list"></div></div>`:''}
- ${isAdmin()?'<div class="card" id="safety"><p class="note">Loading…</p></div><div class="card" id="inv-set"><p class="note">Loading…</p></div>':''}
+ ${isAdmin()?'<div class="card" id="safety"><p class="note">Loading…</p></div><div class="card" id="logo-card"><p class="note">Loading…</p></div><div class="card" id="inv-set"><p class="note">Loading…</p></div>':''}
  <div class="card"><h3>Venue and seats</h3>
   <p class="note">The largest number of seats any single event may be set to. It stops a room that holds 40 being sold as 120.</p>
   <div class="f2"><div><label class="l">Maximum seats per event</label><input class="t" id="s-max" type="number" inputmode="numeric" min="1" value="${esc(SET.max_seats||'')}" placeholder="40"></div><div></div></div>
@@ -2347,7 +2415,7 @@ async function settings(){
  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
   if(!confirm('Remove '+b.dataset.del+' permanently? Their sign-in stops working immediately.'))return;
   await api('/api/users/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});toast('Removed');settings()});
- invoiceSettingsCard();safetyCard();tfaCard();
+ invoiceSettingsCard();safetyCard();tfaCard();logoCard();
  if($('#wa-on')){const drawWa=w=>{$('#wa-on').checked=w.on;
    $('#wa-st').innerHTML=!w.connected?'<span class="chip red">WhatsApp Business is not connected yet</span> Replies start once it is connected (Meta setup).':!w.ai?'<span class="chip red">AI is off on the server</span>':`<span class="chip ${w.on?'green':''}">${w.on?'Answering automatically':'Off: messages wait for the team'}</span>`;
    $('#wa-list').innerHTML=w.recent.length?`<h4 class="sec">Latest messages</h4>${w.recent.slice(0,12).map(m=>`<div class="wa-row"><span class="dir ${m.direction}">${m.direction==='in'?'In':'Sent'}</span><div><b>${m.contact_id?`<a href="#rec/${m.contact_id}">${esc(m.company||m.full_name||m.phone)}</a>`:esc(m.phone)}</b> <span class="note">${dt(m.at)}${m.kind==='handover'?' · passed to the team':m.kind==='ai'?' · AI':''}</span><div>${esc(String(m.body||'').slice(0,240))}</div></div></div>`).join('')}`:'<p class="note">No WhatsApp messages yet.</p>'};
@@ -2612,6 +2680,16 @@ async function tfaCard(){
     <pre class="tf-rc">${x.recovery_codes.join('\n')}</pre><div class="acts"><button class="btn btn-line" id="tf-cp">Copy</button><button class="btn btn-dark" id="tf-done">I have saved them</button></div>`;
    $('#tf-cp').onclick=()=>{navigator.clipboard?.writeText(x.recovery_codes.join('\n'));toast('Copied')};$('#tf-done').onclick=tfaCard;toast('Two-step sign-in is on')}
   catch(e){$('#tf-e').textContent=e.message==='bad_code'?'That code is not right. Check the time on your phone and try the next code.':'Please start again.'}}};
+}
+async function logoCard(){
+ const box=$('#logo-card');if(!box)return;const r=await api('/api/media/logo').catch(()=>null);if(!r)return;
+ box.innerHTML=`<div class="ch"><h3>Logo on pictures</h3>${r.without_logo?`<span class="chip">${r.without_logo} without</span>`:'<span class="chip green">All have it</span>'}</div>
+  <p class="note">New uploads get the Gotham logo in the corner automatically: pictures, videos, email pictures and PDFs. Partner and sponsor logos never do.
+   Tick "already shows our logo" when uploading a flyer or video that has it. Location data is always removed; the date taken is kept in the back office.</p>
+  ${r.without_logo?`<p class="note">${r.without_logo} pictures were uploaded before this and have no logo yet. Adding it keeps a copy of each as it was.</p>
+  <button class="btn btn-dark" id="lg-go">Add the logo to those ${r.without_logo}</button>`:''}`;
+ if($('#lg-go'))$('#lg-go').onclick=async e=>{e.target.disabled=true;e.target.textContent='Working…';
+  try{const x=await api('/api/media/logo',{method:'POST',body:'{}'});toast(`Logo added to ${x.done} pictures`)}catch{toast('Could not finish, try again')}logoCard()};
 }
 async function safetyCard(){
  const r=await api('/api/safety').catch(()=>null);const box=$('#safety');if(!r||!box)return;

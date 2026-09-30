@@ -280,8 +280,23 @@
       return `<article class="event" id="ev-${esc(i.code)}"><div class="cov" style="background-image:url('${esc(img)}')"><div class="date"><b>${t.toLocaleDateString('en-GB', { day: 'numeric', ...tz })}</b><span>${t.toLocaleDateString('en-GB', { month: 'short', ...tz })}</span></div></div>
         <div class="body"><h3>${esc(i.title)}</h3><div class="meta">${i.approval ? '<span class="pill">By invitation</span>' : ''}<span class="pill teal">${esc(price)}</span><span class="pill gray">${esc(day)} · ${esc(time)}</span>${i.venue ? `<span class="pill gray">${esc(i.venue)}</span>` : ''}</div>
         ${(i.summary || i.subtitle) ? `<p>${esc(i.summary || i.subtitle)}</p>` : ''}
-        <div class="ev-acts"><a class="btn btn-gold" href="/register?e=${encodeURIComponent(i.code)}">${i.approval ? 'Request your invitation' : 'Reserve your seat'} <span class="arrow">→</span></a>${addCal(i)}</div></div></article>`;
+        <div class="ev-acts"><a class="btn btn-gold" href="/register?e=${encodeURIComponent(i.code)}">${i.approval ? 'Request your invitation' : 'Reserve your seat'} <span class="arrow">→</span></a><a class="btn btn-line" href="/events/${encodeURIComponent(i.slug || i.code)}">Details</a>${addCal(i)}</div></div></article>`;
     }).join('');
+  }).catch(() => {});
+
+  /* ---- past events: a strip of cards with their photos (home and forums) ---- */
+  const peBoxes = LEG ? [] : $$('[data-past-events]');
+  if (peBoxes.length) items().then(d => {
+    const past = (d.items || []).filter(i => i.kind === 'event' && (i.phase === 'past' || (i.starts_at && new Date(i.ends_at || i.starts_at) < Date.now() - 3 * 36e5)))
+      .sort((a, b) => (b.starts_at ? +new Date(b.starts_at) : 0) - (a.starts_at ? +new Date(a.starts_at) : 0)).slice(0, 4);
+    if (!past.length) return;
+    const html = past.map(i => {
+      const im = i.cover_image?.sizes?.card || (i.images || []).find(m => m.sizes?.card)?.sizes?.card, n = (i.images || []).length, v = (i.images || []).filter(m => m.kind === 'video').length;
+      const when = i.starts_at ? new Date(i.starts_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', ...TZ }) : 'Past event';
+      return `<a class="pe" href="/events/${encodeURIComponent(i.slug || i.code)}">${im ? `<img src="${esc(im.webp)}" alt="" loading="lazy" decoding="async" width="${im.w}" height="${im.h}">` : '<span class="pe-ph"></span>'}
+        <span class="pe-b"><small>${esc(when)}${n ? ' · ' + [[n - v, 'photo'], [v, 'video']].filter(x => x[0]).map(x => x[0] + ' ' + x[1] + (x[0] > 1 ? 's' : '')).join(', ') : ''}</small><b>${esc(i.title)}</b></span></a>`;
+    }).join('');
+    peBoxes.forEach(b => { $('[data-pe-row]', b).innerHTML = html; b.hidden = false; });
   }).catch(() => {});
 
   /* ---- forums page: the calendar ---- */

@@ -5,7 +5,9 @@
  "version": "1.2.0",
  "dependencies": {
   "exceljs": "^4.4.0",
+  "exif-reader": "^2.0.3",
   "nodemailer": "^7.0.13",
+  "pdf-lib": "^1.17.1",
   "pg": "^8.13.1",
   "qrcode": "^1.5.4",
   "sharp": "^0.33.5",

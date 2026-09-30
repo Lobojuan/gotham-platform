@@ -8,6 +8,8 @@ import QR from 'qrcode';
 import sharp from 'sharp';
 import ExcelJS from 'exceljs';
 import nodemailer from 'nodemailer';
+import * as MT from './media-tools.js';
+import * as EVP from './events-pages.js';
 
 const PORT = process.env.PORT || 4100;
 const SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
@@ -37,6 +39,7 @@ const SIZES = {
   og:    { w: 1200, h: 630 }    // WhatsApp / LinkedIn share preview
 };
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
+const MAX_VIDEO_BYTES = (+process.env.MAX_VIDEO_MB || 600) * 1024 * 1024;
 const MAX_DOC_BYTES = 20 * 1024 * 1024;
 
 /* ---------- helpers ---------- */
@@ -263,6 +266,11 @@ async function flushMessages(limit = 60) {
   }
   return n;
 }
+/* The Gotham logo: one set of files (public/brand), used by the back office, emails, invoices and uploads. */
+const BRAND_CACHE = {};
+const BRAND_PNG = n => BRAND_CACHE[n] ||= fs.readFileSync(path.join(here, 'public', 'brand', n + '.png'));
+const brandUrl = (n = 'mark-tile') => `${PUBLIC_URL.replace(/\/$/, '')}/admin/brand/${n}.png`;
+
 /* Every outgoing email must declare its character set, or an em dash
    arrives in someone's inbox as three pieces of rubbish. */
 const mailDoc = (title, body) => `<!doctype html><html lang="en"><head>
@@ -274,7 +282,7 @@ const wrapMail = (title, inner, footer = '') => mailDoc(title, `<div style="font
 <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #E2E4E7;border-radius:18px;overflow:hidden">
 <div style="height:6px;background:repeating-linear-gradient(90deg,#A9761F 0 28px,#0F1B2D 28px 40px,#1F6B4E 40px 64px,#C9A24B 64px 76px)"></div>
 <div style="padding:26px">
-<p style="margin:0 0 6px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#A9761F;font-weight:600">Gotham Consult</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 10px"><tr><td style="padding-right:10px"><img src="${brandUrl()}" width="34" height="34" alt="Gotham Consult" style="display:block;border-radius:8px"></td><td style="font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#A9761F;font-weight:600">Gotham Consult</td></tr></table>
 <h1 style="margin:0 0 14px;font-size:22px;color:#0F1B2D">${title}</h1>
 ${inner}
 <p style="margin-top:22px;font-size:13px;color:#5A6472">Gotham Consult, Accra<br>WhatsApp +233 55 041 6627 · info@gothamconsult.com</p>
@@ -284,6 +292,10 @@ ${footer}
 /* ---------- bootstrap ---------- */
 async function init() {
   await q(fs.readFileSync(path.join(here, 'schema.sql'), 'utf8'));
+  // a restart stops any video that was being converted: say so, the team uploads it again (not when a one-off import runs beside the live server)
+  if (process.argv[2] !== '--import') await q(`update media set info = info || '{"status":"failed","error":"The server restarted during conversion. Upload the video again."}'::jsonb
+    where kind='video' and info->>'status'='processing'`);
+  if (process.argv[2] !== '--import') try { for (const f of fs.readdirSync(MEDIA)) if (/^up-.*\.part$/.test(f)) fs.unlinkSync(path.join(MEDIA, f)); } catch {}
   const { rows } = await q('select count(*)::int n from users');
   if (!rows[0].n) {
     const email = (process.env.ADMIN_EMAIL || 'admin@gothamconsult.com').toLowerCase();
@@ -324,33 +336,42 @@ async function init() {
 /* ---------- media ---------- */
 const MEDIA_MIME = {
   '.webp': 'image/webp', '.jpg': 'image/jpeg', '.png': 'image/png',
-  '.pdf': 'application/pdf', '.svg': 'image/svg+xml'
+  '.pdf': 'application/pdf', '.svg': 'image/svg+xml', '.mp4': 'video/mp4'
 };
 const mediaId = () => crypto.randomBytes(8).toString('hex');
 const safeName = n => clean(n, 90).replace(/[^\w.\- ]+/g, '').replace(/\s+/g, '-') || 'file';
 
 /* Resize one uploaded image into every layout size, in WebP and JPEG.
    Cover-crops to the exact aspect ratio so nothing ever breaks the grid. */
-async function storeImage(buf, originalName, alt, who) {
+/* Every picture gets the logo in the corner (unless it already shows it: opts.brand === false),
+   and the date it was taken is read from the file. Metadata, including any location, is not copied.
+   The unbranded original is kept (not public) so a picture can be re-done later. */
+const dateCols = (w, extra = {}) => [w.at || null, w.at ? w.source : null, JSON.stringify({ camera: w.camera || null, had_location: !!w.had_location, ...extra })];
+async function storeImage(buf, originalName, alt, who, opts = {}) {
   const id = mediaId();
   const meta = await sharp(buf).metadata();
   if (!meta.width || !meta.height) throw new Error('not_an_image');
+  const when = MT.imageInfo(meta, originalName), brand = opts.brand !== false;
+  const orig = `${id}-orig.jpg`;
+  fs.writeFileSync(path.join(MEDIA, orig), await sharp(buf).rotate().resize({ width: 2560, height: 2560, fit: 'inside', withoutEnlargement: true })
+    .flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer());
   const variants = {};
   for (const [name, s] of Object.entries(SIZES)) {
     // never upscale past the source; keep the ratio of the target box
     const w = Math.min(s.w, Math.max(320, meta.width));
     const h = Math.round(w * s.h / s.w);
     const base = sharp(buf).rotate().resize(w, h, { fit: 'cover', position: 'attention' });
+    if (brand) base.composite([await MT.logoLayer(w, h)]);
     const webp = await base.clone().webp({ quality: 82 }).toBuffer();
     const jpg = await base.clone().jpeg({ quality: 84, mozjpeg: true }).toBuffer();
     fs.writeFileSync(path.join(MEDIA, `${id}-${name}.webp`), webp);
     fs.writeFileSync(path.join(MEDIA, `${id}-${name}.jpg`), jpg);
     variants[name] = { w, h, webp: `${id}-${name}.webp`, jpg: `${id}-${name}.jpg`, kb: Math.round(webp.length / 1024) };
   }
-  await q(`insert into media(id,kind,original_name,mime,bytes,width,height,variants,alt,uploaded_by)
-           values ($1,'image',$2,$3,$4,$5,$6,$7,$8,$9)`,
+  await q(`insert into media(id,kind,original_name,mime,bytes,width,height,variants,alt,uploaded_by,taken_at,date_source,info,branded,caption)
+           values ($1,'image',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,true,$13)`,
     [id, safeName(originalName), 'image/' + (meta.format || 'jpeg'), buf.length, meta.width, meta.height,
-      JSON.stringify(variants), clean(alt, 200), who]);
+      JSON.stringify(variants), clean(alt, 200), who, ...dateCols(when, { logo: brand ? 'added' : 'already', orig }), clean(opts.caption, 200) || null]);
   return { id, width: meta.width, height: meta.height, variants };
 }
 
@@ -379,37 +400,106 @@ async function storeLogo(buf, originalName, alt, who) {
   return { id, width: meta.width, height: meta.height, variants };
 }
 
-async function storeDoc(buf, originalName, label, who) {
+/* PDFs get a small logo in the corner of each page; the untouched original is kept beside it (not public). */
+async function storeDoc(buf, originalName, label, who, opts = {}) {
   if (buf.slice(0, 5).toString('latin1') !== '%PDF-') throw new Error('not_a_pdf');
   const id = mediaId();
-  const file = `${id}.pdf`;
-  fs.writeFileSync(path.join(MEDIA, file), buf);
-  await q(`insert into media(id,kind,original_name,mime,bytes,variants,alt,uploaded_by)
-           values ($1,'doc',$2,'application/pdf',$3,$4,$5,$6)`,
-    [id, safeName(originalName), buf.length, JSON.stringify({ file }), clean(label, 200), who]);
-  return { id, bytes: buf.length, file };
+  const file = `${id}.pdf`, orig = `${id}-orig.pdf`;
+  const when = await MT.pdfInfo(buf, originalName);
+  let out = buf, logo = 'already';
+  if (opts.brand !== false) {
+    try { out = await MT.stampPdf(buf); logo = 'added'; } catch { logo = 'failed'; }   // locked or damaged PDFs stay as they are
+  }
+  fs.writeFileSync(path.join(MEDIA, orig), buf);
+  fs.writeFileSync(path.join(MEDIA, file), out);
+  await q(`insert into media(id,kind,original_name,mime,bytes,variants,alt,uploaded_by,taken_at,date_source,info,branded)
+           values ($1,'doc',$2,'application/pdf',$3,$4,$5,$6,$7,$8,$9,$10)`,
+    [id, safeName(originalName), out.length, JSON.stringify({ file }), clean(label, 200), who, ...dateCols(when, { logo, orig, pages: when.pages || null }), logo !== 'failed']);
+  return { id, bytes: out.length, file };
 }
 
 function deleteMediaFiles(row) {
   const v = row.variants || {};
   const files = row.kind === 'doc'
     ? [v.file]
-    : Object.values(v).flatMap(x => [x.webp, x.jpg]);
+    : Object.values(v).flatMap(x => [x.webp, x.jpg, x.file]).filter(Boolean);
+  if (row.info && row.info.orig) files.push(row.info.orig);
+  for (const f of [...files]) files.push(f + '.pre-logo');
   for (const f of files) { try { fs.unlinkSync(path.join(MEDIA, f)); } catch {} }
 }
 
 /* Shape a media row for the public API: absolute URLs, ready for <picture>. */
 const mediaPublic = row => {
   if (!row) return null;
+  const when = { taken_at: row.taken_at || null, date_source: row.date_source || null, caption: row.caption || '' };
   if (row.kind === 'doc') return {
-    id: row.id, kind: 'doc', label: row.alt || row.original_name, name: row.original_name,
+    id: row.id, kind: 'doc', label: row.alt || row.original_name, name: row.original_name, ...when,
     kb: Math.round((row.bytes || 0) / 1024), url: `${MEDIA_URL}/media/${row.variants.file}`
   };
-  const out = { id: row.id, kind: row.kind, alt: row.alt || '', sizes: {} };
+  const out = { id: row.id, kind: row.kind, alt: row.alt || '', sizes: {}, ...when };
+  if (row.kind === 'video') {
+    const v = row.variants || {}, info = row.info || {};
+    Object.assign(out, { status: info.status || 'ready', duration: info.duration || 0, w: row.width, h: row.height,
+      url: v.video ? `${MEDIA_URL}/media/${v.video.file}` : null, error: info.status === 'failed' ? (info.error || 'failed') : undefined });
+    for (const k of ['poster', 'thumb']) if (v[k]) out.sizes[k] = { w: v[k].w, h: v[k].h, webp: `${MEDIA_URL}/media/${v[k].webp}`, jpg: `${MEDIA_URL}/media/${v[k].jpg}` };
+    if (out.sizes.thumb) { out.sizes.card = out.sizes.card || out.sizes.poster; out.sizes.hero = out.sizes.hero || out.sizes.poster; }
+    return out;
+  }
   for (const [k, v] of Object.entries(row.variants || {}))
     out.sizes[k] = { w: v.w, h: v.h, webp: `${MEDIA_URL}/media/${v.webp}`, jpg: `${MEDIA_URL}/media/${v.jpg}` };
   return out;
 };
+
+/* ---------- videos: uploaded in pieces (phones and the WordPress bridge cope badly with one huge request),
+   then converted one at a time: H.264 MP4, logo in the corner, no metadata, a poster frame, the date it was recorded. */
+const UPLOADS = new Map();   // id -> {name, size, brand, who, got, file, t}
+let FFMPEG_OK = null;
+const ffmpegReady = async () => (FFMPEG_OK ??= await MT.hasFfmpeg());
+let videoQueue = Promise.resolve();
+async function posterVariants(id, jpgFile) {
+  const variants = {};
+  for (const [name, maxW] of [['poster', 1280], ['thumb', 400]]) {
+    const base = sharp(jpgFile).resize({ width: maxW, withoutEnlargement: true });
+    const webp = await base.clone().webp({ quality: 80 }).toBuffer(), jpg = await base.clone().jpeg({ quality: 82, mozjpeg: true }).toBuffer();
+    const m = await sharp(webp).metadata();
+    fs.writeFileSync(path.join(MEDIA, `${id}-${name}.webp`), webp); fs.writeFileSync(path.join(MEDIA, `${id}-${name}.jpg`), jpg);
+    variants[name] = { w: m.width, h: m.height, webp: `${id}-${name}.webp`, jpg: `${id}-${name}.jpg`, kb: Math.round(webp.length / 1024) };
+  }
+  return variants;
+}
+function convertVideo(id, src, name, brand) {
+  videoQueue = videoQueue.then(async () => {
+    const out = path.join(MEDIA, `${id}.mp4`), poster = path.join(MEDIA, `${id}-frame.jpg`);
+    try {
+      const info = await MT.videoInfo(src, name);
+      await MT.processVideo(src, out, poster, { brand, info });
+      const variants = { video: { file: `${id}.mp4`, w: info.w, h: info.h, kb: Math.round(fs.statSync(out).size / 1024) }, ...(await posterVariants(id, poster)) };
+      const W = info.w > 1920 || info.h > 1920 ? variants.poster.w : info.w, H = info.w > 1920 || info.h > 1920 ? variants.poster.h : info.h;
+      await q(`update media set variants=$2, width=$3, height=$4, bytes=$5, taken_at=coalesce(taken_at,$6), date_source=coalesce(date_source,$7),
+        info = info || $8::jsonb where id=$1`, [id, JSON.stringify(variants), W, H, fs.statSync(out).size, info.at || null, info.at ? info.source : null,
+        JSON.stringify({ status: 'ready', duration: info.duration, camera: info.camera, had_location: info.had_location, has_audio: info.has_audio })]);
+    } catch (e) {
+      try { fs.unlinkSync(out); } catch {}
+      await q(`update media set info = info || $2::jsonb where id=$1`, [id, JSON.stringify({ status: 'failed', error: String(e.message || e).slice(0, 300) })]);
+      console.error('video', id, e.message);
+    } finally {
+      for (const f of [src, poster]) { try { fs.unlinkSync(f); } catch {} }
+    }
+  });
+  return videoQueue;
+}
+/* a picture whose logo came later: stamp the stored sizes in place, keeping a copy of each as it was */
+async function brandStored(row) {
+  const v = row.variants || {};
+  const files = [...new Set(Object.values(v).flatMap(x => [x.webp, x.jpg]).filter(Boolean))];
+  for (const f of files) {
+    const full = path.join(MEDIA, f);
+    if (!fs.existsSync(full)) continue;
+    if (!fs.existsSync(full + '.pre-logo')) fs.copyFileSync(full, full + '.pre-logo');
+    fs.writeFileSync(full, await MT.stampImage(fs.readFileSync(full + '.pre-logo')));
+  }
+  await q(`update media set branded=true, info = info || '{"logo":"added later"}'::jsonb where id=$1`, [row.id]);
+}
 
 /* ---------- outreach ---------- */
 const firstName = n => String(n || '').trim().split(/\s+/)[0] || '';
@@ -1044,7 +1134,7 @@ function campaignBody(cam, c, item, links) {
     <tr><td style="height:6px;background:#A9761F;font-size:0;line-height:0">&nbsp;</td></tr>
     <tr><td style="padding:26px 34px 0">
       <table role="presentation" width="100%"><tr>
-        <td style="font-size:15px;font-weight:700;color:#0F1B2D;letter-spacing:.01em">Gotham Consult</td>
+        <td style="font-size:15px;font-weight:700;color:#0F1B2D;letter-spacing:.01em"><img src="${brandUrl()}" width="30" height="30" alt="" style="display:inline-block;vertical-align:middle;border-radius:7px;margin-right:9px">Gotham Consult</td>
         <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'Renewable energy &amp; AI partner: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
       </tr></table></td></tr>
     <tr><td style="padding:22px 34px 0">
@@ -1174,7 +1264,7 @@ function designerBody(cam, c, data, links, preview) {
     <tr><td style="height:6px;background:#A9761F;font-size:0;line-height:0">&nbsp;</td></tr>
     <tr><td style="padding:22px 32px 18px">
       <table role="presentation" width="100%"><tr>
-        <td style="font-size:15px;font-weight:700;color:#0F1B2D">Gotham Consult</td>
+        <td style="font-size:15px;font-weight:700;color:#0F1B2D"><img src="${brandUrl()}" width="30" height="30" alt="" style="display:inline-block;vertical-align:middle;border-radius:7px;margin-right:9px">Gotham Consult</td>
         <td align="right" style="font-size:11px;color:#8A93A0">${cam.carlson ? 'Renewable energy &amp; AI partner: Carlson Capital Ltd' : 'Accra, Ghana'}</td>
       </tr></table></td></tr>
     ${out.join('\n')}
@@ -1190,18 +1280,22 @@ function designerBody(cam, c, data, links, preview) {
 const mailContext = async cam => cam.template === 'designer' ? designerData(cam) : (cam.item_code ? itemForMail(cam.item_code) : null);
 
 /* Pictures for email: never cropped, at most 1200 px wide (sharp on phones), light enough for mobile data. */
-async function storeEmailImage(buf, originalName, alt, who) {
+async function storeEmailImage(buf, originalName, alt, who, opts = {}) {
   const id = mediaId();
   const meta = await sharp(buf).metadata();
   if (!meta.width || !meta.height) throw new Error('not_an_image');
+  const when = MT.imageInfo(meta, originalName), brand = opts.brand !== false;
+  const rot = (meta.orientation || 1) >= 5, sw = rot ? meta.height : meta.width, shh = rot ? meta.width : meta.height;
+  const ow = Math.min(1200, sw), oh = Math.round(shh * ow / sw);
   const base = sharp(buf).rotate().resize({ width: 1200, withoutEnlargement: true });
+  if (brand) base.composite([await MT.logoLayer(ow, oh)]);
   const png = meta.hasAlpha && ['png', 'webp', 'gif'].includes(meta.format);
   const out = png ? await base.png({ compressionLevel: 9, palette: true }).toBuffer() : await base.flatten({ background: '#ffffff' }).jpeg({ quality: 80, mozjpeg: true }).toBuffer();
   const m2 = await sharp(out).metadata(), file = `${id}-email.${png ? 'png' : 'jpg'}`;
   fs.writeFileSync(path.join(MEDIA, file), out);
   const variants = { email: { w: m2.width, h: m2.height, webp: file, jpg: file, kb: Math.round(out.length / 1024) } };
-  await q(`insert into media(id,kind,original_name,mime,bytes,width,height,variants,alt,uploaded_by) values ($1,'email',$2,$3,$4,$5,$6,$7,$8,$9)`,
-    [id, safeName(originalName), 'image/' + (png ? 'png' : 'jpeg'), out.length, meta.width, meta.height, JSON.stringify(variants), clean(alt, 200), who]);
+  await q(`insert into media(id,kind,original_name,mime,bytes,width,height,variants,alt,uploaded_by,taken_at,date_source,info,branded) values ($1,'email',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,true)`,
+    [id, safeName(originalName), 'image/' + (png ? 'png' : 'jpeg'), out.length, meta.width, meta.height, JSON.stringify(variants), clean(alt, 200), who, ...dateCols(when, { logo: brand ? 'added' : 'already' })]);
   return { id };
 }
 /* Starting points in the designer. Saved templates sit next to these. */
@@ -1294,7 +1388,7 @@ async function syncRegistrations() {
 
 /* ---------- queries ---------- */
 const ITEM_COLS = `i.code,i.kind,i.title,i.subtitle,i.venue,i.starts_at,i.ends_at,i.currency,i.price,i.per,i.capacity,
-    i.approval,i.phase,i.audiences,i.slug,i.summary,i.description,i.cover,i.gallery,i.docs,i.agenda,i.speakers,
+    i.approval,i.phase,i.audiences,i.slug,i.summary,i.description,i.recap,i.cover,i.gallery,i.docs,i.agenda,i.speakers,
     case when i.capacity is null then null else greatest(i.capacity - coalesce((
       select sum(r.seats) from registrations r where r.item_code=i.code and r.status<>'cancelled'),0),0) end as seats_left`;
 const itemsPublic = () => q(`select ${ITEM_COLS} from items i where i.published order by i.sort, i.starts_at`);
@@ -1581,6 +1675,20 @@ const server = http.createServer(async (req, res) => {
       const full = path.join(MEDIA, file);
       if (!fs.existsSync(full)) return json(res, 404, { error: 'not_found' }, cors);
       const type = MEDIA_MIME[path.extname(file).toLowerCase()] || 'application/octet-stream';
+      if (/-orig\.|\.pre-logo$|\.part$|^up-/.test(file)) return json(res, 404, { error: 'not_found' }, cors);   // originals stay private
+      if (type === 'video/mp4') {   // stream with byte ranges: phones need them to play and seek
+        const size = fs.statSync(full).size, rg = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
+        const head = { 'content-type': type, 'accept-ranges': 'bytes', 'cache-control': 'public, max-age=31536000, immutable', 'access-control-allow-origin': '*' };
+        if (rg && (rg[1] || rg[2])) {
+          let start = rg[1] ? +rg[1] : size - +rg[2], end = rg[1] && rg[2] ? Math.min(+rg[2], size - 1) : size - 1;
+          if (start < 0) start = 0;
+          if (start >= size || start > end) { res.writeHead(416, { 'content-range': `bytes */${size}` }); return res.end(); }
+          res.writeHead(206, { ...head, 'content-range': `bytes ${start}-${end}/${size}`, 'content-length': end - start + 1 });
+          return fs.createReadStream(full, { start, end }).pipe(res);
+        }
+        res.writeHead(200, { ...head, 'content-length': size });
+        return fs.createReadStream(full).pipe(res);
+      }
       const buf = fs.readFileSync(full);
       const etag = '"' + crypto.createHash('sha1').update(buf).digest('hex').slice(0, 16) + '"';
       if (req.headers['if-none-match'] === etag) { res.writeHead(304); return res.end(); }
@@ -1955,7 +2063,7 @@ ${await askKnowledge()}`;
 h1{font-size:23px;margin:0 0 10px}p{color:#5A6472;margin:0 0 8px}code{background:#F2F2EE;border-radius:6px;padding:2px 8px}
 a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;font-weight:600}
 .qr{margin:18px auto 6px;width:220px;height:220px}.mut{font-size:13px;color:#8A93A0}</style></head>
-<body><div class="c"><div class="k"></div>${inner}</div></body></html>`;
+<body><div class="c"><div class="k"></div><img src="/admin/brand/mark-tile.png" width="46" height="46" alt="Gotham Consult" style="display:block;margin:0 auto 14px;border-radius:12px">${inner}</div></body></html>`;
     const sendHtml = html => { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(html); };
 
     const mConf = p.match(/^\/confirm\/([A-Za-z0-9_-]{10,})$/);
@@ -1963,7 +2071,7 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       const { rows } = await q("update registrations set confirmed_email=true, status=case when status='new' then 'confirmed' else status end where confirm_token=$1 returning id, full_name", [mConf[1]]);
       if (!rows[0]) return sendHtml(pageShell('Link not recognised', '<h1>That link is no longer valid</h1><p>It may already have been used. Write to info@gothamconsult.com and we will sort it out.</p>'));
       await q('insert into activity(reg_id,actor,action) values ($1,$2,$3)', [rows[0].id, 'customer', 'email_confirmed']);
-      return sendHtml(pageShell('Confirmed', `<h1>You are on the list</h1><p>Thank you, ${esc(String(rows[0].full_name).split(' ')[0])}. The Ghana Business Brief reaches you on the next send.</p><a class="btn" href="https://gotham-consult-gh.netlify.app">Back to the website</a>`));
+      return sendHtml(pageShell('Confirmed', `<h1>You are on the list</h1><p>Thank you, ${esc(String(rows[0].full_name).split(' ')[0])}. The Ghana Business Brief reaches you on the next send.</p><a class="btn" href="${SITE_URL}">Back to the website</a>`));
     }
 
     const mUnsub = p.match(/^\/unsubscribe\/([A-Za-z0-9_-]{10,})$/);
@@ -2322,6 +2430,7 @@ body{margin:0;background:#EDEDE8;font-family:'Hanken Grotesk',system-ui,sans-ser
 .kente{height:9px;border-radius:99px;background:repeating-linear-gradient(90deg,#A9761F 0 34px,#0F1B2D 34px 48px,#1F6B4E 48px 78px,#C9A24B 78px 92px)}
 .brand{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 0;font-size:13pt;font-weight:600;letter-spacing:.02em}
 .brand span{color:#5A6472;font-weight:500;font-size:10pt}
+.brand .bl{color:#0F1B2D;font-weight:600;font-size:13pt;display:inline-flex;align-items:center;gap:3mm}.brand .bl img{width:11mm;height:11mm;border-radius:2.5mm}
 .eyebrow{margin:16mm 0 4mm;font-size:10pt;letter-spacing:.16em;text-transform:uppercase;color:#A9761F;font-weight:600}
 h1{font-size:34pt;line-height:1.04;margin:0 0 5mm;letter-spacing:-.02em}
 h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
@@ -2345,7 +2454,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
 <div class="no-print">Print this page, or use your browser's Print dialog and choose <b>Save as PDF</b>. Paper size is set to ${size}. <a href="?size=${size === 'A4' ? 'a5' : 'a4'}">Switch to ${size === 'A4' ? 'A5' : 'A4'}</a></div>
 <div class="sheet">
   <div class="kente"></div>
-  <div class="brand">Gotham Consult <span>Accra, Ghana</span></div>
+  <div class="brand"><span class="bl"><img src="/admin/brand/mark-tile.png" alt="">Gotham Consult</span> <span>Accra, Ghana</span></div>
   <p class="eyebrow">${esc(ev ? (ev.kind === 'event' ? 'You are invited' : 'Gotham Consult') : 'Gotham Consult')}</p>
   <h1>${esc(headline)}</h1>
   ${sub ? `<p class="sub">${esc(sub)}</p>` : ''}
@@ -2910,6 +3019,9 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const cam = (await q('select * from campaigns where id=$1', [id])).rows[0];
       if (!cam) return json(res, 404, { error: 'not_found' });
       const b = await body(req).catch(() => ({}));
+      /* a draft still holding a gap like [Speaker 1] or [time] must not reach anyone */
+      const gap = placeholderLeft(cam);
+      if (gap) return json(res, 400, { error: 'placeholder_left', gap });
       /* "Send on …": check it now, build the queue when the time comes */
       if (b && b.at) {
         const at = new Date(b.at);
@@ -2977,17 +3089,100 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       if (isDoc && buf.length > MAX_DOC_BYTES) return json(res, 413, { error: 'file_too_large' });
       if (!isDoc && buf.length > MAX_IMAGE_BYTES) return json(res, 413, { error: 'file_too_large' });
       try {
-        const out = isDoc ? await storeDoc(buf, b.name, b.label || b.alt, u.email)
+        const opts = { brand: b.brand !== false, caption: b.caption };
+        const out = isDoc ? await storeDoc(buf, b.name, b.label || b.alt, u.email, opts)
           : isLogo ? await storeLogo(buf, b.name, b.alt, u.email)
-          : isEmail ? await storeEmailImage(buf, b.name, b.alt, u.email)
-          : await storeImage(buf, b.name, b.alt, u.email);
+          : isEmail ? await storeEmailImage(buf, b.name, b.alt, u.email, opts)
+          : await storeImage(buf, b.name, b.alt, u.email, opts);
         const { rows } = await q('select * from media where id=$1', [out.id]);
         await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
           [u.email, 'media_upload', `${isDoc ? 'PDF' : isLogo ? 'logo' : isEmail ? 'email picture' : 'image'} ${safeName(b.name)} (${Math.round(buf.length / 1024)} KB)`]);
-        return json(res, 200, { ...mediaPublic(rows[0]), name: rows[0].original_name, bytes: rows[0].bytes });
+        return json(res, 200, { ...mediaPublic(rows[0]), name: rows[0].original_name, bytes: rows[0].bytes, had_location: !!(rows[0].info || {}).had_location });
       } catch (e) {
         return json(res, 400, { error: e.message === 'not_a_pdf' ? 'not_a_pdf' : e.message === 'not_an_image' ? 'not_an_image' : 'process_failed' });
       }
+    }
+
+    /* video upload, in pieces: start → pieces → done (then converted in the background) */
+    if (p === '/api/uploads' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      const size = Math.floor(+b.size || 0);
+      if (!size) return json(res, 400, { error: 'no_file' });
+      if (size > MAX_VIDEO_BYTES) return json(res, 413, { error: 'file_too_large', max_mb: Math.round(MAX_VIDEO_BYTES / 1048576) });
+      if (!(await ffmpegReady())) return json(res, 503, { error: 'video_tools_missing' });
+      const id = mediaId(), file = path.join(MEDIA, `up-${id}.part`);
+      fs.writeFileSync(file, '');
+      UPLOADS.set(id, { name: clean(b.name, 120) || 'video.mp4', size, brand: b.brand !== false, caption: clean(b.caption, 200), alt: clean(b.alt, 200), who: u.email, got: 0, file, t: Date.now() });
+      return json(res, 200, { id, chunk: 4 * 1024 * 1024 });
+    }
+    const mUp = p.match(/^\/api\/uploads\/([a-f0-9]{16})(\/done)?$/);
+    if (mUp) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const up = UPLOADS.get(mUp[1]);
+      if (!up || up.who !== u.email) return json(res, 404, { error: 'not_found' });
+      if (!mUp[2] && req.method === 'PUT') {
+        const at = +url.searchParams.get('at') || 0;
+        if (at !== up.got) { req.resume(); return json(res, 409, { error: 'wrong_offset', got: up.got }); }
+        const parts = []; let n = 0;
+        try {
+          await new Promise((ok, no) => {
+            req.on('data', c => { n += c.length; if (n > 9 * 1024 * 1024 || up.got + n > up.size) { no(new Error('too_large')); req.destroy(); return; } parts.push(c); });
+            req.on('end', ok); req.on('error', no);
+          });
+        } catch { return json(res, 413, { error: 'piece_too_large' }); }
+        fs.appendFileSync(up.file, Buffer.concat(parts)); up.got += n; up.t = Date.now();
+        return json(res, 200, { got: up.got });
+      }
+      if (mUp[2] && req.method === 'POST') {
+        if (up.got !== up.size) return json(res, 400, { error: 'incomplete', got: up.got, size: up.size });
+        UPLOADS.delete(mUp[1]);
+        let info;
+        try { info = await MT.videoInfo(up.file, up.name); }
+        catch { try { fs.unlinkSync(up.file); } catch {} return json(res, 400, { error: 'not_a_video' }); }
+        const id = mUp[1];
+        await q(`insert into media(id,kind,original_name,mime,bytes,width,height,variants,alt,uploaded_by,taken_at,date_source,info,branded,caption)
+                 values ($1,'video',$2,'video/mp4',$3,$4,$5,'{}',$6,$7,$8,$9,$10,true,$11)`,
+          [id, safeName(up.name), up.size, info.w, info.h, up.alt, u.email, info.at || null, info.at ? info.source : null,
+            JSON.stringify({ status: 'processing', duration: info.duration, camera: info.camera, had_location: info.had_location, logo: up.brand ? 'added' : 'already' }), up.caption || null]);
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'media_upload', `video ${safeName(up.name)} (${Math.round(up.size / 1048576)} MB)`]);
+        convertVideo(id, up.file, up.name, up.brand);
+        const { rows } = await q('select * from media where id=$1', [id]);
+        return json(res, 200, { ...mediaPublic(rows[0]), name: rows[0].original_name });
+      }
+      return json(res, 405, { error: 'method' });
+    }
+
+    /* one upload: its state (a video being converted), and its date and caption */
+    const mMedOne = p.match(/^\/api\/media\/([A-Za-z0-9]{16})$/);
+    if (mMedOne && (req.method === 'GET' || req.method === 'PATCH')) {
+      const u = req.method === 'GET' ? auth() : need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (req.method === 'PATCH') {
+        const b = await body(req), sets = [], vals = [mMedOne[1]];
+        if ('taken_at' in b) {
+          const d = b.taken_at ? new Date(b.taken_at) : null;
+          if (d && (isNaN(d) || d.getUTCFullYear() < 1990 || d > new Date(Date.now() + 864e5))) return json(res, 400, { error: 'bad_date' });
+          vals.push(d); sets.push(`taken_at=$${vals.length}`, `date_source=${d ? "'manual'" : 'null'}`);
+        }
+        if ('caption' in b) { vals.push(clean(b.caption, 200) || null); sets.push(`caption=$${vals.length}`); }
+        if ('alt' in b) { vals.push(clean(b.alt, 200) || null); sets.push(`alt=$${vals.length}`); }
+        if (sets.length) await q(`update media set ${sets.join(',')} where id=$1`, vals);
+      }
+      const { rows } = await q('select * from media where id=$1', [mMedOne[1]]);
+      if (!rows[0]) return json(res, 404, { error: 'not_found' });
+      return json(res, 200, { ...mediaPublic(rows[0]), name: rows[0].original_name, had_location: !!(rows[0].info || {}).had_location });
+    }
+
+    /* pictures stored before the logo existed: how many, and add it to them */
+    if (p === '/api/media/logo' && (req.method === 'GET' || req.method === 'POST')) {
+      const u = req.method === 'GET' ? auth() : need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q(`select * from media where kind in ('image','email') and not coalesce(branded,false) order by created_at`);
+      if (req.method === 'GET') return json(res, 200, { without_logo: rows.length });
+      const b = await body(req), skip = new Set(Array.isArray(b.skip) ? b.skip : []);
+      let done = 0;
+      for (const r of rows) if (!skip.has(r.id)) { try { await brandStored(r); done++; } catch (e) { console.error('logo', r.id, e.message); } }
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'media_logo', `logo added to ${done} stored pictures`]);
+      return json(res, 200, { done, left: rows.length - done });
     }
 
     const mMedDel = p.match(/^\/api\/media\/([A-Za-z0-9]+)$/);
@@ -3020,23 +3215,23 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const slug = slugify(b.slug || b.title) || code.toLowerCase();
       const list = v => Array.isArray(v) ? v : [];
       await q(`insert into items(code,kind,title,subtitle,venue,starts_at,ends_at,currency,price,per,capacity,published,sort,approval,phase,audiences,
-                 slug,summary,description,cover,gallery,docs,agenda,speakers)
-        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
+                 slug,summary,description,cover,gallery,docs,agenda,speakers,recap)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
         on conflict (code) do update set kind=excluded.kind,title=excluded.title,subtitle=excluded.subtitle,venue=excluded.venue,
           starts_at=excluded.starts_at,ends_at=excluded.ends_at,currency=excluded.currency,price=excluded.price,per=excluded.per,
           capacity=excluded.capacity,published=excluded.published,sort=excluded.sort,approval=excluded.approval,
           phase=excluded.phase,audiences=excluded.audiences,slug=excluded.slug,summary=excluded.summary,
           description=excluded.description,cover=excluded.cover,gallery=excluded.gallery,docs=excluded.docs,
-          agenda=excluded.agenda,speakers=excluded.speakers`,
+          agenda=excluded.agenda,speakers=excluded.speakers,recap=excluded.recap`,
         [code, clean(b.kind, 12) || 'event', clean(b.title, 200), clean(b.subtitle, 200), clean(b.venue, 120),
           b.starts_at || null, b.ends_at || null, 'GHS', Number(b.price) || 0, clean(b.per, 20) || null,
           b.capacity ? +b.capacity : null, b.published !== false, +b.sort || 0,
           b.approval === true, ['teaser','open','live','past'].includes(b.phase) ? b.phase : 'open', clean(b.audiences, 300),
           slug, clean(b.summary, 300), clean(b.description, 6000), clean(b.cover, 32) || null,
-          JSON.stringify(list(b.gallery).slice(0, 12)),
+          JSON.stringify(list(b.gallery).slice(0, 80)),
           JSON.stringify(list(b.docs).slice(0, 8).map(d => ({ id: clean(d.id, 32), label: clean(d.label, 120) }))),
           JSON.stringify(list(b.agenda).slice(0, 30).map(a => ({ time: clean(a.time, 20), what: clean(a.what, 200) }))),
-          JSON.stringify(list(b.speakers).slice(0, 20).map(x => ({ name: clean(x.name, 100), role: clean(x.role, 140), media: clean(x.media, 32) || null })))]);
+          JSON.stringify(list(b.speakers).slice(0, 20).map(x => ({ name: clean(x.name, 100), role: clean(x.role, 140), media: clean(x.media, 32) || null }))), clean(b.recap, 8000) || null]);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'item_save', code + ' — ' + clean(b.title, 120)]);
       return json(res, 200, { ok: true, code, slug });
     }
@@ -3832,11 +4027,52 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         tasks: taskStats.rows[0], events: items.rows, lost_reasons: lostWhy.rows });
     }
 
+    /* ---- the logo for the back office, emails and documents (from the brand folder, nothing else) ---- */
+    const mBrand = p.match(/^\/admin\/brand\/(mark-tile|mark-white-256|icon-64|icon-180)\.png$/);
+    if (mBrand && (req.method === 'GET' || req.method === 'HEAD')) {
+      res.writeHead(200, { 'content-type': 'image/png', 'cache-control': 'public, max-age=604800' });
+      return res.end(req.method === 'HEAD' ? '' : BRAND_PNG(mBrand[1]));
+    }
+
     /* ---- static admin ---- */
     if (p === '/admin' || p === '/admin/' || (!SITE_DIR && p === '/')) {
       const html = fs.readFileSync(path.join(here, 'public', 'admin.html'));
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'x-frame-options': 'SAMEORIGIN' });
       return res.end(html);
+    }
+
+    /* ---- event pages (/events, /events/<slug>) and the sitemap that lists them ---- */
+    if (SITE_DIR && (req.method === 'GET' || req.method === 'HEAD') && /^\/(events(\/[^/]*)?|event-shell(\.html)?|sitemap\.xml)\/?$/.test(p)) {
+      const site = SITE_URL.replace(/\/$/, '');
+      const pub = async () => (await withMedia((await itemsPublic()).rows)).filter(i => i.kind === 'event');   // briefings are booked any time: they live on /services, not here
+      if (p === '/sitemap.xml') {
+        let xml; try { xml = fs.readFileSync(path.join(SITE_DIR, 'sitemap.xml'), 'utf8'); } catch { xml = null; }
+        if (xml) {
+          const today = new Date().toISOString().slice(0, 10), evs = await pub();
+          const add = [`${site}/events`, ...evs.map(i => EVP.eventUrl(site, i))].filter(u => !xml.includes(`<loc>${u}</loc>`))
+            .map(u => `  <url><loc>${esc(u)}</loc><lastmod>${today}</lastmod></url>\n`).join('');
+          res.writeHead(200, { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=600' });
+          return res.end(req.method === 'HEAD' ? '' : xml.replace('</urlset>', add + '</urlset>'));
+        }
+      } else {
+        const tpl = EVP.shell(SITE_DIR);
+        const send = (code, page) => {
+          res.writeHead(code, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'public, max-age=60' });
+          return res.end(req.method === 'HEAD' ? '' : EVP.fill(tpl, { og: `${site}/img/og/forum.jpg`, ...page }));
+        };
+        if (tpl && /^\/events\/?$/.test(p)) return send(200, EVP.indexPage(site, await pub()));
+        const mEv = p.match(/^\/events\/([^/]+)\/?$/);
+        if (tpl && mEv) {
+          const want = decodeURIComponent(mEv[1]).toLowerCase(), evs = await pub();
+          const i = evs.find(e => EVP.slugOf(e).toLowerCase() === want) || evs.find(e => e.code.toLowerCase() === want);
+          if (i && EVP.slugOf(i).toLowerCase() !== want) { res.writeHead(301, { location: '/events/' + encodeURIComponent(EVP.slugOf(i)) }); return res.end(); }
+          if (i) return send(200, EVP.eventPage(site, i, evs.filter(e => e !== i).sort((a, b) => (EVP.isPast(a) - EVP.isPast(b)) || (+new Date(b.starts_at || 0) - +new Date(a.starts_at || 0)))));
+        }
+        if (/^\/event-shell/.test(p) || mEv) {   // the template itself is not a page; an unknown event is a 404
+          let nf = ''; try { nf = fs.readFileSync(path.join(SITE_DIR, '404.html')); } catch {}
+          res.writeHead(404, { 'content-type': 'text/html; charset=utf-8' }); return res.end(nf || 'Not found');
+        }
+      }
     }
 
     /* ---- the public website, same machine, same domain ---- */
@@ -4231,7 +4467,7 @@ function invoicePage(inv, pays, st, opts = {}) {
 .dark{background:#0F1B2D;color:#fff}.gold{background:linear-gradient(135deg,#F4C66A,#C8963E);color:#1a1205}.line{background:#fff;color:#0F1B2D;border:1px solid #D9DCE1}
 .sheet{position:relative;max-width:210mm;margin:0 auto 24px;background:#fff;padding:16mm 16mm 12mm;box-shadow:0 10px 40px rgba(0,0,0,.08);overflow:hidden}
 .kente{height:6px;margin:-16mm -16mm 12mm;background:linear-gradient(90deg,#A9761F 0 25%,#0F1B2D 25% 50%,#1F6B4E 50% 75%,#C9A24B 75%)}
-.top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.co b{font-size:20px}.co div,.meta div{color:#5A6472;font-size:13.5px}
+.top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}.co b{font-size:20px}.co .lg{display:block;width:52px;height:52px;border-radius:12px;margin:0 0 10px}.co div,.meta div{color:#5A6472;font-size:13.5px}
 h1{margin:0;font-size:26px;letter-spacing:.02em;text-align:right}.meta{text-align:right}
 .to{margin:22px 0 16px;display:flex;gap:24px;flex-wrap:wrap}.to div{flex:1 1 220px}.lab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8A6116;font-weight:700;margin-bottom:4px}
 table.items{width:100%;border-collapse:collapse;margin-top:8px}table.items th{text-align:left;font-size:12px;color:#5A6472;border-bottom:2px solid #0F1B2D;padding:8px 6px}table.items th.num{text-align:right}
@@ -4256,7 +4492,7 @@ ${opts.msg ? `<div class="msg">${esc(opts.msg)}</div>` : ''}
 ${!isQ && !isC && opts.payUrl && balance > 0 && !['void', 'credited'].includes(inv.status) ? `<form method="post" action="${opts.payUrl}" style="margin:0"><button class="btn gold">Pay ${esc(money2(balance, cur))} online</button></form>` : ''}
 ${isQ && inv.status === 'sent' ? `<form method="post" action="/i/${inv.token}/accept" style="margin:0"><button class="btn dark">Accept this quotation</button></form>` : ''}</div>
 <div class="sheet"><div class="kente"></div>${stamp ? `<div class="stamp ${stamp === 'VOID' ? 'void' : ''}">${stamp}</div>` : ''}
-<div class="top"><div class="co"><b>${esc(st.co_name)}</b><div>${esc(st.inv_co_address || 'Accra, Ghana')}</div>
+<div class="top"><div class="co"><img class="lg" src="/admin/brand/mark-tile.png" alt="" width="52" height="52"><b>${esc(st.co_name)}</b><div>${esc(st.inv_co_address || 'Accra, Ghana')}</div>
 ${st.inv_tin ? `<div>TIN: ${esc(st.inv_tin)}</div>` : ''}${st.vat_registered && st.inv_vat_number ? `<div>VAT registration: ${esc(st.inv_vat_number)}</div>` : ''}
 <div>${esc(st.inv_email || 'info@gothamconsult.com')} · +233 55 041 6627</div></div>
 <div class="meta"><h1>${isQ ? 'QUOTATION' : isC ? 'CREDIT NOTE' : inv.tax_mode === 'standard' ? 'TAX INVOICE' : 'INVOICE'}</h1>${isC && opts.origNumber ? `<div>Credit against invoice <b>${esc(opts.origNumber)}</b></div>` : ''}
@@ -4365,7 +4601,7 @@ h1{margin:0 0 4px;font-size:24px}.mut{color:#5A6472;font-size:13.5px}table{width
 .big td{font-size:18px;font-weight:800;border-bottom:2px solid #0F1B2D}.foot{margin-top:18px;font-size:12px;color:#8A93A0}
 @media print{body{background:#fff}.bar{display:none}.sheet{box-shadow:none;margin:0}}@media(max-width:600px){.sheet{padding:18px 16px}.kente{margin:-18px -16px 16px}}
 </style></head><body><div class="bar"><button class="btn" onclick="print()">Print or save as PDF</button></div><div class="sheet"><div class="kente"></div>
-<h1>RECEIPT</h1><div class="mut"><b style="color:#0F1B2D">${esc(pay.receipt_no)}</b> · ${day(pay.paid_on)}</div>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><h1>RECEIPT</h1><img src="/admin/brand/mark-tile.png" alt="Gotham Consult" width="46" height="46" style="border-radius:11px"></div><div class="mut"><b style="color:#0F1B2D">${esc(pay.receipt_no)}</b> · ${day(pay.paid_on)}</div>
 <p style="margin:16px 0 0"><b>${esc(st.co_name)}</b><br><span class="mut">${esc(st.inv_co_address || 'Accra, Ghana')}${st.inv_tin ? ' · TIN ' + esc(st.inv_tin) : ''}</span></p>
 <p style="margin:14px 0 0"><span class="mut">Received from</span><br><b>${esc(b.company || b.name || '')}</b>${b.company && b.name ? '<br>' + esc(b.name) : ''}</p>
 <table><tr><td>For invoice</td><td>${esc(inv.number)}</td></tr><tr><td>Method</td><td>${esc(M[pay.method] || pay.method)}${pay.reference ? ' · ' + esc(pay.reference) : ''}</td></tr>
@@ -4491,6 +4727,8 @@ async function packWorkbook(P) {
     return ws;
   };
   const S = sheet('Summary', ['Item', 'Value'], P.summary, [48, 22]);
+  S.getColumn(3).width = 12;
+  S.addImage(wb.addImage({ buffer: BRAND_PNG('mark-tile'), extension: 'png' }), { tl: { col: 2.25, row: 0.15 }, ext: { width: 64, height: 64 } });
   S.addRow([]); S.addRow(['Notes']).font = { bold: true };
   ['Amounts in foreign currency are converted at the exchange rate recorded on each invoice (or on the payment when given).',
    'Credit notes are negative. Void invoices are left out; their numbers stay in the back office so there are no gaps.',
@@ -4655,8 +4893,14 @@ async function publicEvents(code) {
     location: r.venue || '', sub: r.subtitle || '', url: `${SITE_URL.replace(/\/$/, '')}/register?e=${encodeURIComponent(r.code)}` }));
 }
 
+/* "[Speaker 1]", "[time]", "[survey link]": blanks left in a draft to fill in later */
+const placeholderLeft = cam => {
+  const m = [cam.subject, cam.intro, cam.sms_text, cam.cta_label, cam.cta_url].map(x => String(x || '')).join('\n').match(/\[(?!\s)[A-Za-z][^\]\n]{0,40}\]/);
+  return m ? m[0] : null;
+};
 /* Start a campaign: build its queue from the audience as it is right now. */
 async function startCampaign(cam, actor) {
+  const gap = placeholderLeft(cam); if (gap) return { error: 'placeholder_left', gap };
   if (cam.channel === 'sms' && !cam.sms_text) return { error: 'sms_text_missing' };
   if (cam.channel === 'whatsapp' && !cam.wa_template && waReady()) return { error: 'wa_template_missing' };
   const { where, vals } = segmentSql(cam);
@@ -4678,6 +4922,8 @@ async function startCampaign(cam, actor) {
 
 async function runJobs() {
   try {
+    // 0. video uploads abandoned half-way (a closed laptop): drop the pieces after six hours
+    for (const [id, up] of UPLOADS) if (Date.now() - up.t > 6 * 3600e3) { UPLOADS.delete(id); try { fs.unlinkSync(up.file); } catch {} }
     // 1. release seats whose hold expired
     const exp = await q(`update registrations set status='cancelled', notes=coalesce(notes,'') || ' [hold expired]'
       where status='new' and payment_method<>'free' and not paid and created_at < now() - interval '24 hours' returning id`);
@@ -4798,7 +5044,77 @@ async function watchdog() {
   }
 }
 
-init().then(() => {
+/* One-off content load from a folder, run on the server (no sign-in needed, nothing public changes until it is done):
+     docker exec gotham-crm-1 node server.js --import /data/import/manifest.json
+   manifest: {events:[{code,title,…,cover:{file,brand,alt}, gallery:[{file,brand,alt,caption,taken_at}]}], tasks:[…], campaigns:[…]}
+   Safe to run twice: an event whose gallery is already filled keeps it, tasks and campaigns with the same name are skipped. */
+async function runImport(file) {
+  const M = JSON.parse(fs.readFileSync(file, 'utf8')), dir = path.dirname(file), who = 'import';
+  const say = (...a) => console.log('  ', ...a);
+  const put = async (f, isCover) => {
+    const src = path.join(dir, f.file), buf = fs.readFileSync(src), brand = f.brand !== false;
+    if (/\.(mp4|mov|m4v|webm)$/i.test(f.file)) {
+      const id = mediaId(), tmp = path.join(MEDIA, `up-${id}.part`); fs.copyFileSync(src, tmp);
+      const info = await MT.videoInfo(tmp, f.name || f.file);
+      await q(`insert into media(id,kind,original_name,mime,bytes,width,height,variants,alt,uploaded_by,taken_at,date_source,info,branded,caption)
+               values ($1,'video',$2,'video/mp4',$3,$4,$5,'{}',$6,$7,$8,$9,$10,true,$11)`,
+        [id, safeName(f.file), buf.length, info.w, info.h, clean(f.alt, 200), who, f.taken_at || info.at || null, f.taken_at ? 'manual' : info.at ? info.source : null,
+          JSON.stringify({ status: 'processing', duration: info.duration, logo: brand ? 'added' : 'already' }), clean(f.caption, 200) || null]);
+      await convertVideo(id, tmp, f.name || f.file, brand);
+      const st = (await q('select info from media where id=$1', [id])).rows[0].info;
+      say(`video ${f.file}: ${st.status}${st.error ? ' (' + st.error + ')' : ''}`);
+      return id;
+    }
+    const out = await storeImage(buf, f.name || f.file, f.alt, who, { brand, caption: f.caption });
+    if (f.taken_at) await q(`update media set taken_at=$2, date_source='manual' where id=$1`, [out.id, f.taken_at]);
+    say(`${isCover ? 'cover' : 'photo'} ${f.file}${brand ? ' (logo added)' : ' (already had the logo)'}`);
+    return out.id;
+  };
+  for (const e of M.events || []) {
+    const had = (await q('select * from items where code=$1', [e.code])).rows[0];
+    if (had && (had.gallery || []).length) { say(`${e.code} already has a gallery: left as it is`); continue; }
+    const cover = e.cover ? await put(e.cover, true) : (had && had.cover) || null;
+    const gallery = [];
+    for (const g of e.gallery || []) gallery.push(await put(g, false));
+    await q(`insert into items(code,kind,title,subtitle,venue,starts_at,ends_at,currency,price,capacity,published,sort,phase,slug,summary,description,recap,cover,gallery)
+      values ($1,$2,$3,$4,$5,$6,$7,'GHS',$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+      on conflict (code) do update set cover=excluded.cover, gallery=excluded.gallery,
+        recap=coalesce(items.recap, excluded.recap), description=coalesce(nullif(items.description,''), excluded.description),
+        summary=coalesce(nullif(items.summary,''), excluded.summary), slug=coalesce(nullif(items.slug,''), excluded.slug)`,
+      [e.code, e.kind || 'event', e.title, e.subtitle || null, e.venue || null, e.starts_at || null, e.ends_at || null, +e.price || 0, e.capacity || null,
+        e.published !== false, +e.sort || 0, e.phase || 'past', e.slug, e.summary || null, e.description || null, e.recap || null, cover, JSON.stringify(gallery)]);
+    say(`${e.code} ${e.title}: ${gallery.length} in the gallery`);
+  }
+  for (const [code, slug] of Object.entries(M.slugs || {})) {   // a short web address, only where none was set
+    const r = await q(`update items set slug=$2 where code=$1 and coalesce(slug,'')=''`, [code, slug]);
+    if (r.rowCount) say(`${code}: web address /events/${slug}`);
+  }
+  let t = 0;
+  for (const k of M.tasks || []) {
+    if ((await q('select 1 from tasks where title=$1 and coalesce(item_code,$2)=$2 and due_at is not distinct from $3', [k.title, k.item_code || '', k.due_at || null])).rows.length) continue;
+    await q(`insert into tasks(title,notes,due_at,priority,created_by,item_code) values ($1,$2,$3,$4,$5,$6)`,
+      [clean(k.title, 200), clean(k.notes, 4000), k.due_at || null, k.priority === 'high' ? 'high' : 'normal', who, k.item_code || null]);
+    t++;
+  }
+  say(`${t} tasks added`);
+  let c = 0;
+  for (const k of M.campaigns || []) {
+    if ((await q('select 1 from campaigns where name=$1', [k.name])).rows.length) continue;
+    await q(`insert into campaigns(name,subject,template,intro,cta_label,cta_url,item_code,channel,sms_text,seg_consent,from_name,starts_at,status,created_by)
+      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'draft',$13)`,
+      [k.name, k.subject || k.name, k.template || 'invitation', k.intro || null, k.cta_label || null, k.cta_url || null, k.item_code || null,
+        k.channel || 'email', k.sms_text || null, k.seg_consent || 'yes', k.from_name || 'Gotham Consult', k.starts_at || null, who]);
+    c++;
+  }
+  say(`${c} draft messages added (nothing is sent: each one needs someone to press Start)`);
+  await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [who, 'content_import', path.basename(file)]);
+}
+
+init().then(async () => {
+  if (process.argv[2] === '--import') {
+    try { await runImport(process.argv[3]); await videoQueue; console.log('import done'); process.exit(0); }
+    catch (e) { console.error('import failed:', e); process.exit(1); }
+  }
   server.listen(PORT, () => console.log('CRM on', PORT));
   runJobs();
   setInterval(runJobs, +process.env.JOBS_EVERY_MS || 15 * 60 * 1000);      // every 15 minutes (tests use less)

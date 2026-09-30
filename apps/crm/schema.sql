@@ -182,7 +182,7 @@ create table if not exists sponsor_leads (
 
 -- widen the media kinds for logos on an existing database
 alter table media drop constraint if exists media_kind_check;
-alter table media add constraint media_kind_check check (kind in ('image','logo','doc','email'));
+alter table media add constraint media_kind_check check (kind in ('image','logo','doc','email','video'));
 
 -- ---- outreach: contacts and campaigns (v1.4) ----
 create table if not exists contacts (
@@ -379,7 +379,7 @@ alter table campaigns add column if not exists blocks jsonb not null default '[]
 alter table campaigns drop constraint if exists campaigns_template_check;
 alter table campaigns add constraint campaigns_template_check check (template in ('invitation','sponsor','brief','plain','designer'));
 alter table media drop constraint if exists media_kind_check;
-alter table media add constraint media_kind_check check (kind in ('image','logo','doc','email'));
+alter table media add constraint media_kind_check check (kind in ('image','logo','doc','email','video'));
 create table if not exists email_templates (
   id serial primary key,
   name text not null,
@@ -486,3 +486,14 @@ create table if not exists page_hits (
 );
 create index if not exists page_hits_day on page_hits (day, kind);
 create index if not exists page_hits_visitor on page_hits (day, visitor);
+
+-- uploads: when a picture or video was taken, the logo on it, videos
+alter table media add column if not exists taken_at timestamptz;          -- when it was taken (see date_source)
+alter table media add column if not exists date_source text;              -- camera | video | pdf | whatsapp | filename | manual
+alter table media add column if not exists caption text;                  -- shown under the picture on the website
+alter table media add column if not exists branded boolean default false; -- the Gotham logo is on it (added by us, or it already had it)
+alter table media add column if not exists info jsonb default '{}'::jsonb; -- {camera, had_location, duration, status, pages, logo:'added'|'already'|'off'}
+alter table media drop constraint if exists media_kind_check;
+alter table media add constraint media_kind_check check (kind in ('image','logo','doc','email','video'));
+alter table items add column if not exists recap text;                   -- after the event: what happened, in a few paragraphs
+alter table tasks add column if not exists item_code text;   -- a task that belongs to an event (its promo plan)
