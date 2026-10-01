@@ -62,16 +62,16 @@ PRACTICES = {
 }
 # search titles and descriptions for the practice pages (the visible names above stay as they are)
 PRACTICE_SEO = {
- 'investment-readiness': ('GIPA Registration and Investment Readiness in Ghana', 'Register your company with GIPA and get investor-ready in Ghana: registration, financial documents and a clear story for banks, programmes and investors.'),
+ 'investment-readiness': ('GIPA Registration and Investor Readiness, Ghana', 'Register your company with GIPA and get investor-ready in Ghana: registration, financial documents and a clear story for banks, programmes and investors.'),
  'market-entry': ('Ghana Market Entry and Company Registration', 'Enter the Ghana market with a registered company, checked partners and a local desk in Accra. Company registration, GIPA, tax and licences handled.'),
  'ai': ('AI Consulting for Businesses in Ghana', 'Use AI for bookkeeping from mobile-money and bank statements, monthly reports, research and admin, with your staff trained to use it well.'),
  'digital': ('Websites, Online Shops and Hosting in Ghana', 'A website or online shop that takes mobile money and card payments, with hosting, business email and daily backups looked after in Ghana.'),
  'creative-studio': ('AI Adverts, Jingles and Video in Ghana', 'Jingles, radio spots, posters and video adverts made quickly with AI, with voice-overs in Twi and English that reach your customers in Ghana.'),
- 'energy-mining': ('Energy, Mining and Infrastructure Projects in Ghana', 'Due diligence, a clear licensing path and bankable documents for solar, mining and infrastructure projects in Ghana, ready for banks and DFIs.'),
- 'compliance-esg': ('Compliance, AML, Data Protection and ESG in Ghana', 'Anti-money-laundering, data protection and ESG practices that international banks, investors and buyers recognise, plus a well-designed CSR programme.'),
+ 'energy-mining': ('Energy, Mining & Infrastructure Projects, Ghana', 'Due diligence, a clear licensing path and bankable documents for solar, mining and infrastructure projects in Ghana, ready for banks and DFIs.'),
+ 'compliance-esg': ('AML, Data Protection and ESG Compliance, Ghana', 'Anti-money-laundering, data protection and ESG practices that international banks, investors and buyers recognise, plus a well-designed CSR programme.'),
  'education': ('School Registration and Licensing in Ghana', 'Register and licence a school or training centre in Ghana, strengthen teaching and prepare staff for digital learning, with the paperwork handled.'),
- 'family-support': ('Family Support for Parents in Ghana, for Families Abroad', 'Renewals, regular visits, property watch and estate paperwork for older people in Ghana, with written reports and photos for families abroad.'),
- 'media-forums': ('Business Media, Forums and Trade Missions in Ghana', 'Features, roundtables, trade missions and showcases that put your business in front of investors and buyers in Ghana, including inclusive enterprise.'),
+ 'family-support': ('Family Support for Parents in Ghana', 'Renewals, regular visits, property watch and estate paperwork for older people in Ghana, with written reports and photos for families abroad.'),
+ 'media-forums': ('Business Media, Forums & Trade Missions, Ghana', 'Features, roundtables, trade missions and showcases that put your business in front of investors and buyers in Ghana, including inclusive enterprise.'),
 }
 for _s, (_t, _d, _o) in PRACTICES.items():
     _st, _sd = PRACTICE_SEO[_s]
@@ -92,11 +92,11 @@ for _a in ARTS:
     META[_n] = dict(title=_a['title'], desc=_a['description'], og='img/og/real-bog.jpg', extra=V2_EXTRA + '\n' + IF.article_ld(_a, 'en', SITE))
     GEN[_n] = IF.article_body(_a, 'en', [o for o in ARTS if o is not _a][:3])
 # the partner's page
-META['carlson-capital.html'] = dict(title='Carlson Capital Ltd, Partner of Gotham Consult | Company Set-up, AI, Mining',
+META['carlson-capital.html'] = dict(title='Carlson Capital Ltd: Market Entry, AI & Mining | Gotham Consult',
   desc="Carlson Capital Ltd, Gotham Consult's partner for company set-up and market entry for large companies, AI, software, apps and mining. Registered in Ghana.",
   og='img/og/real-tema.jpg', extra=V2_EXTRA)
 META['invest/join.html'] = dict(title='Join the Investor List: Invest in Ghana | Gotham Consult',
-  desc='Free investor list for Ghana: checked opportunities in your sectors and ticket size, investor round tables in Accra and the right meetings. Two minutes, no obligation.',
+  desc='Free investor list for Ghana: checked opportunities in your sectors and ticket size, investor round tables in Accra and the right meetings. No obligation.',
   og='img/og/real-airportcity.jpg', extra=V2_EXTRA)
 # case studies
 META['projects/dawa-solar.html'] = dict(title='Case Study: 130 MW Dawa Solar Project, Ghana | Gotham Consult',
@@ -113,7 +113,8 @@ META['classic.html']['og'] = 'img/og/boot2.jpg'
 
 # ---- structured data for Google (JSON-LD) ----
 ORG = {'@type': ['ProfessionalService', 'LocalBusiness'], '@id': SITE + '/#org', 'name': 'Gotham Consult', 'url': SITE + '/',
-  'logo': SITE + '/img/og/boot2.jpg', 'image': SITE + '/img/og/boot2.jpg',
+  'logo': SITE + '/img/brand/icon-512.png', 'image': SITE + '/img/og/boot2.jpg',
+  'sameAs': ['https://www.linkedin.com/company/gotham-consult/'],
   'description': 'Accra business consultancy for investment, company registration, GIPA, market entry, compliance and business forums in Ghana.',
   'telephone': '+233550416627', 'email': 'info@gothamconsult.com', 'priceRange': 'GHS',
   'address': {'@type': 'PostalAddress', 'addressLocality': 'Accra', 'addressRegion': 'Greater Accra', 'addressCountry': 'GH'},
@@ -255,6 +256,9 @@ def main():
             '<p class="lead">From chop bar to factory: a business health check, a funding finder and the 2026 VAT check. No sign-up, no cost, and your answers stay on your phone.</p></div></section>\n')
     h = re.sub(r'<h1([^>]*)>(.*?)</h1>', r'<p\1 aria-hidden="true">\2</p>', h, count=1, flags=re.S)   # the hidden one-page hero keeps no second h1
     h = h.replace('<section id="tools"', hero + '<section id="tools"', 1)
+    tld = {'@context': 'https://schema.org', '@graph': [{'@type': 'ProfessionalService', '@id': SITE + '/#org', 'name': 'Gotham Consult', 'url': SITE + '/'},
+           {'@type': 'WebPage', '@id': SITE + '/tools#page', 'url': SITE + '/tools', 'name': 'Free business tools · Gotham Consult', 'description': tdesc, 'isPartOf': {'@id': SITE + '/#site'}}]}
+    h = h.replace('</head>', '<script type="application/ld+json">' + json.dumps(tld, ensure_ascii=False) + '</script>\n</head>', 1)
     open(os.path.join(DIST, 'tools.html'), 'w', encoding='utf-8').write(h)
     print('  tools.html (from classic)')
 
@@ -284,7 +288,7 @@ def main():
             for part in ('top', 'bottom'):
                 body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
             m = META[n]
-            extra = V2_EXTRA + ('\n' + IF.article_ld(a, 'fr', SITE) if a else '')
+            extra = V2_EXTRA + ('\n' + IF.article_ld(a, 'fr', SITE) if a else '\n<script type="application/ld+json">' + json.dumps({'@context': 'https://schema.org', '@type': 'CollectionPage', 'url': SITE + '/fr/insights', 'name': IF.L['fr']['idx_title'], 'inLanguage': 'fr', 'publisher': {'@id': SITE + '/#org'}}, ensure_ascii=False) + '</script>')
             doc = HEAD.format(site=SITE, path=path_of(n), ogsize='', **{**{k: v for k, v in m.items() if k != 'crumb'}, 'extra': extra}) + body + '\n</body>\n</html>'
             title, desc = (IF.L['fr']['idx_title'], IF.L['fr']['idx_desc']) if a is None else (a['fr']['title'], a['fr']['description'])
         else:

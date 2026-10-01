@@ -22,7 +22,7 @@ L = {
             desk_p='Gotham Consult répond sur WhatsApp, généralement le jour même.', wa='WhatsApp +233 55 041 6627', more='Autres guides', all='Tous les guides',
             idx_h1='Analyses : <span class="serif">faire des affaires au Ghana.</span>', idx_eyebrow='Guides · vérifiés et datés',
             idx_lead='Des guides pratiques pour investisseurs et entreprises : immatriculer une société, la loi GIPA de 2026, la TVA au Ghana et se faire payer depuis l’étranger. Chaque guide cite ses sources.',
-            idx_title='Analyses : guides pour faire des affaires au Ghana | Gotham Consult',
+            idx_title='Analyses : faire des affaires au Ghana | Gotham Consult',
             idx_desc='Guides pratiques et sourcés : immatriculer une société au Ghana, la loi GIPA de 2026, la TVA ghanéenne et la facturation en devises.',
             locale='fr_FR', updated='Mis à jour'),
 }
@@ -126,7 +126,7 @@ FR_META = {
  'services/energy-mining.html': ('Énergie, mines et infrastructures au Ghana', 'Due diligence, parcours de permis clair et dossiers finançables pour projets solaires, miniers et d’infrastructure au Ghana, prêts pour banques et DFI.'),
  'services/compliance-esg.html': ('Conformité, LBC, données personnelles et ESG au Ghana', 'Lutte anti-blanchiment, protection des données et pratiques ESG reconnues par les banques, investisseurs et acheteurs internationaux, plus un programme RSE.'),
  'services/education.html': ('Immatriculation et agrément d’écoles au Ghana', 'Immatriculez et faites agréer une école ou un centre de formation au Ghana, renforcez l’enseignement et préparez l’équipe au numérique.'),
- 'services/family-support.html': ('Accompagnement des parents au Ghana, pour les familles à l’étranger', 'Renouvellements, visites régulières, suivi de biens et succession pour les aînés au Ghana, avec rapports écrits et photos pour les familles à l’étranger.'),
+ 'services/family-support.html': ('Aide aux parents au Ghana pour les familles à l’étranger', 'Renouvellements, visites régulières, suivi de biens et succession pour les aînés au Ghana, avec rapports écrits et photos pour les familles à l’étranger.'),
  'services/media-forums.html': ('Médias d’affaires, forums et missions commerciales au Ghana', 'Articles, tables rondes, missions commerciales et vitrines pour présenter votre entreprise aux investisseurs et acheteurs au Ghana, de façon inclusive.'),
 }
 SKIP_TAGS = {'script', 'style', 'svg', 'noscript', 'textarea', 'code', 'pre'}
