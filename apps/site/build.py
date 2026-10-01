@@ -92,8 +92,8 @@ for _a in ARTS:
     META[_n] = dict(title=_a['title'], desc=_a['description'], og='img/og/real-bog.jpg', extra=V2_EXTRA + '\n' + IF.article_ld(_a, 'en', SITE))
     GEN[_n] = IF.article_body(_a, 'en', [o for o in ARTS if o is not _a][:3])
 # the partner's page
-META['carlson-capital.html'] = dict(title='Carlson Capital Ltd, Partner of Gotham Consult | Africa Since 2005',
-  desc="Carlson Capital Ltd, Gotham Consult's partner for company set-up and market entry for large companies, AI, software, apps and mining. Africa since 2005.",
+META['carlson-capital.html'] = dict(title='Carlson Capital Ltd, Partner of Gotham Consult | Company Set-up, AI, Mining',
+  desc="Carlson Capital Ltd, Gotham Consult's partner for company set-up and market entry for large companies, AI, software, apps and mining. Registered in Ghana.",
   og='img/og/real-tema.jpg', extra=V2_EXTRA)
 META['invest/join.html'] = dict(title='Join the Investor List: Invest in Ghana | Gotham Consult',
   desc='Free investor list for Ghana: checked opportunities in your sectors and ticket size, investor round tables in Accra and the right meetings. Two minutes, no obligation.',
