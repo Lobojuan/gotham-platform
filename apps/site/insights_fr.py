@@ -14,23 +14,32 @@ L = {
  'en': dict(home='Home', insights='Insights', read='min read', short='In short', faq='Questions', sources='Sources', desk='Talk to our investor desk',
             desk_p='Gotham Consult replies on WhatsApp, usually the same day.', wa='WhatsApp +233 55 041 6627', more='More guides', all='All guides',
             idx_h1='Insights: <span class="serif">doing business in Ghana.</span>', idx_eyebrow='Guides · checked and dated',
-            idx_lead='Practical guides for investors and companies: company registration, the GIPA Act 2026, Ghana VAT and getting paid from abroad. Each one lists its sources.',
+            idx_lead='Practical guides for investors and companies: company registration, hiring, mining licences, opening an office, the GIPA Act 2026, Ghana VAT and getting paid from abroad. Each one lists its sources.',
             idx_title='Insights: Guides to Doing Business in Ghana | Gotham Consult',
             idx_desc='Practical, sourced guides for investors and companies: registering a company in Ghana, the GIPA Act 2026, Ghana VAT and foreign-currency invoicing.',
             locale='en_GB', updated='Updated'),
  'fr': dict(home='Accueil', insights='Analyses', read='min de lecture', short='En bref', faq='Questions', sources='Sources', desk='Parlez à notre bureau investisseurs',
             desk_p='Gotham Consult répond sur WhatsApp, généralement le jour même.', wa='WhatsApp +233 55 041 6627', more='Autres guides', all='Tous les guides',
             idx_h1='Analyses : <span class="serif">faire des affaires au Ghana.</span>', idx_eyebrow='Guides · vérifiés et datés',
-            idx_lead='Des guides pratiques pour investisseurs et entreprises : immatriculer une société, la loi GIPA de 2026, la TVA au Ghana et se faire payer depuis l’étranger. Chaque guide cite ses sources.',
+            idx_lead="Des guides pratiques pour investisseurs et entreprises : immatriculer une société, embaucher, licences minières, ouvrir un bureau, la loi GIPA de 2026, la TVA au Ghana et se faire payer depuis l'étranger. Chaque guide cite ses sources.",
             idx_title='Analyses : faire des affaires au Ghana | Gotham Consult',
             idx_desc='Guides pratiques et sourcés : immatriculer une société au Ghana, la loi GIPA de 2026, la TVA ghanéenne et la facturation en devises.',
             locale='fr_FR', updated='Mis à jour'),
+ 'es': dict(home='Inicio', insights='Análisis', read='min de lectura', short='En resumen', faq='Preguntas', sources='Fuentes', desk='Hable con nuestro servicio para inversores',
+            desk_p='Gotham Consult responde por WhatsApp, normalmente el mismo día.', wa='WhatsApp +233 55 041 6627', more='Más guías', all='Todas las guías',
+            idx_h1='Análisis: <span class="serif">hacer negocios en Ghana.</span>', idx_eyebrow='Guías · revisadas y fechadas',
+            idx_lead='Guías prácticas para inversores y empresas: registrar una empresa, contratar personal, licencias mineras, abrir una oficina, la Ley GIPA de 2026, el IVA de Ghana y cobrar desde el extranjero. Cada guía cita sus fuentes.',
+            idx_title='Análisis: guías para hacer negocios en Ghana | Gotham Consult',
+            idx_desc='Guías prácticas con fuentes: registrar una empresa en Ghana, la Ley GIPA de 2026, el IVA de Ghana y la facturación en divisas.',
+            locale='es_ES', updated='Actualizado'),
 }
+MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 MONTHS_FR = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
 MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 def day(iso, lang):
     y, m, d = iso.split('-')
+    if lang == 'es': return f'{int(d)} de {MONTHS_ES[int(m) - 1]} de {y}'
     return f'{int(d)} {(MONTHS_FR if lang == "fr" else MONTHS_EN)[int(m) - 1]} {y}'
 
 def articles():
@@ -39,8 +48,8 @@ def articles():
 
 def view(a, lang):
     """the fields of an article in one language"""
-    if lang == 'en': return a
-    f = a['fr']; return {**a, **{k: f[k] for k in f}}
+    if lang == 'en' or lang not in a: return a
+    f = a[lang]; return {**a, **{k: f[k] for k in f}}
 
 def article_body(a, lang, others):
     t, v = L[lang], view(a, lang)
@@ -187,3 +196,37 @@ def alternates(site, path):
     fr = f'{site}/fr' + (f'/{path}' if path else '')
     return (f'<link rel="alternate" hreflang="en" href="{en}">\n<link rel="alternate" hreflang="fr" href="{fr}">\n'
             f'<link rel="alternate" hreflang="x-default" href="{en}">\n')
+
+def text_nodes(doc):
+    """the translatable text of a fragment, in page order, normalised the way the dictionaries key it"""
+    parts = re.split(r'(<!--.*?-->|<[^>]+>)', doc, flags=re.S); out, stack = [], []
+    for tok in parts:
+        if tok.startswith('<!--'): continue
+        if tok.startswith('<'):
+            m = re.match(r'<\s*(/?)\s*([a-zA-Z0-9-]+)', tok)
+            if m:
+                name = m.group(2).lower()
+                if m.group(1):
+                    while stack and stack.pop() != name: pass
+                elif name not in VOID and not tok.endswith('/>'): stack.append(name)
+            continue
+        if any(n in SKIP_TAGS for n in stack): continue
+        k = re.sub(r'\s+', ' ', H.unescape(tok)).strip()
+        if k and re.search(r'[A-Za-z]', k): out.append(k)
+    return out
+
+def article_pairs(arts, lang):
+    """English → other-language pairs for the in-page switch, from the articles' own translations (articles are written
+    once per language, so their text is not in the hand-edited dictionaries). Returns (pairs, slugs that did not line up)."""
+    pairs, bad = {}, []
+    def add(en_html, xx_html, tag):
+        a, b = text_nodes(en_html), text_nodes(xx_html)
+        if len(a) != len(b): bad.append(tag); return
+        for x, y in zip(a, b):
+            if x != y: pairs.setdefault(x, y)
+    add(index_body(arts, 'en'), index_body(arts, lang), 'index')
+    for a in arts:
+        if lang not in a: bad.append(a['slug']); continue
+        others = [o for o in arts if o is not a][:3]
+        add(article_body(a, 'en', others), article_body(a, lang, others), a['slug'])
+    return pairs, bad

@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=15';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=16';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -55,6 +55,7 @@
     if (node.nodeType === 3) {
       const p = node.parentElement; if (!p || p.closest('script,style,svg,noscript,[data-no-tr]')) return;
       if (!ORIG.has(node)) ORIG.set(node, node.nodeValue);
+      if (p.tagName === 'OPTION' && !p.hasAttribute('value')) p.setAttribute('value', ORIG.get(node).trim());   // the form still sends the English value
       const en = ORIG.get(node), t = tr(en, lang);
       const want = t == null ? en : en.match(/^\s*/)[0] + t + en.match(/\s*$/)[0];
       if (node.nodeValue !== want) node.nodeValue = want;
@@ -104,6 +105,7 @@
   };
   $$('[data-lang]').forEach(b => b.addEventListener('click', () => { choose(b.dataset.lang); closeLang(); }));
   if (pageLang === 'fr') current = 'fr';
+  else if (current === 'fr' && twin('fr')) { location.replace(twin('fr')); return; }   // a French visitor landing on an English page goes to its French twin
   markLang(current); if (current !== 'en') setLang(current);
 
   document.addEventListener('click', () => { setMega(false); closeLang(); });

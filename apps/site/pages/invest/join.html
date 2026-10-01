@@ -161,7 +161,7 @@ fieldset.ij-f{border:0;padding:0;margin:0 0 16px}
       const j = await r.json().catch(() => ({}));
       if (r.ok && j.ok) {
         const n = body.full_name.split(/\s+/)[0];
-        document.getElementById('ij-card').innerHTML = '<div class="ij-ok" role="status"><p class="eyebrow">You are on the list</p><h2>Thank you, ' + n.replace(/[<>&"]/g, '') + '.</h2>'
+        document.getElementById('ij-card').innerHTML = '<div class="ij-ok" role="status"><p class="eyebrow">You are on the list</p><h2>Thank you, <span data-no-tr>' + n.replace(/[<>&"]/g, '') + '</span>.</h2>'
           + '<p style="color:var(--mute);margin:0 0 18px">We will contact you within two working days. A confirmation is on its way to your email.</p>'
           + '<div style="display:flex;flex-wrap:wrap;gap:10px"><a class="btn btn-wa" href="https://wa.me/233550416627?text=Hello%20Gotham%20Consult%2C%20I%20just%20joined%20the%20investor%20list." target="_blank" rel="noopener">WhatsApp us now</a>'
           + '<a class="btn btn-line" href="/projects/dawa-solar">See the Dawa case study</a></div></div>';

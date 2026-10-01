@@ -306,6 +306,16 @@ def main():
     print(f'  fr/: {len(fr_pages) + 1 + len(ARTS)} French pages; {len(left)} phrases still in English')
     open(os.path.join(HERE, '.fr-missing.txt'), 'w').write('\n'.join(left))
 
+    # the in-page language switch also covers the articles: their own French/Spanish text goes into the dist dictionaries
+    # (the hand-edited public dictionaries win where both have a phrase)
+    for lang in ('fr', 'es'):
+        pairs, bad = IF.article_pairs(ARTS, lang)
+        if bad: raise SystemExit(f'articles whose {lang} text does not line up with the English: {bad}')
+        fp = os.path.join(DIST, 'assets', 'v2', f'i18n-{lang}.js'); s = open(fp, encoding='utf-8').read()
+        merged = {**pairs, **IF.load_dict(lang)}
+        open(fp, 'w', encoding='utf-8').write(s[:s.index('= {') + 2] + json.dumps(merged, ensure_ascii=False) + ';\n')
+        print(f'  i18n-{lang}.js: {len(pairs)} article phrases added')
+
     # the logo on every photo, share image and video (dist copies only; public/img keeps the clean originals)
     import brand_media; brand_media.run(DIST)
 
