@@ -115,6 +115,7 @@ META['classic.html']['og'] = 'img/og/boot2.jpg'
 ORG = {'@type': ['ProfessionalService', 'LocalBusiness'], '@id': SITE + '/#org', 'name': 'Gotham Consult', 'url': SITE + '/',
   'logo': SITE + '/img/brand/icon-512.png', 'image': SITE + '/img/og/boot2.jpg',
   'sameAs': ['https://www.linkedin.com/company/gotham-consult/'],
+  'foundingDate': '2018',
   'description': 'Accra business consultancy for investment, company registration, GIPA, market entry, compliance and business forums in Ghana.',
   'telephone': '+233550416627', 'email': 'info@gothamconsult.com', 'priceRange': 'GHS',
   'address': {'@type': 'PostalAddress', 'addressLocality': 'Accra', 'addressRegion': 'Greater Accra', 'addressCountry': 'GH'},
