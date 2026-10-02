@@ -500,3 +500,47 @@ alter table tasks add column if not exists item_code text;   -- a task that belo
 -- investors who join the list on /invest/join get their own deal kind
 alter table deals drop constraint if exists deals_kind_check;
 alter table deals add constraint deals_kind_check check (kind in ('sponsorship','consulting','family_desk','investor','membership','event','other'));
+
+-- Team chat (chat.js): channels, direct messages, a thread per company / deal / event; files kept in the database
+alter table users add column if not exists phone text;
+alter table users add column if not exists chat_since timestamptz default now();
+alter table items add column if not exists updates jsonb default '[]'::jsonb;   -- [{at,text}] public news lines on the forum page
+create table if not exists chat_channels (
+  id serial primary key,
+  kind text not null default 'channel' check (kind in ('channel','dm','record')),
+  slug text unique not null,
+  name text not null, topic text,
+  ref_type text, ref_id text,
+  created_by text, created_at timestamptz default now(), last_at timestamptz, archived boolean not null default false
+);
+create table if not exists chat_files (
+  id text primary key, name text not null, mime text not null, bytes int not null,
+  data bytea not null, thumb bytea, uploaded_by text not null, created_at timestamptz default now()
+);
+create table if not exists chat_messages (
+  id bigserial primary key,
+  channel_id int not null references chat_channels(id) on delete cascade,
+  author text not null, author_name text,
+  body text not null default '',
+  kind text not null default 'msg' check (kind in ('msg','system','proposal')),
+  data jsonb, file_id text references chat_files(id) on delete set null,
+  mentions text[] not null default '{}',
+  created_at timestamptz default now(), edited_at timestamptz, deleted boolean not null default false
+);
+create index if not exists chat_messages_ch on chat_messages(channel_id, id);
+create table if not exists chat_members (
+  channel_id int not null references chat_channels(id) on delete cascade,
+  user_email text not null, last_read bigint not null default 0,
+  primary key (channel_id, user_email)
+);
+create table if not exists chat_notify (
+  id bigserial primary key,
+  message_id bigint not null references chat_messages(id) on delete cascade,
+  user_email text not null, due_at timestamptz not null, sent_at timestamptz, skipped boolean, wa text,
+  unique (message_id, user_email)
+);
+insert into chat_channels(kind, slug, name, topic) values
+  ('channel','general','general','Everything for the whole team'),
+  ('channel','forums','forums','Speakers, venues, sponsors and the day itself'),
+  ('channel','investors','investors','Investor desk and the investor list')
+on conflict (slug) do nothing;

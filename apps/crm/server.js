@@ -11,6 +11,7 @@ import nodemailer from 'nodemailer';
 import * as MT from './media-tools.js';
 import * as EVP from './events-pages.js';
 import * as RCP from './receptionist.js';
+import * as CHT from './chat.js';
 
 const PORT = process.env.PORT || 4100;
 const SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
@@ -1389,7 +1390,7 @@ async function syncRegistrations() {
 
 /* ---------- queries ---------- */
 const ITEM_COLS = `i.code,i.kind,i.title,i.subtitle,i.venue,i.starts_at,i.ends_at,i.currency,i.price,i.per,i.capacity,
-    i.approval,i.phase,i.audiences,i.slug,i.summary,i.description,i.recap,i.cover,i.gallery,i.docs,i.agenda,i.speakers,
+    i.approval,i.phase,i.audiences,i.slug,i.summary,i.description,i.recap,i.cover,i.gallery,i.docs,i.agenda,i.speakers,i.updates,
     case when i.capacity is null then null else greatest(i.capacity - coalesce((
       select sum(r.seats) from registrations r where r.item_code=i.code and r.status<>'cancelled'),0),0) end as seats_left`;
 const itemsPublic = () => q(`select ${ITEM_COLS} from items i where i.published order by i.sort, i.starts_at`);
@@ -2343,6 +2344,7 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       return json(res, 200, { ok: true });
     }
     if (p === '/api/logout') return json(res, 200, { ok: true }, { 'set-cookie': 'gc_session=; Path=/; Max-Age=0' });
+    if (p.startsWith('/api/chat/')) { if (await CHAT.handle(req, res, p, url, auth())) return; }
     if (p === '/api/me') { const u = authAny(); return u ? json(res, 200, u) : json(res, 401, { error: 'no_session' }); }
 
     if (p === '/api/password' && req.method === 'POST') {
@@ -5243,6 +5245,10 @@ async function runImport(file) {
   await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [who, 'content_import', path.basename(file)]);
 }
 
+/* the team chat (chat.js) */
+const CHAT = CHT.makeChat({ q, json, body, bodyBig, clean, askModel, phoneGH, aiOn: () => !!OPENAI_KEY, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto,
+  setting: async k => (await q('select value from settings where key=$1', [k])).rows[0]?.value || '' });
+
 init().then(async () => {
   if (process.argv[2] === '--import') {
     try { await runImport(process.argv[3]); await videoQueue; console.log('import done'); process.exit(0); }
@@ -5251,4 +5257,5 @@ init().then(async () => {
   server.listen(PORT, () => console.log('CRM on', PORT));
   runJobs();
   setInterval(runJobs, +process.env.JOBS_EVERY_MS || 15 * 60 * 1000);      // every 15 minutes (tests use less)
+  setInterval(() => CHAT.notify().catch(e => console.error('chat notify:', e.message)), +process.env.CHAT_NOTIFY_MS || 60e3);   // @mentions unread after 15 minutes
 }).catch(e => { console.error(e); process.exit(1); });

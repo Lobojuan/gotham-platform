@@ -8,7 +8,12 @@ http.createServer((req, res) => {
   let b = ''; req.on('data', c => b += c); req.on('end', () => {
     let q = '', sys = ''; try { const j = JSON.parse(b); q = (j.messages || []).slice(-1)[0].content || ''; sys = (j.messages || [])[0].content || ''; } catch {}
     let out;
-    if (/virtual receptionist of Kasa Family Clinic/.test(sys)) {
+    if (/keep the website's forum pages up to date/.test(q)) {
+      /* the team chat: a confirmed speaker becomes a proposal for forum F1; anything else proposes nothing */
+      const msg = (q.match(/New message from [^:]+: ([^\n]*)/) || [])[1] || '';
+      out = /confirmed/i.test(msg) ? JSON.stringify({ code: 'F1', updates: [{ type: 'add_speaker', name: 'Kwame Test', role: 'CEO, Test Mining' }, { type: 'news', text: 'MOCK news: Kwame Test joins the panel.' }, { type: 'nonsense' }] })
+        : JSON.stringify({ code: '', updates: [] });
+    } else if (/virtual receptionist of Kasa Family Clinic/.test(sys)) {
       /* the receptionist demo: a booking takes the first free time in the prompt; "busy slot" asks for a time that is not free */
       const m = q.match(/\((\d{4}-\d\d-\d\d)\): (\d\d:\d\d)/);
       const R = (say, action) => JSON.stringify({ say, action: action || { type: 'none' } });

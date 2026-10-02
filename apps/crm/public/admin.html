@@ -469,6 +469,42 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 .inv-f{display:block;margin:0}.inv-f span{display:none}.inv-f .t{width:100%}
 .inv-warn{background:#FFF7E8;border-color:#F0D9A8}td.num,th.num{text-align:right}
 @media(max-width:700px){.inv-lh{display:none}.inv-l{grid-template-columns:1fr 1fr 1fr 36px;border:1px solid var(--line);border-radius:12px;padding:10px}.inv-l textarea{grid-column:1/-1}.inv-f span{display:block;font-size:12px;color:#5A6472;margin-bottom:2px}.inv-amt{grid-column:1/4;padding-top:6px}.inv-l>.iconbtn{align-self:end}.inv-sum{min-width:0;width:100%}}
+/* team chat */
+.chat{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;height:calc(100vh - var(--top) - 150px);min-height:460px}
+.chl{background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px;overflow-y:auto}
+.chl h6{margin:14px 6px 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);display:flex;justify-content:space-between;align-items:center}
+.chl h6:first-child{margin-top:2px}
+.chl .note{margin:4px 8px;font-size:13px}
+.chi{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;color:var(--ink);text-decoration:none;font-size:14.5px;min-height:40px}
+.chi:hover{background:var(--sunk)}.chi.on{background:var(--ink);color:#fff}.chi.on .chip{background:rgba(255,255,255,.18);color:#fff}
+.chi .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chi .b{background:var(--sunk);color:var(--ink);border-radius:999px;font-size:12px;font-weight:700;padding:0 7px;line-height:20px}
+.chi .b.warn,.nav .b.warn{background:#C0492F;color:#fff}
+.lnk{border:0;background:none;color:var(--blue);cursor:pointer;font:inherit;font-size:13px;padding:2px 6px}
+.chm{background:#fff;border:1px solid var(--line);border-radius:16px;display:flex;flex-direction:column;min-height:0}
+.chh{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line)}
+.chs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.chday{text-align:center;margin:8px 0}.chday span{font-size:12px;color:var(--mute);background:var(--sunk);border-radius:999px;padding:3px 10px}
+.chmsg{display:flex;gap:10px;align-items:flex-start}
+.chmsg .av{flex:none;width:32px;height:32px;border-radius:50%;background:var(--sunk);display:grid;place-items:center;font-size:12px;font-weight:700}
+.chmsg .av.ai{background:var(--gold-soft);color:var(--gold)}
+.chmsg.me .av{background:var(--ink);color:#fff}
+.chb{min-width:0;flex:1}.chw{font-size:14px}.cht{font-size:15px;line-height:1.5;overflow-wrap:anywhere}
+.chmsg.at .cht{background:var(--gold-soft);border-radius:8px;padding:4px 8px;display:inline-block}
+.mention{color:var(--blue);font-weight:600}
+.chimg{display:block;max-width:min(320px,100%);border-radius:10px;margin-top:6px;border:1px solid var(--line)}
+.chfile{display:inline-block;margin-top:6px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;text-decoration:none;color:var(--ink)}
+.chsys{text-align:center;font-size:13px;color:var(--green)}
+.chp{border:1px solid #E9D7B3;background:#FFFBF2;border-radius:12px;padding:10px 12px;margin-top:4px}.chp ul{margin:6px 0 8px;padding-left:18px}.chp .acts{display:flex;gap:8px;flex-wrap:wrap}
+.chdel{color:var(--mute);font-size:12px;visibility:hidden}.chmsg:hover .chdel,.chdel:focus{visibility:visible}
+.chc{border-top:1px solid var(--line);padding:10px 12px;position:relative}
+.chc textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;font-size:15px;resize:vertical;min-height:48px}
+.chc .cbar{display:flex;align-items:center;gap:10px;margin-top:8px}.chc .cbar .note{flex:1;font-size:12.5px}
+.chat-mn{position:absolute;bottom:100%;left:12px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;display:flex;flex-wrap:wrap;gap:6px;z-index:5}
+.chat-mn[hidden]{display:none}
+.chat-mn button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;cursor:pointer;font:inherit;font-size:13.5px}
+.chf{font-size:13.5px;margin-bottom:6px}
+@media (max-width:860px){.chat{grid-template-columns:1fr;height:auto}.chl{max-height:240px}.chm{height:70vh}.chc .cbar .note{display:none}}
 </style></head><body>
 <div class="kente"></div>
 
@@ -514,7 +550,7 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></symbol>
 <symbol id="i-bill" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12v20l-3-2-3 2-3-2-3 2z"/><path d="M9 7h6M9 11h6M9 15h4"/></symbol>
 <symbol id="i-globe2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></symbol>
-<symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></symbol><symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
 </defs></svg>
 
 <div id="app">
@@ -590,7 +626,7 @@ async function start(){
  if(ME.must_change){$('#app').style.display='none';return firstPassword()}
  $('#pwfirst').style.display='none';$('#app').style.display='grid';
  $('#mename').textContent=ME.name||ME.email;$('#who').textContent=ROLE_NAME[ME.role];$('#meav').textContent=initials(ME.name||ME.email);
- buildNav();parseHash();await loadUsers();await load();badges();
+ buildNav();parseHash();await loadUsers();await load();badges();chatBadge();
 }
 /* password fields with a show/hide toggle, shared by the first-sign-in screen and Settings */
 const pwField=(id,label,ac)=>`<label class="l" for="${id}">${label}</label><div class="pwf"><input class="t" id="${id}" type="password" autocomplete="${ac}" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-eye="${id}" aria-label="Show password">Show</button></div>`;
@@ -635,11 +671,11 @@ const ghs=n=>'GHS '+Number(n||0).toLocaleString('en-GB',{maximumFractionDigits:0
 const ghsShort=n=>{n=Number(n||0);return n>=1e6?'GHS '+(n/1e6).toFixed(n>=1e7?0:1)+'m':n>=1e4?'GHS '+Math.round(n/1e3)+'k':ghs(n)};
 const dshort=s=>s?new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
 const NAV=[
- ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt']]],
+ ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt'],['chat','Team chat','chat','chcnt']]],
  ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1],['web','Website visitors','globe2',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
  ['System',[['mail','Email outbox','mail','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
-const TITLES={dash:'Dashboard',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',web:'Website visitors',rec:'Company record',reports:'Reports',
+const TITLES={dash:'Dashboard',chat:'Team chat',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',web:'Website visitors',rec:'Company record',reports:'Reports',
  regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',
  out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
 const ADMIN_ONLY=new Set(['web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
@@ -647,8 +683,8 @@ let V='dash', ARG=null, USERS=[];
 function buildNav(){
  $('#nav').innerHTML=NAV.map(([g,items])=>{const it=items.filter(x=>!x[4]||isAdmin());
   return it.length?`<h6>${g}</h6>`+it.map(([v,l,i,b])=>`<a data-v="${v}" href="#${v}">${ic(i)}<span>${l}</span>${b?`<span class="b" id="${b}"></span>`:''}</a>`).join(''):''}).join('');
- const bn=isAdmin()?[['dash','Home','home'],['tasks','Tasks','check','tcnt2'],['pipe','Pipeline','cols'],['contacts','Contacts','users'],['more','More','dots']]
-                   :[['dash','Home','home'],['tasks','Tasks','check','tcnt2'],['regs','Guests','ticket'],['door','Check-in','scan'],['more','More','dots']];
+ const bn=isAdmin()?[['dash','Home','home'],['tasks','Tasks','check','tcnt2'],['chat','Chat','chat','chcnt2'],['contacts','Contacts','users'],['more','More','dots']]
+                   :[['dash','Home','home'],['chat','Chat','chat','chcnt2'],['regs','Guests','ticket'],['door','Check-in','scan'],['more','More','dots']];
  $('#bnav').innerHTML=bn.map(([v,l,i,b])=>`<a data-b="${v}" ${v!=='more'?`href="#${v}"`:'role="button" tabindex="0"'}>${ic(i)}<span>${l}</span>${b?`<span class="b" id="${b}"></span>`:''}</a>`).join('');
  $('#bnav [data-b="more"]').onclick=openSide;
  document.querySelectorAll('[data-admin]').forEach(e=>e.hidden=!isAdmin());
@@ -665,7 +701,7 @@ addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
 function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
- const m={dash:dashboard,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,
+ const m={dash:dashboard,chat:chatView,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
   contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>',
@@ -872,7 +908,7 @@ async function openDeal(id,wantStage){
   <div><label class="l" for="df-k">Kind</label><select class="t" id="df-k">${Object.entries(KIND_NAME).map(([k,l])=>`<option value="${k}" ${k===d.kind?'selected':''}>${l}</option>`).join('')}</select></div>
   <div><label class="l" for="df-t">Title</label><input class="t" id="df-t" value="${esc(d.title)}"></div></div>
   <div style="margin:8px 0 2px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button type="button" class="ai-btn" id="df-ai">✦ Suggest a next step</button><span class="note" id="df-aiw"></span></div>
-  <div class="acts"><button class="btn btn-dark" id="df-s">Save</button>${d.contact_phone?`<a class="btn btn-wa" target="_blank" rel="noopener" href="https://wa.me/${d.contact_phone.replace(/\D/g,'')}">WhatsApp</a>`:''}<button class="btn btn-line" id="df-task">Add task</button><button class="btn btn-line" id="df-quo">Quotation</button><button class="btn btn-line" id="df-inv">Invoice</button></div>
+  <div class="acts"><button class="btn btn-dark" id="df-s">Save</button>${d.contact_phone?`<a class="btn btn-wa" target="_blank" rel="noopener" href="https://wa.me/${d.contact_phone.replace(/\D/g,'')}">WhatsApp</a>`:''}<button class="btn btn-line" id="df-chat">Team chat</button><button class="btn btn-line" id="df-task">Add task</button><button class="btn btn-line" id="df-quo">Quotation</button><button class="btn btn-line" id="df-inv">Invoice</button></div>
   <h4 class="sec">Tasks</h4>${r.tasks.length?`<ul class="list">${r.tasks.map(t=>(TASKCACHE[t.id]=t,taskRow(t))).join('')}</ul>`:'<p class="note">No tasks yet.</p>'}
   <h4 class="sec">Notes</h4><div class="composer"><textarea id="dn-b" placeholder="What happened? e.g. Called Ama, she wants the headline package"></textarea><div class="cbar"><div class="seg" id="dn-k">${['note','call','whatsapp','meeting','email'].map((k,i)=>`<button data-k="${k}" class="${i?'':'on'}">${NOTE_NAME[k]}</button>`).join('')}</div><button class="btn btn-dark" id="dn-s">Add note</button></div></div>
   <ul class="tl">${r.notes.map(n=>`<li class="${n.kind}"><i>${NOTE_ICON[n.kind]}</i><div class="when">${dt(n.at)} · ${esc(userName(n.author))} · ${NOTE_NAME[n.kind]}</div><div class="txt">${esc(n.body)}</div></li>`).join('')}
@@ -886,6 +922,7 @@ async function openDeal(id,wantStage){
  if($('#df-ai'))$('#df-ai').onclick=async()=>{const r=await aiCall({task:'deal',deal_id:d.id},$('#df-ai'));if(!r||r.error)return;
   $('#df-n').value=r.next_step;if(r.next_date)$('#df-nd').value=r.next_date;$('#df-aiw').textContent=r.why?'Why: '+r.why+' Press Save to keep it.':'Press Save to keep it.'};
  $('#df-quo').onclick=()=>invNew('quote',{deal_id:id,contact_id:d.contact_id,title:d.title,value:Number(d.value)||''});$('#df-inv').onclick=()=>invNew('invoice',{deal_id:id,contact_id:d.contact_id,title:d.title,value:Number(d.value)||''});
+ $('#df-chat').onclick=()=>chatThread('deal',id);
  $('#df-task').onclick=()=>taskForm({deal_id:id,contact_id:d.contact_id,title:d.next_step||'',company:d.company,deal_title:d.title});
  let nk='note';$('#dn-k').onclick=e=>{const b=e.target.closest('button');if(!b)return;nk=b.dataset.k;$('#dn-k').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))};
  $('#dn-s').onclick=async()=>{const body=$('#dn-b').value.trim();if(!body)return $('#dn-b').focus();await api('/api/notes',{method:'POST',body:JSON.stringify({deal_id:id,kind:nk,body})});toast('Note added');openDeal(id)};
@@ -946,7 +983,7 @@ async function record(id){
  const r=await api('/api/contacts/'+id+'/record').catch(()=>null);if(V!=='rec')return;
  if(!r){$('#view').innerHTML='<div class="empty"><b>Not found.</b>It may have been removed.</div>';return}
  const c=r.contact,name=c.company||c.full_name||c.email||'Unnamed';setTitle(name,c.company&&c.full_name?c.full_name+(c.role?' · '+c.role:''):'');
- pageActions(`<a class="btn btn-line" href="#contacts">← All contacts</a><button class="btn btn-line" id="rc-edit">Edit details</button>`);
+ pageActions(`<a class="btn btn-line" href="#contacts">← All contacts</a><button class="btn btn-line" id="rc-chat">Team chat</button><button class="btn btn-line" id="rc-edit">Edit details</button>`);$('#rc-chat').onclick=()=>chatThread('contact',id);
  const tel=(c.phone||'').replace(/[^\d+]/g,''),wa=(c.whatsapp||tel).replace(/\D/g,'');
  const tags=(c.tags||'').split(',').map(s=>s.trim()).filter(Boolean);
  const openD=r.deals.filter(d=>!['won','lost'].includes(d.stage)),openT=r.tasks.filter(t=>!t.done_at);
@@ -1192,7 +1229,7 @@ function evEditor(){
  $('#view').innerHTML=`<div class="card"><div class="ch">
    <div><h3>${i.__new?'New item':esc(i.title||i.code)}</h3><div class="note">${i.__new?'Give it a short code such as F5.':'Code '+esc(i.code)}</div></div>
    <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-line" id="ev-back">← All items</button>
+    <button class="btn btn-line" id="ev-back">← All items</button>${i.__new?'':'<button class="btn btn-line" id="ev-chat">Team chat</button>'}
     <button class="btn btn-dark" id="ev-save">Save</button></div></div>
 
   <h4 class="sec">The basics</h4>
@@ -1305,7 +1342,7 @@ function evEditor(){
    :e.error==='code_and_title_required'?'A code and a title are needed':'Could not save')}
  };
  $('#ev-save').onclick=save; $('#ev-save2').onclick=save;
- $('#ev-back').onclick=()=>{EV=null;events()};
+ $('#ev-back').onclick=()=>{EV=null;events()};if($('#ev-chat'))$('#ev-chat').onclick=()=>chatThread('item',i.code);
 
  $('#i-cover-f').onchange=async e=>{const f=e.target.files[0];if(!f)return;collect();toast('Resizing…');
   try{const m=await upload(f,'image',{alt:$('#i-alt').value,brand:!$('#i-cover-own').checked});EV.cover=m.id;EV.cover_image=m;toast('Cover set');redraw()}
@@ -2375,7 +2412,7 @@ async function settings(){
      <button class="btn btn-line" data-toggle="${esc(u.email)}" data-on="${u.active===false?'1':'0'}">${u.active===false?'Turn access on':'Turn access off'}</button>
      <button class="btn btn-line danger" data-del="${esc(u.email)}">Remove</button></div>`:`<span class="note">${ROLE_NAME[u.role]}</span>`}</div></div>`}).join('')}</div>
   <p class="note" style="margin-top:14px"><b>Owner (super admin)</b> everything, including this team list. <b>Admin</b> registrations, payments, events, outreach and settings. <b>Staff</b> view and door check-in only, with contact details hidden.</p></div>`;
- wireEyes($('#view'));
+ wireEyes($('#view'));chatPrefsCard();
  $('#sp').onclick=async()=>{const b=$('#sp');b.disabled=true;
   if(await changePassword($('#cp-cur').value,$('#cp-new').value,$('#cp-new2').value,$('#cp-err'))){['cp-cur','cp-new','cp-new2'].forEach(i=>$('#'+i).value='');toast('Password changed')}
   b.disabled=false};
@@ -2764,4 +2801,117 @@ function labelTables(root){root.querySelectorAll('table').forEach(t=>{const h=[.
 
 /* session check */
 api('/api/me').then(u=>{ME=u;start()}).catch(()=>{$('#login').style.display='grid'});
+/* ===================== team chat (server side: chat.js) ===================== */
+let CH={state:null,cur:null,msgs:[],last:0,timer:0,files:null};
+const chName=c=>c.kind==='channel'?'#'+c.name:c.kind==='dm'?(()=>{const o=(c.members||[]).find(e=>e!==ME.email);const u=(CH.state.users||[]).find(x=>x.email===o);return u?(u.name||u.email):'Direct message'})():c.name;
+const chWho=e=>e==='ai'?'Gotham AI':((CH.state&&CH.state.users||[]).find(x=>x.email===e)||{}).name||e;
+const chText=s=>esc(s).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/(^|\s)@([\p{L}][\p{L}0-9.'-]{1,30})/gu,'$1<b class="mention">@$2</b>').replace(/\n/g,'<br>');
+async function chatBadge(){
+ const s=await api('/api/chat/state').catch(()=>null);if(!s)return;CH.state=s;
+ ['#chcnt','#chcnt2'].forEach(x=>{const e=$(x);if(e){e.textContent=s.unread||'';e.classList.toggle('warn',s.mentioned>0)}});
+ document.title=document.title.replace(/^\(\d+\) /,'');if(s.unread)document.title='('+s.unread+') '+document.title;
+ if(V==='chat')chatList();
+}
+setInterval(()=>{if(ME&&!ME.must_change&&!document.hidden)chatBadge()},20000);
+function chatList(){
+ const s=CH.state,l=$('#chl');if(!s||!l)return;
+ const row=c=>`<a class="chi ${CH.cur&&CH.cur.id===c.id?'on':''}" href="#chat/${c.id}"><span class="nm">${c.kind==='record'?`<span class="chip">${{contact:'Company',deal:'Deal',item:'Event'}[c.ref_type]}</span> `:''}${esc(chName(c))}</span>${c.unread?`<span class="b ${c.mentioned?'warn':''}">${c.unread}</span>`:''}</a>`;
+ const g=k=>s.channels.filter(c=>c.kind===k);
+ l.innerHTML=`<h6>Channels${isAdmin()?' <button type="button" class="lnk" id="ch-newc" title="New channel">+</button>':''}</h6>${g('channel').map(row).join('')}
+  <h6>Direct messages <button type="button" class="lnk" id="ch-newd" title="New direct message">+</button></h6>${g('dm').map(row).join('')||'<p class="note">None yet.</p>'}
+  <h6>Clients, deals & events</h6>${g('record').map(row).join('')||'<p class="note">Open a company, deal or event and press “Team chat”.</p>'}`;
+ if($('#ch-newc'))$('#ch-newc').onclick=async()=>{const n=prompt('Name of the new channel (e.g. sponsors)');if(!n)return;try{const r=await api('/api/chat/channels',{method:'POST',body:JSON.stringify({name:n})});await chatBadge();go('chat',r.channel.id)}catch(e){toast('Could not add the channel')}};
+ $('#ch-newd').onclick=()=>{const us=s.users.filter(u=>u.email!==ME.email);
+  $('#dr').classList.add('on');$('#drb').innerHTML=`<h2 style="margin:0 0 12px">Message someone</h2><ul class="list">${us.map(u=>`<li class="li" style="cursor:pointer" data-dm="${esc(u.email)}"><span class="av">${initials(u.name||u.email)}</span><div class="grow"><b>${esc(u.name||u.email)}</b><div class="note">${esc(ROLE_NAME[u.role]||u.role)}</div></div></li>`).join('')}</ul>`;
+  document.querySelectorAll('[data-dm]').forEach(x=>x.onclick=async()=>{const r=await api('/api/chat/dm',{method:'POST',body:JSON.stringify({email:x.dataset.dm})});closeDr();await chatBadge();go('chat',r.channel.id)})};
+}
+async function chatView(){
+ clearInterval(CH.timer);
+ $('#view').innerHTML=`<div class="chat"><nav class="chl" id="chl" aria-label="Conversations"></nav><section class="chm" id="chm"><div class="empty">Choose a conversation.</div></section></div>`;
+ await chatBadge();
+ let id=+ARG||0;
+ if(!id&&CH.state){const g=CH.state.channels.find(c=>c.name==='general');id=g?g.id:0}
+ if(id)chatOpen(id);else chatList();
+}
+async function chatOpen(id){
+ clearInterval(CH.timer);
+ let r;try{r=await api('/api/chat/messages?channel='+id)}catch(e){$('#chm').innerHTML='<div class="empty"><b>Not available.</b>This conversation is closed to you or no longer exists.</div>';return}
+ if(V!=='chat')return;
+ CH.cur=r.channel;CH.msgs=r.messages;CH.last=CH.msgs.length?CH.msgs[CH.msgs.length-1].id:0;
+ const known=(CH.state.channels||[]).find(c=>c.id===id)||{...r.channel,members:[]};
+ const link=r.channel.kind==='record'?({contact:`#rec/${r.channel.ref_id}`,deal:null,item:'#events'})[r.channel.ref_type]:null;
+ setTitle('Team chat',chName(known));
+ $('#chm').innerHTML=`<div class="chh"><div><b>${esc(chName(known))}</b>${r.channel.topic?`<div class="note">${esc(r.channel.topic)}</div>`:''}</div>
+   ${link?`<a class="btn btn-line" href="${link}">Open ${r.channel.ref_type==='item'?'events':'record'}</a>`:r.channel.ref_type==='deal'?`<button class="btn btn-line" id="ch-deal">Open deal</button>`:''}</div>
+  <div class="chs" id="chs" aria-live="polite"></div>
+  <form class="chc" id="chc"><div class="chat-mn" id="chmn" hidden></div><div class="chf" id="chfp" hidden></div>
+   <textarea id="cht" rows="2" placeholder="Write a message. @name to mention someone, @all for everyone here." aria-label="Message"></textarea>
+   <div class="cbar"><label class="btn btn-line" title="Add a photo or file">Attach<input type="file" id="chfile" hidden accept="image/*,.pdf,.docx,.xlsx,.pptx,.txt,.csv"></label><span class="note">Enter to send · Shift+Enter for a new line</span><button class="btn btn-dark">Send</button></div></form>`;
+ if($('#ch-deal'))$('#ch-deal').onclick=()=>openDeal(+r.channel.ref_id);
+ chatDraw(true);chatList();chatRead();
+ const t=$('#cht');
+ t.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&!$('#chmn').hidden&&$('#chmn').firstChild){e.preventDefault();$('#chmn').firstChild.click();return}
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#chc').requestSubmit()}});
+ t.addEventListener('input',()=>{const m=t.value.slice(0,t.selectionStart).match(/@([\p{L}]*)$/u),box=$('#chmn');
+  if(!m){box.hidden=true;return}const qq=m[1].toLowerCase();
+  const opts=[...CH.state.users.filter(u=>u.email!==ME.email).map(u=>first(u.name||u.email)),'all',...(CH.state.ai?['Gotham']:[])].filter(n=>n.toLowerCase().startsWith(qq)).slice(0,6);
+  box.innerHTML=opts.map(n=>`<button type="button" data-n="${esc(n)}">@${esc(n)}</button>`).join('');box.hidden=!opts.length;
+  box.querySelectorAll('button').forEach(b=>b.onclick=()=>{const pos=t.selectionStart,before=t.value.slice(0,pos).replace(/@[\p{L}]*$/u,'@'+b.dataset.n+' ');t.value=before+t.value.slice(pos);box.hidden=true;t.focus();t.selectionStart=t.selectionEnd=before.length})});
+ $('#chfile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;if(f.size>10*1024*1024)return toast('Files up to 10 MB');
+  $('#chfp').hidden=false;$('#chfp').textContent='Uploading '+f.name+'…';
+  const data=await new Promise(res=>{const rd=new FileReader();rd.onload=()=>res(rd.result);rd.readAsDataURL(f)});
+  try{const u=await api('/api/chat/upload',{method:'POST',body:JSON.stringify({name:f.name,type:f.type||'application/octet-stream',data})});CH.files={id:u.file,name:f.name};$('#chfp').innerHTML=`📎 ${esc(f.name)} <button type="button" class="lnk" id="chfx">remove</button>`;$('#chfx').onclick=()=>{CH.files=null;$('#chfp').hidden=true}}
+  catch(err){$('#chfp').hidden=true;toast(err.message==='file_type'?'That kind of file cannot be shared here':'Upload failed')}};
+ $('#chc').onsubmit=async e=>{e.preventDefault();const body=t.value.trim();if(!body&&!CH.files)return t.focus();
+  const b=$('#chc button.btn-dark');b.disabled=true;
+  try{const r=await api('/api/chat/messages',{method:'POST',body:JSON.stringify({channel:CH.cur.id,body,file:CH.files&&CH.files.id})});t.value='';CH.files=null;$('#chfp').hidden=true;
+   if(!CH.msgs.some(m=>m.id===r.message.id))CH.msgs.push(r.message);CH.last=Math.max(CH.last,r.message.id);chatDraw(true);chatRead()}
+  catch(err){toast('Not sent. Try again.')}finally{b.disabled=false;t.focus()}};
+ CH.timer=setInterval(chatPoll,4000);
+ t.focus();
+}
+async function chatPoll(){
+ if(V!=='chat'||!CH.cur){clearInterval(CH.timer);return}if(document.hidden)return;
+ const r=await api('/api/chat/messages?channel='+CH.cur.id+'&after='+CH.last).catch(()=>null);if(!r||!r.messages.length)return;
+ const s=$('#chs'),atEnd=s&&s.scrollHeight-s.scrollTop-s.clientHeight<80;
+ for(const m of r.messages)if(!CH.msgs.some(x=>x.id===m.id))CH.msgs.push(m);
+ CH.last=CH.msgs[CH.msgs.length-1].id;chatDraw(atEnd);chatRead();
+}
+async function chatRead(){if(!CH.cur||!CH.last)return;await api('/api/chat/read',{method:'POST',body:JSON.stringify({channel:CH.cur.id,last:CH.last})}).catch(()=>{});chatBadge()}
+function chatDraw(toEnd){
+ const s=$('#chs');if(!s)return;let prevDay='';
+ s.innerHTML=CH.msgs.length?CH.msgs.map(m=>{
+  const day=new Date(m.at).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'}),sep=day!==prevDay?`<div class="chday"><span>${day}</span></div>`:'';prevDay=day;
+  const time=new Date(m.at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),who=m.author_name||chWho(m.author),mine=m.author===ME.email;
+  if(m.deleted)return sep+`<div class="chmsg del"><div class="chb"><span class="note">Message deleted</span></div></div>`;
+  if(m.kind==='system')return sep+`<div class="chsys">${esc(m.body)} · ${time}</div>`;
+  if(m.kind==='proposal'){const d=m.data||{},st=d.status;
+   return sep+`<div class="chmsg prop"><span class="av ai">✦</span><div class="chb"><div class="chw"><b>Gotham AI</b> <span class="note">${time}</span></div>
+    <div class="chp"><b>Website update for ${esc(d.title||d.code)}</b><ul>${(d.updates||[]).map(u=>`<li>${esc(u.type==='add_speaker'?'Add speaker: '+u.name+(u.role?' ('+u.role+')':''):u.type==='remove_speaker'?'Remove speaker: '+u.name:u.type==='agenda_add'?'Programme: '+(u.time?u.time+' ':'')+u.what:u.type==='set_venue'?'Venue: '+u.venue:u.type==='set_start'?'New date: '+u.date+' '+u.time:'News: '+u.text)}</li>`).join('')}</ul>
+    ${st==='pending'?(isAdmin()?`<div class="acts"><button class="btn btn-dark" data-pub="${m.id}">Publish to website</button><button class="btn btn-line" data-dis="${m.id}">Dismiss</button></div><div class="note">Nothing changes on the website until you publish.</div>`:'<div class="note">Waiting for an admin to publish.</div>')
+     :`<div class="note">${st==='published'?'Published':'Dismissed'} by ${esc(chWho(d.by))}${d.at?' · '+dshort(d.at):''}</div>`}</div></div></div>`}
+  const f=m.file?(m.file.kind==='image'?`<a href="/api/chat/files/${m.file.id}" target="_blank" rel="noopener"><img class="chimg" src="/api/chat/files/${m.file.id}?thumb=1" alt="${esc(m.file.name||'Photo')}" loading="lazy"></a>`
+   :`<a class="chfile" href="/api/chat/files/${m.file.id}">📎 ${esc(m.file.name||'File')}</a>`):'';
+  return sep+`<div class="chmsg ${mine?'me':''} ${m.mentions.includes(ME.email)?'at':''}"><span class="av">${initials(who)}</span><div class="chb"><div class="chw"><b>${esc(who)}</b> <span class="note">${time}</span>${mine||ME.role==='owner'?` <button type="button" class="lnk chdel" data-del="${m.id}" title="Delete">Delete</button>`:''}</div>${m.body?`<div class="cht">${chText(m.body)}</div>`:''}${f}</div></div>`}).join(''):'<div class="empty">No messages yet. Say hello.</div>';
+ if(toEnd)s.scrollTop=s.scrollHeight;
+ s.querySelectorAll('[data-pub],[data-dis]').forEach(b=>b.onclick=async()=>{const pub=!!b.dataset.pub;if(pub&&!confirm('Publish this update to the website now?'))return;
+  try{await api('/api/chat/proposal',{method:'POST',body:JSON.stringify({id:+(b.dataset.pub||b.dataset.dis),decision:pub?'publish':'dismiss'})});toast(pub?'Published to the website':'Dismissed');chatOpen(CH.cur.id)}catch(e){toast('Could not do that: '+e.message)}});
+ s.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this message?'))return;await api('/api/chat/messages/'+b.dataset.del,{method:'DELETE'}).catch(()=>{});chatOpen(CH.cur.id)});
+}
+async function chatThread(ref_type,ref_id){
+ try{const r=await api('/api/chat/thread',{method:'POST',body:JSON.stringify({ref_type,ref_id})});closeDr();go('chat',r.channel.id)}catch(e){toast('Could not open the team chat')}
+}
+
+/* Settings: where @mention alerts go */
+async function chatPrefsCard(){
+ const p=await api('/api/chat/prefs').catch(()=>null);if(!p||V!=='settings')return;
+ const c=document.createElement('div');c.className='card';c.id='chat-prefs';
+ c.innerHTML=`<h3>Team chat alerts</h3><p class="note">When someone @mentions you and you have not read it within 15 minutes, you get an email${p.wa_ready?' and, if a WhatsApp template is set below, a WhatsApp message':''}.</p>
+  <div class="f2"><div><label class="l" for="cp-ph">Your WhatsApp number for alerts</label><input class="t" id="cp-ph" inputmode="tel" value="${esc(p.phone||'')}" placeholder="+233 24 000 0000"></div>
+  ${p.wa_template!==undefined?`<div><label class="l" for="cp-tpl">WhatsApp template for alerts (approved by Meta)</label><input class="t" id="cp-tpl" value="${esc(p.wa_template||'')}" placeholder="e.g. team_mention"><div class="note">A business message outside a customer chat must use a template Meta has approved, with three fields: who, where, the message. Leave empty to send emails only.</div></div>`:''}</div>
+  <div class="acts"><button class="btn btn-dark" id="cp-save">Save alerts</button></div>`;
+ $('#view').appendChild(c);
+ $('#cp-save').onclick=async()=>{const b={phone:$('#cp-ph').value};if($('#cp-tpl'))b.wa_template=$('#cp-tpl').value.trim();
+  try{await api('/api/chat/prefs',{method:'POST',body:JSON.stringify(b)});toast('Alerts saved')}catch(e){toast(e.message==='bad_phone'?'Check the phone number':e.message==='bad_template'?'Template names use lowercase letters, numbers and _':'Not saved')}};
+}
 </script></body></html>

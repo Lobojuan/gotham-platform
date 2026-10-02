@@ -147,7 +147,9 @@ export function act(b, action, phoneGH, now = new Date()) {
     const name = str(action.name, 80), phone = phoneGH(str(action.phone, 30));
     if (!name || /[\[\]<>]|caller name|unknown/i.test(name)) return { ok: false, why: 'ask for the caller\'s name first' };
     if (!/^\+\d{9,15}$/.test(phone)) return { ok: false, why: 'ask for a phone number to call back first' };
-    const cb = { reason: str(action.reason, 160) || 'Caller asked for a person', name, phone, due: 'within 1 hour', status: 'task for the front desk' };
+    const reason = str(action.reason, 160) || 'Caller asked for a person';
+    if (b.callbacks.some(c => c.phone === phone && c.reason.toLowerCase() === reason.toLowerCase())) return { ok: true };   // already arranged in this call
+    const cb = { reason, name, phone, due: 'within 1 hour', status: 'task for the front desk' };
     b.callbacks.push(cb);
     return { ok: true, did: { type: 'handover', callback: cb } };
   }
