@@ -141,7 +141,7 @@
   /* our own listening, for browsers whose speech service is missing or broken (on some computers Chrome says "network" at once):
      the page records the caller, notices when they stop talking, and our server turns the recording into text */
   const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-  let serverListen = true, useServer = !NATIVE; try { if (localStorage.getItem('rc-ears') === '1') useServer = true; } catch {}
+  let serverListen = true, switched = false, useServer = !NATIVE; try { if (localStorage.getItem('rc-ears') === '1') useServer = true; } catch {}
   let SR = NATIVE || (canRecord ? ServerRec : null);
   if (useServer && !canRecord) useServer = false;
   const canSpeak = 'speechSynthesis' in window;
@@ -256,7 +256,7 @@
     r.abort = r.stop = () => { dead = true; stopRec(); };
     r.start = () => { (async () => {
       try { if (!srvStream || !srvStream.active) srvStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }); }
-      catch (e) { return finishWith(/NotAllowed|Security|Permission/i.test(String(e && e.name)) ? 'not-allowed' : 'audio-capture'); }
+      catch (e) { await new Promise(r => setTimeout(r, 50)); return finishWith(/NotAllowed|Security|Permission/i.test(String(e && e.name)) ? 'not-allowed' : 'audio-capture'); }
       if (dead) return;
       primeCtx(); if (!srvCtx) return finishWith('audio-capture');
       const an = srvCtx.createAnalyser(); an.fftSize = 1024; src = srvCtx.createMediaStreamSource(srvStream); src.connect(an);
@@ -303,19 +303,24 @@
     if (!SR || !inCall) return;
     rec = new (useServer ? ServerRec : NATIVE)(); rec.lang = SPEECH[recLang] || SPEECH[0]; rec.interimResults = false; rec.maxAlternatives = 1; rec.continuous = false;
     let heard = '';
-    rec.onaudiostart = () => { micOn = true; if (micDown) { micDown = false; warn.style.display = 'none'; } if (mic.dataset.state === 'listening') set('listening', T.listening, T.listenHint); armGreet(); };
+    rec.onaudiostart = () => { if (useServer && switched) { switched = false; try { localStorage.setItem('rc-ears', '1'); } catch {} } micOn = true; if (micDown) { micDown = false; warn.style.display = 'none'; } if (mic.dataset.state === 'listening') set('listening', T.listening, T.listenHint); armGreet(); };
     rec.onsoundstart = () => { if (mic.dataset.state === 'listening') set('listening', T.hearing, T.hearingHint); };
     rec.onspeechstart = () => { heardSpeech = true; };
     rec.onprocessing = () => { if (inCall && !busy) set('thinking', T.wait); };
     rec.onresult = ev => { heardSpeech = true; quiet = 0; if (warn.textContent === T.quiet) warn.style.display = 'none'; heard = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
     rec.onerror = ev => {
       if (ev.error === 'language-not-supported' && recLang + 1 < SPEECH.length) { recLang++; return; }
-      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') whyBlocked().then(micFail);
-      else if (ev.error === 'audio-capture') micFail(T.noMic);
+      if ((ev.error === 'not-allowed' || ev.error === 'service-not-allowed') && !useServer && serverListen && canRecord) {
+        /* often only the browser's speech service is off (an iPhone with Dictation switched off says this); try our own listening:
+           if the microphone itself is blocked it will say so, and the visitor gets the real reason */
+        useServer = true; switched = true;
+      }
+      else if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { inCall = false; whyBlocked().then(micFail); }
+      else if (ev.error === 'audio-capture') { inCall = false; micFail(T.noMic); }
       else if (ev.error === 'network') {
         /* the browser's own speech service does not work here: switch to ours for good (the rest of this call and the next visits) */
-        if (!useServer && serverListen && canRecord) { useServer = true; try { localStorage.setItem('rc-ears', '1'); } catch {} }
-        else micFail(useServer ? T.noEars : T.noNet);
+        if (!useServer && serverListen && canRecord) { useServer = true; switched = true; }
+        else { inCall = false; micFail(useServer ? T.noEars : T.noNet); }
       }
       else if (ev.error === 'no-speech' && ++quiet >= 2) note(T.quiet);
     };

@@ -72,7 +72,9 @@ const fakeVoice = lines => {
 
   // the microphone cannot be used (here: the browser says not-allowed): clear instructions, the page is not frozen, she still greets and answers out loud
   const bl = await b.newContext(); await bl.addInitScript(fakeVoice, []);
-  await bl.addInitScript(() => { class SRX { start() { setTimeout(() => { this.onerror && this.onerror({ error: 'not-allowed' }); this.onend && this.onend(); }, 50); } abort() {} } window.webkitSpeechRecognition = SRX; window.SpeechRecognition = SRX; });
+  await bl.addInitScript(() => { class SRX { start() { setTimeout(() => { this.onerror && this.onerror({ error: 'not-allowed' }); this.onend && this.onend(); }, 50); } abort() {} } window.webkitSpeechRecognition = SRX; window.SpeechRecognition = SRX;
+    /* the page now tries its own listening when the speech service refuses; the microphone itself is refused here too */
+    navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error('Permission denied'), { name: 'NotAllowedError' })); });
   const pb = await bl.newPage(); watch(pb);
   await pb.goto(B + '/demo/receptionist'); await pb.waitForTimeout(500); await pb.click('#rc-mic');
   await pb.waitForFunction(() => document.getElementById('rc-warn').style.display === 'block', null, { timeout: 5000 });

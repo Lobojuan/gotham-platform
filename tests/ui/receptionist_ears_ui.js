@@ -51,7 +51,34 @@ const noService = () => { delete window.webkitSpeechRecognition; delete window.S
   assert(await p.getAttribute('#rc-mic', 'data-state') === 'idle', 'ending the call returns to idle');
   await ctx.close();
 
-  // ---------- 2. a browser with no speech service at all (Firefox) ----------
+  // ---------- 1b. an iPhone with Dictation switched off: the speech service says "service-not-allowed", the microphone itself is fine ----------
+  const ctxI = await b.newContext({ viewport: { width: 390, height: 844 } }); await ctxI.grantPermissions(['microphone'], { origin: B });
+  await ctxI.addInitScript(common); await ctxI.addInitScript(() => {
+    class SR { start() { setTimeout(() => { this.onerror && this.onerror({ error: 'service-not-allowed' }); this.onend && this.onend(); }, 40); } abort() {} stop() {} }
+    window.webkitSpeechRecognition = SR; window.SpeechRecognition = SR; window.__greetWait = 20000; });
+  const pI = await ctxI.newPage(); watch(pI);
+  await pI.goto(B + '/demo/receptionist'); await pI.waitForTimeout(1000);
+  await pI.click('#rc-mic');
+  await pI.waitForFunction(() => [...document.querySelectorAll('#rc-log li.u')].length >= 1, null, { timeout: 40000 });
+  assert(/appointment/i.test(await pI.textContent('#rc-log li.u')), '"service-not-allowed" (iPhone with Dictation off): the page uses our listening instead of giving up');
+  assert(await pI.evaluate(() => getComputedStyle(document.getElementById('rc-warn')).display) === 'none', 'and shows no error');
+  await ctxI.close();
+
+  // ---------- 1c. the microphone itself is blocked: the visitor still gets the real reason ----------
+  const ctxB = await b.newContext({ viewport: { width: 1280, height: 900 } });   // no microphone permission granted, and the fake device is told no
+  await ctxB.addInitScript(common); await ctxB.addInitScript(() => {
+    class SR { start() { setTimeout(() => { this.onerror && this.onerror({ error: 'not-allowed' }); this.onend && this.onend(); }, 40); } abort() {} stop() {} }
+    window.webkitSpeechRecognition = SR; window.SpeechRecognition = SR;
+    navigator.mediaDevices.getUserMedia = () => Promise.reject(Object.assign(new Error('Permission denied by system'), { name: 'NotAllowedError' }));
+    Object.defineProperty(navigator, 'permissions', { configurable: true, value: { query: async () => ({ state: 'granted', onchange: null }) } }); });
+  const pB = await ctxB.newPage(); watch(pB);
+  await pB.goto(B + '/demo/receptionist'); await pB.waitForTimeout(800);
+  await pB.click('#rc-mic');
+  await pB.waitForFunction(() => document.getElementById('rc-warn').style.display === 'block', null, { timeout: 15000 });
+  assert(/microphone/i.test(await pB.textContent('#rc-warn')) && await pB.getAttribute('#rc-mic', 'data-state') !== 'listening', 'a really blocked microphone is still explained, and the page does not freeze');
+  await ctxB.close();
+
+
   const ctx2 = await b.newContext({ viewport: { width: 1280, height: 900 } }); await ctx2.grantPermissions(['microphone'], { origin: B });
   await ctx2.addInitScript(common); await ctx2.addInitScript(noService); await ctx2.addInitScript(() => { window.__greetWait = 20000; });
   const p2 = await ctx2.newPage(); watch(p2);
