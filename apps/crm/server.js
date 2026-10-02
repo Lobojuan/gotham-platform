@@ -12,6 +12,7 @@ import * as MT from './media-tools.js';
 import * as EVP from './events-pages.js';
 import * as RCP from './receptionist.js';
 import * as CHT from './chat.js';
+import * as TTS from './tts.js';
 
 const PORT = process.env.PORT || 4100;
 const SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
@@ -1773,12 +1774,33 @@ ${await askKnowledge()}`;
     }
 
     /* ---- the AI receptionist demo (/demo/receptionist): an invented clinic; nothing stored, see receptionist.js ---- */
+    /* her voice: "Jenny (Dioco)", made on this server (tts.js); only for words she said on this call, English only */
+    if (p === '/api/demo/receptionist/voice' && req.method === 'POST') {
+      const b = await body(req);
+      const sid = /^[A-Za-z0-9-]{8,40}$/.test(String(b.sid || '')) ? String(b.sid) : '';
+      const text = String(b.text || '').replace(/\s+/g, ' ').trim();
+      if (!sid || !text || text.length > 600) return json(res, 400, { error: 'bad_request' }, cors);
+      if (!VOICE.available()) return json(res, 503, { error: 'voice_unavailable' }, cors);
+      const said = RCP.board(sid).said || [];
+      if (!(RCP.GREETING.includes(text) || said.some(x => x.includes(text)))) return json(res, 403, { error: 'not_said' }, cors);
+      if (rateLimited(ip, 400, 3600e3, 'rcptv')) return json(res, 429, { error: 'too_many' }, cors);
+      try {
+        const mp3 = await VOICE.say(text);
+        res.writeHead(200, { 'content-type': 'audio/mpeg', 'content-length': mp3.length, 'cache-control': 'private, max-age=3600', ...cors });
+        return res.end(mp3);
+      } catch (e) {
+        console.error('voice failed:', String(e.message || e).slice(0, 200));
+        return json(res, 503, { error: 'voice_failed' }, cors);
+      }
+    }
+
     if (p === '/api/demo/receptionist' && (req.method === 'POST' || req.method === 'GET')) {
       const sidOf = v => (/^[A-Za-z0-9-]{8,40}$/.test(String(v || '')) ? String(v) : '');
       if (req.method === 'GET') {
         const sid = sidOf(url.searchParams.get('sid'));
         if (!sid) return json(res, 400, { error: 'missing_sid' }, cors);
-        return json(res, 200, { ai: !!OPENAI_KEY, board: RCP.publicBoard(RCP.board(sid)) }, cors);
+        VOICE.warm(RCP.GREETING);
+        return json(res, 200, { ai: !!OPENAI_KEY, voice: VOICE.available(), board: RCP.publicBoard(RCP.board(sid)) }, cors);
       }
       const b = await body(req);
       const sid = sidOf(b.sid);
@@ -1793,8 +1815,12 @@ ${await askKnowledge()}`;
       if (rcptDay.n >= +(process.env.RECEPTIONIST_DAILY_CAP || 800)) return json(res, 200, { say: 'The demo has had a busy day. Please try again tomorrow.', off: true }, cors);
       rcptDay.n++;
       const bd = RCP.board(sid);
-      if (++bd.n > 40) return json(res, 200, { say: 'This demo call is at its limit. Press restart to begin a new one.', off: true, board: RCP.publicBoard(bd) }, cors);
       const language = ['en', 'fr', 'es'].includes(b.language) ? b.language : 'en';
+      const reply = o => {
+        if (o.say) { (bd.said ||= []).push(String(o.say).replace(/\s+/g, ' ').trim()); if (bd.said.length > 40) bd.said.shift(); if (language === 'en' && VOICE.available()) o.voice = TTS.chunks(o.say); }
+        return json(res, 200, o, cors);
+      };
+      if (++bd.n > 40) return reply({ say: 'This demo call is at its limit. Press restart to begin a new one.', off: true, board: RCP.publicBoard(bd) });
       const history = (Array.isArray(b.history) ? b.history : []).slice(-10)
         .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
         .map(m => ({ role: m.role, content: m.content.slice(0, 600) }));
@@ -1818,10 +1844,10 @@ ${await askKnowledge()}`;
           r = await ask(300);
         }
         const done = { did };
-        return json(res, 200, { say: r.say || 'Sorry, could you say that again?', did: done.did || null, board: RCP.publicBoard(bd) }, cors);
+        return reply({ say: r.say || 'Sorry, could you say that again?', did: done.did || null, board: RCP.publicBoard(bd) });
       } catch (e) {
         console.error('receptionist failed:', String(e.message || e).slice(0, 300));
-        return json(res, 200, { say: 'Sorry, the line is busy for a moment. Please say that again.', board: RCP.publicBoard(bd) }, cors);
+        return reply({ say: 'Sorry, the line is busy for a moment. Please say that again.', board: RCP.publicBoard(bd) });
       }
     }
 
@@ -5246,6 +5272,7 @@ async function runImport(file) {
 }
 
 /* the team chat (chat.js) */
+const VOICE = TTS.makeTTS();
 const CHAT = CHT.makeChat({ q, json, body, bodyBig, clean, askModel, phoneGH, aiOn: () => !!OPENAI_KEY, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto,
   setting: async k => (await q('select value from settings where key=$1', [k])).rows[0]?.value || '' });
 

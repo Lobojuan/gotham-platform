@@ -78,7 +78,7 @@
           <button type="button" data-say="Can I pay now with Mobile Money?">Can I pay now with Mobile Money?</button>
           <button type="button" data-say="Can a nurse call me back?">Can a nurse call me back?</button>
         </div>
-        <p class="rc-note">Your browser turns your voice into text (in Chrome this goes through Google's speech service) and reads the answers aloud. We do not store the call: the board on the right is cleared when you close the page. Please use an invented name and do not share real medical details. For emergencies in Ghana call 112.</p>
+        <p class="rc-note">Your browser turns your voice into text (in Chrome this goes through Google's speech service). In English the receptionist speaks with the voice “Jenny (Dioco)”, made on our own server; in French and Spanish your browser reads the answers aloud. We do not store the call: the board on the right is cleared when you close the page. Please use an invented name and do not share real medical details. For emergencies in Ghana call 112.</p>
       </div>
 
       <div class="rc-card rc-board" aria-label="Clinic back office, live">
@@ -139,6 +139,12 @@
   const history = [];
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   const canSpeak = 'speechSynthesis' in window;
+  /* her English voice comes from our server ("Jenny (Dioco)"); the browser's own voice is the fallback, and speaks French and Spanish */
+  let serverVoice = lang === 'en' && 'Audio' in window, speakSeq = 0, stopAudio = null;
+  const player = serverVoice ? new Audio() : null;
+  const SILENT = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+  /* phones only let a page play sound that starts from a tap: the first tap unlocks the player for the rest of the call */
+  const unlock = () => { if (!player || player.dataset.ok) return; player.dataset.ok = '1'; try { player.src = SILENT; const p = player.play(); if (p) p.catch(() => {}); } catch {} };
   let inCall = false, busy = false, rec = null, recLang = 0, seen = { bookings: 0, links: 0, callbacks: 0 };
 
   const set = (st, label, hint) => { mic.dataset.state = st; stateEl.textContent = label; hintEl.textContent = hint || '';
@@ -160,9 +166,43 @@
     for (const k in L) if (!L[k].children.length) L[k].innerHTML = `<li class="rc-empty" style="border:0;padding:0">${T.nothing}</li>`;
     seen = { bookings: b.bookings.length, links: b.links.length, callbacks: b.callbacks.length };
   }
-  fetch('/api/demo/receptionist?sid=' + encodeURIComponent(sid)).then(r => r.json()).then(j => { draw(j.board); if (j.ai === false) note(T.resting); }).catch(() => draw({ bookings: [], links: [], callbacks: [] }));
+  fetch('/api/demo/receptionist?sid=' + encodeURIComponent(sid)).then(r => r.json()).then(j => { draw(j.board); if (j.ai === false) note(T.resting); if (j.voice === false) serverVoice = false; }).catch(() => draw({ bookings: [], links: [], callbacks: [] }));
 
-  function speak(text) {
+  const fetchVoice = text => fetch('/api/demo/receptionist/voice', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid, text }) })
+    .then(r => (r.ok ? r.blob() : Promise.reject(new Error('voice ' + r.status))));
+  function playBlob(blob, onStart) {
+    return new Promise((res, rej) => {
+      const u = URL.createObjectURL(blob); let done = false;
+      const fin = err => { if (done) return; done = true; player.onended = player.onerror = player.onplaying = null; stopAudio = null; setTimeout(() => URL.revokeObjectURL(u), 1000); err ? rej(err) : res(); };
+      player.onended = () => fin(); player.onerror = () => fin(new Error('audio'));
+      player.onplaying = () => { if (onStart) onStart(); };
+      stopAudio = () => { try { player.pause(); } catch {} fin(); };
+      player.src = u; setTimeout(() => fin(), 45000);
+      try { const p = player.play(); if (p) p.catch(e => fin(e)); } catch (e) { fin(e); }
+    });
+  }
+  /* the reply comes in pieces: the first plays while the next is being made */
+  async function speak(text, pieces, onStart) {
+    const my = ++speakSeq;
+    if (serverVoice && player && pieces && pieces.length) {
+      let i = 0;
+      try {
+        let next = fetchVoice(pieces[0]);
+        for (; i < pieces.length; i++) {
+          const blob = await next;
+          if (my !== speakSeq) return;
+          next = i + 1 < pieces.length ? fetchVoice(pieces[i + 1]) : null; if (next) next.catch(() => {});
+          await playBlob(blob, i === 0 ? onStart : null);
+          if (my !== speakSeq) return;
+        }
+        return;
+      } catch { if (my !== speakSeq) return; text = pieces.slice(i).join(' '); }
+    }
+    if (onStart) onStart();
+    return browserSpeak(text);
+  }
+  function hush() { speakSeq++; if (stopAudio) stopAudio(); if (canSpeak) speechSynthesis.cancel(); }
+  function browserSpeak(text) {
     return new Promise(res => {
       if (!canSpeak || !text) return res();
       speechSynthesis.cancel();
@@ -192,8 +232,9 @@
     if (j.did && j.did.type === 'pay_link') say('s', T.sPay);
     if (j.did && j.did.type === 'handover') say('s', T.sCb);
     if (j.off) inCall = false;
-    if (inCall) { set('speaking', T.speaking, T.interrupt); await speak(answer); }
-    else if (canSpeak && !SR) await speak(answer);
+    const talking = () => set('speaking', T.speaking, T.interrupt);
+    if (inCall) await speak(answer, j.voice, talking);
+    else if ((canSpeak || serverVoice) && !SR) { await speak(answer, j.voice, talking); }
     busy = false;
     if (inCall) listen(); else set('idle', T.start, SR ? T.startHint : T.typeHint);
   }
@@ -211,21 +252,21 @@
   }
   function stopListening() { if (rec) { try { rec.onend = null; rec.abort(); } catch {} rec = null; } }
   async function startCall() {
-    inCall = true; endBtn.hidden = false;
-    if (!history.length) { say('a', GREET); history.push({ role: 'assistant', content: GREET }); set('speaking', T.speaking, T.interrupt); await speak(GREET); }
+    inCall = true; endBtn.hidden = false; unlock();
+    if (!history.length) { say('a', GREET); history.push({ role: 'assistant', content: GREET }); set('thinking', T.wait); await speak(GREET, lang === 'en' ? [GREET] : null, () => set('speaking', T.speaking, T.interrupt)); }
     if (inCall) listen();
   }
-  function endCall() { inCall = false; stopListening(); if (canSpeak) speechSynthesis.cancel(); endBtn.hidden = true; if (!busy) set('idle', T.start, SR ? T.startHint : T.typeHint); }
+  function endCall() { inCall = false; stopListening(); hush(); endBtn.hidden = true; if (!busy) set('idle', T.start, SR ? T.startHint : T.typeHint); }
   mic.addEventListener('click', () => {
     if (!SR) { $('rc-text').focus(); return; }
     const st = mic.dataset.state;
     if (st === 'idle') return startCall();
-    if (st === 'speaking') { if (canSpeak) speechSynthesis.cancel(); return; }
+    if (st === 'speaking') { hush(); return; }
     if (st === 'listening') return endCall();
   });
   endBtn.addEventListener('click', endCall);
-  $('rc-form').addEventListener('submit', ev => { ev.preventDefault(); const t = $('rc-text').value.trim(); if (!t) return; $('rc-text').value = ''; turn(t); });
-  document.querySelectorAll('.rc-try button').forEach(b => b.addEventListener('click', () => turn(b.textContent.trim())));
+  $('rc-form').addEventListener('submit', ev => { ev.preventDefault(); unlock(); const t = $('rc-text').value.trim(); if (!t) return; $('rc-text').value = ''; turn(t); });
+  document.querySelectorAll('.rc-try button').forEach(b => b.addEventListener('click', () => { unlock(); turn(b.textContent.trim()); }));
   $('rc-reset').addEventListener('click', async () => {
     endCall(); history.length = 0; log.innerHTML = ''; seen = { bookings: 0, links: 0, callbacks: 0 };
     try { const r = await fetch('/api/demo/receptionist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid, reset: true }) }); draw((await r.json()).board); } catch {}

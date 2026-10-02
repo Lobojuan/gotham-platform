@@ -16,6 +16,6 @@ for f in [x for x in os.listdir(crm) if x.endswith('.js')]:
 needed.add('server.js')
 missing = sorted(n for n in needed if n not in copied and not any(n.startswith(c.rstrip('/') + '/') for c in copied))
 assert not missing, 'not copied into the server image: %s' % missing
-for f in ['schema.sql', 'assistant.md']: assert f in copied, f
+for f in ['schema.sql', 'assistant.md', 'tts.py']: assert f in copied, f
 print('  ok every module server.js loads is copied into the server image:', ', '.join(sorted(needed)))
 print('PASSED')

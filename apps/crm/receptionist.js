@@ -58,6 +58,8 @@ export function board(sid) {
 }
 export function resetBoard(sid) { boards.delete(sid); }
 setInterval(() => { const cut = Date.now() - 2 * 3600e3; for (const [k, v] of boards) if (v.at < cut) boards.delete(k); }, 10 * 60e3).unref();
+/* her greeting (the page shows it in English, French or Spanish; the server voice speaks the English one) */
+export const GREETING = 'Good day, Kasa Family Clinic, how can I help you?';
 export const publicBoard = b => ({ bookings: b.bookings, links: b.links, callbacks: b.callbacks });
 
 export function systemPrompt(b, language, now = new Date()) {
