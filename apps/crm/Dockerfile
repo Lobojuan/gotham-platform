@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -r
 WORKDIR /app
 COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund
-COPY server.js media-tools.js events-pages.js schema.sql assistant.md ./
+COPY server.js media-tools.js events-pages.js receptionist.js schema.sql assistant.md ./
 COPY public ./public
 RUN mkdir -p /data/media
 ENV NODE_ENV=production MEDIA_DIR=/data/media
