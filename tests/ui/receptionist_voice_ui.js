@@ -70,6 +70,19 @@ const fakeVoice = lines => {
   assert(true, 'once the microphone is capturing and nobody speaks, she greets');
   assert(!(await pp.textContent('#rc-state')).includes('Allow'), 'the ask disappears once the microphone is open');
 
+  // the microphone cannot be used (here: the browser says not-allowed): clear instructions, the page is not frozen, she still greets and answers out loud
+  const bl = await b.newContext(); await bl.addInitScript(fakeVoice, []);
+  await bl.addInitScript(() => { class SRX { start() { setTimeout(() => { this.onerror && this.onerror({ error: 'not-allowed' }); this.onend && this.onend(); }, 50); } abort() {} } window.webkitSpeechRecognition = SRX; window.SpeechRecognition = SRX; });
+  const pb = await bl.newPage(); watch(pb);
+  await pb.goto(B + '/demo/receptionist'); await pb.waitForTimeout(500); await pb.click('#rc-mic');
+  await pb.waitForFunction(() => document.getElementById('rc-warn').style.display === 'block', null, { timeout: 5000 });
+  assert((await pb.textContent('#rc-warn')).includes('microphone is blocked for this site') && (await pb.textContent('#rc-warn')).includes('padlock'), 'a blocked microphone is explained with what to do, not left as a frozen "Allow" message');
+  await pb.waitForFunction(() => document.getElementById('rc-mic').dataset.state === 'idle', null, { timeout: 20000 });
+  assert(!(await pb.textContent('#rc-state')).includes('Allow') && await pb.evaluate(() => window.__played >= 1 || window.__spoken.length >= 1), 'the button is usable again and she still greeted out loud');
+  await pb.fill('#rc-text', 'How much is a dental check?'); await pb.press('#rc-text', 'Enter');
+  await pb.waitForFunction(() => window.__played >= 2 || window.__spoken.length >= 2, null, { timeout: 25000 });
+  assert(true, 'typing works and the answer is spoken out loud');
+
   // French: the browser speaks
   const fr = await b.newContext(); await fr.addInitScript(() => { try { localStorage.setItem('gc-language', 'fr'); } catch {} });
   await fr.addInitScript(fakeVoice, []);
