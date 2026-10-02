@@ -10,6 +10,7 @@ import ExcelJS from 'exceljs';
 import nodemailer from 'nodemailer';
 import * as MT from './media-tools.js';
 import * as EVP from './events-pages.js';
+import * as RCP from './receptionist.js';
 
 const PORT = process.env.PORT || 4100;
 const SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
@@ -1402,6 +1403,7 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5-mini';
 const OPENAI_BASE = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
 const ASK_DAILY_CAP = +(process.env.ASK_DAILY_CAP || 400);
 const askDay = { day: '', n: 0 };
+const rcptDay = { day: '', n: 0 };
 let askKnow = { at: 0, text: '' };
 /* Live exchange rates for the website and the invoice "Suggest rate" button. One source (open.er-api.com, updated
    daily from central-bank and market feeds), fetched at most once an hour and kept in settings, so a restart or an
@@ -1766,6 +1768,48 @@ ${await askKnowledge()}`;
       } catch (e) {
         console.error('ask failed:', String(e.message || e).slice(0, 300));
         return json(res, 200, { fallback: true }, cors);
+      }
+    }
+
+    /* ---- the AI receptionist demo (/demo/receptionist): an invented clinic; nothing stored, see receptionist.js ---- */
+    if (p === '/api/demo/receptionist' && (req.method === 'POST' || req.method === 'GET')) {
+      const sidOf = v => (/^[A-Za-z0-9-]{8,40}$/.test(String(v || '')) ? String(v) : '');
+      if (req.method === 'GET') {
+        const sid = sidOf(url.searchParams.get('sid'));
+        if (!sid) return json(res, 400, { error: 'missing_sid' }, cors);
+        return json(res, 200, { ai: !!OPENAI_KEY, board: RCP.publicBoard(RCP.board(sid)) }, cors);
+      }
+      const b = await body(req);
+      const sid = sidOf(b.sid);
+      if (!sid) return json(res, 400, { error: 'missing_sid' }, cors);
+      if (b.reset === true) { RCP.resetBoard(sid); return json(res, 200, { ok: true, board: RCP.publicBoard(RCP.board(sid)) }, cors); }
+      const text = clean(b.text, 500);
+      if (!text) return json(res, 400, { error: 'missing_text' }, cors);
+      if (!OPENAI_KEY) return json(res, 200, { say: 'The demo receptionist is resting right now. Please try again later.', off: true }, cors);
+      if (rateLimited(ip, 60, 3600e3, 'rcpt')) return json(res, 429, { error: 'too_many' }, cors);
+      const today = new Date().toISOString().slice(0, 10);
+      if (rcptDay.day !== today) { rcptDay.day = today; rcptDay.n = 0; }
+      if (rcptDay.n >= +(process.env.RECEPTIONIST_DAILY_CAP || 800)) return json(res, 200, { say: 'The demo has had a busy day. Please try again tomorrow.', off: true }, cors);
+      rcptDay.n++;
+      const bd = RCP.board(sid);
+      if (++bd.n > 40) return json(res, 200, { say: 'This demo call is at its limit. Press restart to begin a new one.', off: true, board: RCP.publicBoard(bd) }, cors);
+      const language = ['en', 'fr', 'es'].includes(b.language) ? b.language : 'en';
+      const history = (Array.isArray(b.history) ? b.history : []).slice(-10)
+        .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
+        .map(m => ({ role: m.role, content: m.content.slice(0, 600) }));
+      const msgs = [{ role: 'system', content: RCP.systemPrompt(bd, language) }, ...history, { role: 'user', content: text }];
+      try {
+        let r = RCP.parseReply(await askModel(msgs, { temperature: 0.3, json: true, raw: true, max: 400 }));
+        let done = RCP.act(bd, r.action, phoneGH);
+        if (!done.ok) {                            // tell the model what went wrong once, and let it say so to the caller
+          msgs.push({ role: 'assistant', content: JSON.stringify(r) }, { role: 'system', content: `Action failed: ${done.why}. Tell the caller briefly and offer what is possible. Answer with the same JSON shape and "action": {"type": "none"}.` });
+          r = RCP.parseReply(await askModel(msgs, { temperature: 0.3, json: true, raw: true, max: 300 }));
+          done = { ok: true };
+        }
+        return json(res, 200, { say: r.say || 'Sorry, could you say that again?', did: done.did || null, board: RCP.publicBoard(bd) }, cors);
+      } catch (e) {
+        console.error('receptionist failed:', String(e.message || e).slice(0, 300));
+        return json(res, 200, { say: 'Sorry, the line is busy for a moment. Please say that again.', board: RCP.publicBoard(bd) }, cors);
       }
     }
 

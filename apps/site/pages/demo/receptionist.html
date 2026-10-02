@@ -1,0 +1,237 @@
+<!--#top-->
+<style>
+.rc-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:900px){.rc-grid{grid-template-columns:1fr}}
+.rc-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 18px 50px rgba(15,27,45,.08)}
+@media (max-width:560px){.rc-card{padding:18px 14px}}
+.rc-card h2{font-size:22px;margin:0 0 4px}
+.rc-card .sub{color:var(--mute);margin:0 0 16px;font-size:14.5px}
+.rc-call{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:6px 0 14px}
+.rc-mic{width:84px;height:84px;border-radius:50%;border:0;background:var(--navy);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none;box-shadow:0 10px 30px rgba(15,27,45,.25);transition:transform .15s}
+.rc-mic svg{width:34px;height:34px}
+.rc-mic:focus-visible{outline:3px solid var(--gold-2);outline-offset:3px}
+.rc-mic[data-state=listening]{background:#1F7A55;animation:rcPulse 1.4s infinite}
+.rc-mic[data-state=thinking]{background:#8A6116}
+.rc-mic[data-state=speaking]{background:var(--gold);color:var(--navy)}
+@keyframes rcPulse{0%{box-shadow:0 0 0 0 rgba(31,122,85,.45)}70%{box-shadow:0 0 0 18px rgba(31,122,85,0)}100%{box-shadow:0 0 0 0 rgba(31,122,85,0)}}
+@media (prefers-reduced-motion:reduce){.rc-mic[data-state=listening]{animation:none}}
+.rc-state b{display:block;font-size:17px}
+.rc-state span{color:var(--mute);font-size:14px}
+.rc-end{margin-left:auto}
+.rc-log{list-style:none;margin:0;padding:12px;display:flex;flex-direction:column;gap:10px;height:340px;overflow-y:auto;background:#F6F4EF;border-radius:16px}
+.rc-log li{max-width:88%;padding:10px 13px;border-radius:14px;font-size:15px;line-height:1.45}
+.rc-log li.u{align-self:flex-end;background:var(--navy);color:#fff;border-bottom-right-radius:4px}
+.rc-log li.a{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.rc-log li.s{align-self:center;background:transparent;color:var(--mute);font-size:13px;text-align:center;padding:2px}
+.rc-type{display:flex;gap:8px;margin-top:12px}
+.rc-type input{flex:1;min-width:0;border:1px solid #C9CFD6;border-radius:12px;padding:12px 14px;font:inherit;font-size:16px;min-height:48px}
+.rc-type input:focus{outline:3px solid var(--gold-2);outline-offset:1px}
+.rc-try{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.rc-try button{border:1px solid #C9CFD6;background:#fff;border-radius:999px;padding:8px 12px;font:inherit;font-size:13.5px;cursor:pointer;min-height:40px;color:var(--ink)}
+.rc-try button:hover{border-color:var(--navy)}
+.rc-board h3{font-size:15px;margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center}
+.rc-board h3:first-of-type{margin-top:4px}
+.rc-board h3 small{font-weight:500;color:var(--mute);font-size:12.5px}
+.rc-items{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.rc-items li{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:14px;line-height:1.45;background:#fff}
+.rc-items li.new{animation:rcNew 1.6s ease-out}
+@keyframes rcNew{from{background:rgba(240,190,90,.35)}to{background:#fff}}
+.rc-items li b{display:block;font-size:14.5px}
+.rc-items .tag{display:inline-block;font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;background:rgba(31,122,85,.12);color:#1F7A55;margin-top:4px}
+.rc-items .tag.x{background:rgba(161,50,43,.1);color:#A1322B}
+.rc-items .tag.p{background:rgba(240,190,90,.22);color:#8A6116}
+.rc-empty{color:var(--mute);font-size:13.5px;margin:0}
+.rc-note{font-size:13px;color:var(--mute);margin:14px 0 0;line-height:1.5}
+.rc-warn{display:none;background:#FFF6E5;border:1px solid #F0D9A8;border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.rc-how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:760px){.rc-how{grid-template-columns:1fr}}
+.rc-how .box{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px}
+.rc-how h3{font-size:17px;margin:0 0 6px}
+.rc-how p{margin:0;font-size:15px;color:var(--mute)}
+</style>
+<main id="main">
+  <section class="phero" aria-labelledby="h1"><img class="bgimg" src="/img/tech.webp" alt="" fetchpriority="high">
+    <div class="wrap">
+      <nav class="crumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/services/ai">AI &amp; software</a><span aria-hidden="true">/</span><span>AI receptionist demo</span></nav>
+      <p class="eyebrow">Live demo · AI receptionist</p>
+      <h1 id="h1">Call our AI receptionist. <span class="serif">Watch it book, bill and call back.</span></h1>
+      <p class="lead">Kasa Family Clinic is an invented clinic. Press the button and talk as a patient would: ask about prices, book a time, ask to pay by Mobile Money or for a nurse to call you, and watch the clinic's back office fill in as you speak.</p>
+    </div>
+  </section>
+
+  <section class="sec" aria-label="AI receptionist demo"><div class="wrap">
+    <div class="rc-grid">
+      <div class="rc-card">
+        <div class="rc-warn" id="rc-warn" role="status" data-no-tr></div>
+        <h2>Kasa Family Clinic</h2>
+        <p class="sub">Front desk · open Monday to Saturday</p>
+        <div class="rc-call">
+          <button class="rc-mic" id="rc-mic" type="button" data-state="idle" aria-label="Start the call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></button>
+          <div class="rc-state" aria-live="polite" data-no-tr><b id="rc-state">Press to start the call</b><span id="rc-hint">Speak after the receptionist greets you.</span></div>
+          <button class="btn btn-ghost rc-end" id="rc-end" type="button" hidden>End call</button>
+        </div>
+        <ul class="rc-log" id="rc-log" aria-live="polite" aria-label="Conversation" data-no-tr></ul>
+        <form class="rc-type" id="rc-form"><label class="sr-only" for="rc-text">Or type to the receptionist</label><input id="rc-text" maxlength="400" placeholder="Or type here…" autocomplete="off" enterkeyhint="send"><button class="btn btn-gold" type="submit">Send</button></form>
+        <div class="rc-try" aria-label="Things to try">
+          <button type="button" data-say="How much is a dental check?">How much is a dental check?</button>
+          <button type="button" data-say="I'd like to see a doctor tomorrow morning.">I'd like to see a doctor tomorrow morning.</button>
+          <button type="button" data-say="Can I pay now with Mobile Money?">Can I pay now with Mobile Money?</button>
+          <button type="button" data-say="Can a nurse call me back?">Can a nurse call me back?</button>
+        </div>
+        <p class="rc-note">Your browser turns your voice into text (in Chrome this goes through Google's speech service) and reads the answers aloud. We do not store the call: the board on the right is cleared when you close the page. Please use an invented name and do not share real medical details. For emergencies in Ghana call 112.</p>
+      </div>
+
+      <div class="rc-card rc-board" aria-label="Clinic back office, live">
+        <h2>Back office, live</h2>
+        <p class="sub">What the receptionist did during this call.</p>
+        <h3>Appointments <small>in the clinic diary</small></h3>
+        <ul class="rc-items" id="rc-bookings" data-no-tr></ul>
+        <h3>Payment links <small>sent by SMS and WhatsApp</small></h3>
+        <ul class="rc-items" id="rc-links" data-no-tr></ul>
+        <h3>Call-backs <small>tasks for the front desk</small></h3>
+        <ul class="rc-items" id="rc-callbacks" data-no-tr></ul>
+        <div class="cta-row" style="justify-content:flex-start;margin-top:20px"><button class="btn btn-ghost" id="rc-reset" type="button">Restart the demo</button></div>
+      </div>
+    </div>
+  </div></section>
+
+  <section class="sec" style="padding-top:0" aria-labelledby="how-h"><div class="wrap">
+    <div class="sec-head"><p class="eyebrow">For your business</p><h2 id="how-h">What a real one does for you.</h2></div>
+    <div class="rc-how">
+      <div class="box"><h3>Answers every call and chat</h3><p>Phone, WhatsApp and your website, day and night, in English. A person takes over whenever the caller asks or the AI is unsure.</p></div>
+      <div class="box"><h3>Books into your own system</h3><p>Appointments, orders and enquiries go straight into your diary or back office, with the caller's details and a reminder.</p></div>
+      <div class="box"><h3>Gets you paid</h3><p>Sends Mobile Money and card payment links, and the payment shows up in your books.</p></div>
+    </div>
+    <div class="cta-row" style="justify-content:flex-start;margin-top:22px"><a class="btn btn-wa" href="https://wa.me/233550416627?text=Hello%2C%20I%20tried%20the%20AI%20receptionist%20demo%20and%20would%20like%20one%20for%20my%20business." target="_blank" rel="noopener"><svg class="icon"><use href="#i-wa"/></svg>I want one for my business</a><a class="btn btn-ghost" href="/services/ai">AI &amp; software services</a></div>
+  </div></section>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const mic = $('rc-mic'), stateEl = $('rc-state'), hintEl = $('rc-hint'), log = $('rc-log'), warn = $('rc-warn'), endBtn = $('rc-end');
+  let sid = ''; try { sid = sessionStorage.getItem('rc-sid') || ''; } catch {}
+  if (!/^[A-Za-z0-9-]{8,40}$/.test(sid)) { sid = 'v-' + Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36); try { sessionStorage.setItem('rc-sid', sid); } catch {} }
+  let lang = 'en'; try { lang = localStorage.getItem('gc-language') || 'en'; } catch {}
+  if (!['en', 'fr', 'es'].includes(lang)) lang = 'en';
+  const SPEECH = { en: ['en-GH', 'en-GB'], fr: ['fr-FR'], es: ['es-ES'] }[lang];
+  const GREET = { en: 'Good day, Kasa Family Clinic, how can I help you?', fr: 'Bonjour, clinique familiale Kasa, comment puis-je vous aider ?', es: 'Buenos días, clínica familiar Kasa, ¿en qué puedo ayudarle?' }[lang];
+  const T = {
+    en: { start: 'Press to start the call', startHint: 'Speak after the receptionist greets you.', typeHint: 'Type your question below.', wait: 'One moment…', speaking: 'Receptionist speaking…', interrupt: 'Tap the button to interrupt.',
+      listening: 'Listening…', listenHint: 'Speak now; pause when you are done.', limit: 'You have reached the demo limit for now. Please try again in an hour.', drop: 'Sorry, the line dropped. Please say that again.', again: 'Sorry, could you say that again?',
+      sBook: 'Appointment added to the clinic diary', sPay: 'Payment link sent', sCb: 'Call-back task created for the front desk', noVoice: 'Voice needs Chrome, Edge or Safari. You can still type to the receptionist below.',
+      blocked: 'The microphone is blocked. Allow it in your browser, or type below.', resting: 'The demo receptionist is resting right now. Please try again later.', nothing: 'Nothing yet.',
+      booked: 'Booked', cancelled: 'Cancelled', linkSent: 'Payment link sent', waiting: 'Waiting for payment', forB: 'for', to: 'To', by: 'by SMS and WhatsApp', cb: 'Call back', caller: 'the caller', due: 'due within 1 hour',
+      svc: { gp: 'Family doctor consultation', child: 'Child check-up', lab: 'Blood test', dental: 'Dental check and cleaning', antenatal: 'Antenatal visit' } },
+    fr: { start: 'Appuyez pour lancer l’appel', startHint: 'Parlez après l’accueil de la réceptionniste.', typeHint: 'Écrivez votre question ci-dessous.', wait: 'Un instant…', speaking: 'La réceptionniste parle…', interrupt: 'Touchez le bouton pour l’interrompre.',
+      listening: 'J’écoute…', listenHint: 'Parlez ; faites une pause quand vous avez fini.', limit: 'Vous avez atteint la limite de la démo. Réessayez dans une heure.', drop: 'Désolée, la ligne a coupé. Pouvez-vous répéter ?', again: 'Pardon, pouvez-vous répéter ?',
+      sBook: 'Rendez-vous ajouté à l’agenda de la clinique', sPay: 'Lien de paiement envoyé', sCb: 'Rappel créé pour l’accueil', noVoice: 'La voix nécessite Chrome, Edge ou Safari. Vous pouvez quand même écrire ci-dessous.',
+      blocked: 'Le micro est bloqué. Autorisez-le dans votre navigateur, ou écrivez ci-dessous.', resting: 'La réceptionniste de démo se repose. Réessayez plus tard.', nothing: 'Rien pour l’instant.',
+      booked: 'Réservé', cancelled: 'Annulé', linkSent: 'Lien de paiement envoyé', waiting: 'En attente de paiement', forB: 'pour', to: 'À', by: 'par SMS et WhatsApp', cb: 'Rappeler', caller: 'l’appelant', due: 'dans l’heure',
+      svc: { gp: 'Consultation de médecin de famille', child: 'Bilan de santé de l’enfant', lab: 'Prise de sang', dental: 'Contrôle et détartrage dentaires', antenatal: 'Consultation prénatale' } },
+    es: { start: 'Pulse para iniciar la llamada', startHint: 'Hable después del saludo de la recepcionista.', typeHint: 'Escriba su pregunta abajo.', wait: 'Un momento…', speaking: 'La recepcionista está hablando…', interrupt: 'Toque el botón para interrumpir.',
+      listening: 'Escuchando…', listenHint: 'Hable ahora; haga una pausa al terminar.', limit: 'Ha llegado al límite de la demo. Vuelva a intentarlo en una hora.', drop: 'Perdón, se cortó la línea. ¿Puede repetirlo?', again: 'Perdón, ¿puede repetirlo?',
+      sBook: 'Cita añadida a la agenda de la clínica', sPay: 'Enlace de pago enviado', sCb: 'Tarea de devolver la llamada creada para recepción', noVoice: 'La voz necesita Chrome, Edge o Safari. Puede escribir abajo.',
+      blocked: 'El micrófono está bloqueado. Permítalo en su navegador o escriba abajo.', resting: 'La recepcionista de la demo está descansando. Vuelva a intentarlo más tarde.', nothing: 'Nada todavía.',
+      booked: 'Reservada', cancelled: 'Cancelada', linkSent: 'Enlace de pago enviado', waiting: 'Pendiente de pago', forB: 'para', to: 'A', by: 'por SMS y WhatsApp', cb: 'Devolver la llamada a', caller: 'la persona que llamó', due: 'en menos de 1 hora',
+      svc: { gp: 'Consulta de medicina familiar', child: 'Revisión infantil', lab: 'Análisis de sangre', dental: 'Revisión y limpieza dental', antenatal: 'Control prenatal' } }
+  }[lang];
+  const dayName = d => { try { return new Intl.DateTimeFormat({ en: 'en-GB', fr: 'fr-FR', es: 'es-ES' }[lang], { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(d + 'T12:00:00Z')); } catch { return d; } };
+  const history = [];
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const canSpeak = 'speechSynthesis' in window;
+  let inCall = false, busy = false, rec = null, recLang = 0, seen = { bookings: 0, links: 0, callbacks: 0 };
+
+  const set = (st, label, hint) => { mic.dataset.state = st; stateEl.textContent = label; hintEl.textContent = hint || '';
+    mic.setAttribute('aria-label', st === 'idle' ? 'Start the call' : st === 'listening' ? 'Stop listening' : 'Interrupt and speak'); };
+  const say = (role, text) => { const li = document.createElement('li'); li.className = role; li.textContent = text; log.appendChild(li); log.scrollTop = log.scrollHeight; };
+  const note = t => { warn.textContent = t; warn.style.display = 'block'; };
+  if (!SR) note(T.noVoice);
+
+  const item = (list, html, isNew) => { const li = document.createElement('li'); li.innerHTML = html; if (isNew) li.className = 'new'; list.appendChild(li); };
+  const e = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const tagFor = st => st === 'cancelled' ? `<span class="tag x">${T.cancelled}</span>` : st === 'payment link sent' ? `<span class="tag p">${T.linkSent}</span>` : `<span class="tag">${T.booked}</span>`;
+  function draw(b) {
+    if (!b) return;
+    const L = { bookings: $('rc-bookings'), links: $('rc-links'), callbacks: $('rc-callbacks') };
+    for (const k in L) L[k].innerHTML = '';
+    b.bookings.forEach((x, i) => item(L.bookings, `<b>${e(dayName(x.date))}, ${e(x.time)} · ${e(T.svc[x.service] || x.serviceName)}</b>${e(x.name)} · ${e(x.phone)} · GHS ${e(x.price)}<br>${tagFor(x.status)}`, i >= seen.bookings));
+    b.links.forEach((x, i) => item(L.links, `<b>GHS ${e(x.amount)} ${T.forB} ${e(x.booking)}</b>${T.to} ${e(x.to)} ${T.by}<br><span class="tag p">${T.waiting}</span>`, i >= seen.links));
+    b.callbacks.forEach((x, i) => item(L.callbacks, `<b>${T.cb} ${e(x.name || T.caller)}${x.phone ? ' · ' + e(x.phone) : ''}</b>${e(x.reason)} · ${T.due}`, i >= seen.callbacks));
+    for (const k in L) if (!L[k].children.length) L[k].innerHTML = `<li class="rc-empty" style="border:0;padding:0">${T.nothing}</li>`;
+    seen = { bookings: b.bookings.length, links: b.links.length, callbacks: b.callbacks.length };
+  }
+  fetch('/api/demo/receptionist?sid=' + encodeURIComponent(sid)).then(r => r.json()).then(j => { draw(j.board); if (j.ai === false) note(T.resting); }).catch(() => draw({ bookings: [], links: [], callbacks: [] }));
+
+  function speak(text) {
+    return new Promise(res => {
+      if (!canSpeak || !text) return res();
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const voices = speechSynthesis.getVoices(), want = SPEECH[0].slice(0, 2);
+      u.voice = voices.find(v => v.lang === SPEECH[0]) || voices.find(v => /^en-GB/.test(v.lang) && want === 'en' && /female|Google UK English Female|Serena|Kate/i.test(v.name)) || voices.find(v => v.lang && v.lang.startsWith(want)) || null;
+      u.lang = u.voice ? u.voice.lang : SPEECH[0]; u.rate = 1;
+      let done = false; const fin = () => { if (!done) { done = true; res(); } };
+      u.onend = fin; u.onerror = fin; setTimeout(fin, 20000);
+      try { speechSynthesis.speak(u); } catch { fin(); }
+    });
+  }
+  async function turn(text) {
+    if (!text || busy) return;
+    busy = true; stopListening();
+    say('u', text); set('thinking', T.wait);
+    let j = {};
+    try {
+      const r = await fetch('/api/demo/receptionist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid, text, history: history.slice(-10), language: lang }) });
+      j = await r.json();
+      if (r.status === 429) j.say = T.limit;
+    } catch { j.say = T.drop; }
+    const answer = j.say || T.again;
+    history.push({ role: 'user', content: text }, { role: 'assistant', content: answer });
+    say('a', answer); draw(j.board);
+    if (j.did && j.did.type === 'book') say('s', T.sBook);
+    if (j.did && j.did.type === 'pay_link') say('s', T.sPay);
+    if (j.did && j.did.type === 'handover') say('s', T.sCb);
+    if (j.off) inCall = false;
+    if (inCall) { set('speaking', T.speaking, T.interrupt); await speak(answer); }
+    else if (canSpeak && !SR) await speak(answer);
+    busy = false;
+    if (inCall) listen(); else set('idle', T.start, SR ? T.startHint : T.typeHint);
+  }
+  function listen() {
+    if (!SR || !inCall) return;
+    rec = new SR(); rec.lang = SPEECH[recLang] || SPEECH[0]; rec.interimResults = false; rec.maxAlternatives = 1; rec.continuous = false;
+    let heard = '';
+    rec.onresult = ev => { heard = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
+    rec.onerror = ev => {
+      if (ev.error === 'language-not-supported' && recLang + 1 < SPEECH.length) { recLang++; return; }
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { inCall = false; note(T.blocked); }
+    };
+    rec.onend = () => { rec = null; if (heard) turn(heard); else if (inCall && !busy) listen(); };
+    try { rec.start(); set('listening', T.listening, T.listenHint); } catch {}
+  }
+  function stopListening() { if (rec) { try { rec.onend = null; rec.abort(); } catch {} rec = null; } }
+  async function startCall() {
+    inCall = true; endBtn.hidden = false;
+    if (!history.length) { say('a', GREET); history.push({ role: 'assistant', content: GREET }); set('speaking', T.speaking, T.interrupt); await speak(GREET); }
+    if (inCall) listen();
+  }
+  function endCall() { inCall = false; stopListening(); if (canSpeak) speechSynthesis.cancel(); endBtn.hidden = true; if (!busy) set('idle', T.start, SR ? T.startHint : T.typeHint); }
+  mic.addEventListener('click', () => {
+    if (!SR) { $('rc-text').focus(); return; }
+    const st = mic.dataset.state;
+    if (st === 'idle') return startCall();
+    if (st === 'speaking') { if (canSpeak) speechSynthesis.cancel(); return; }
+    if (st === 'listening') return endCall();
+  });
+  endBtn.addEventListener('click', endCall);
+  $('rc-form').addEventListener('submit', ev => { ev.preventDefault(); const t = $('rc-text').value.trim(); if (!t) return; $('rc-text').value = ''; turn(t); });
+  document.querySelectorAll('.rc-try button').forEach(b => b.addEventListener('click', () => turn(b.textContent.trim())));
+  $('rc-reset').addEventListener('click', async () => {
+    endCall(); history.length = 0; log.innerHTML = ''; seen = { bookings: 0, links: 0, callbacks: 0 };
+    try { const r = await fetch('/api/demo/receptionist', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ sid, reset: true }) }); draw((await r.json()).board); } catch {}
+  });
+  if (canSpeak) speechSynthesis.getVoices();
+  set('idle', T.start, SR ? T.startHint : T.typeHint);
+})();
+</script>
+<!--#bottom-->
