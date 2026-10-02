@@ -53,6 +53,8 @@ const fakeVoice = lines => {
   const fr = await b.newContext({ viewport: { width: 1280, height: 900 } });
   await fr.addInitScript(() => { try { localStorage.setItem('gc-language', 'fr'); } catch {} delete window.webkitSpeechRecognition; delete window.SpeechRecognition; });
   const pf = await fr.newPage(); pf.on('pageerror', e => errs.push(e.message));
+  /* the server has no listening of its own either (it is told so here), so with no browser speech service there is no voice input */
+  await pf.route(/\/api\/demo\/receptionist\?/, async r => { const resp = await r.fetch(); const j = await resp.json(); j.listen = false; await r.fulfill({ response: resp, json: j }); });
   await pf.goto(B + '/demo/receptionist'); await pf.waitForTimeout(1200);
   assert((await pf.textContent('h1')).includes('Appelez notre réceptionniste IA'), 'French page');
   assert((await pf.textContent('#rc-warn')).includes('La voix nécessite Chrome'), 'no speech recognition: says so in French and offers typing');

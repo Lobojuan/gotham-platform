@@ -13,6 +13,7 @@ import * as EVP from './events-pages.js';
 import * as RCP from './receptionist.js';
 import * as CHT from './chat.js';
 import * as TTS from './tts.js';
+import * as STT from './stt.js';
 
 const PORT = process.env.PORT || 4100;
 const SECRET = process.env.SESSION_SECRET || 'dev-secret-change-me';
@@ -1794,13 +1795,34 @@ ${await askKnowledge()}`;
       }
     }
 
+    /* her ears: a short recording of the caller (made in the browser) becomes text; nothing is kept. Only for a demo session, rate limited. */
+    if (p === '/api/demo/receptionist/listen' && req.method === 'POST') {
+      let b; try { b = await bodyBig(req, 1.8e6); } catch { return json(res, 413, { error: 'too_large' }, cors); }
+      const sid = /^[A-Za-z0-9-]{8,40}$/.test(String(b.sid || '')) ? String(b.sid) : '';
+      const lang = ['en', 'fr', 'es'].includes(b.lang) ? b.lang : 'en';
+      const b64 = String(b.audio || '');
+      if (!sid || !b64 || b64.length > 1.6e6 || !/^[A-Za-z0-9+/=]+$/.test(b64)) return json(res, 400, { error: 'bad_request' }, cors);
+      if (!EARS.available()) return json(res, 503, { error: 'listen_unavailable' }, cors);
+      if (rateLimited(ip, 300, 3600e3, 'rcptl')) return json(res, 429, { error: 'too_many' }, cors);
+      try {
+        const text = await EARS.listen(Buffer.from(b64, 'base64'), lang);
+        return json(res, 200, { text }, cors);
+      } catch (e) {
+        const m = String(e.message || e);
+        if (m === 'audio_unreadable') return json(res, 422, { error: 'unreadable' }, cors);
+        if (m === 'stt_busy') return json(res, 429, { error: 'busy' }, cors);
+        console.error('listen failed:', m.slice(0, 200));
+        return json(res, 503, { error: 'listen_failed' }, cors);
+      }
+    }
+
     if (p === '/api/demo/receptionist' && (req.method === 'POST' || req.method === 'GET')) {
       const sidOf = v => (/^[A-Za-z0-9-]{8,40}$/.test(String(v || '')) ? String(v) : '');
       if (req.method === 'GET') {
         const sid = sidOf(url.searchParams.get('sid'));
         if (!sid) return json(res, 400, { error: 'missing_sid' }, cors);
-        VOICE.warm(RCP.GREETING);
-        return json(res, 200, { ai: !!OPENAI_KEY, voice: VOICE.available(), board: RCP.publicBoard(RCP.board(sid)) }, cors);
+        VOICE.warm(RCP.GREETING); EARS.warm();
+        return json(res, 200, { ai: !!OPENAI_KEY, voice: VOICE.available(), listen: EARS.available(), board: RCP.publicBoard(RCP.board(sid)) }, cors);
       }
       const b = await body(req);
       const sid = sidOf(b.sid);
@@ -5273,6 +5295,8 @@ async function runImport(file) {
 
 /* the team chat (chat.js) */
 const VOICE = TTS.makeTTS();
+/* her ears: the caller's recording turned into text here (stt.js), for browsers whose own speech service does not work */
+const EARS = STT.makeSTT();
 const CHAT = CHT.makeChat({ q, json, body, bodyBig, clean, askModel, phoneGH, aiOn: () => !!OPENAI_KEY, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto,
   setting: async k => (await q('select value from settings where key=$1', [k])).rows[0]?.value || '' });
 
