@@ -81,8 +81,10 @@ export function sentences(text) {
 
 /* the reply cut into pieces to speak one after another: the first can play while the next is being made */
 export function chunks(text, min = 40, max = 240) {
-  const out = [];
-  for (const s of sentences(text)) {
+  const out = [], list = sentences(text);
+  /* a long opening sentence is split at a comma: on our one-CPU server each second of speech takes about 0.3 s to make */
+  if (list[0] && list[0].length > 80) { const i = list[0].slice(20, 70).lastIndexOf(', '); if (i >= 0) list.splice(0, 1, list[0].slice(0, 20 + i + 1), list[0].slice(20 + i + 2)); }
+  for (const s of list) {
     const last = out[out.length - 1];
     /* the first piece stays short so she starts speaking sooner; later pieces are joined into fuller phrases */
     const short = out.length === 1 ? last.length < 12 : last && last.length < min;
