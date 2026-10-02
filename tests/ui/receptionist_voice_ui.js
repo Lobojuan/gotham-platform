@@ -8,7 +8,7 @@ const B = 'http://127.0.0.1:4199';
 const assert = (c, m) => { if (!c) throw new Error('FAIL ' + m); console.log('  ok', m); };
 const fakeVoice = lines => {
   window.__heard = lines.slice(); window.__spoken = []; window.__played = 0; window.__ended = 0;
-  class SR { start() { const t = window.__heard.shift(); setTimeout(() => { if (t) this.onresult && this.onresult({ results: [[{ transcript: t }]] }); this.onend && this.onend(); }, t ? 150 : 400); } abort() {} }
+  class SR { start() { if (!window.__prompt) setTimeout(() => this.onaudiostart && this.onaudiostart(), 20); const t = window.__heard.shift(); setTimeout(() => { if (t) this.onresult && this.onresult({ results: [[{ transcript: t }]] }); this.onend && this.onend(); }, t ? 150 : 400); } abort() {} }
   window.webkitSpeechRecognition = SR; window.SpeechRecognition = SR;
   Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak: u => { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 50); }, cancel() {}, getVoices: () => [] } });
   window.SpeechSynthesisUtterance = function (t) { this.text = t; };
@@ -58,6 +58,17 @@ const fakeVoice = lines => {
   await p.waitForFunction(() => window.__spoken.length >= 1, null, { timeout: 10000 });
   assert((await p.evaluate(() => window.__spoken[0])).startsWith('Good day'), 'when the server voice fails, the browser\'s voice speaks instead');
   await p.click('#rc-end'); await p.unroute('**/api/demo/receptionist/voice');
+
+  // a phone's first visit: while the "Allow microphone?" question is open (no capture yet) she must not start talking
+  const ph = await b.newContext(); await ph.addInitScript(fakeVoice, []); await ph.addInitScript(() => { window.__greetWait = 500; window.__prompt = true; });
+  const pp = await ph.newPage(); watch(pp);
+  await pp.goto(B + '/demo/receptionist'); await pp.waitForTimeout(500); await pp.click('#rc-mic'); await pp.waitForTimeout(2500);
+  assert(await pp.getAttribute('#rc-mic', 'data-state') === 'listening' && (await pp.evaluate(() => window.__played)) === 0 && !(await pp.evaluate(() => window.__spoken)).length, 'while the microphone question is open, she waits and does not greet over it');
+  assert((await pp.textContent('#rc-state')).includes('Please tap “Allow” to open the microphone') && (await pp.textContent('#rc-hint')).includes('Tap Allow so we can talk'), 'and politely asks the caller to tap Allow');
+  await pp.evaluate(() => { window.__prompt = false; });
+  await pp.waitForFunction(() => window.__played >= 1 || window.__spoken.length >= 1, null, { timeout: 15000 });
+  assert(true, 'once the microphone is capturing and nobody speaks, she greets');
+  assert(!(await pp.textContent('#rc-state')).includes('Allow'), 'the ask disappears once the microphone is open');
 
   // French: the browser speaks
   const fr = await b.newContext(); await fr.addInitScript(() => { try { localStorage.setItem('gc-language', 'fr'); } catch {} });

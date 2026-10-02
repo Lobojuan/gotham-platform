@@ -7,7 +7,7 @@ const assert = (c, m) => { if (!c) throw new Error('FAIL ' + m); console.log('  
 /* a fake microphone: each start() "hears" the next line, then ends; a fake speaker that finishes at once */
 const fakeVoice = lines => {
   window.__heard = lines.slice(); window.__spoken = [];
-  class SR { start() { const t = window.__heard.shift(); setTimeout(() => { if (t) this.onresult && this.onresult({ results: [[{ transcript: t }]] }); this.onend && this.onend(); }, t ? 150 : 400); } abort() {} }
+  class SR { start() { setTimeout(() => this.onaudiostart && this.onaudiostart(), 20); const t = window.__heard.shift(); setTimeout(() => { if (t) this.onresult && this.onresult({ results: [[{ transcript: t }]] }); this.onend && this.onend(); }, t ? 150 : 400); } abort() {} }
   window.webkitSpeechRecognition = SR; window.SpeechRecognition = SR;
   Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak: u => { window.__spoken.push(u.text); setTimeout(() => u.onend && u.onend(), 50); }, cancel() {}, getVoices: () => [] } });
   window.SpeechSynthesisUtterance = function (t) { this.text = t; };

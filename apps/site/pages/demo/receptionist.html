@@ -67,7 +67,7 @@
         <p class="sub">Front desk · open Monday to Saturday</p>
         <div class="rc-call">
           <button class="rc-mic" id="rc-mic" type="button" data-state="idle" aria-label="Start the call"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></button>
-          <div class="rc-state" aria-live="polite" data-no-tr><b id="rc-state">Press to start the call</b><span id="rc-hint">The microphone opens as soon as you press. Just start talking.</span></div>
+          <div class="rc-state" aria-live="polite" data-no-tr><b id="rc-state">Press to start the call</b><span id="rc-hint">Press, then tap “Allow” when your browser asks to use the microphone.</span></div>
           <button class="btn btn-ghost rc-end" id="rc-end" type="button" hidden>End call</button>
         </div>
         <ul class="rc-log" id="rc-log" aria-live="polite" aria-label="Conversation" data-no-tr></ul>
@@ -116,19 +116,19 @@
   const SPEECH = { en: ['en-GH', 'en-GB'], fr: ['fr-FR'], es: ['es-ES'] }[lang];
   const GREET = { en: 'Good day, Kasa Family Clinic, how can I help you?', fr: 'Bonjour, clinique familiale Kasa, comment puis-je vous aider ?', es: 'Buenos días, clínica familiar Kasa, ¿en qué puedo ayudarle?' }[lang];
   const T = {
-    en: { start: 'Press to start the call', startHint: 'The microphone opens as soon as you press. Just start talking.', typeHint: 'Type your question below.', wait: 'One moment…', speaking: 'Receptionist speaking…', interrupt: 'Tap the button to interrupt.',
+    en: { start: 'Press to start the call', startHint: 'Press, then tap “Allow” when your browser asks to use the microphone. After that, just talk.', allow: 'Please tap “Allow” to open the microphone', allowHint: 'Your browser is asking to use the microphone. Tap Allow so we can talk.', typeHint: 'Type your question below.', wait: 'One moment…', speaking: 'Receptionist speaking…', interrupt: 'Tap the button to interrupt.',
       listening: 'Listening…', listenHint: 'Speak now; pause when you are done.', limit: 'You have reached the demo limit for now. Please try again in an hour.', drop: 'Sorry, the line dropped. Please say that again.', again: 'Sorry, could you say that again?',
       sBook: 'Appointment added to the clinic diary', sPay: 'Payment link sent', sCb: 'Call-back task created for the front desk', noVoice: 'Voice needs Chrome, Edge or Safari. You can still type to the receptionist below.',
       blocked: 'The microphone is blocked. Allow it in your browser, or type below.', resting: 'The demo receptionist is resting right now. Please try again later.', nothing: 'Nothing yet.',
       booked: 'Booked', cancelled: 'Cancelled', linkSent: 'Payment link sent', waiting: 'Waiting for payment', forB: 'for', to: 'To', by: 'by SMS and WhatsApp', cb: 'Call back', caller: 'the caller', due: 'due within 1 hour',
       svc: { gp: 'Family doctor consultation', child: 'Child check-up', lab: 'Blood test', dental: 'Dental check and cleaning', antenatal: 'Antenatal visit' } },
-    fr: { start: 'Appuyez pour lancer l’appel', startHint: 'Le micro s’ouvre dès que vous appuyez. Parlez simplement.', typeHint: 'Écrivez votre question ci-dessous.', wait: 'Un instant…', speaking: 'La réceptionniste parle…', interrupt: 'Touchez le bouton pour l’interrompre.',
+    fr: { start: 'Appuyez pour lancer l’appel', startHint: 'Appuyez, puis touchez « Autoriser » quand votre navigateur demande le micro. Ensuite, parlez simplement.', allow: 'Touchez « Autoriser » pour ouvrir le micro', allowHint: 'Votre navigateur demande l’accès au micro. Touchez Autoriser pour que nous puissions parler.', typeHint: 'Écrivez votre question ci-dessous.', wait: 'Un instant…', speaking: 'La réceptionniste parle…', interrupt: 'Touchez le bouton pour l’interrompre.',
       listening: 'J’écoute…', listenHint: 'Parlez ; faites une pause quand vous avez fini.', limit: 'Vous avez atteint la limite de la démo. Réessayez dans une heure.', drop: 'Désolée, la ligne a coupé. Pouvez-vous répéter ?', again: 'Pardon, pouvez-vous répéter ?',
       sBook: 'Rendez-vous ajouté à l’agenda de la clinique', sPay: 'Lien de paiement envoyé', sCb: 'Rappel créé pour l’accueil', noVoice: 'La voix nécessite Chrome, Edge ou Safari. Vous pouvez quand même écrire ci-dessous.',
       blocked: 'Le micro est bloqué. Autorisez-le dans votre navigateur, ou écrivez ci-dessous.', resting: 'La réceptionniste de démo se repose. Réessayez plus tard.', nothing: 'Rien pour l’instant.',
       booked: 'Réservé', cancelled: 'Annulé', linkSent: 'Lien de paiement envoyé', waiting: 'En attente de paiement', forB: 'pour', to: 'À', by: 'par SMS et WhatsApp', cb: 'Rappeler', caller: 'l’appelant', due: 'dans l’heure',
       svc: { gp: 'Consultation de médecin de famille', child: 'Bilan de santé de l’enfant', lab: 'Prise de sang', dental: 'Contrôle et détartrage dentaires', antenatal: 'Consultation prénatale' } },
-    es: { start: 'Pulse para iniciar la llamada', startHint: 'El micrófono se abre al pulsar. Empiece a hablar.', typeHint: 'Escriba su pregunta abajo.', wait: 'Un momento…', speaking: 'La recepcionista está hablando…', interrupt: 'Toque el botón para interrumpir.',
+    es: { start: 'Pulse para iniciar la llamada', startHint: 'Pulse y luego toque «Permitir» cuando su navegador pida el micrófono. Después, hable con normalidad.', allow: 'Toque «Permitir» para abrir el micrófono', allowHint: 'Su navegador pide acceso al micrófono. Toque Permitir para que podamos hablar.', typeHint: 'Escriba su pregunta abajo.', wait: 'Un momento…', speaking: 'La recepcionista está hablando…', interrupt: 'Toque el botón para interrumpir.',
       listening: 'Escuchando…', listenHint: 'Hable ahora; haga una pausa al terminar.', limit: 'Ha llegado al límite de la demo. Vuelva a intentarlo en una hora.', drop: 'Perdón, se cortó la línea. ¿Puede repetirlo?', again: 'Perdón, ¿puede repetirlo?',
       sBook: 'Cita añadida a la agenda de la clínica', sPay: 'Enlace de pago enviado', sCb: 'Tarea de devolver la llamada creada para recepción', noVoice: 'La voz necesita Chrome, Edge o Safari. Puede escribir abajo.',
       blocked: 'El micrófono está bloqueado. Permítalo en su navegador o escriba abajo.', resting: 'La recepcionista de la demo está descansando. Vuelva a intentarlo más tarde.', nothing: 'Nada todavía.',
@@ -242,6 +242,7 @@
     if (!SR || !inCall) return;
     rec = new SR(); rec.lang = SPEECH[recLang] || SPEECH[0]; rec.interimResults = false; rec.maxAlternatives = 1; rec.continuous = false;
     let heard = '';
+    rec.onaudiostart = () => { micOn = true; if (mic.dataset.state === 'listening') set('listening', T.listening, T.listenHint); armGreet(); };
     rec.onspeechstart = () => { heardSpeech = true; };
     rec.onresult = ev => { heardSpeech = true; heard = Array.from(ev.results).map(r => r[0].transcript).join(' ').trim(); };
     rec.onerror = ev => {
@@ -249,7 +250,7 @@
       if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') { inCall = false; note(T.blocked); }
     };
     rec.onend = () => { rec = null; if (heard) turn(heard); else if (inCall && !busy) listen(); };
-    try { rec.start(); set('listening', T.listening, T.listenHint); } catch {}
+    try { rec.start(); if (micOn) set('listening', T.listening, T.listenHint); else set('listening', T.allow, T.allowHint); } catch {}
   }
   function stopListening() { if (rec) { try { rec.onend = null; rec.abort(); } catch {} rec = null; } }
   /* the microphone opens the moment the button is pressed; the greeting is written at once and is only spoken if the caller says nothing
@@ -260,16 +261,22 @@
     inCall = true; endBtn.hidden = false; unlock(); heardSpeech = false;
     const first = !history.length;
     if (first) { say('a', GREET); history.push({ role: 'assistant', content: GREET }); }
+    greetArm = first;
     listen();
-    if (first) {
-      clearTimeout(greetTimer);
-      greetTimer = setTimeout(async () => {
-        if (!inCall || busy || heardSpeech) return;
-        stopListening(); set('thinking', T.wait);
-        await speak(GREET, lang === 'en' ? [GREET] : null, () => set('speaking', T.speaking, T.interrupt));
-        if (inCall && !busy) listen();
-      }, GREET_WAIT());
-    }
+    /* if the browser never reports that the microphone is capturing, greet after a longer wait anyway */
+    if (first) { clearTimeout(greetTimer); greetTimer = setTimeout(armGreet, 12000); }
+  }
+  /* the silence timer starts only when the microphone is really capturing: on a phone the first visit shows an "Allow microphone?"
+     question, and she must not talk over it (or cancel it) */
+  let greetArm = false, micOn = false;
+  function armGreet() {
+    if (!greetArm) return; greetArm = false; clearTimeout(greetTimer);
+    greetTimer = setTimeout(async () => {
+      if (!inCall || busy || heardSpeech) return;
+      stopListening(); set('thinking', T.wait);
+      await speak(GREET, lang === 'en' ? [GREET] : null, () => set('speaking', T.speaking, T.interrupt));
+      if (inCall && !busy) listen();
+    }, GREET_WAIT());
   }
   function endCall() { inCall = false; clearTimeout(greetTimer); stopListening(); hush(); endBtn.hidden = true; if (!busy) set('idle', T.start, SR ? T.startHint : T.typeHint); }
   mic.addEventListener('click', () => {
