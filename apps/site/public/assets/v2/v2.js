@@ -410,6 +410,24 @@
     $('#c-mail')?.addEventListener('click', () => { if (!$('#c-name').reportValidity()) return; location.href = `mailto:info@gothamconsult.com?subject=${encodeURIComponent('Enquiry: ' + $('#c-topic').value)}&body=${encodeURIComponent(text())}`; });
   }
 
+  /* ---- book a call: the next working days and a time; the request goes by WhatsApp or email, nothing stored ---- */
+  const bkf = LEG ? null : $('#bookF');
+  if (bkf) {
+    const dsel = $('#b-day'); const d = new Date(); let n = 0;
+    /* Accra is GMT all year, so UTC dates are Accra dates; start tomorrow, skip weekends */
+    for (d.setUTCDate(d.getUTCDate() + 1); n < 7; d.setUTCDate(d.getUTCDate() + 1)) {
+      if ([0, 6].includes(d.getUTCDay())) continue; n++;
+      const o = document.createElement('option'); o.value = d.toISOString().slice(0, 10);
+      o.textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).replace(/^(\w+) /, '$1, ');
+      dsel.append(o);
+    }
+    const label = () => `${dsel.selectedOptions[0].dataset.enText || dsel.selectedOptions[0].value} at ${$('#b-time').value} (Accra time, GMT)`;
+    $$('#b-day option').forEach(o => { o.dataset.enText = o.textContent; });
+    const text = () => `Hello Gotham Consult,\nI would like to book a free 20-minute call.\nName: ${$('#b-name').value}\nTopic: ${$('#b-topic').value}\nPreferred time: ${label()}`;
+    bkf.addEventListener('submit', e => { e.preventDefault(); if (!$('#b-name').reportValidity()) return; open('https://wa.me/233550416627?text=' + encodeURIComponent(text()), '_blank', 'noopener'); });
+    $('#b-mail')?.addEventListener('click', () => { if (!$('#b-name').reportValidity()) return; location.href = `mailto:info@gothamconsult.com?subject=${encodeURIComponent('Call request: ' + $('#b-topic').value)}&body=${encodeURIComponent(text())}`; });
+  }
+
   /* ---- next forum, live from the back office ---- */
   items().then(d => {
     const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now())

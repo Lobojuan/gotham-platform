@@ -159,8 +159,13 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .stat { border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); border-radius: var(--radius-s); padding: 14px 16px; }
 .stat b { display: block; font-size: clamp(22px, 2.3vw, 27px); letter-spacing: -.02em; white-space: nowrap; }
 .stat span { font-size: 12.5px; color: rgba(255,255,255,.6); line-height: 1.35; display: block; }
+/* phones: the words come first (headline, promise, buttons), then the globe, then the numbers */
 @media (max-width: 899px) {
-  .globe-wrap { order: -1; max-width: min(62vw, 270px); margin: 4px auto -6px; }
+  .hero-in > div:first-child { display: contents; }
+  .hero-in .eyebrow { order: 1; } .hero-in h1 { order: 2; } .hero-in .lead { order: 3; } .hero-in .hero-cta { order: 4; }
+  .globe-wrap { order: 5; max-width: min(62vw, 270px); margin: 18px auto 0; }
+  .hero-in .stats { order: 6; }
+  .hero-in { padding-top: 28px; }
 }
 @media (min-width: 900px) {
   .globe-tag { display: block; }
@@ -939,3 +944,23 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .partner a.cc { color: var(--gold-2); font-weight: 700; text-decoration: none; }
 .partner a.cc:hover { text-decoration: underline; }
 .gf-made a { color: inherit; }
+
+/* ---------- book a call ---------- */
+.book { display: grid; gap: 22px; border-radius: calc(var(--radius) + 6px); padding: clamp(24px, 4vw, 48px); background: var(--navy); color: #fff; }
+.book h2 { font-size: clamp(28px, 3.8vw, 44px); margin-bottom: 12px; }
+.book .lead { color: rgba(255,255,255,.74); margin: 0 0 14px; }
+.book .bk-pts { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; color: rgba(255,255,255,.85); font-size: 15px; }
+.book .bk-pts li { padding-left: 24px; position: relative; }
+.book .bk-pts li::before { content: ""; position: absolute; left: 0; top: .45em; width: 12px; height: 7px; border-left: 2px solid var(--gold-2); border-bottom: 2px solid var(--gold-2); transform: rotate(-45deg); }
+.book .form { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12); border-radius: var(--radius); padding: clamp(18px, 3vw, 26px); }
+.book .form label { color: rgba(255,255,255,.88); }
+.book .form input, .book .form select { background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.18); color: #fff; }
+.book .form select option { color: var(--ink); }
+.book .fine { color: rgba(255,255,255,.6); font-size: 12.5px; margin: 0; }
+@media (min-width: 900px) { .book { grid-template-columns: .9fr 1.1fr; align-items: center; gap: 40px; } }
+.book .form .row2 { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+@media (max-width: 480px) {
+  .hero-in h1 { font-size: 38px; line-height: 1.02; }
+  .hero-in .lead { font-size: 16px; line-height: 1.5; margin: 14px 0 20px; }
+  .hero-in .eyebrow.long { font-size: 11px; }
+}
