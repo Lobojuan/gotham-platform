@@ -27,11 +27,11 @@ const fakeVoice = lines => {
   await p.waitForFunction(() => document.querySelectorAll('#rc-log li.a').length >= 4, null, { timeout: 15000 });
   await p.waitForFunction(() => document.querySelectorAll('#rc-links li:not(.rc-empty)').length === 1, null, { timeout: 15000 });
   const log = await p.$$eval('#rc-log li', l => l.map(x => x.className + ':' + x.textContent));
-  assert(log[0].startsWith('a:Good day, Kasa Family Clinic'), 'the call opens with the greeting');
+  assert(log[0].startsWith('a:Good day, Kasa Family Clinic'), 'the call opens with the greeting written out');
   assert(log.some(x => x === 'u:I would like to book a doctor') && log.some(x => x.startsWith('a:MOCK booked')), 'what was heard is sent and answered, turn after turn');
   assert(log.some(x => x === 's:Appointment added to the clinic diary') && log.some(x => x === 's:Payment link sent'), 'the log marks what was done');
   const spoken = await p.evaluate(() => window.__spoken);
-  assert(spoken[0].startsWith('Good day') && spoken.some(t => t.startsWith('MOCK booked')), 'answers are spoken aloud');
+  assert(!spoken.some(t => t.startsWith('Good day')) && spoken.some(t => t.startsWith('MOCK booked')), 'the caller spoke at once, so the greeting was not read over them; answers are spoken aloud');
   const bk = await p.textContent('#rc-bookings');
   assert(/Ama Test · \+233241234567 · GHS \d+/.test(bk) && bk.includes('Payment link sent'), 'the booking shows in the back office with its status');
   assert((await p.textContent('#rc-links')).includes('To +233241234567 by SMS and WhatsApp'), 'the payment link shows');
