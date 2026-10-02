@@ -51,7 +51,17 @@ d = json.loads(out)
 assert d['n'] > 50 and len(d['days']) == 6 and d['sun'] == 0 and d['past'] == 0 and d['late'] == 0 and d['same'], d
 assert d['sat'] and min(d['sat']) >= '09:00' and max(d['sat']) <= '12:30', d['sat']
 assert '2026-10-04' not in d['days'] and d['days'][0] == '2026-10-02', d['days']
-ok('the clinic diary: six open days, no Sundays, Saturday 09:00-13:00, nothing in the past or the next 45 minutes, the same every time')
+out = subprocess.run(['node', '--input-type=module', '-e', """
+import { slotsText } from './receptionist.js';
+const now = new Date('2026-10-02T15:10:00Z');
+console.log(JSON.stringify([slotsText('gp', '2026-10-05', now), slotsText('gp', '2026-10-04', now), slotsText('gp', '', now), slotsText('xray', '', now)]));
+"""], capture_output=True, text=True, check=True).stdout
+a, b, c, x = json.loads(out)
+assert a.startswith('Free times for Family doctor consultation on Monday 5 October (2026-10-05): ') and a.count(':') >= 3, a
+assert b.startswith('No free Family doctor consultation time on 2026-10-04') and 'Next free' in b and '(2026-10-05)' in b, b
+assert c.startswith('Next free Family doctor consultation times: ') and c.count(';') == 2, c
+assert x.startswith('No such service') and 'gp' in x, x
+ok('the clinic diary: six open days, no Sundays, Saturday 09:00-13:00, nothing in the past or the next 45 minutes, the same every time; free times are looked up per service and day, a closed day points to the next free days')
 
 # ---------- asking things ----------
 st, a = call(R + '?sid=short'); assert st == 400, a
@@ -72,11 +82,13 @@ ln = a['did']['link']
 assert a['did']['type'] == 'pay_link' and ln['amount'] == bk['price'] and ln['to'] == '+233241234567' and a['board']['bookings'][0]['status'] == 'payment link sent', a
 st, a = call(R, {'sid': 'visit-aaaa-1111', 'text': 'busy slot please'})
 assert a['say'].startswith('MOCK sorry') and 'not a free' in a['say'] and a['did'] is None and len(a['board']['bookings']) == 1, a
+st, a = call(R, {'sid': 'visit-aaaa-1111', 'text': 'someone call me, no details'})
+assert a['say'].startswith('MOCK sorry') and 'name' in a['say'] and a['board']['callbacks'] == [], a
 st, a = call(R, {'sid': 'visit-aaaa-1111', 'text': 'Can a nurse call me?'})
 cb = a['board']['callbacks']; assert len(cb) == 1 and cb[0]['phone'] == '+233241234567' and cb[0]['reason'] == 'Wants a nurse', a
 st, a = call(R, {'sid': 'visit-aaaa-1111', 'text': 'Please cancel it'}); assert a['board']['bookings'][0]['status'] == 'cancelled', a
 st, a = call(R, {'sid': 'visit-aaaa-1111', 'text': 'Can I pay now?'}); assert a['say'].startswith('MOCK sorry') and len(a['board']['links']) == 1, a
-ok('a booking only on a free time with name and a Ghana phone; MoMo payment link for the right amount; a taken time is refused and explained; call-back task; cancel; no link for a cancelled booking')
+ok('times are looked up before booking; a booking only on a free time with name and a Ghana phone; a call-back needs a real name and number; MoMo payment link for the right amount; a taken time is refused and explained; call-back task; cancel; no link for a cancelled booking')
 
 # ---------- one board per visit, nothing stored ----------
 st, a = call(R + '?sid=visit-bbbb-2222'); assert a['board'] == {'bookings': [], 'links': [], 'callbacks': []}, a

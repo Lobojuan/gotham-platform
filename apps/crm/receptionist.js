@@ -62,38 +62,46 @@ export const publicBoard = b => ({ bookings: b.bookings, links: b.links, callbac
 
 export function systemPrompt(b, language, now = new Date()) {
   const lang = ({ fr: 'French', es: 'Spanish' })[language] || 'English';
-  const slots = freeSlots(now);
-  const byKey = {};
-  for (const s of slots) (byKey[s.service + ' ' + s.date] ||= []).push(s.time);
-  const diary = Object.entries(byKey).map(([k, t]) => { const [svc, date] = k.split(' '); return `- ${svc} ${date} (${dayLabel(date)}): ${t.slice(0, 8).join(' ')}`; }).join('\n');
   const today = now.toISOString().slice(0, 10);
+  const days = [...new Set(freeSlots(now).map(s => s.date))].map(d => `${dayLabel(d)} = ${d}`).join('; ');
   const mine = b.bookings.length ? b.bookings.map(x => `- ${x.id}: ${SVC[x.service].name}, ${dayLabel(x.date)} at ${x.time}, for ${x.name}, ${x.status}`).join('\n') : '- none yet';
   return `You are the virtual receptionist of Kasa Family Clinic, a private family clinic in Accra, Ghana. This is a sales demo with an invented clinic.
 You speak on the phone, so every reply is read aloud: at most 2 short sentences (about 40 words), warm, clear, no lists, no emojis, no markdown.
-Reply in ${lang}. Today is ${dayLabel(today)} (${today}); the time in Accra is ${now.toISOString().slice(11, 16)}.
+Reply in ${lang}. Today is ${dayLabel(today)} (${today}); the time in Accra is ${now.toISOString().slice(11, 16)}. Next open days: ${days}.
 
 Clinic facts (use only these, never invent):
 - Open Monday to Friday 08:00 to 18:00, Saturday 09:00 to 13:00, closed Sunday and public holidays.
-- Services and prices (Ghana cedis): ${CLINIC.services.map(s => `${s.name} GHS ${s.price} (${s.mins} min, code ${s.id})`).join('; ')}.
+- Services and prices (Ghana cedis): ${CLINIC.services.map(s => `${s.name} GHS ${s.price} (code ${s.id})`).join('; ')}.
 - Payment: Mobile Money (MTN, Telecel, AirtelTigo), card, or cash at the desk. NHIS is accepted for family doctor and antenatal visits.
 - No medical advice, diagnosis or medicine doses: offer an appointment instead. If the caller describes an emergency (chest pain, heavy bleeding, difficulty breathing, unconscious, a baby not breathing, an accident), tell them to call 112 or go to the nearest emergency unit now.
 - Never ask for card numbers or PINs.
 
-Free appointment times (service code, date: times). Offer only these:
-${diary}
-
 Bookings made in this call:
 ${mine}
 
-To book you need: the service, a free date and time from the list, the caller's name and a phone number. Ask for what is missing, one thing at a time, then confirm the details in one sentence.
+You do not know which times are free until you check: never name a time you have not received from find_slots.
+To book you need: the service, a free date and time, the caller's name and a phone number. Ask for what is missing, one thing at a time.
 Answer only with JSON, no other text: {"say": "what you say aloud", "action": ACTION}
 ACTION is one of:
 {"type": "none"}
-{"type": "book", "service": "gp", "date": "YYYY-MM-DD", "time": "HH:MM", "name": "...", "phone": "..."}  (only when you have all five and the caller agreed)
-{"type": "pay_link", "booking": "B1"}  (when the caller wants to pay now by Mobile Money for a booking made in this call)
+{"type": "find_slots", "service": "gp", "date": "YYYY-MM-DD"}  (check free times before offering any; date may be empty for the next free days; "say" can be empty)
+{"type": "book", "service": "gp", "date": "YYYY-MM-DD", "time": "HH:MM", "name": "...", "phone": "..."}  (only a time find_slots returned, when you have all five and the caller agreed)
+{"type": "pay_link", "booking": "B1"}  (the caller wants to pay now by Mobile Money for a booking made in this call)
 {"type": "cancel", "booking": "B1"}
-{"type": "handover", "reason": "...", "name": "...", "phone": "..."}  (the caller wants a person, a nurse or a doctor to call back, or you cannot help)
-When you use an action, "say" tells the caller what you did (for a payment link: it was sent by SMS and WhatsApp).`;
+{"type": "handover", "reason": "...", "name": "...", "phone": "..."}  (the caller wants a person, a nurse or a doctor to call back, or you cannot help; ask for their name and phone number first)
+When you use an action other than find_slots, "say" tells the caller what you did (for a payment link: it was sent by SMS and WhatsApp).`;
+}
+
+/* free times for one service: on the asked day, or the next days with room; a short line for the model */
+export function slotsText(service, date, now = new Date()) {
+  if (!SVC[service]) return `No such service "${service}". Codes: ${CLINIC.services.map(s => s.id).join(', ')}.`;
+  const all = freeSlots(now).filter(s => s.service === service);
+  const on = /^\d{4}-\d{2}-\d{2}$/.test(String(date || '')) ? all.filter(s => s.date === date) : [];
+  const fmt = list => list.map(s => s.time).join(', ');
+  if (on.length) return `Free times for ${SVC[service].name} on ${dayLabel(date)} (${date}): ${fmt(on.slice(0, 6))}.`;
+  const days = [...new Set(all.map(s => s.date))].slice(0, 3);
+  const lead = date ? `No free ${SVC[service].name} time on ${date} (closed or full). ` : '';
+  return lead + `Next free ${SVC[service].name} times: ` + days.map(d => `${dayLabel(d)} (${d}): ${fmt(all.filter(s => s.date === d).slice(0, 4))}`).join('; ') + '.';
 }
 
 /* the model's JSON, tolerant of a stray sentence or code fence around it */
@@ -116,7 +124,7 @@ export function act(b, action, phoneGH, now = new Date()) {
     const service = str(action.service, 20), date = str(action.date, 10), time = str(action.time, 5), name = str(action.name, 80);
     const phone = phoneGH(str(action.phone, 30));
     if (!SVC[service]) return { ok: false, why: 'unknown service' };
-    if (!name) return { ok: false, why: 'the caller\'s name is missing' };
+    if (!name || /[\[\]<>]|caller name|unknown/i.test(name)) return { ok: false, why: 'the caller\'s name is missing' };
     if (!/^\+\d{9,15}$/.test(phone)) return { ok: false, why: 'the phone number is not complete' };
     if (!freeSlots(now).some(s => s.service === service && s.date === date && s.time === time)) return { ok: false, why: `${time} on ${date} is not a free ${SVC[service].name} time` };
     if (b.bookings.some(x => x.service === service && x.date === date && x.time === time && x.status !== 'cancelled')) return { ok: false, why: 'that time was just booked' };
@@ -136,7 +144,10 @@ export function act(b, action, phoneGH, now = new Date()) {
   }
   if (t === 'handover') {
     if (b.callbacks.length >= 5) return { ok: false, why: 'too many call-backs in this demo' };
-    const cb = { reason: str(action.reason, 160) || 'Caller asked for a person', name: str(action.name, 80), phone: phoneGH(str(action.phone, 30)), due: 'within 1 hour', status: 'task for the front desk' };
+    const name = str(action.name, 80), phone = phoneGH(str(action.phone, 30));
+    if (!name || /[\[\]<>]|caller name|unknown/i.test(name)) return { ok: false, why: 'ask for the caller\'s name first' };
+    if (!/^\+\d{9,15}$/.test(phone)) return { ok: false, why: 'ask for a phone number to call back first' };
+    const cb = { reason: str(action.reason, 160) || 'Caller asked for a person', name, phone, due: 'within 1 hour', status: 'task for the front desk' };
     b.callbacks.push(cb);
     return { ok: true, did: { type: 'handover', callback: cb } };
   }

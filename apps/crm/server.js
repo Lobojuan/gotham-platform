@@ -1798,14 +1798,25 @@ ${await askKnowledge()}`;
         .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
         .map(m => ({ role: m.role, content: m.content.slice(0, 600) }));
       const msgs = [{ role: 'system', content: RCP.systemPrompt(bd, language) }, ...history, { role: 'user', content: text }];
+      /* one model call; a second try after a short pause when the free tier says "busy" */
+      const ask = async max => { try { return RCP.parseReply(await askModel(msgs, { temperature: 0.3, json: true, raw: true, max })); }
+        catch (e) { await new Promise(r => setTimeout(r, 1500)); return RCP.parseReply(await askModel(msgs, { temperature: 0.3, json: true, raw: true, max })); } };
       try {
-        let r = RCP.parseReply(await askModel(msgs, { temperature: 0.3, json: true, raw: true, max: 400 }));
-        let done = RCP.act(bd, r.action, phoneGH);
-        if (!done.ok) {                            // tell the model what went wrong once, and let it say so to the caller
-          msgs.push({ role: 'assistant', content: JSON.stringify(r) }, { role: 'system', content: `Action failed: ${done.why}. Tell the caller briefly and offer what is possible. Answer with the same JSON shape and "action": {"type": "none"}.` });
-          r = RCP.parseReply(await askModel(msgs, { temperature: 0.3, json: true, raw: true, max: 300 }));
-          done = { ok: true };
+        /* the model may first look up free times (find_slots), then book; a failed action is explained to it once */
+        let r = await ask(350), did = null;
+        for (let i = 0; i < 3; i++) {
+          if (r.action && r.action.type === 'find_slots') {
+            if (i === 2) { r.action = { type: 'none' }; break; }
+            msgs.push({ role: 'assistant', content: JSON.stringify(r) }, { role: 'system', content: `Result of find_slots: ${RCP.slotsText(String(r.action.service || ''), String(r.action.date || ''))} Now answer the caller, offering at most 3 of these times (or book one the caller already chose). Same JSON shape.` });
+            r = await ask(350); continue;
+          }
+          const done = RCP.act(bd, r.action, phoneGH);
+          if (done.ok) { did = done.did || null; break; }
+          if (i === 2) { r = { say: '', action: { type: 'none' } }; break; }
+          msgs.push({ role: 'assistant', content: JSON.stringify(r) }, { role: 'system', content: `Action failed: ${done.why}. Tell the caller briefly and offer what is possible. Answer with the same JSON shape and "action": {"type": "none"} (or find_slots).` });
+          r = await ask(300);
         }
+        const done = { did };
         return json(res, 200, { say: r.say || 'Sorry, could you say that again?', did: done.did || null, board: RCP.publicBoard(bd) }, cors);
       } catch (e) {
         console.error('receptionist failed:', String(e.message || e).slice(0, 300));

@@ -10,13 +10,15 @@ http.createServer((req, res) => {
     let out;
     if (/virtual receptionist of Kasa Family Clinic/.test(sys)) {
       /* the receptionist demo: a booking takes the first free time in the prompt; "busy slot" asks for a time that is not free */
-      const m = sys.match(/^- (\w+) (\d{4}-\d\d-\d\d) \([^)]*\): (\d\d:\d\d)/m);
+      const m = q.match(/\((\d{4}-\d\d-\d\d)\): (\d\d:\d\d)/);
       const R = (say, action) => JSON.stringify({ say, action: action || { type: 'none' } });
       if (/^Action failed/.test(q)) out = R('MOCK sorry, ' + q.slice(15, 80));
       else if (/busy slot/i.test(q)) out = R('MOCK booking', { type: 'book', service: 'gp', date: '2000-01-01', time: '03:00', name: 'Ama Test', phone: '0241234567' });
-      else if (/book/i.test(q) && m) out = R('MOCK booked', { type: 'book', service: m[1], date: m[2], time: m[3], name: 'Ama Test', phone: '024 123 4567' });
+      else if (/^Result of find_slots/.test(q) && m) out = R('MOCK booked', { type: 'book', service: 'gp', date: m[1], time: m[2], name: 'Ama Test', phone: '024 123 4567' });
+      else if (/book/i.test(q)) out = R('', { type: 'find_slots', service: 'gp' });
       else if (/pay/i.test(q)) out = R('MOCK link sent', { type: 'pay_link', booking: 'B1' });
       else if (/cancel/i.test(q)) out = R('MOCK cancelled', { type: 'cancel', booking: 'B1' });
+      else if (/no details/i.test(q)) out = R('MOCK a person will call', { type: 'handover', reason: 'x', name: '[caller name]', phone: '' });
       else if (/person|human|nurse/i.test(q)) out = R('MOCK a nurse will call you', { type: 'handover', reason: 'Wants a nurse', name: 'Ama Test', phone: '0241234567' });
       else out = 'Sure.\n' + R('MOCK receptionist: ' + q.slice(0, 60) + (/(French|Spanish)/.exec(sys.match(/Reply in (\w+)/)?.[0] || '') ? ' [' + sys.match(/Reply in (\w+)/)[1] + ']' : ''));
     } else if (/Answer only with JSON/.test(q)) {
