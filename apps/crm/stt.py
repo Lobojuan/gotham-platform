@@ -6,7 +6,20 @@ import sys, json, time, os
 import numpy as np
 from faster_whisper import WhisperModel
 
-model = WhisperModel(sys.argv[1], device='cpu', compute_type='int8', cpu_threads=int(os.environ.get('WHISPER_THREADS', '1')), num_workers=1)
+# English is heard by the small English-only model (fast on our one CPU); French and Spanish by the larger multilingual one, loaded on first use
+EN_DIR = sys.argv[1] if len(sys.argv) > 1 else ''
+MULTI_DIR = sys.argv[2] if len(sys.argv) > 2 else ''
+THREADS = int(os.environ.get('WHISPER_THREADS', '1'))
+_models = {}
+def get_model(lang):
+    key = 'en' if (lang == 'en' and EN_DIR) or not MULTI_DIR else 'multi'
+    path = EN_DIR if key == 'en' and EN_DIR else MULTI_DIR
+    if not path:
+        return None
+    if path not in _models:
+        _models[path] = WhisperModel(path, device='cpu', compute_type='int8', cpu_threads=THREADS, num_workers=1)
+    return _models[path]
+get_model('en')   # load the English model now, so the first caller does not wait
 # a few words of context steer the spelling of names and the clinic's vocabulary
 PROMPT = {
     'en': 'A caller phones Kasa Family Clinic in Accra, Ghana to book an appointment, ask about prices in cedis, or pay by mobile money.',
@@ -37,6 +50,9 @@ while True:
         audio = np.frombuffer(raw[: len(raw) // 2 * 2], dtype=np.int16).astype(np.float32) / 32768.0
         # a recording with almost no sound in it is not worth listening to (and Whisper invents words from silence)
         if len(audio) >= 16000 * 0.3 and float(np.sqrt(np.mean(audio ** 2))) > 0.002:
+            model = get_model(lang)
+            if model is None:
+                raise RuntimeError('no model')
             segs, _info = model.transcribe(audio, language=lang, beam_size=1, best_of=1, temperature=0.0, condition_on_previous_text=False,
                                            without_timestamps=True, vad_filter=False, initial_prompt=PROMPT.get(lang or 'en'), no_speech_threshold=0.6)
             keep = []

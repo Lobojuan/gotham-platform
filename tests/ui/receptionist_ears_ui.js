@@ -4,7 +4,7 @@
 // sentence ("Hello, I would like to book an appointment for my daughter tomorrow morning.") is used, so the whole path is real:
 // microphone, recording, the quiet/loud detection, upload, Whisper, the answer.
 // Needs a server on :4199 with the stand-in model AND the listening model:
-//   WHISPER_PYTHON=/tmp/qa/wh/bin/python WHISPER_MODEL=/tmp/qa/whisper/tiny bash /tmp/qa/server_ai.sh
+//   WHISPER_PYTHON=/tmp/qa/wh/bin/python WHISPER_MODEL_EN=/tmp/qa/whisper/tiny.en WHISPER_MODEL=/tmp/qa/whisper/tiny bash /tmp/qa/server_ai.sh
 // and /tmp/qa/stt/u1.wav (the sentence, made with Piper by tests/api/27_receptionist_listen.py).
 const { chromium } = require(process.env.PLAYWRIGHT);
 const { execSync } = require('child_process');

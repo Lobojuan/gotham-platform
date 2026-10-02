@@ -7,9 +7,10 @@ import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit, ba
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
-MODEL = os.environ.get('TEST_WHISPER_MODEL', '/tmp/qa/whisper/tiny')
+MODEL = os.environ.get('TEST_WHISPER_MODEL', '/tmp/qa/whisper/tiny')            # the multilingual model (French, Spanish)
+MODEL_EN = os.environ.get('TEST_WHISPER_MODEL_EN', '/tmp/qa/whisper/tiny.en')    # the English one
 PY = os.environ.get('TEST_WHISPER_PYTHON', '/tmp/qa/wh/bin/python')
-HAVE = os.path.exists(os.path.join(MODEL, 'model.bin')) and os.path.exists(PY) and subprocess.run([PY, '-c', 'import faster_whisper'], capture_output=True).returncode == 0
+HAVE = os.path.exists(os.path.join(MODEL, 'model.bin')) and os.path.exists(os.path.join(MODEL_EN, 'model.bin')) and os.path.exists(PY) and subprocess.run([PY, '-c', 'import faster_whisper'], capture_output=True).returncode == 0
 mock = subprocess.Popen(['node', os.path.join(ROOT, 'tests', 'e2e', 'mock_ai.js')], env={**os.environ, 'MOCK_PORT': '4295'}, stdout=subprocess.DEVNULL)
 atexit.register(lambda: mock.poll() is None and mock.terminate())
 B = 'http://127.0.0.1:4199'
@@ -18,7 +19,7 @@ def start(ears):
     env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
         'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'http://example.org',
         'OPENAI_API_KEY': 'test', 'OPENAI_BASE_URL': 'http://127.0.0.1:4295', 'OPENAI_MODEL': 'mock-model',
-        'WHISPER_PYTHON': PY if ears else '/nonexistent/python', 'WHISPER_MODEL': MODEL, 'PIPER_PYTHON': '/nonexistent/python'})
+        'WHISPER_PYTHON': PY if ears else '/nonexistent/python', 'WHISPER_MODEL': MODEL, 'WHISPER_MODEL_EN': MODEL_EN, 'PIPER_PYTHON': '/nonexistent/python'})
     os.makedirs('/tmp/mediatest', exist_ok=True)
     srv = subprocess.Popen(['node', 'server.js'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     atexit.register(lambda: srv.poll() is None and srv.terminate())
@@ -71,6 +72,10 @@ for fmt in ('webm', 'wav', 'm4a'):
     assert s == 200 and 'appointment' in j['text'].lower() and 'daughter' in j['text'].lower(), (fmt, s, j)
     ok('a %s recording is understood in %.1f s: "%s"' % (fmt, took, j['text']))
 
+s, j = call(L, {'sid': sid, 'lang': 'fr', 'audio': b64(clip('/tmp/qa/stt/u1.wav', 'webm'))})
+assert s == 200 and 'text' in j, (s, j); ok('a French request goes to the multilingual model (loaded on first use) and answers: "%s"' % j['text'][:60])
+s, j = call(L, {'sid': sid, 'lang': 'en', 'audio': b64(clip('/tmp/qa/stt/u1.wav', 'webm'))})
+assert s == 200 and 'appointment' in j['text'].lower(), (s, j); ok('and English still uses the English model')
 silent = subprocess.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i', 'anullsrc=r=16000:cl=mono', '-t', '3', '-f', 'wav', '-'], capture_output=True).stdout
 s, j = call(L, {'sid': sid, 'lang': 'en', 'audio': b64(silent)})
 assert s == 200 and j['text'] == '', j; ok('three seconds of silence give no text (no invented words)')

@@ -8,16 +8,17 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
-export function makeSTT({ python = process.env.WHISPER_PYTHON || '/opt/whisper-venv/bin/python', model = process.env.WHISPER_MODEL || '/opt/whisper/base',
+export function makeSTT({ python = process.env.WHISPER_PYTHON || '/opt/whisper-venv/bin/python', model = process.env.WHISPER_MODEL || '/opt/whisper/base', modelEn = process.env.WHISPER_MODEL_EN || '/opt/whisper/tiny.en',
   script = path.join(HERE, 'stt.py'), ffmpeg = process.env.FFMPEG_BIN || 'ffmpeg', timeoutMs = 40e3, maxSeconds = 20, queueMax = 3 } = {}) {
   let worker = null, ready = null, buf = Buffer.alloc(0), waiting = null, chain = Promise.resolve(), deadUntil = 0, queued = 0;
-  const available = () => fs.existsSync(python) && fs.existsSync(path.join(model, 'model.bin')) && fs.existsSync(script);
+  const has = d => fs.existsSync(path.join(d, 'model.bin'));
+  const available = () => fs.existsSync(python) && fs.existsSync(script) && (has(modelEn) || has(model));
 
   function start() {
     if (ready) return ready;
     if (!available() || Date.now() < deadUntil) return Promise.reject(new Error('stt_unavailable'));
     ready = new Promise((resolve, reject) => {
-      const w = spawn(python, [script, model], { stdio: ['pipe', 'pipe', 'pipe'] });
+      const w = spawn(python, [script, has(modelEn) ? modelEn : '', has(model) ? model : ''], { stdio: ['pipe', 'pipe', 'pipe'] });
       worker = w; buf = Buffer.alloc(0);
       let up = false;
       const t = setTimeout(() => { if (!up) { reject(new Error('stt_start_timeout')); w.kill(); } }, 90e3);

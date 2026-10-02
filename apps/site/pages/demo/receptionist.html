@@ -294,7 +294,7 @@
         if (age < 350) { floor += rms; nfloor++; thr = Math.min(0.05, Math.max(0.012, (floor / nfloor) * 3)); return; }
         if (rms > thr) { if (!loudMs) fire('onsoundstart'); loudMs += 50; lastVoice = now; if (loudMs >= 200 && !voiced) { voiced = true; fire('onspeechstart'); } }
         else if (!voiced) loudMs = Math.max(0, loudMs - 25);   // a click or a cough does not count as speech
-        if (voiced && (now - lastVoice > 900 || age > 16000)) finish();
+        if (voiced && (now - lastVoice > 700 || age > 16000)) finish();
         else if (!voiced && age > 8000) finishWith('no-speech');
       }, 50);
     })(); };
