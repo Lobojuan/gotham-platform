@@ -83,6 +83,17 @@ const fakeVoice = lines => {
   await pb.waitForFunction(() => window.__played >= 2 || window.__spoken.length >= 2, null, { timeout: 25000 });
   assert(true, 'typing works and the answer is spoken out loud');
 
+  // she can't hear me: the page shows when sound arrives, and after two silent rounds says how to check the microphone
+  const qc = await b.newContext(); await qc.addInitScript(fakeVoice, []);
+  await qc.addInitScript(() => { window.__greetWait = 60000; class SRQ { start() { setTimeout(() => this.onaudiostart && this.onaudiostart(), 20); if (window.__sound) setTimeout(() => this.onsoundstart && this.onsoundstart(), 100);
+    setTimeout(() => { this.onerror && this.onerror({ error: 'no-speech' }); this.onend && this.onend(); }, 400); } abort() {} } window.webkitSpeechRecognition = SRQ; window.SpeechRecognition = SRQ; window.__sound = true; });
+  const pq = await qc.newPage(); watch(pq);
+  await pq.goto(B + '/demo/receptionist'); await pq.waitForTimeout(500); await pq.click('#rc-mic');
+  await pq.waitForFunction(() => document.getElementById('rc-state').textContent.includes('I can hear you'), null, { timeout: 5000 });
+  assert(true, 'when sound reaches the microphone, the page says "I can hear you"');
+  await pq.waitForFunction(() => document.getElementById('rc-warn').textContent.includes('I cannot hear anything') && document.getElementById('rc-warn').style.display === 'block', null, { timeout: 8000 });
+  assert((await pq.textContent('#rc-warn')).includes('System Settings, Sound, Input'), 'after two silent rounds it says how to check the microphone, and the note stays up');
+
   // French: the browser speaks
   const fr = await b.newContext(); await fr.addInitScript(() => { try { localStorage.setItem('gc-language', 'fr'); } catch {} });
   await fr.addInitScript(fakeVoice, []);
