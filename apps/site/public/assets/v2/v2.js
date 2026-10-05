@@ -518,16 +518,21 @@
           const j=await r.json();job=j.job || job;if(!/^[a-zA-Z0-9_-]{10,128}$/.test(job || ''))throw new Error('voice_unavailable');voiceJob=job;
           await new Promise(resolve=>setTimeout(resolve,Math.min(5000,Math.max(500,Number(j.retry_after)*1000 || 1000))));
         }else{
-          if(!r.ok || !r.headers.get('content-type')?.includes('audio/'))throw new Error('voice_unavailable');
-          const bytes=await r.arrayBuffer();if(epoch!==voiceEpoch || !voiceOn || chat.hidden)return;
+          if(!r.ok)throw new Error('voice_unavailable');
+          let bytes,more;
+          if(r.headers.get('content-type')?.includes('application/json')){
+            const packet=await r.json();if(typeof packet.audio!=='string' || typeof packet.more!=='boolean')throw new Error('voice_unavailable');
+            bytes=Uint8Array.from(atob(packet.audio),c=>c.charCodeAt(0)).buffer;more=packet.more;
+          }else{if(!r.headers.get('content-type')?.includes('audio/'))throw new Error('voice_unavailable');bytes=await r.arrayBuffer();more=r.headers.get('x-voice-more')==='1';}
+          if(epoch!==voiceEpoch || !voiceOn || chat.hidden)return;
           if(!audioContext)throw new Error('voice_unavailable');const decoded=await audioContext.decodeAudioData(bytes);
           if(epoch!==voiceEpoch || !voiceOn || chat.hidden)return;
-          buffers.push(decoded);const more=r.headers.get('x-voice-more')==='1';
+          buffers.push(decoded);
           if(!more){voiceJob=null;audioBuffer=joinAudio(buffers);}queueAudio(decoded);
           if(!more)break;
         }
         if(request.signal.aborted || epoch!==voiceEpoch || !voiceOn || chat.hidden)return;
-        r=await fetch('/api/ask/voice/result',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job}),signal:request.signal});
+        r=await fetch('/api/ask/voice/result',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job,packets:true}),signal:request.signal});
       }
     } catch { if (epoch === voiceEpoch) { voiceState = 'unavailable'; updateVoiceUI(); } }
     finally { clearTimeout(timeout); if (voiceRequest === request) voiceRequest = null; }

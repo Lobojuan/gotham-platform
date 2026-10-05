@@ -1756,6 +1756,8 @@ const server = http.createServer(async (req, res) => {
       if (rateLimited(ip,120,60e3,'ask-voice-result')) return json(res,429,{error:'voice_limit'},cors);
       const b=await body(req),out=ASK_VOICE.result(String(b.job || ''),ip);
       if(!out.audio)return json(res,out.status,{...(out.error?{error:out.error}:{}),...(out.retry_after?{retry_after:out.retry_after}:{})},cors);
+      // WordPress forwards response bodies, but strips unlisted custom headers.
+      if(b.packets===true)return json(res,200,{audio:out.audio.toString('base64'),more:out.more},cors);
       res.writeHead(200,{...cors,'content-type':'audio/mpeg','cache-control':'no-store','content-length':out.audio.length,'x-voice-more':out.more?'1':'0'});return res.end(out.audio);
     }
     if (p === '/api/ask/voice' && req.method === 'POST') {

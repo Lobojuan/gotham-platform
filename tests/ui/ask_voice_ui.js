@@ -50,7 +50,7 @@ const ok=(c,m)=>{if(!c)throw new Error(m);console.log('  ok',m);};
   const sp=await streamCtx.newPage();let part=0,cancels=0;
   await sp.route('**/api/ask',r=>r.fulfill({json:{answer:'A full answer in two spoken parts.',speech:{token:'answer-token',voice:'bm_fable'}}}));
   await sp.route('**/api/ask/voice',r=>r.fulfill({status:202,json:{job:'streamed-audio-job',retry_after:.01}}));
-  await sp.route('**/api/ask/voice/result',async r=>{part++;if(part%2===0)await new Promise(resolve=>setTimeout(resolve,1000));await r.fulfill({contentType:'audio/mpeg',headers:{'x-voice-more':part%2?'1':'0'},body:'audio chunk'}).catch(()=>{});});
+  await sp.route('**/api/ask/voice/result',async r=>{ok(r.request().postDataJSON().packets===true,'stream requests body metadata through WordPress');part++;if(part%2===0)await new Promise(resolve=>setTimeout(resolve,1000));await r.fulfill({json:{audio:Buffer.from('audio chunk').toString('base64'),more:part%2===1}}).catch(()=>{});});
   await sp.route('**/api/ask/voice/cancel',r=>{cancels++;return r.fulfill({json:{ok:true}});});
   await sp.goto(B+'/');await sp.locator('.dock [data-open-chat]').click();await sp.click('#chatVoice');
   await sp.fill('#chatI','Explain Ghana');await sp.press('#chatI','Enter');await sp.waitForFunction(()=>window.__played===1);
