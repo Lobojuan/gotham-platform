@@ -279,7 +279,8 @@ async function journeys(browser) {
     check(`${dev}: menu → Forums`, /forums$/.test(p.url()));
     await p.goto(B + '/services/digital', NAV); await settle(p);
     await p.locator('[data-ask]').nth(2).scrollIntoViewIfNeeded(); await p.locator('[data-ask]').nth(2).tap();
-    check(`${dev}: AI question answered in the chat`, await waitAnswer(p, 2) && isAnswer(await lastBot(p)));
+    const paymentReady=await waitAnswer(p,2),paymentText=await lastBot(p);
+    check(`${dev}: payment question gets verified instructions in the chat`, paymentReady && paymentText.includes('+233 55 041 6627') && /registration confirmation page/.test(paymentText) && !/WhatsApp/.test(paymentText), paymentText);
     const chatBox = await p.locator('#chat').boundingBox(); const vw = p.viewportSize().width;
     check(`${dev}: chat fits the screen`, chatBox && chatBox.x >= 0 && chatBox.x + chatBox.width <= vw + 1, JSON.stringify(chatBox));
     const inputFont = await p.$eval('#chatI', e => parseFloat(getComputedStyle(e).fontSize));
