@@ -33,6 +33,18 @@ let finish; const slow=makeAskVoice({enabled:()=>true,render:()=>new Promise(r=>
 const t=slow.issue('x','one'); const pending=slow.speak(t.token,'one');
 assert.equal((await slow.speak(t.token,'one')).status,403);finish(Buffer.from('x'));await pending;
 console.log('  ok simultaneous replay cannot start a second worker job');
+let complete;
+const bg=makeAskVoice({enabled:()=>true,render:()=>new Promise(r=>{complete=r;})});
+const ticket=bg.issue('An answer that takes longer than the proxy timeout.','one');const job=bg.start(ticket.token,'one');
+assert.equal(job.status,202);assert.equal(bg.start(ticket.token,'one').status,403);
+assert.equal(bg.result(job.job,'two').status,403);assert.equal(bg.result(job.job,'one').status,202);
+await new Promise(setImmediate);complete(Buffer.from('actual mp3'));await new Promise(setImmediate);
+const ready=bg.result(job.job,'one');assert.equal(ready.status,200);assert.equal(ready.audio.toString(),'actual mp3');
+assert.equal(bg.result(job.job,'one').status,403);
+const broken=makeAskVoice({enabled:()=>true,render:async()=>{throw new Error('private details');}});
+const bad=broken.start(broken.issue('x','one').token,'one');await new Promise(setImmediate);
+assert.deepEqual(broken.result(bad.job,'one'),{status:503,error:'voice_unavailable'});
+console.log('  ok background jobs: pending, visitor binding, one-time result, sanitized failures');
 '''
 subprocess.run(['node', '--input-type=module', '-e', code], check=True)
 env = dict(os.environ, DATABASE_URL=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test'),

@@ -1751,10 +1751,17 @@ const server = http.createServer(async (req, res) => {
     }
 
     /* Public speech: one-use, visitor-bound tokens from /api/ask; no arbitrary text accepted. */
+    if (p === '/api/ask/voice/result' && req.method === 'POST') {
+      if (rateLimited(ip,120,60e3,'ask-voice-result')) return json(res,429,{error:'voice_limit'},cors);
+      const b=await body(req),out=ASK_VOICE.result(String(b.job || ''),ip);
+      if(!out.audio)return json(res,out.status,{...(out.error?{error:out.error}:{}),...(out.retry_after?{retry_after:out.retry_after}:{})},cors);
+      res.writeHead(200,{...cors,'content-type':'audio/mpeg','cache-control':'no-store','content-length':out.audio.length});return res.end(out.audio);
+    }
     if (p === '/api/ask/voice' && req.method === 'POST') {
       if (rateLimited(ip, 20, 3600e3, 'ask-voice')) return json(res, 429, { error: 'voice_limit' }, cors);
       const b = await body(req);
-      const out = await ASK_VOICE.speak(String(b.token || ''), ip);
+      const out = ASK_VOICE.start(String(b.token || ''), ip);
+      if(out.status===202)return json(res,202,{job:out.job,retry_after:out.retry_after},cors);
       if (!out.audio) return json(res, out.status, { error: out.error }, cors);
       res.writeHead(200, { ...cors, 'content-type': 'audio/mpeg', 'cache-control': 'no-store', 'content-length': out.audio.length });
       return res.end(out.audio);

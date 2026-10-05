@@ -495,11 +495,18 @@
     if (!voiceOn || chat.hidden || epoch !== voiceEpoch) return;
     if (!speech?.token) { voiceState = 'unavailable'; updateVoiceUI(); return; }
     voiceRequest = new AbortController(); const request = voiceRequest;
-    const timeout = setTimeout(() => request.abort(), 40000);
+    const timeout = setTimeout(() => request.abort(), 10 * 60e3);
     voiceState = 'loading'; updateVoiceUI();
     try {
-      const r = await fetch('/api/ask/voice', { method: 'POST', headers: { 'content-type': 'application/json' },
+      let r = await fetch('/api/ask/voice', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ token: speech.token }), signal: request.signal });
+      let job;
+      while(r.status===202) {
+        const j=await r.json();job=j.job || job;if(!/^[a-zA-Z0-9_-]{10,128}$/.test(job || ''))throw new Error('voice_unavailable');
+        await new Promise(resolve=>setTimeout(resolve,Math.min(5000,Math.max(500,Number(j.retry_after)*1000 || 3000))));
+        if(request.signal.aborted || epoch!==voiceEpoch || !voiceOn || chat.hidden)return;
+        r=await fetch('/api/ask/voice/result',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job}),signal:request.signal});
+      }
       if (!r.ok || !r.headers.get('content-type')?.includes('audio/')) throw new Error('voice_unavailable');
       const bytes = await r.arrayBuffer();
       if (epoch !== voiceEpoch || !voiceOn || chat.hidden) return;
@@ -537,7 +544,7 @@
   const closeChat = () => { stopVoice(true); chat.hidden = true; chatO.hidden = false; chatO.setAttribute('aria-expanded', 'false'); if (getComputedStyle(chatO).display !== 'none') chatO.focus(); };
   chatO?.addEventListener('click', openChat);
   $('#chatX')?.addEventListener('click', closeChat);
-  const FALLBACK = 'Good question. Our team will answer you personally on WhatsApp: +233 55 041 6627.';
+  const FALLBACK = 'The AI is temporarily unavailable. Please try again, or browse our services at /services and forums at /forums.';
   // Known public facts remain useful when the AI provider is temporarily unavailable.
   function offlineAnswer(q) {
     const pay = /\b(pay|payment|momo|money|payer|paiement|pagar|pago)\b/i.test(q);
