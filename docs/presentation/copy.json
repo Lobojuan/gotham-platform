@@ -1,0 +1,62 @@
+{
+  "en": {
+    "cover": "Build partnerships\nin Ghana",
+    "subtitle": "Business advisory, technology\nand international projects",
+    "titles": ["Business & investment", "AI, digital & creative services", "Projects, people & partnerships"],
+    "services": [
+      ["Company setup and market entry", "Business plans and financial models", "Partner and project due diligence", "Compliance and ESG support"],
+      ["AI readiness audits and staff training", "Finance and reporting automation", "Websites, apps and managed hosting", "Jingles, adverts and voiceovers"],
+      ["Energy, mining and infrastructure", "Education and school development", "Senior citizens and family support", "Forums, media and investor roundtables"]
+    ],
+    "scan": "Stay connected with Gotham",
+    "website": "Explore our services",
+    "follow": "Follow us on LinkedIn",
+    "start": "Start presentation",
+    "next": "Next",
+    "previous": "Previous",
+    "fullscreen": "Full screen",
+    "exit": "Exit full screen",
+    "download": "Download",
+    "help": "Use the arrow keys to change slides. Leave the final QR slide on screen so people can scan."
+  },
+  "fr": {
+    "cover": "Des partenariats\nau Ghana",
+    "subtitle": "Conseil aux entreprises, technologie\net projets internationaux",
+    "titles": ["Entreprises et investissement", "IA, numérique et création", "Projets et partenariats"],
+    "services": [
+      ["Création d’entreprise et accès au marché", "Plans d’affaires et modèles financiers", "Vérification des partenaires et projets", "Conformité et accompagnement ESG"],
+      ["Audits IA et formation des équipes", "Automatisation financière et des rapports", "Sites web, applications et hébergement", "Jingles, publicités et voix off"],
+      ["Énergie, mines et infrastructures", "Éducation et développement des écoles", "Soutien aux seniors et aux familles", "Forums, médias et rencontres d’investisseurs"]
+    ],
+    "scan": "Restons en contact avec Gotham",
+    "website": "Découvrez nos services",
+    "follow": "Suivez-nous sur LinkedIn",
+    "start": "Lancer la présentation",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "fullscreen": "Plein écran",
+    "exit": "Quitter le plein écran",
+    "download": "Télécharger",
+    "help": "Utilisez les flèches pour changer de diapositive. Laissez les codes QR à l’écran à la fin pour que le public puisse les scanner."
+  },
+  "es": {
+    "cover": "Alianzas de negocio\nen Ghana",
+    "subtitle": "Asesoría empresarial, tecnología\ny proyectos internacionales",
+    "titles": ["Empresas e inversión", "IA, servicios digitales y creativos", "Proyectos y alianzas"],
+    "services": [
+      ["Creación de empresas y entrada al mercado", "Planes de negocio y modelos financieros", "Evaluación de socios y proyectos", "Cumplimiento y apoyo en ESG"],
+      ["Auditorías de IA y formación de equipos", "Automatización financiera y de informes", "Sitios web, aplicaciones y alojamiento", "Jingles, anuncios y locuciones"],
+      ["Energía, minería e infraestructura", "Educación y desarrollo de escuelas", "Apoyo a personas mayores y familias", "Foros, medios y encuentros de inversores"]
+    ],
+    "scan": "Sigue en contacto con Gotham",
+    "website": "Descubre nuestros servicios",
+    "follow": "Síguenos en LinkedIn",
+    "start": "Iniciar presentación",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "fullscreen": "Pantalla completa",
+    "exit": "Salir de pantalla completa",
+    "download": "Descargar",
+    "help": "Usa las flechas para cambiar de diapositiva. Deja los códigos QR en pantalla al final para que el público pueda escanearlos."
+  }
+}
