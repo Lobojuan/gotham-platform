@@ -2345,7 +2345,7 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       const secret = totpOpen(u.totp_secret); let okc = false;
       const step = secret ? totpCheck(secret, b.code, +u.totp_last || 0) : 0;
       if (step) { okc = true; await q('update users set totp_last=$2 where id=$1', [u.id, step]); }
-      else if (/[A-Za-z]/.test(String(b.code || ''))) {   // a recovery code: works once
+      else if (/^[A-Fa-f0-9]{10}$/.test(String(b.code || '').replace(/[-\s]/g, ''))) {   // a recovery code: works once, including numeric-only codes
         const h = recHash(b.code), list = Array.isArray(u.totp_recovery) ? u.totp_recovery : [];
         if (list.includes(h)) { okc = true; await q('update users set totp_recovery=$2 where id=$1', [u.id, JSON.stringify(list.filter(x => x !== h))]);
           await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'login_recovery_code', `${list.length - 1} recovery codes left`]); }

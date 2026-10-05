@@ -96,6 +96,12 @@ st, me, _ = call('/api/login/code', {'ticket': d['ticket'], 'code': rc.lower()},
 st, d, _ = login('ama@gotham.test', pw)
 st, e, _ = call('/api/login/code', {'ticket': d['ticket'], 'code': rc}, headers={'x-real-ip': '10.67.1.5'}); assert st == 401, 'a recovery code works once'
 st, g, _ = call('/api/2fa', cookie=ack); assert g == {'on': True, 'recovery_left': 7}, g
+numeric_rc = '12345-67890'
+numeric_hash = hashlib.sha256(('rec:' + numeric_rc.replace('-', '')).encode()).hexdigest()
+psql("update users set totp_recovery=totp_recovery || '[\"%s\"]'::jsonb where email='ama@gotham.test'" % numeric_hash)
+st, me, _ = call('/api/login/code', {'ticket': d['ticket'], 'code': numeric_rc}, headers={'x-real-ip': '10.67.1.7'}); assert st == 200, me
+st, e, _ = call('/api/login/code', {'ticket': d['ticket'], 'code': numeric_rc}, headers={'x-real-ip': '10.67.1.8'}); assert st == 401, 'numeric-only recovery codes also work exactly once'
+st, g, _ = call('/api/2fa', cookie=ack); assert g == {'on': True, 'recovery_left': 7}, g
 st, e, _ = call('/api/login/code', {'ticket': 'forged.ticket', 'code': '123456'}, headers={'x-real-ip': '10.67.1.6'}); assert st == 401 and e['error'] == 'expired'
 st, U, _ = call('/api/users', cookie=ck); assert [u for u in U['rows'] if u['email'] == 'ama@gotham.test'][0]['totp_on'] is True
 st, _, _ = call('/api/users/ama%40gotham.test', {'reset_2fa': True}, method='PATCH', cookie=ck); assert st == 200
