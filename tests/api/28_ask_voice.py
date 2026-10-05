@@ -48,7 +48,7 @@ console.log('  ok background jobs: pending, visitor binding, one-time result, sa
 const waiters=[],spoken=[];const streaming=makeAskVoice({enabled:()=>true,render:(text,language,signal)=>new Promise((resolve,reject)=>{spoken.push(text);waiters.push(resolve);signal.addEventListener('abort',()=>reject(new Error('cancelled')),{once:true});})});
 const full='A short opening phrase starts promptly. '+('More words follow with all the original meaning. '.repeat(5));
 const stream=streaming.start(streaming.issue(full,'one').token,'one',true);await new Promise(setImmediate);
-assert.ok(spoken[0].length<=65);waiters.shift()(Buffer.from('first'));await new Promise(setImmediate);
+assert.ok(spoken[0].length<=45);waiters.shift()(Buffer.from('first'));await new Promise(setImmediate);
 const first=streaming.result(stream.job,'one');assert.equal(first.audio.toString(),'first');assert.equal(first.more,true);
 assert.equal(streaming.cancel(stream.job,'two').status,403);assert.equal(streaming.cancel(stream.job,'one').status,200);await new Promise(setImmediate);
 assert.equal(streaming.result(stream.job,'one').status,403);console.log('  ok early audio chunks and visitor-bound cancellation');

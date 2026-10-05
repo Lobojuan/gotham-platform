@@ -36,6 +36,7 @@ for(const [l,q]of [['en','cedi to USD today'],['fr','taux dollar cedi aujourd’
 assert.match(ratesAnswer('cedi to AED','en',fx,clock),/1 AED/);assert.match(ratesAnswer('cedi USD','en',fx,clock+7*864e5),/older than three days/);
 assert.match(ratesAnswer('cedi USD','en',null),/cannot verify/);assert.equal(ratesAnswer('register for a forum','en',fx),null);
 assert.match(timeAnswer('what time is it in Dubai?','en',Date.parse('2026-10-05T12:30:00Z')),/16:30/);
+assert.match(timeAnswer('what time is it?','en',Date.parse('2026-10-05T12:30:00Z')),/Accra: 12:30\. 5 October 2026/);
 assert.match(timeAnswer('quelle heure est-il?','fr',Date.parse('2026-10-05T12:30:00Z')),/12:30/);
 assert.match(timeAnswer('que hora es en Londres?','es',Date.parse('2026-10-05T12:30:00Z')),/13:30/);
 assert.equal(timeAnswer('How much time is needed for registration?'),null);
