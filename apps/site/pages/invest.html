@@ -3,10 +3,10 @@
   <section class="phero" aria-labelledby="h1"><img class="bgimg" src="/img/real-bog.webp" alt="" fetchpriority="high">
     <div class="wrap">
       <nav class="crumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>Invest in Ghana</span></nav>
-      <p class="eyebrow">Invest in Ghana · September 2026</p>
-      <h1 id="h1">Invest in Ghana: <span class='serif'>today's numbers.</span></h1>
-      <p class="lead">After the 2022–23 debt crisis, Ghana is growing again: inflation at a multi-year low, record exports and investment flows rising. Here is the picture for investors.</p>
-      <nav class="jump" aria-label="On this page"><a href="#numbers">Numbers</a><a href="#why">Why Ghana</a><a href="#sectors">Sectors</a><a href="#country">Your country</a><a href="#gipa">GIPA Act 2026</a><a href="#desk">Investor packages</a></nav>
+      <p class="eyebrow">Invest in Ghana · published evidence</p>
+      <h1 id="h1">Invest in Ghana: <span class='serif'>informed decisions.</span></h1>
+      <p class="lead">Explore published economic data, listed company performance and sector opportunities. Build your investment brief around verified evidence and clear risks.</p>
+      <nav class="jump" aria-label="On this page"><a href="#numbers">Numbers</a><a href="#research">Investor research</a><a href="#why">Why Ghana</a><a href="#sectors">Sectors</a><a href="#country">Your country</a><a href="#gipa">GIPA Act 2026</a><a href="#desk">Investor packages</a></nav>
       <div class="cta-row" style="margin-top:22px;justify-content:flex-start"><a class="btn btn-gold" href="/invest/join">Join the investor list, free <span class="arrow">→</span></a><a class="btn btn-ghost" href="/projects/dawa-solar">See a project we took to build-ready</a></div>
     </div>
   </section>
@@ -15,16 +15,17 @@
     <div class="wrap">
       <h2 id="n-h" class="sr-only">Key numbers</h2>
       <div class="ngrid">
-        <div><b data-count="6.2" data-suffix="%">6.2%</b><span>GDP growth, H1 2026 · Q2: 6.0%</span></div>
-        <div><b data-count="5.0" data-suffix="%">5.0%</b><span>Inflation, Aug 2026 · policy rate 14%</span></div>
-        <div><b data-count="13.6" data-prefix="$" data-suffix="bn">$13.6bn</b><span>Trade surplus, 2025 · reserves $13.8bn</span></div>
-        <div><b data-count="2.6" data-prefix="$" data-suffix="bn">$2.6bn</b><span>New FDI registered, 2025 · 245 projects</span></div>
+        <div data-ghana-key="gdp" data-no-tr><b>6.0%</b><span>GDP growth · 2026Q2</span></div>
+        <div data-ghana-key="inflation" data-no-tr><b>5.0%</b><span>Inflation · 2026M08</span></div>
+        <div data-ghana-key="tradeBalanceAnnual" data-no-tr><b>$13.80bn</b><span>Trade surplus · 2025</span></div>
+        <div data-ghana-key="reserves" data-no-tr><b>$11.07bn</b><span>Reserves · 2026-08</span></div>
       </div>
       <p class="fx-live" id="fx-live" hidden aria-live="polite"></p>
-      <p class="src">Ghana Statistical Service (Q2 2026 GDP, Aug 2026 CPI), Bank of Ghana (July 2026 MPC, 2025 trade data), GIPC (2025 FDI report).</p>
+      <p class="src"><span data-ghana-sources data-no-tr><a href="https://www.statsghana.gov.gh/">GSS</a> · <a href="https://www.bog.gov.gh/monetary-policy/summary-of-economic-and-financial-data/">Bank of Ghana</a></span></p>
     </div>
   </section>
 
+  <!--#research-->
   <section class="sec" id="why" aria-labelledby="w-h">
     <div class="wrap">
       <div class="sec-head split">
@@ -47,17 +48,16 @@
         <p class="lead">Year-on-year growth by sector, Q2 2026, and what Ghana sells.</p>
       </div>
       <div class="grid2" style="margin-bottom:14px">
-        <div class="box rv"><h3>Growth by sector, Q2 2026</h3><div class="bars" style="margin-top:14px"><div class="bar"><span>ICT</span><i style="width:100.0%"></i><b>+30.9%</b></div><div class="bar"><span>Oil &amp; gas</span><i style="width:69.3%"></i><b>+21.4%</b></div><div class="bar"><span>Services</span><i style="width:25.9%"></i><b>+8.0%</b></div><div class="bar"><span>Whole economy</span><i style="width:19.4%"></i><b>+6.0%</b></div><div class="bar"><span>Industry</span><i style="width:13.9%"></i><b>+4.3%</b></div><div class="bar"><span>Agriculture</span><i style="width:12.6%"></i><b>+3.9%</b></div></div></div>
-        <div class="box rv"><h3>What Ghana sells</h3><p>Exports 2025: $31.1bn, up from $19.1bn in 2024.</p><div class="stack" role="img" aria-label="Exports 2025: gold 20.0bn, cocoa 3.8bn, oil 2.6bn, other 4.7bn dollars"><div style="flex:20.0;background:#A9761F">64%</div><div style="flex:3.8;background:#6B4B2A">12%</div><div style="flex:2.6;background:#0F1B2D"></div><div style="flex:4.7;background:#7C8795">15%</div></div><div class="legend"><span><i style="background:#A9761F"></i>Gold <b>$20.0bn</b></span><span><i style="background:#6B4B2A"></i>Cocoa <b>$3.8bn</b></span><span><i style="background:#0F1B2D"></i>Oil <b>$2.6bn</b></span><span><i style="background:#7C8795"></i>Other <b>$4.7bn</b></span></div>
-          <p style="margin-top:16px">New FDI registered with GIPC rose from <b>$0.65bn</b> in 2024 to <b>$2.6bn</b> in 2025.</p></div>
+        <div class="box rv"><h3>Published sector growth</h3><div class="market-metrics"><div data-ghana-key="services" data-no-tr><b>8%</b><span>Services · 2026-06</span></div><div data-ghana-key="industry" data-no-tr><b>4.3%</b><span>Industry · 2026-06</span></div><div data-ghana-key="agriculture" data-no-tr><b>3.9%</b><span>Agriculture · 2026-06</span></div></div></div>
+        <div class="box rv"><h3>What Ghana sells</h3><div class="market-metrics"><div data-ghana-key="goldAnnual" data-no-tr><b>$20.98bn</b><span>Gold exports · 2025</span></div><div data-ghana-key="cocoaAnnual" data-no-tr><b>$4.00bn</b><span>Cocoa exports · 2025</span></div><div data-ghana-key="oilAnnual" data-no-tr><b>$2.62bn</b><span>Oil exports · 2025</span></div><div data-ghana-key="otherAnnual" data-no-tr><b>$3.65bn</b><span>Other exports · 2025</span></div></div><p class="src"><a href="https://www.bog.gov.gh/monetary-policy/summary-of-economic-and-financial-data/">Bank of Ghana · revised trade series</a></p></div>
       </div>
       <div class="grid3"><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Digital &amp; fintech</h3><span class="pill teal">Strong</span></div>
-        <div class="m">+30.9%</div><div class="ms">ICT growth, Q2 2026</div><p style="margin:0">The fastest-growing part of the economy, driving 41% of all growth in Q2. Mobile money, software, data centres and digital services.</p><div class="risk"><b>Risk:</b> Talent competition and regulatory licensing for fintech.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Agro-processing</h3><span class="pill teal">Strong</span></div>
-        <div class="m">$3.8bn</div><div class="ms">Cocoa exports 2025, doubled</div><p style="margin:0">Cocoa, cashew and shea processing with the AfCFTA secretariat based in Accra. Policy pushes more processing at home.</p><div class="risk"><b>Risk:</b> Farm-gate prices and crop disease.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Renewable energy</h3><span class="pill ">Selective</span></div>
+        <div class="m">Digital</div><div class="ms">Payments, software and services</div><p style="margin:0">Mobile money, software, data centres and digital services.</p><div class="risk"><b>Risk:</b> Talent competition and regulatory licensing for fintech.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Agro-processing</h3><span class="pill teal">Strong</span></div>
+        <div class="m" data-ghana-value="cocoaAnnual" data-no-tr>$4.00bn</div><div class="ms">Cocoa exports · published annual series</div><p style="margin:0">Cocoa, cashew and shea processing with the AfCFTA secretariat based in Accra. Policy pushes more processing at home.</p><div class="risk"><b>Risk:</b> Farm-gate prices and crop disease.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Renewable energy</h3><span class="pill ">Selective</span></div>
         <div class="m">24/7</div><div class="ms">demand from the 24-Hour Economy</div><p style="margin:0">Solar for industry and free zones, mini-grids and storage. Strongest with private buyers of power.</p><div class="risk"><b>Risk:</b> Payment risk on sales to the state utility.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Manufacturing &amp; free zones</h3><span class="pill ">Selective</span></div>
-        <div class="m">42</div><div class="ms">new free-zone investments, 2025</div><p style="margin:0">The 24-Hour Economy program and a new Afreximbank project facility target factories, logistics and export parks.</p><div class="risk"><b>Risk:</b> Power costs and import dependence.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Mining &amp; critical minerals</h3><span class="pill ">Selective</span></div>
-        <div class="m">$20.0bn</div><div class="ms">Gold exports 2025</div><p style="margin:0">Record gold earnings, and lithium now open. Best entry: large-scale licences, JVs with verified Ghanaian partners, and mining services.</p><div class="risk"><b>Risk:</b> Royalty reform pending in Parliament; land and illegal-mining exposure.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Oil &amp; gas</h3><span class="pill gray">Watch</span></div>
-        <div class="m">+21.4%</div><div class="ms">Output growth, Q2 2026</div><p style="margin:0">Production recovered in 2026, but oil export earnings fell to $2.6bn in 2025 as fields mature.</p><div class="risk"><b>Risk:</b> Mature fields and global price swings.</div></div></div>
+        <div class="m">Exports</div><div class="ms">Manufacturing and logistics</div><p style="margin:0">The 24-Hour Economy program and a new Afreximbank project facility target factories, logistics and export parks.</p><div class="risk"><b>Risk:</b> Power costs and import dependence.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Mining &amp; critical minerals</h3><span class="pill ">Selective</span></div>
+        <div class="m" data-ghana-value="goldAnnual" data-no-tr>$20.98bn</div><div class="ms">Gold exports · published annual series</div><p style="margin:0">Record gold earnings, and lithium now open. Best entry: large-scale licences, JVs with verified Ghanaian partners, and mining services.</p><div class="risk"><b>Risk:</b> Royalty reform pending in Parliament; land and illegal-mining exposure.</div></div><div class="box sector rv"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3>Oil &amp; gas</h3><span class="pill gray">Watch</span></div>
+        <div class="m" data-ghana-value="oilAnnual" data-no-tr>$2.62bn</div><div class="ms">Oil exports · published annual series</div><p style="margin:0">Check production, field maturity, licensing and export earnings against the published data.</p><div class="risk"><b>Risk:</b> Mature fields and global price swings.</div></div></div>
       <p class="fine" style="margin-top:14px">Outlook ratings are Gotham Consult's view for discussion, not investment advice.</p>
     </div>
   </section>
@@ -134,4 +134,3 @@
   </section>
 </main>
 <!--#bottom-->
-

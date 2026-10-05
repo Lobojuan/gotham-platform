@@ -1,0 +1,220 @@
+{
+  "checked": "2026-10-05T14:30:00Z",
+  "sources": {
+    "gss": {
+      "url": "https://www.statsghana.gov.gh/",
+      "checked": "2026-10-05T14:30:00Z",
+      "sha256": "415fb0c7a33b218a551e45f2f443841fb4c96051c16ed3e40c6330257faeb95b",
+      "metrics": {
+        "gdp": {
+          "value": 6,
+          "period": "2026Q2",
+          "unit": "%"
+        },
+        "gdpAnnual": {
+          "value": 6,
+          "period": "2025",
+          "unit": "%"
+        },
+        "inflation": {
+          "value": 5,
+          "period": "2026M08",
+          "unit": "%"
+        },
+        "ppi": {
+          "value": 4.4,
+          "period": "2026M08",
+          "unit": "%"
+        },
+        "industrial": {
+          "value": 3,
+          "period": "2026Q2",
+          "unit": "%"
+        }
+      }
+    },
+    "bog": {
+      "url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
+      "checked": "2026-10-05T14:30:00Z",
+      "sha256": "d51e173c57011df728ba89410528d97b3567520e3e5985c916d3c6ba2ce7fe9c",
+      "metrics": {
+        "agriculture": {
+          "value": 3.9,
+          "period": "2026-06",
+          "unit": "%"
+        },
+        "industry": {
+          "value": 4.3,
+          "period": "2026-06",
+          "unit": "%"
+        },
+        "services": {
+          "value": 8,
+          "period": "2026-06",
+          "unit": "%"
+        },
+        "policy": {
+          "value": 14,
+          "period": "2026-08",
+          "unit": "%"
+        },
+        "treasury91": {
+          "value": 5.38,
+          "period": "2026-08",
+          "unit": "%"
+        },
+        "exports": {
+          "value": 22.440099999999997,
+          "period": "2026-08",
+          "unit": "USD bn"
+        },
+        "exportsAnnual": {
+          "value": 31.248,
+          "period": "2025",
+          "unit": "USD bn"
+        },
+        "gold": {
+          "value": 14.8632,
+          "period": "2026-08",
+          "unit": "USD bn"
+        },
+        "goldAnnual": {
+          "value": 20.9753,
+          "period": "2025",
+          "unit": "USD bn"
+        },
+        "cocoa": {
+          "value": 2.7624,
+          "period": "2026-08",
+          "unit": "USD bn"
+        },
+        "cocoaAnnual": {
+          "value": 4.0008,
+          "period": "2025",
+          "unit": "USD bn"
+        },
+        "oil": {
+          "value": 2.4249,
+          "period": "2026-08",
+          "unit": "USD bn"
+        },
+        "oilAnnual": {
+          "value": 2.6203000000000003,
+          "period": "2025",
+          "unit": "USD bn"
+        },
+        "other": {
+          "value": 2.3895999999999997,
+          "period": "2026-08",
+          "unit": "USD bn"
+        },
+        "otherAnnual": {
+          "value": 3.6515,
+          "period": "2025",
+          "unit": "USD bn"
+        },
+        "tradeBalance": {
+          "value": 8.8551,
+          "period": "2026-08",
+          "unit": "USD bn"
+        },
+        "tradeBalanceAnnual": {
+          "value": 13.7959,
+          "period": "2025",
+          "unit": "USD bn"
+        },
+        "reserves": {
+          "value": 11.0715,
+          "period": "2026-08",
+          "unit": "USD bn"
+        }
+      }
+    },
+    "gse": {
+      "url": "https://gse.com.gh/",
+      "checked": "2026-10-05T14:30:00Z",
+      "sha256": "4c202cb6cc79b55f025830c0a60a6ea6670e2f1683b7aeda0104408f4a45db49",
+      "metrics": {
+        "index": {
+          "value": 14071.44,
+          "period": "2026-10-02",
+          "unit": "points"
+        },
+        "ytd": {
+          "value": 60.45,
+          "period": "2026-10-02",
+          "unit": "%"
+        }
+      }
+    }
+  },
+  "research": {
+    "checked": "2026-10-05T15:17:03.202Z",
+    "items": {
+      "factbook": {
+        "url": "https://gse.com.gh/wp-content/uploads/2025/12/GSE-2024-FACTBOOK.pdf",
+        "label": "GSE 2024 factbook",
+        "checked": "2026-10-05T15:15:03.450Z",
+        "verified": "2026-10-05T15:15:03.450Z",
+        "sha256": "83c370b95b388b34e3e4d99b41940de8b3c028ef2c32a4cfb1aba0c371610144",
+        "status": "verified"
+      },
+      "gse2025": {
+        "url": "https://gse.com.gh/wp-content/uploads/2026/01/GSE-Equities-Market-Report-December-2025.pdf",
+        "label": "GSE December 2025",
+        "checked": "2026-10-05T15:15:03.454Z",
+        "verified": "2026-10-05T15:15:03.454Z",
+        "sha256": "090a1a392bebd75abf9841fb4e67ca819fcd7bf2c9c6bf613312426df8c93e8a",
+        "status": "verified"
+      },
+      "mtn": {
+        "url": "https://mtn.com.gh/wp-content/uploads/2026/03/MTN-FY-AR-2025.pdf",
+        "label": "MTN FY2025",
+        "checked": "2026-10-05T15:15:03.474Z",
+        "verified": "2026-10-05T15:15:03.474Z",
+        "sha256": "424811646ed2eb5e46021d698aa5605baee9abe8cd51d27eb155028df6be65d7",
+        "status": "verified"
+      },
+      "wb": {
+        "url": "https://www.worldbank.org/en/news/press-release/2026/08/26/ghana-must-turn-strong-recovery-into-quality-jobs-and-lasting-growth",
+        "label": "World Bank Ghana economic outlook",
+        "checked": "2026-10-05T15:15:03.478Z",
+        "verified": "2026-10-05T15:15:03.478Z",
+        "sha256": "67cf67868960bb7e0a0ab405e3f8215ace474dde05d45d1cf723666faa99f8bd",
+        "status": "verified"
+      },
+      "imf": {
+        "url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf",
+        "label": "IMF Ghana Article IV",
+        "checked": "2026-10-05T15:17:03.199Z",
+        "verified": "2026-10-05T15:17:03.199Z",
+        "sha256": "dce1bee850dded801bf8cf0ae4011cc2a41c6173470c8ba826605da01f542777",
+        "status": "verified"
+      },
+      "gipa": {
+        "url": "https://www.gipc.gov.gh/wp-content/uploads/2024/07/Investment-Roadmap-Document.pdf",
+        "label": "GIPA sector roadmap",
+        "checked": "2026-10-05T15:15:03.526Z",
+        "verified": "2026-10-05T15:15:03.526Z",
+        "sha256": "2338ea90255ac4d55aeba8681318b794561d0832c8c209966d6fe306527c3026",
+        "status": "verified"
+      },
+      "mpc": {
+        "url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+        "label": "BoG policy decision",
+        "checked": "2026-10-05T15:15:03.527Z",
+        "verified": "2026-10-05T15:15:03.527Z",
+        "sha256": "78f7951921f7eae911331825201719ef537ab9533a963c4e14214737e6180221",
+        "status": "verified"
+      },
+      "brokers": {
+        "url": "https://gse.com.gh/licensed-dealing-members/",
+        "label": "GSE licensed brokers",
+        "checked": "2026-10-05T15:15:03.529Z",
+        "verified": "2026-10-05T15:15:03.529Z",
+        "sha256": "d7322579e6a4eb66cdeb859c6e10634309f0dc4077c284f42f1f53de37b9da70",
+        "status": "verified"
+      }
+    }
+  }
+}

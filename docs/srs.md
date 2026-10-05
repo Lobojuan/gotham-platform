@@ -75,6 +75,11 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | W-9 | Share links (WhatsApp, LinkedIn, copy) contain the full address. | manual |
 | W-10 | Public landing pages have complete English, French and Spanish copy with an accessible language toggle that preserves the current page/section. | landing toggle and static-copy translations implemented; interactive results and CRM event text plus browser QA remain |
 | W-11 | Ask Gotham keeps `/api/ask` history and fallback behavior, follows the selected English/French/Spanish page language, and gives the MoMo destination plus staff verification instructions for payment questions. | api/13, local fallback in `pages/index.html`; browser QA pending |
+| W-12 | Chat replies play with Kokoro Fable in English, French and Spanish after a visitor asks; mute, stop and replay work; voice failures preserve the text answer. Only short-lived, visitor-bound answer tickets can request speech. | api/28, ui/ask_voice_ui; real Kokoro audio verified in all three languages |
+| W-13 | Investor research links primary sources, distinguishes reporting periods from check times, retains verified economic data during outages and shows USD/EUR/GBP/AED and other market rates with publication dates. | api/29, ui/investor_portal_ui |
+| W-14 | Five-year company case studies identify price-only nominal cedi returns, show intermediate years and risks, and link original exchange/company reports. Five/ten-year scenarios use visitor assumptions and account for FX. | api/29, ui/investor_portal_ui, docs/ghana-investor-research-2026-10.md |
+| W-15 | Chat answers current currency questions directly from the dated feed, with inverse rates and stale-data warnings. Other answers retrieve published website material and sourced investor research; missing worldwide quotes or investment returns are never invented. | api/29, api/13; live text and Fable smoke checks at deployment |
+| W-16 | The chat’s broad site introduction is shared in three languages and can speak with Fable after the visitor opens chat. Cited investment research sources are checked daily; changed or unavailable publications show review status without inventing updated historical figures. | api/28, api/29, ui/ask_voice_ui, ui/investor_portal_ui |
 
 ## 6. CRM pipeline and service operations
 

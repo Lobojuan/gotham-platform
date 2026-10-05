@@ -9,6 +9,7 @@ import os, re, shutil, sys, json, html as htmlmod
 from datetime import date
 import chrome_css
 import insights_fr as IF
+import investor_content as INVESTOR
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
@@ -32,7 +33,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=22">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=23">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 # Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
@@ -40,7 +41,7 @@ V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link re
 V2 = {
  'index.html': ('Business Consulting in Ghana | Gotham Consult, Accra', 'Accra business consultancy for investors and companies: company registration, GIPA, market entry, compliance and business forums in Ghana.', 'img/og/boot2.jpg'),
  'services.html': ('Consulting Services in Ghana, Fixed Fees | Gotham Consult', 'Consulting services in Ghana with fixed fees in cedis: investment readiness and GIPA registration, market entry, mining, compliance, AI and education.', 'img/og/real-airportcity.jpg'),
- 'invest.html': ('Invest in Ghana: GIPA Act 2026 Guide | Gotham Consult', 'Invest in Ghana with a local desk: key numbers, sectors to watch, company registration and what the GIPA Act 2026 changes for foreign investors.', 'img/og/real-bog.jpg'),
+ 'invest.html': ('Ghana Investor Portal: Markets & Research | Gotham Consult', 'Ghana investor research: economic publications, currency rates, company share histories, sector outlook and market entry with a local desk.', 'img/og/real-bog.jpg'),
  'mining.html': ('Mining Due Diligence and Licensing in Ghana | Gotham Consult', 'Geology-led concession screening, due diligence and mining licences in Ghana, with field data investors and banks can check before they commit.', 'img/og/solar.jpg'),
  'forums.html': ('Business Forums and Events in Accra, Ghana | Gotham Consult', 'Business forums, investor roundtables and seminars in Accra, plus the free weekly Ghana Business Brief. Register in a minute and pay by mobile money.', 'img/og/forum.jpg'),
  'about.html': ('About Gotham Consult | Business Consultancy in Accra, Ghana', 'Accra-based business consultancy connecting companies, investors and public institutions in Ghana. Office hours, WhatsApp and contact details.', 'img/og/joy.jpg'),
@@ -198,9 +199,15 @@ def main():
     # page bodies -> complete documents
     for name, m in META.items():
         body = GEN.get(name) or open(os.path.join(HERE, 'pages', name), encoding='utf-8').read()
+        body = body.replace('<!--#research-->', INVESTOR.render())
         for part in ('top', 'bottom'):   # shared header/footer of the new design
             if f'<!--#{part}-->' in body:
                 body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
+        if 'ghana-market.js' in body:
+            welcome = open(os.path.join(HERE, '..', 'crm', 'ask-welcome.json'), encoding='utf-8').read().replace('<', '\\u003c')
+            body += '<script type="application/json" id="ask-welcome">' + welcome + '</script>'
+            snapshot = open(os.path.join(HERE, '..', 'crm', 'ghana-snapshot.json'), encoding='utf-8').read().replace('<', '\\u003c')
+            body += '<script type="application/json" id="ghana-snapshot">' + snapshot + '</script>'
         os.makedirs(os.path.dirname(os.path.join(DIST, name)), exist_ok=True)
         mm = {'extra': '', **m}; mm.pop('crumb', None)
         mm['extra'] = (mm['extra'] + '\n' + ld_for(name, m, body)) if name not in ('classic.html', 'register.html', '404.html', 'event-shell.html') and not name.startswith('insights/') else mm['extra']
@@ -298,6 +305,7 @@ def main():
         else:
             doc = open(os.path.join(DIST, n), encoding='utf-8').read()
             title, desc = IF.FR_META[n]
+        if n == 'invest.html': doc = doc.replace(INVESTOR.render(), INVESTOR.render('fr'))
         doc, miss = IF.translate_html(doc, d)
         if not n.startswith('insights'): report[n] = miss
         doc = IF.localise_links(set_meta(doc, n, title, desc), fr_paths)
@@ -319,6 +327,32 @@ def main():
         merged = {**pairs, **IF.load_dict(lang)}
         open(fp, 'w', encoding='utf-8').write(s[:s.index('= {') + 2] + json.dumps(merged, ensure_ascii=False) + ';\n')
         print(f'  i18n-{lang}.js: {len(pairs)} article phrases added')
+
+    # Retrieval material is generated only from published English page bodies.
+    # No accounts, enquiries or private files enter the chatbot knowledge.
+    from html.parser import HTMLParser
+    class PublicText(HTMLParser):
+        def __init__(self): super().__init__(); self.depth=0; self.skip=0; self.parts=[]
+        def handle_starttag(self, tag, attrs):
+            if tag=='main': self.depth+=1
+            if tag in ('script','style'): self.skip+=1
+        def handle_endtag(self,tag):
+            if tag=='main': self.depth=max(0,self.depth-1)
+            if tag in ('script','style'): self.skip=max(0,self.skip-1)
+        def handle_data(self,text):
+            if self.depth and not self.skip and text.strip(): self.parts.append(text.strip())
+    knowledge=[]
+    for n,m in META.items():
+        if n in ('classic.html','event-shell.html','404.html'): continue
+        p=PublicText();p.feed(open(os.path.join(DIST,n),encoding='utf-8').read())
+        knowledge.append(dict(url=SITE+'/'+('' if n=='index.html' else n[:-5]),title=m['title'],text=' '.join(p.parts)))
+    evidence='Sources: '+'; '.join(INVESTOR.SOURCES.values())
+    case_text='Five-year nominal cedi share-price change, 31 Dec 2020 to 31 Dec 2025; excludes dividends, fees, taxes, inflation and FX. Selected examples, not rankings or buy recommendations. '
+    for c in INVESTOR.CASES:
+        case_text+=c['name']+' ('+c['ticker']+'): '+str(dict(zip(range(2020,2026),c['prices'])))+' GHS; '+c['notes']['en']+' '
+    knowledge.append(dict(url=SITE+'/invest#research',title='Ghana investor research: listed companies and historical share returns',text=case_text+evidence))
+    knowledge.append(dict(url=SITE+'/invest#research',title='Ghana investor research: global links, 2031 and 2036 sector scenarios',text=INVESTOR.LABELS['en']['outlooknote']+' '+ ' '.join(c['title']['en']+': '+c['text']['en'] for c in INVESTOR.SECTORS)+' '+evidence))
+    open(os.path.join(DIST,'site-knowledge.json'),'w').write(json.dumps(knowledge,ensure_ascii=False))
 
     # the logo on every photo, share image and video (dist copies only; public/img keeps the clean originals)
     import brand_media; brand_media.run(DIST)

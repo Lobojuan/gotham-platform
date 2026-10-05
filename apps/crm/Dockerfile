@@ -26,9 +26,15 @@ RUN python3 -m venv /opt/whisper-venv && /opt/whisper-venv/bin/pip install --no-
  && echo "ff77588746d3a2595d32ab5b69ffd7b95ce2441ac57533cb66fc3eb575a115cf  vocabulary.txt" | sha256sum -c - \
  && echo "1a5afae06a4db91c975c9a9d78be5cc110ee4ea022ad57d55492e4550e936b2a  model.bin" | sha256sum -c -
 WORKDIR /app
+RUN python3 -m venv /opt/kokoro-venv && /opt/kokoro-venv/bin/pip install --no-cache-dir kokoro-onnx==0.6.1 soundfile==0.13.1 pdfplumber==0.11.9 \
+ && mkdir -p /opt/kokoro && cd /opt/kokoro \
+ && curl -fsSL --retry 3 -o kokoro-v1.0.onnx https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/kokoro-v1.0.onnx \
+ && curl -fsSL --retry 3 -o voices-v1.0.bin https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin \
+ && echo "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5  kokoro-v1.0.onnx" | sha256sum -c - \
+ && echo "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d  voices-v1.0.bin" | sha256sum -c -
 COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund
-COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py schema.sql assistant.md ./
+COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-welcome.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json schema.sql assistant.md ./
 COPY public ./public
 RUN mkdir -p /data/media
 ENV NODE_ENV=production MEDIA_DIR=/data/media

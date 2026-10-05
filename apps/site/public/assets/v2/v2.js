@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=16';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=17';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -458,28 +458,115 @@
 
   /* ---- Ask Gotham ---- */
   const chat = $('#chat'), chatO = $('#chatO'), msgs = $('#msgs'), HIST = [];
+  const voiceButton = $('#chatVoice'), playButton = $('#chatPlay'), voiceStatus = $('#chatVoiceStatus');
+  const VOICE_TEXT = {
+    en: { on: 'Voice on', off: 'Voice off', play: 'Play answer', stop: 'Stop speaking', ready: 'Fable · AI-generated voice', loading: 'Preparing Fable voice…', speaking: 'Fable is speaking…', blocked: 'Tap Play answer to hear Fable.', unavailable: 'Voice unavailable. You can still read the answer.', disclosure: 'Fable is an AI-generated voice made on our own server.' },
+    fr: { on: 'Voix activée', off: 'Voix désactivée', play: 'Écouter la réponse', stop: 'Arrêter la voix', ready: 'Fable · voix générée par IA', loading: 'Préparation de la voix Fable…', speaking: 'Fable parle…', blocked: 'Appuyez sur Écouter la réponse.', unavailable: 'Voix indisponible. La réponse reste lisible.', disclosure: 'Fable est une voix générée par IA sur notre serveur.' },
+    es: { on: 'Voz activada', off: 'Voz desactivada', play: 'Escuchar respuesta', stop: 'Detener voz', ready: 'Fable · voz generada por IA', loading: 'Preparando la voz Fable…', speaking: 'Fable está hablando…', blocked: 'Pulsa Escuchar respuesta para oír Fable.', unavailable: 'Voz no disponible. Puedes leer la respuesta.', disclosure: 'Fable es una voz generada por IA en nuestro servidor.' }
+  };
+  let voiceOn = true, voiceState = 'ready', audioContext, audioSource, audioBuffer, voiceRequest, voiceEpoch = 0;
+  try { voiceOn = localStorage.getItem('gc-chat-voice') !== 'off'; } catch {}
+  const voiceWords = () => VOICE_TEXT[current] || VOICE_TEXT.en;
+  function updateVoiceUI() {
+    if (!voiceButton) return; const w = voiceWords();
+    voiceButton.textContent = voiceOn ? w.on : w.off; voiceButton.setAttribute('aria-pressed', String(voiceOn));
+    playButton.textContent = voiceState === 'speaking' ? w.stop : w.play;
+    playButton.hidden = !audioBuffer || !voiceOn;
+    voiceStatus.textContent = w[voiceState] || w.ready; voiceButton.title = w.disclosure;
+  }
+  function stopVoice(clear = false) {
+    voiceEpoch++; voiceRequest?.abort(); voiceRequest = null;
+    if (audioSource) { audioSource.onended = null; try { audioSource.stop(); } catch {} audioSource = null; }
+    if (clear) audioBuffer = null; voiceState = 'ready'; updateVoiceUI();
+  }
+  // Unlock audio during the visitor's submit/tap, before waiting for the AI/network.
+  function unlockVoice() {
+    if (!voiceOn) return;
+    try { const AC = window.AudioContext || window.webkitAudioContext; audioContext ||= new AC(); audioContext.resume().catch(() => {}); } catch {}
+  }
+  function playVoice() {
+    if (!audioBuffer || !voiceOn || chat.hidden) return;
+    if (!audioContext || audioContext.state !== 'running') { voiceState = 'blocked'; updateVoiceUI(); return; }
+    audioSource = audioContext.createBufferSource(); audioSource.buffer = audioBuffer;
+    audioSource.connect(audioContext.destination); audioSource.onended = () => { audioSource = null; voiceState = 'ready'; updateVoiceUI(); };
+    voiceState = 'speaking'; updateVoiceUI(); audioSource.start();
+  }
+  async function speakAnswer(speech, epoch) {
+    if (!voiceOn || chat.hidden || epoch !== voiceEpoch) return;
+    if (!speech?.token) { voiceState = 'unavailable'; updateVoiceUI(); return; }
+    voiceRequest = new AbortController(); const request = voiceRequest;
+    const timeout = setTimeout(() => request.abort(), 40000);
+    voiceState = 'loading'; updateVoiceUI();
+    try {
+      const r = await fetch('/api/ask/voice', { method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: speech.token }), signal: request.signal });
+      if (!r.ok || !r.headers.get('content-type')?.includes('audio/')) throw new Error('voice_unavailable');
+      const bytes = await r.arrayBuffer();
+      if (epoch !== voiceEpoch || !voiceOn || chat.hidden) return;
+      if (!audioContext) throw new Error('voice_unavailable');
+      const decoded = await audioContext.decodeAudioData(bytes);
+      if (epoch !== voiceEpoch || !voiceOn || chat.hidden) return;
+      audioBuffer = decoded; playVoice();
+    } catch { if (epoch === voiceEpoch) { voiceState = 'unavailable'; updateVoiceUI(); } }
+    finally { clearTimeout(timeout); if (voiceRequest === request) voiceRequest = null; }
+  }
+  voiceButton?.addEventListener('click', () => {
+    voiceOn = !voiceOn; stopVoice(); try { localStorage.setItem('gc-chat-voice', voiceOn ? 'on' : 'off'); } catch {}
+    if (voiceOn) { unlockVoice(); playVoice(); } updateVoiceUI();
+  });
+  playButton?.addEventListener('click', async () => {
+    if (voiceState === 'speaking') { stopVoice(); return; }
+    unlockVoice(); try { await audioContext?.resume(); } catch {} playVoice();
+  });
+  new MutationObserver(() => { stopVoice(true); updateVoiceUI(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopVoice(); });
+  window.addEventListener('pagehide', () => stopVoice(true)); updateVoiceUI();
   const say = (t, who) => { const m = document.createElement('div'); m.className = 'm ' + who; m.textContent = t; msgs.append(m); msgs.scrollTop = msgs.scrollHeight; return m; };
+  const WELCOME = (()=>{try{return JSON.parse($('#ask-welcome')?.textContent || '{}');}catch{return {};}})();
+  function speakIntro() {
+    if (!voiceOn) return;
+    unlockVoice();const epoch=voiceEpoch;
+    fetch('/api/ask',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({intro:true,language:current,speech:true}),signal:AbortSignal.timeout(30000)})
+      .then(r=>r.ok?r.json():null).then(j=>{if(epoch===voiceEpoch && !chat.hidden)speakAnswer(j?.speech,epoch);}).catch(()=>{if(epoch===voiceEpoch){voiceState='unavailable';updateVoiceUI();}});
+  }
   function openChat() {
     chat.hidden = false; chatO.hidden = true; chatO.setAttribute('aria-expanded', 'true');
-    if (!msgs.children.length) say('Hi, welcome to Gotham Consult. Ask me about our services, forums, prices or investing in Ghana.', 'bot');
+    if (!msgs.children.length) { say(WELCOME[current] || WELCOME.en || 'Welcome to Gotham Consult. Ask me about services, business, investing in Ghana, forums, registration and payments.', 'bot'); speakIntro(); }
     if (innerWidth > 520) $('#chatI').focus();
   }
-  const closeChat = () => { chat.hidden = true; chatO.hidden = false; chatO.setAttribute('aria-expanded', 'false'); if (getComputedStyle(chatO).display !== 'none') chatO.focus(); };
+  const closeChat = () => { stopVoice(true); chat.hidden = true; chatO.hidden = false; chatO.setAttribute('aria-expanded', 'false'); if (getComputedStyle(chatO).display !== 'none') chatO.focus(); };
   chatO?.addEventListener('click', openChat);
   $('#chatX')?.addEventListener('click', closeChat);
   const FALLBACK = 'Good question. Our team will answer you personally on WhatsApp: +233 55 041 6627.';
+  // Known public facts remain useful when the AI provider is temporarily unavailable.
+  function offlineAnswer(q) {
+    const pay = /\b(pay|payment|momo|money|payer|paiement|pagar|pago)\b/i.test(q);
+    if (pay) return ({
+      en: 'Pay by Mobile Money to +233 55 041 6627, Joy’s payment number. Use the amount and registration reference shown in your account, then submit the transaction ID so the team can verify it. Bank transfer details are on your invoice. Never share your MoMo PIN here.',
+      fr: 'Payez par Mobile Money au +233 55 041 6627, le numéro de paiement de Joy. Utilisez le montant et la référence affichés dans votre compte, puis transmettez l’identifiant de transaction pour vérification. Les coordonnées bancaires figurent sur votre facture. Ne partagez jamais votre code PIN MoMo ici.',
+      es: 'Paga por Mobile Money al +233 55 041 6627, el número de pago de Joy. Usa el importe y la referencia que aparecen en tu cuenta y envía el identificador de la transacción para su verificación. Los datos bancarios figuran en tu factura. Nunca compartas aquí tu PIN de MoMo.'
+    })[current] || FALLBACK;
+    return ({
+      en: 'The AI is temporarily unavailable. You can find our services and published prices at /services, and upcoming forums at /forums. For a question about your own case, contact +233 55 041 6627.',
+      fr: 'L’IA est temporairement indisponible. Nos services et tarifs sont sur /fr/services, et les forums sur /fr/forums. Pour votre situation personnelle, contactez le +233 55 041 6627.',
+      es: 'La IA no está disponible temporalmente. Puedes consultar servicios y precios en /services y próximos foros en /forums. Para tu caso particular, contacta al +233 55 041 6627.'
+    })[current] || FALLBACK;
+  }
   async function ask(q) {
-    say(q, 'me'); const t = say('•••', 'bot typing'); let a = '', acts = [];
+    stopVoice(true); unlockVoice(); const epoch = voiceEpoch;
+    say(q, 'me'); const t = say('•••', 'bot typing'); let a = '', acts = [], speech = null;
     try {
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ q, history: HIST.slice(-6), language: current }), signal: AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined });
+        body: JSON.stringify({ q, history: HIST.slice(-6), language: current, speech: voiceOn }), signal: AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined });
       const j = await r.json().catch(() => ({}));
       a = j.answer || (r.status === 429 ? 'You have asked a lot in a short time. Please WhatsApp us on +233 55 041 6627.' : '');
       acts = Array.isArray(j.actions) ? j.actions : [];
+      speech = j.speech;
     } catch {}
-    t.remove(); if (!a) { a = FALLBACK; acts = [{ type: 'person' }]; } say(a, 'bot');
+    t.remove(); if (!a) { a = offlineAnswer(q); acts = [{ type: 'person' }]; } say(a, 'bot');
     HIST.push({ role: 'user', content: q }, { role: 'assistant', content: a });
     if (acts.length) actions(acts, q);
+    speakAnswer(speech, epoch);
   }
   /* buttons the AI can offer under its answer: register for a forum, leave your details, talk to a person */
   const WA = 'https://wa.me/233550416627?text=';
@@ -537,24 +624,6 @@
       warmed.add(u.pathname); fetch(u.pathname + u.search, { credentials: 'same-origin', priority: 'low' }).catch(() => {}); };
     document.addEventListener('pointerover', warm, { passive: true }); document.addEventListener('touchstart', warm, { passive: true });
   }
-  /* ---- the cedi today: live exchange rates (server caches them hourly) in the home ticker and on /invest ---- */
-  const tick = $('.ticker ul'), fxBox = $('#fx-live');
-  if (tick || fxBox) fetch('/api/rates').then(r => r.ok ? r.json() : null).then(d => {
-    if (!d || !d.rates) return;
-    const f = n => Number(n).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const pairs = ['USD', 'EUR', 'GBP'].filter(c => d.rates[c]);
-    const day = new Date(d.updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-    if (tick) {
-      const li = hid => pairs.map(c => `<li${hid ? ' aria-hidden="true"' : ''}>${c}/GHS <b>${f(d.rates[c])}</b></li>`).join('');
-      const first = [...tick.children].findIndex(x => x.getAttribute('aria-hidden') === 'true');
-      tick.insertAdjacentHTML('afterbegin', li(false));
-      if (first > -1) tick.children[first + pairs.length].insertAdjacentHTML('beforebegin', li(true));
-    }
-    if (fxBox) {
-      fxBox.innerHTML = `<span class="fx-l">The cedi today</span>${pairs.map(c => `<b>1 ${c} = GHS ${f(d.rates[c])}</b>`).join('')}<span class="fx-s"><span>Market mid-rate, updated</span> <time datetime="${esc(d.updated)}">${esc(day)}</time>. <a href="https://www.bog.gov.gh/" target="_blank" rel="noopener">Bank of Ghana reference rate</a></span>`;
-      fxBox.hidden = false;
-    }
-  }).catch(() => {});
   /* ---- visitor count: one small request per page, no cookies, nothing stored in the browser ---- */
   try {
     if (!navigator.webdriver && !/^\/(admin|i)\b/.test(location.pathname) && window.top === window.self) {

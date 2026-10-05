@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 
 export function makeTTS({ python = process.env.PIPER_PYTHON || '/opt/piper/bin/python', model = process.env.PIPER_MODEL || '/opt/voices/en_GB-jenny_dioco-medium.onnx',
-  script = path.join(HERE, 'tts.py'), ffmpeg = process.env.FFMPEG_BIN || 'ffmpeg', cacheMax = 300, timeoutMs = 30e3 } = {}) {
+  script = path.join(HERE, 'tts.py'), ffmpeg = process.env.FFMPEG_BIN || 'ffmpeg', cacheMax = 300, timeoutMs = 30e3, maxChars = 800, workerEnv = {} } = {}) {
   let worker = null, ready = null, buf = Buffer.alloc(0), waiting = null, chain = Promise.resolve(), deadUntil = 0;
   const cache = new Map();
   const available = () => fs.existsSync(python) && fs.existsSync(model) && fs.existsSync(script);
@@ -19,7 +19,7 @@ export function makeTTS({ python = process.env.PIPER_PYTHON || '/opt/piper/bin/p
     if (ready) return ready;
     if (!available() || Date.now() < deadUntil) return Promise.reject(new Error('voice_unavailable'));
     ready = new Promise((resolve, reject) => {
-      const w = spawn(python, [script, model], { stdio: ['pipe', 'pipe', 'pipe'] });
+      const w = spawn(python, [script, model], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, ...workerEnv } });
       worker = w; buf = Buffer.alloc(0);
       let up = false;
       const t = setTimeout(() => { if (!up) { reject(new Error('voice_start_timeout')); w.kill(); } }, 60e3);
@@ -37,10 +37,10 @@ export function makeTTS({ python = process.env.PIPER_PYTHON || '/opt/piper/bin/p
     return ready;
   }
 
-  const wavOnce = text => new Promise((resolve, reject) => {
+  const wavOnce = (text, language) => new Promise((resolve, reject) => {
     const t = setTimeout(() => { waiting = null; reject(new Error('voice_timeout')); if (worker) worker.kill(); }, timeoutMs);
     waiting = (err, wav) => { clearTimeout(t); if (err) return reject(err); if (!wav.length) return reject(new Error('voice_failed')); resolve(wav); };
-    worker.stdin.write(JSON.stringify({ text }) + '\n');
+    worker.stdin.write(JSON.stringify({ text, language }) + '\n');
   });
 
   const toMp3 = wav => new Promise((resolve, reject) => {
@@ -51,15 +51,15 @@ export function makeTTS({ python = process.env.PIPER_PYTHON || '/opt/piper/bin/p
   });
 
   /* text → MP3 bytes; one at a time, cached */
-  function say(text) {
-    text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, 800);
+  function say(text, language = 'en') {
+    text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, maxChars);
     if (!text) return Promise.reject(new Error('empty'));
-    const key = crypto.createHash('sha1').update(text).digest('hex');
+    const key = crypto.createHash('sha1').update(language + ':' + text).digest('hex');
     if (cache.has(key)) { const v = cache.get(key); cache.delete(key); cache.set(key, v); return Promise.resolve(v); }
     const job = chain.then(async () => {
       if (cache.has(key)) return cache.get(key);
       await start();
-      const mp3 = await toMp3(await wavOnce(text));
+      const mp3 = await toMp3(await wavOnce(text, language));
       cache.set(key, mp3); while (cache.size > cacheMax) cache.delete(cache.keys().next().value);
       return mp3;
     });

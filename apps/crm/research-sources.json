@@ -1,0 +1,59 @@
+{
+  "factbook": {
+    "url": "https://gse.com.gh/wp-content/uploads/2025/12/GSE-2024-FACTBOOK.pdf",
+    "label": "GSE 2024 factbook",
+    "baseline": "83c370b95b388b34e3e4d99b41940de8b3c028ef2c32a4cfb1aba0c371610144",
+    "verified": "2026-10-05T15:15:03.450Z",
+    "bytes": 15175939
+  },
+  "gse2025": {
+    "url": "https://gse.com.gh/wp-content/uploads/2026/01/GSE-Equities-Market-Report-December-2025.pdf",
+    "label": "GSE December 2025",
+    "baseline": "090a1a392bebd75abf9841fb4e67ca819fcd7bf2c9c6bf613312426df8c93e8a",
+    "verified": "2026-10-05T15:15:03.454Z",
+    "bytes": 707737
+  },
+  "mtn": {
+    "url": "https://mtn.com.gh/wp-content/uploads/2026/03/MTN-FY-AR-2025.pdf",
+    "label": "MTN FY2025",
+    "baseline": "424811646ed2eb5e46021d698aa5605baee9abe8cd51d27eb155028df6be65d7",
+    "verified": "2026-10-05T15:15:03.474Z",
+    "bytes": 19995611
+  },
+  "wb": {
+    "url": "https://www.worldbank.org/en/news/press-release/2026/08/26/ghana-must-turn-strong-recovery-into-quality-jobs-and-lasting-growth",
+    "label": "World Bank Ghana economic outlook",
+    "baseline": "67cf67868960bb7e0a0ab405e3f8215ace474dde05d45d1cf723666faa99f8bd",
+    "verified": "2026-10-05T15:15:03.478Z",
+    "bytes": 28950
+  },
+  "imf": {
+    "url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf",
+    "label": "IMF Ghana Article IV",
+    "baseline": "dce1bee850dded801bf8cf0ae4011cc2a41c6173470c8ba826605da01f542777",
+    "bytes": 3919613,
+    "verified": "2026-10-05T15:17:03.199Z"
+  },
+  "gipa": {
+    "url": "https://www.gipc.gov.gh/wp-content/uploads/2024/07/Investment-Roadmap-Document.pdf",
+    "label": "GIPA sector roadmap",
+    "baseline": "2338ea90255ac4d55aeba8681318b794561d0832c8c209966d6fe306527c3026",
+    "bytes": 47391073,
+    "verified": "2026-10-05T15:15:03.526Z",
+    "maxBytes": 50000000
+  },
+  "mpc": {
+    "url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+    "label": "BoG policy decision",
+    "baseline": "78f7951921f7eae911331825201719ef537ab9533a963c4e14214737e6180221",
+    "verified": "2026-10-05T15:15:03.527Z",
+    "bytes": 205057
+  },
+  "brokers": {
+    "url": "https://gse.com.gh/licensed-dealing-members/",
+    "label": "GSE licensed brokers",
+    "baseline": "d7322579e6a4eb66cdeb859c6e10634309f0dc4077c284f42f1f53de37b9da70",
+    "verified": "2026-10-05T15:15:03.529Z",
+    "bytes": 125344
+  }
+}

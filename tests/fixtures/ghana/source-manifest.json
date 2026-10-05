@@ -1,0 +1,26 @@
+[
+  {
+    "source": "https://gse.com.gh/wp-content/uploads/2025/12/GSE-2024-FACTBOOK.pdf",
+    "sha256": "83c370b95b388b34e3e4d99b41940de8b3c028ef2c32a4cfb1aba0c371610144",
+    "checked": "2026-10-05",
+    "bytes": 15175939
+  },
+  {
+    "source": "https://gse.com.gh/wp-content/uploads/2026/01/GSE-Equities-Market-Report-December-2025.pdf",
+    "sha256": "090a1a392bebd75abf9841fb4e67ca819fcd7bf2c9c6bf613312426df8c93e8a",
+    "checked": "2026-10-05",
+    "bytes": 707737
+  },
+  {
+    "source": "https://mtn.com.gh/wp-content/uploads/2026/03/MTN-FY-AR-2025.pdf",
+    "sha256": "424811646ed2eb5e46021d698aa5605baee9abe8cd51d27eb155028df6be65d7",
+    "checked": "2026-10-05",
+    "bytes": 19995611
+  },
+  {
+    "source": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
+    "sha256": "d51e173c57011df728ba89410528d97b3567520e3e5985c916d3c6ba2ce7fe9c",
+    "checked": "2026-10-05",
+    "bytes": 1199768
+  }
+]
