@@ -186,7 +186,9 @@ async function journeys(browser) {
       await p.waitForSelector('.chat-lead', { state: 'detached', timeout: 8000 }).catch(() => {});
       check('details form sends and says thank you', /get back to you/.test(await lastBot(p)));
       await p.fill('#chatI', 'I want to speak to a human'); await p.press('#chatI', 'Enter'); await waitAnswer(p, 6);
-      check('chat offers WhatsApp with the question filled in', /wa\.me\/233550416627\?text=.*human/.test(await p.getAttribute('.chat-act.wa >> nth=-1', 'href') || ''));
+      check('chat keeps human help on the site', await p.locator('.chat-act:has-text("Ask our team here")').count() >= 1 && await p.locator('#chat a[href*="wa.me"]').count() === 0);
+      await p.locator('.chat-act:has-text("Ask our team here")').last().click();
+      check('human help opens the on-site details form', await p.locator('.chat-lead [name=contact]').count() === 1);
     }
     await p.click('#chatX');
     // the Earth: real pictures load, the card tells you something and moves on when asked
