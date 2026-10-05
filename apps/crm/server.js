@@ -1761,7 +1761,7 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/ask/voice' && req.method === 'POST') {
       if (rateLimited(ip, 20, 3600e3, 'ask-voice')) return json(res, 429, { error: 'voice_limit' }, cors);
       const b = await body(req);
-      const out = ASK_VOICE.start(String(b.token || ''), ip);
+      const out = ASK_VOICE.start(String(b.token || ''), ip, b.stream===true);
       if(out.status===202)return json(res,202,{job:out.job,retry_after:out.retry_after},cors);
       if (!out.audio) return json(res, out.status, { error: out.error }, cors);
       res.writeHead(200, { ...cors, 'content-type': 'audio/mpeg', 'cache-control': 'no-store', 'content-length': out.audio.length });

@@ -511,7 +511,7 @@
     voiceState = 'loading'; updateVoiceUI();
     try {
       let r = await fetch('/api/ask/voice', { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ token: speech.token }), signal: request.signal });
+        body: JSON.stringify({ token: speech.token, stream: true }), signal: request.signal });
       let job;const buffers=[];
       while(true){
         if(r.status===202){

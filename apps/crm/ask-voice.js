@@ -53,7 +53,7 @@ export function makeAskVoice({ enabled = () => voice.available(), render = rende
     catch { return { status: 503, error: 'voice_unavailable' }; }
     finally { active--; }
   }
-  function start(token,ip) {
+  function start(token,ip,stream=false) {
     const ticket=tickets.get(token);
     if(ticket && ticket.ip===ip && ticket.expires>now())for(const [key,j]of jobs)if(j.ip===ip && !j.complete)cancel(key,ip);
     const taken=take(token,ip);if(!taken.ticket)return taken;
@@ -62,6 +62,7 @@ export function makeAskVoice({ enabled = () => voice.available(), render = rende
     while(jobs.size>=100){const old=[...jobs].find(([,j])=>j.status!==202);if(!old)break;jobs.delete(old[0]);}
     const job=crypto.randomBytes(24).toString('base64url'),state={ip,expires:now()+10*60e3,status:202,parts:[],complete:false,controller:new AbortController()};jobs.set(job,state);
     Promise.resolve().then(async()=>{
+      if(!stream){state.parts.push(await render(taken.ticket.text,taken.ticket.language,state.controller.signal));state.complete=true;state.status=200;return;}
       // A short first phrase starts speaking sooner. Every word is retained; later parts continue in order.
       let rest=taken.ticket.text.replace(/\s+/g,' ').trim(),first=true;
       while(rest){if(state.controller.signal.aborted)throw new Error('cancelled');const max=first?65:150;
