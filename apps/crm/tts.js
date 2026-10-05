@@ -25,6 +25,7 @@ export function makeTTS({ python = process.env.PIPER_PYTHON || '/opt/piper/bin/p
       const t = setTimeout(() => { if (!up) { reject(new Error('voice_start_timeout')); w.kill(); } }, 60e3);
       w.stderr.on('data', d => { const s = String(d).trim(); if (s) console.error('tts:', s.slice(0, 300)); });
       w.stdout.on('data', d => {
+        if(worker!==w)return;
         buf = Buffer.concat([buf, d]);
         if (!up) { const i = buf.indexOf(10); if (i < 0) return; if (buf.subarray(0, i).toString() === 'READY') { up = true; clearTimeout(t); buf = buf.subarray(i + 1); resolve(); } }
         if (waiting && buf.length >= 4) { const n = buf.readUInt32BE(0); if (buf.length >= 4 + n) { const wav = buf.subarray(4, 4 + n); buf = buf.subarray(4 + n); const cb = waiting; waiting = null; cb(null, Buffer.from(wav)); } }
@@ -37,10 +38,14 @@ export function makeTTS({ python = process.env.PIPER_PYTHON || '/opt/piper/bin/p
     return ready;
   }
 
-  const wavOnce = (text, language) => new Promise((resolve, reject) => {
-    const t = setTimeout(() => { waiting = null; reject(new Error('voice_timeout')); if (worker) worker.kill(); }, timeoutMs);
-    waiting = (err, wav) => { clearTimeout(t); if (err) return reject(err); if (!wav.length) return reject(new Error('voice_failed')); resolve(wav); };
-    worker.stdin.write(JSON.stringify({ text, language }) + '\n');
+  const wavOnce = (text, language, signal) => new Promise((resolve, reject) => {
+    if(signal?.aborted)return reject(new Error('voice_cancelled'));
+    const w=worker;
+    const abort=()=>{waiting=null;worker=null;ready=null;buf=Buffer.alloc(0);w?.kill();finish(new Error('voice_cancelled'));};
+    const finish=(err,wav)=>{clearTimeout(t);signal?.removeEventListener('abort',abort);if(err)return reject(err);if(!wav?.length)return reject(new Error('voice_failed'));resolve(wav);};
+    const t=setTimeout(()=>{waiting=null;worker=null;ready=null;buf=Buffer.alloc(0);w?.kill();finish(new Error('voice_timeout'));},timeoutMs);
+    waiting=finish;signal?.addEventListener('abort',abort,{once:true});
+    w.stdin.write(JSON.stringify({text,language})+'\n');
   });
 
   const toMp3 = wav => new Promise((resolve, reject) => {
@@ -51,15 +56,18 @@ export function makeTTS({ python = process.env.PIPER_PYTHON || '/opt/piper/bin/p
   });
 
   /* text → MP3 bytes; one at a time, cached */
-  function say(text, language = 'en') {
+  function say(text, language = 'en', signal) {
+    if(signal?.aborted)return Promise.reject(new Error('voice_cancelled'));
     text = String(text || '').replace(/\s+/g, ' ').trim().slice(0, maxChars);
     if (!text) return Promise.reject(new Error('empty'));
     const key = crypto.createHash('sha1').update(language + ':' + text).digest('hex');
     if (cache.has(key)) { const v = cache.get(key); cache.delete(key); cache.set(key, v); return Promise.resolve(v); }
     const job = chain.then(async () => {
+      if(signal?.aborted)throw new Error('voice_cancelled');
       if (cache.has(key)) return cache.get(key);
       await start();
-      const mp3 = await toMp3(await wavOnce(text, language));
+      if(signal?.aborted)throw new Error('voice_cancelled');
+      const mp3 = await toMp3(await wavOnce(text, language, signal));
       cache.set(key, mp3); while (cache.size > cacheMax) cache.delete(cache.keys().next().value);
       return mp3;
     });

@@ -34,9 +34,11 @@ RUN python3 -m venv /opt/kokoro-venv && /opt/kokoro-venv/bin/pip install --no-ca
  && echo "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d  voices-v1.0.bin" | sha256sum -c -
 COPY ask-welcome.json make-intros.py ./
 RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt/kokoro/voices-v1.0.bin ask-welcome.json /opt/kokoro-intros
+COPY ask-payment.json ./
+RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt/kokoro/voices-v1.0.bin ask-payment.json /opt/kokoro-payments
 COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund
-COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-welcome.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json schema.sql assistant.md ./
+COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-welcome.json ask-payment.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json schema.sql assistant.md ./
 COPY public ./public
 RUN mkdir -p /data/media
 ENV NODE_ENV=production MEDIA_DIR=/data/media

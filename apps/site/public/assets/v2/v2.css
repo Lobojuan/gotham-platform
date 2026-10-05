@@ -983,3 +983,25 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
   .hero-in .lead { font-size: 16px; line-height: 1.5; margin: 14px 0 20px; }
   .hero-in .eyebrow.long { font-size: 11px; }
 }
+
+/* Sourced company history: gold on navy, exact linear prices, touch and keyboard years. */
+.market-visual { padding:clamp(18px,3vw,36px); border-radius:24px; background:radial-gradient(ellipse at 85% 0%,#a9761f26,transparent 55%),linear-gradient(145deg,#15283c,#080f1b); color:#f6f5f1; box-shadow:0 20px 50px #0f1b2d1a; overflow:hidden; }
+.chart-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding-bottom:22px; border-bottom:1px solid #ffffff20; }
+#investor-research .market-visual select { width:auto; max-width:100%; min-height:44px; margin:0; background:#192b3e; border:1px solid #ffffff30; color:#fff; font-size:16px; }
+.chart-summary { display:flex; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-top:28px; }
+.chart-summary h3 { color:#fff; margin:12px 0 8px; font-size:clamp(20px,3vw,28px); }
+.chart-summary small,.chart-readout small { display:block; color:#b9c6d4; }
+.chart-summary strong { display:block; margin:6px 0; color:#e5bd6c; font-size:clamp(26px,4vw,40px); font-variant-numeric:tabular-nums; }
+.chart-summary span { color:#cbd5df; font-size:13px; }
+.chart-summary .chart-ticker { display:inline-block; color:#e5bd6c; border:1px solid #e5bd6c50; padding:5px 10px; border-radius:99px; letter-spacing:1.5px; }
+.chart-readout { display:flex; align-items:baseline; flex-wrap:wrap; gap:12px; margin-top:24px; }
+.chart-readout b { font-size:24px; font-variant-numeric:tabular-nums; }.chart-readout>span { color:#e5bd6c; font-weight:700; }
+.market-visual .price-chart { max-width:none; margin:18px 0 6px; }.market-visual .price-chart text { fill:#aab9c8; font-size:13px; }
+.chart-dot { fill:#101e2e; stroke:#e5bd6c; stroke-width:3; transition:r .2s,fill .2s; }.chart-point.selected .chart-dot { r:8; fill:#e5bd6c; }.chart-point { cursor:pointer; }
+.chart-line { stroke-dasharray:1000; animation:chart-reveal 900ms ease-out; }.chart-area { animation:chart-fade 900ms ease-out; }
+.chart-years { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; margin-top:6px; }.chart-years button { min-height:44px; padding:8px 4px; border:1px solid #ffffff25; border-radius:10px; background:transparent; color:#cbd5df; cursor:pointer; font-size:14px; }
+.chart-years button[aria-pressed=true] { background:#e5bd6c; color:#0f1b2d; border-color:#e5bd6c; font-weight:700; }.chart-years button:focus-visible { outline:3px solid #fff; outline-offset:3px; }
+.market-visual .chart-note,.market-visual .chart-values { color:#b9c6d4; font-size:12px; line-height:1.7; margin-top:16px; }
+@keyframes chart-reveal { from { stroke-dashoffset:1000; } to { stroke-dashoffset:0; } } @keyframes chart-fade { from {opacity:0;} to {opacity:1;} }
+@media(max-width:520px) { .chart-years {grid-template-columns:repeat(3,minmax(0,1fr));}.chart-toolbar {align-items:stretch;}#investor-research .market-visual select {width:100%;}.chart-summary {gap:16px;} }
+@media(prefers-reduced-motion:reduce) { .chart-line,.chart-area {animation:none;}.chart-dot {transition:none;} }

@@ -39,8 +39,16 @@ os.makedirs('/tmp/mediatest',exist_ok=True)
 
 srv=start({})
 try:
-    st,d=ask({'q':'How do I pay?'}); assert st==200 and d=={'fallback':True,'actions':[{'type':'person'}]},(st,d)
-    ok('without OPENAI_API_KEY the chat falls back to the built-in answers')
+    st,d=ask({'q':'What do you do?','speech':True}); assert st==200 and d.get('fallback') and d['actions']==[] and 'try again here' in d['answer'],(st,d)
+    ok('without a provider key the chatbot gives an honest in-page answer without WhatsApp')
+    for lang,q0 in [('en','How do I pay?'),('fr','Comment payer ?'),('es','Como pagar?')]:
+        st,d=ask({'q':q0,'language':lang,'speech':True})
+        assert st==200 and not d.get('fallback') and '+233 55 041 6627' in d['answer'] and d['actions']==[],(st,d)
+        assert 'WhatsApp' not in d['answer'] and '585' not in d['answer']
+    ok('verified trilingual payment answers include MoMo number and stay in chat without an AI call')
+    st,d=ask({'q':'What time is it?','speech':True});assert st==200 and 'Current time in Accra' in d['answer'] and not d.get('fallback')
+    st,d=ask({'q':'What time is it in Dubai?','speech':True});assert st==200 and 'Asia/Dubai' in d['answer']
+    ok('simple time questions use the server clock and named-city time zones without an AI call')
 finally: srv.terminate(); srv.wait()
 
 subprocess.run(['psql',DB,'-qc',"insert into items(code,kind,title,venue,starts_at,price,currency,capacity,published,approval,phase) values "
@@ -59,6 +67,8 @@ try:
     ok('with a key the question goes to the model and the answer comes back, markdown stripped')
     assert b['model']=='gpt-5-mini' and b['max_completion_tokens']<=1000 and b.get('reasoning_effort')=='minimal'
     ok('bounded answer length, small default model')
+    assert 'General knowledge is welcome' in sysmsg and 'Current server time in UTC' in sysmsg
+    assert 'Never redirect to WhatsApp' in sysmsg and 'Foreign Exchange Account condition' in sysmsg
     assert 'Ghana cedis' in sysmsg and 'QA Roundtable' in sysmsg and 'Test Hall' in sysmsg and 'GHS 350' in sysmsg
     assert '+233 55 041 6627' in sysmsg and 'staff can match it in the account' in sysmsg
     assert 'by invitation' in sysmsg and 'Old forum' not in sysmsg and 'Hidden draft' not in sysmsg

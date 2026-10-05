@@ -11,14 +11,17 @@ const voice = makeTTS({ python: process.env.KOKORO_PYTHON || '/opt/kokoro-venv/b
   workerEnv: { KOKORO_VOICES: process.env.KOKORO_VOICES || path.join(path.dirname(model), 'voices-v1.0.bin'), OMP_NUM_THREADS: '1' } });
 
 const welcomes=JSON.parse(fs.readFileSync(fileURLToPath(new URL('./ask-welcome.json',import.meta.url)),'utf8'));
+const payments=JSON.parse(fs.readFileSync(fileURLToPath(new URL('./ask-payment.json',import.meta.url)),'utf8'));
 function introAudio(text,language) {
   const intro=path.join(process.env.KOKORO_INTROS || '/opt/kokoro-intros',language+'.mp3');
   if(text===welcomes[language] && fs.existsSync(intro))return fs.readFileSync(intro);
+  const payment=path.join(process.env.KOKORO_PAYMENTS || '/opt/kokoro-payments',language+'.mp3');
+  if(text===payments[language] && fs.existsSync(payment))return fs.readFileSync(payment);
   return null;
 }
-async function renderVoice(text,language) {
+async function renderVoice(text,language,signal) {
   const cached=introAudio(text,language);if(cached)return cached;
-  return voice.say(text,language);
+  return voice.say(text,language,signal);
 }
 export function makeAskVoice({ enabled = () => voice.available(), render = renderVoice,
   dailyCap = Number(process.env.ASK_TTS_DAILY_CAP ?? 400), now = Date.now } = {}) {
@@ -29,7 +32,7 @@ export function makeAskVoice({ enabled = () => voice.available(), render = rende
     for (const [k, t] of tickets) if (t.expires <= now()) tickets.delete(k);
     while (tickets.size >= 1000) tickets.delete(tickets.keys().next().value);
     const token = crypto.randomBytes(24).toString('base64url');
-    tickets.set(token, { text: String(text).slice(0, 2000), language: ['en', 'fr', 'es'].includes(language) ? language : 'en', ip, expires: now() + 10 * 60e3 });
+    tickets.set(token, { text: String(text).slice(0, 2000).replace(/https?:\/\/\S+/g,({en:'source link in the chat',fr:'lien source dans le chat',es:'enlace de la fuente en el chat'})[language] || 'source link in the chat'), language: ['en', 'fr', 'es'].includes(language) ? language : 'en', ip, expires: now() + 10 * 60e3 });
     return { token, voice: 'bm_fable' };
   }
   function take(token, ip) {
@@ -51,20 +54,32 @@ export function makeAskVoice({ enabled = () => voice.available(), render = rende
     finally { active--; }
   }
   function start(token,ip) {
+    const ticket=tickets.get(token);
+    if(ticket && ticket.ip===ip && ticket.expires>now())for(const [key,j]of jobs)if(j.ip===ip && !j.complete)cancel(key,ip);
     const taken=take(token,ip);if(!taken.ticket)return taken;
     const cached=introAudio(taken.ticket.text,taken.ticket.language);if(cached){active--;return {status:200,audio:cached};}
     for(const [key,j]of jobs)if(j.expires<=now())jobs.delete(key);
     while(jobs.size>=100){const old=[...jobs].find(([,j])=>j.status!==202);if(!old)break;jobs.delete(old[0]);}
-    const job=crypto.randomBytes(24).toString('base64url'),state={ip,expires:now()+10*60e3,status:202};jobs.set(job,state);
-    Promise.resolve().then(()=>render(taken.ticket.text,taken.ticket.language))
-      .then(audio=>{state.audio=audio;state.status=200;},()=>{state.error='voice_unavailable';state.status=503;}).finally(()=>active--);
-    return {status:202,job,retry_after:3};
+    const job=crypto.randomBytes(24).toString('base64url'),state={ip,expires:now()+10*60e3,status:202,parts:[],complete:false,controller:new AbortController()};jobs.set(job,state);
+    Promise.resolve().then(async()=>{
+      // A short first phrase starts speaking sooner. Every word is retained; later parts continue in order.
+      let rest=taken.ticket.text.replace(/\s+/g,' ').trim(),first=true;
+      while(rest){if(state.controller.signal.aborted)throw new Error('cancelled');const max=first?65:150;
+        let cut=rest.length<=max?rest.length:rest.lastIndexOf(' ',max);if(cut<1)cut=Math.min(max,rest.length);
+        const text=rest.slice(0,cut);rest=rest.slice(cut).trim();first=false;
+        state.parts.push(await render(text,taken.ticket.language,state.controller.signal));
+      }
+      state.complete=true;state.status=200;
+    }).catch(()=>{state.complete=true;state.error='voice_unavailable';state.status=503;}).finally(()=>{if(!state.released)active--;});
+    return {status:202,job,retry_after:1};
   }
   function result(job,ip) {
     const state=jobs.get(job);
     if(!state || state.ip!==ip || state.expires<=now())return {status:403,error:'invalid_voice_job'};
-    if(state.status===202)return {status:202,retry_after:3};
-    jobs.delete(job);return state.audio?{status:200,audio:state.audio}:{status:503,error:'voice_unavailable'};
+    if(state.parts.length){const audio=state.parts.shift(),more=!state.complete || state.parts.length>0;if(!more)jobs.delete(job);return {status:200,audio,more};}
+    if(!state.complete)return {status:202,retry_after:1};
+    jobs.delete(job);return {status:503,error:'voice_unavailable'};
   }
-  return { issue, speak, start, result, available };
+  function cancel(job,ip){const state=jobs.get(job);if(!state || state.ip!==ip)return {status:403,error:'invalid_voice_job'};jobs.delete(job);if(!state.complete && !state.released){state.released=true;active--;}state.controller.abort();return {status:200,ok:true};}
+  return { issue, speak, start, result, cancel, available };
 }

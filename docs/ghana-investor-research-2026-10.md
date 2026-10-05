@@ -48,3 +48,9 @@ The eight cited research sources are verified daily by `research-checks.js`, usi
 Chat knowledge is generated from public website content at site build time and retrieved by topic; the same dated economic cache and currency feed are added server-side. No private CRM records are included. Direct currency questions bypass model arithmetic and can answer even if the model provider is unavailable. Speech uses visitor-bound answer tickets and local Kokoro Fable.
 
 The broad site introductions are built once in English, French and Spanish. Dynamic answers prepare as background speech jobs and are collected through visitor-bound, one-use results, avoiding the WordPress request timeout. Text is immediate; speech preparation can take longer on the shared one-CPU host. The official int8 model was benchmarked but did not improve throughput there, so the release retains Jarvis’s original model and voice files.
+
+## Visual design and response speed
+
+The interactive SVG chart uses line/area, price-scale, legend and point-readout conventions reviewed against TradingView’s public chart examples (https://www.tradingview.com/lightweight-charts/) and the Financial Times markets layout (https://www.ft.com/markets). It is implemented locally without a third-party chart dependency. Year buttons support touch and keyboard use; reduced motion disables reveal animation. Company returns remain nominal price-only case studies.
+
+New Fable answers prepare ordered speech chunks, so the first phrase can play before full synthesis finishes. Replaced, muted and closed answers cancel their visitor-bound jobs. Welcome and payment instructions use fixed recordings built once. General knowledge is allowed; live financial values require a supplied dated source. Time questions use the server clock.

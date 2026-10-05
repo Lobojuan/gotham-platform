@@ -2,6 +2,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 const welcome=JSON.parse(fs.readFileSync(fileURLToPath(new URL('./ask-welcome.json',import.meta.url)),'utf8'));
+const payment=JSON.parse(fs.readFileSync(fileURLToPath(new URL('./ask-payment.json',import.meta.url)),'utf8'));
+export function paymentAnswer(question,language='en') {
+  const q=question.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+  if(!/(?:how|where|comment|ou|como|donde|can i|puis.je|puedo).*(?:\bpay\b|payer|paiement|pagar|pago)|payment (?:phone|number)|momo (?:account|number)|numero.*momo/.test(q))return null;
+  return payment[language] || payment.en;
+}
+export function timeAnswer(question,language='en',now=Date.now()) {
+  const q=question.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();
+  if(!/(?:what(?:'s| is)?(?: the)?(?: current)? time(?: is it| now| in\b|[? ]*$)|quelle heure|que hora|hora actual|current time)/.test(q))return null;
+  const cities=[[/dubai|emirates|emiratos|emirats/,'Dubai','Asia/Dubai'],[/london|londres/,'London','Europe/London'],[/paris/,'Paris','Europe/Paris'],[/madrid/,'Madrid','Europe/Madrid'],[/new york|nueva york/,'New York','America/New_York'],[/singapore|singapour|singapur/,'Singapore','Asia/Singapore'],[/tokyo|tokio/,'Tokyo','Asia/Tokyo'],[/berlin/,'Berlin','Europe/Berlin'],[/copenhagen|copenhague/,'Copenhagen','Europe/Copenhagen'],[/lagos/,'Lagos','Africa/Lagos'],[/johannesburg/,'Johannesburg','Africa/Johannesburg'],[/accra|ghana/,'Accra','Africa/Accra']];
+  const city=cities.find(([r])=>r.test(q)) || [null,'Accra','Africa/Accra'];
+  const lang=['fr','es'].includes(language)?language:'en',locale={en:'en-GB',fr:'fr-FR',es:'es-ES'}[lang];
+  const stamp=new Intl.DateTimeFormat(locale,{timeZone:city[2],hour:'2-digit',minute:'2-digit',hourCycle:'h23',day:'numeric',month:'long',year:'numeric'}).format(new Date(now));
+  return ({en:`Current time in ${city[1]}: ${stamp}. Time zone: ${city[2]}.`,fr:`Heure actuelle à ${city[1]} : ${stamp}. Fuseau horaire : ${city[2]}.`,es:`Hora actual en ${city[1]}: ${stamp}. Zona horaria: ${city[2]}.`})[lang];
+}
+export function unavailableAnswer(language) {return ({en:'The AI is temporarily unavailable. Please try again here. Our published services and prices are at https://gothamconsult.com/services and upcoming forums at https://gothamconsult.com/forums.',fr:'L’IA est temporairement indisponible. Réessayez ici. Nos services et tarifs sont sur https://gothamconsult.com/fr/services et les prochains forums sur https://gothamconsult.com/fr/forums.',es:'La IA no está disponible temporalmente. Vuelve a intentarlo aquí. Nuestros servicios y precios están en https://gothamconsult.com/services y los próximos foros en https://gothamconsult.com/forums.'})[language] || unavailableAnswer('en');}
 export const welcomeAnswer=language=>welcome[language] || welcome.en;
 export function ratesAnswer(question,language,fx,now=Date.now()) {
   const q=question.normalize('NFD').replace(/\p{Diacritic}/gu,'').toLowerCase();

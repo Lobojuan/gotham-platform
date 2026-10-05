@@ -464,19 +464,22 @@
     fr: { on: 'Voix activée', off: 'Voix désactivée', play: 'Écouter la réponse', stop: 'Arrêter la voix', ready: 'Fable · voix générée par IA', loading: 'Préparation de la voix Fable…', speaking: 'Fable parle…', blocked: 'Appuyez sur Écouter la réponse.', unavailable: 'Voix indisponible. La réponse reste lisible.', disclosure: 'Fable est une voix générée par IA sur notre serveur.' },
     es: { on: 'Voz activada', off: 'Voz desactivada', play: 'Escuchar respuesta', stop: 'Detener voz', ready: 'Fable · voz generada por IA', loading: 'Preparando la voz Fable…', speaking: 'Fable está hablando…', blocked: 'Pulsa Escuchar respuesta para oír Fable.', unavailable: 'Voz no disponible. Puedes leer la respuesta.', disclosure: 'Fable es una voz generada por IA en nuestro servidor.' }
   };
-  let voiceOn = true, voiceState = 'ready', audioContext, audioSource, audioBuffer, voiceRequest, voiceEpoch = 0;
+  let voiceOn = true, voiceState = 'ready', audioContext, audioSource, audioBuffer, voiceRequest, voiceEpoch = 0, voiceJob=null, nextAudioAt=0;
+  const playingSources=new Set();
   try { voiceOn = localStorage.getItem('gc-chat-voice') !== 'off'; } catch {}
   const voiceWords = () => VOICE_TEXT[current] || VOICE_TEXT.en;
   function updateVoiceUI() {
     if (!voiceButton) return; const w = voiceWords();
     voiceButton.textContent = voiceOn ? w.on : w.off; voiceButton.setAttribute('aria-pressed', String(voiceOn));
     playButton.textContent = voiceState === 'speaking' ? w.stop : w.play;
-    playButton.hidden = !audioBuffer || !voiceOn;
+    playButton.hidden = (!audioBuffer && !playingSources.size) || !voiceOn;
     voiceStatus.textContent = w[voiceState] || w.ready; voiceButton.title = w.disclosure;
   }
   function stopVoice(clear = false) {
     voiceEpoch++; voiceRequest?.abort(); voiceRequest = null;
-    if (audioSource) { audioSource.onended = null; try { audioSource.stop(); } catch {} audioSource = null; }
+    if(voiceJob){fetch('/api/ask/voice/cancel',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job:voiceJob}),keepalive:true}).catch(()=>{});voiceJob=null;}
+    for(const source of playingSources){source.onended=null;try{source.stop();}catch{}}playingSources.clear();nextAudioAt=0;
+    audioSource=null;
     if (clear) audioBuffer = null; voiceState = 'ready'; updateVoiceUI();
   }
   // Unlock audio during the visitor's submit/tap, before waiting for the AI/network.
@@ -484,12 +487,21 @@
     if (!voiceOn) return;
     try { const AC = window.AudioContext || window.webkitAudioContext; audioContext ||= new AC(); audioContext.resume().catch(() => {}); } catch {}
   }
-  function playVoice() {
-    if (!audioBuffer || !voiceOn || chat.hidden) return;
-    if (!audioContext || audioContext.state !== 'running') { voiceState = 'blocked'; updateVoiceUI(); return; }
-    audioSource = audioContext.createBufferSource(); audioSource.buffer = audioBuffer;
-    audioSource.connect(audioContext.destination); audioSource.onended = () => { audioSource = null; voiceState = 'ready'; updateVoiceUI(); };
-    voiceState = 'speaking'; updateVoiceUI(); audioSource.start();
+  function queueAudio(buffer) {
+    if(!voiceOn || chat.hidden)return;
+    if(!audioContext || audioContext.state!=='running'){voiceState='blocked';updateVoiceUI();return;}
+    const source=audioContext.createBufferSource();source.buffer=buffer;source.connect(audioContext.destination);
+    playingSources.add(source);audioSource=source;
+    source.onended=()=>{playingSources.delete(source);if(!playingSources.size){audioSource=null;voiceState=voiceJob?'loading':'ready';updateVoiceUI();}};
+    const at=Math.max(Number(audioContext.currentTime)||0,nextAudioAt);nextAudioAt=at+(Number(buffer.duration)||0);
+    voiceState='speaking';updateVoiceUI();source.start(at);
+  }
+  function playVoice(){if(audioBuffer && voiceOn && !chat.hidden){nextAudioAt=0;queueAudio(audioBuffer);}}
+  function joinAudio(buffers){
+    if(buffers.length===1)return buffers[0];
+    const joined=audioContext.createBuffer(buffers[0].numberOfChannels,buffers.reduce((n,b)=>n+b.length,0),buffers[0].sampleRate);
+    for(let channel=0;channel<joined.numberOfChannels;channel++){let at=0;for(const b of buffers){joined.getChannelData(channel).set(b.getChannelData(channel),at);at+=b.length;}}
+    return joined;
   }
   async function speakAnswer(speech, epoch) {
     if (!voiceOn || chat.hidden || epoch !== voiceEpoch) return;
@@ -500,20 +512,23 @@
     try {
       let r = await fetch('/api/ask/voice', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ token: speech.token }), signal: request.signal });
-      let job;
-      while(r.status===202) {
-        const j=await r.json();job=j.job || job;if(!/^[a-zA-Z0-9_-]{10,128}$/.test(job || ''))throw new Error('voice_unavailable');
-        await new Promise(resolve=>setTimeout(resolve,Math.min(5000,Math.max(500,Number(j.retry_after)*1000 || 3000))));
+      let job;const buffers=[];
+      while(true){
+        if(r.status===202){
+          const j=await r.json();job=j.job || job;if(!/^[a-zA-Z0-9_-]{10,128}$/.test(job || ''))throw new Error('voice_unavailable');voiceJob=job;
+          await new Promise(resolve=>setTimeout(resolve,Math.min(5000,Math.max(500,Number(j.retry_after)*1000 || 1000))));
+        }else{
+          if(!r.ok || !r.headers.get('content-type')?.includes('audio/'))throw new Error('voice_unavailable');
+          const bytes=await r.arrayBuffer();if(epoch!==voiceEpoch || !voiceOn || chat.hidden)return;
+          if(!audioContext)throw new Error('voice_unavailable');const decoded=await audioContext.decodeAudioData(bytes);
+          if(epoch!==voiceEpoch || !voiceOn || chat.hidden)return;
+          buffers.push(decoded);const more=r.headers.get('x-voice-more')==='1';
+          if(!more){voiceJob=null;audioBuffer=joinAudio(buffers);}queueAudio(decoded);
+          if(!more)break;
+        }
         if(request.signal.aborted || epoch!==voiceEpoch || !voiceOn || chat.hidden)return;
         r=await fetch('/api/ask/voice/result',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job}),signal:request.signal});
       }
-      if (!r.ok || !r.headers.get('content-type')?.includes('audio/')) throw new Error('voice_unavailable');
-      const bytes = await r.arrayBuffer();
-      if (epoch !== voiceEpoch || !voiceOn || chat.hidden) return;
-      if (!audioContext) throw new Error('voice_unavailable');
-      const decoded = await audioContext.decodeAudioData(bytes);
-      if (epoch !== voiceEpoch || !voiceOn || chat.hidden) return;
-      audioBuffer = decoded; playVoice();
     } catch { if (epoch === voiceEpoch) { voiceState = 'unavailable'; updateVoiceUI(); } }
     finally { clearTimeout(timeout); if (voiceRequest === request) voiceRequest = null; }
   }
@@ -554,9 +569,9 @@
       es: 'Paga por Mobile Money al +233 55 041 6627, el número de pago de Joy. Usa el importe y la referencia que aparecen en tu cuenta y envía el identificador de la transacción para su verificación. Los datos bancarios figuran en tu factura. Nunca compartas aquí tu PIN de MoMo.'
     })[current] || FALLBACK;
     return ({
-      en: 'The AI is temporarily unavailable. You can find our services and published prices at /services, and upcoming forums at /forums. For a question about your own case, contact +233 55 041 6627.',
-      fr: 'L’IA est temporairement indisponible. Nos services et tarifs sont sur /fr/services, et les forums sur /fr/forums. Pour votre situation personnelle, contactez le +233 55 041 6627.',
-      es: 'La IA no está disponible temporalmente. Puedes consultar servicios y precios en /services y próximos foros en /forums. Para tu caso particular, contacta al +233 55 041 6627.'
+      en: 'The AI is temporarily unavailable. You can find our services and published prices at /services, and upcoming forums at /forums. Please try your question again here.',
+      fr: 'L’IA est temporairement indisponible. Nos services et tarifs sont sur /fr/services, et les forums sur /fr/forums. Réessayez votre question ici.',
+      es: 'La IA no está disponible temporalmente. Puedes consultar servicios y precios en /services y próximos foros en /forums. Vuelve a hacer tu pregunta aquí.'
     })[current] || FALLBACK;
   }
   async function ask(q) {
@@ -566,7 +581,7 @@
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ q, history: HIST.slice(-6), language: current, speech: voiceOn }), signal: AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined });
       const j = await r.json().catch(() => ({}));
-      a = j.answer || (r.status === 429 ? 'You have asked a lot in a short time. Please WhatsApp us on +233 55 041 6627.' : '');
+      a = j.answer || (r.status === 429 ? 'You have asked a lot in a short time. Please wait and try again here.' : '');
       acts = Array.isArray(j.actions) ? j.actions : [];
       speech = j.speech;
     } catch {}
@@ -576,13 +591,12 @@
     speakAnswer(speech, epoch);
   }
   /* buttons the AI can offer under its answer: register for a forum, leave your details, talk to a person */
-  const WA = 'https://wa.me/233550416627?text=';
   function actions(list, q) {
     const box = document.createElement('div'); box.className = 'chat-acts';
     for (const x of list) {
       if (x.type === 'register') box.insertAdjacentHTML('beforeend', `<a class="chat-act gold" href="/register?e=${encodeURIComponent(x.code)}"><span>${x.approval ? 'Request your invitation' : 'Reserve your seat'}</span><small>${esc(x.title)}</small></a>`);
       if (x.type === 'lead') { const b = document.createElement('button'); b.type = 'button'; b.className = 'chat-act'; b.innerHTML = '<span>Leave your details</span>'; b.addEventListener('click', () => { b.disabled = true; leadForm(q); }); box.append(b); }
-      if (x.type === 'person') box.insertAdjacentHTML('beforeend', `<a class="chat-act wa" target="_blank" rel="noopener" href="${WA + encodeURIComponent('Hello Gotham Consult, I was asking on your website: ' + q)}"><span>Continue on WhatsApp</span></a>`);
+      if (x.type === 'person') { const b=document.createElement('button');b.type='button';b.className='chat-act';b.textContent=({en:'Ask our team here',fr:'Demander à notre équipe ici',es:'Pregunta a nuestro equipo aquí'})[current] || 'Ask our team here';b.addEventListener('click',()=>{b.disabled=true;leadForm(q);});box.append(b); }
     }
     msgs.append(box); msgs.scrollTop = msgs.scrollHeight;
   }
@@ -606,7 +620,7 @@
           body: JSON.stringify({ name: v('name'), company: v('company'), contact: v('contact'), need: v('need'), question: q, consent: true, language: current }) });
         if (!r.ok) throw new Error(String(r.status));
         f.remove(); say('Thank you. Our team will get back to you soon.', 'bot');
-      } catch { msg.textContent = 'That did not go through. Please WhatsApp us on +233 55 041 6627.'; btn.disabled = false; }
+      } catch { msg.textContent = 'That did not go through. Please try again here.'; btn.disabled = false; }
     });
   }
   const chips = ['Next forum', 'How do I pay?', 'What is GIPA Act 1173?', 'Invest in Ghana'];

@@ -45,6 +45,18 @@ const broken=makeAskVoice({enabled:()=>true,render:async()=>{throw new Error('pr
 const bad=broken.start(broken.issue('x','one').token,'one');await new Promise(setImmediate);
 assert.deepEqual(broken.result(bad.job,'one'),{status:503,error:'voice_unavailable'});
 console.log('  ok background jobs: pending, visitor binding, one-time result, sanitized failures');
+const waiters=[],spoken=[];const streaming=makeAskVoice({enabled:()=>true,render:(text,language,signal)=>new Promise((resolve,reject)=>{spoken.push(text);waiters.push(resolve);signal.addEventListener('abort',()=>reject(new Error('cancelled')),{once:true});})});
+const full='A short opening phrase starts promptly. '+('More words follow with all the original meaning. '.repeat(5));
+const stream=streaming.start(streaming.issue(full,'one').token,'one');await new Promise(setImmediate);
+assert.ok(spoken[0].length<=65);waiters.shift()(Buffer.from('first'));await new Promise(setImmediate);
+const first=streaming.result(stream.job,'one');assert.equal(first.audio.toString(),'first');assert.equal(first.more,true);
+assert.equal(streaming.cancel(stream.job,'two').status,403);assert.equal(streaming.cancel(stream.job,'one').status,200);await new Promise(setImmediate);
+assert.equal(streaming.result(stream.job,'one').status,403);console.log('  ok early audio chunks and visitor-bound cancellation');
+let joined=[];const completeStream=makeAskVoice({enabled:()=>true,render:async text=>{joined.push(text);return Buffer.from(text);}});
+const stream2=completeStream.start(completeStream.issue(full,'one').token,'one');await new Promise(setImmediate);
+let chunks=[];while(true){const part=completeStream.result(stream2.job,'one');assert.equal(part.status,200);chunks.push(part.audio.toString());if(!part.more)break;}
+assert.equal(chunks.join(' '),full.trim());console.log('  ok streaming retains every word and finishes with a replayable answer');
+
 '''
 subprocess.run(['node', '--input-type=module', '-e', code], check=True)
 env = dict(os.environ, DATABASE_URL=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test'),

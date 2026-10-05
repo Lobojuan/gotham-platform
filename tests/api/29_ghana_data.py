@@ -4,7 +4,7 @@ ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'../..'))
 code=r'''
 import assert from 'node:assert/strict';import fs from 'node:fs';
 import {parseGSS,parseGSE,latestBoGPdf,makeGhanaData} from './apps/crm/ghana-data.js';
-import {ratesAnswer,websiteKnowledge} from './apps/crm/chat-knowledge.js';
+import {ratesAnswer,websiteKnowledge,timeAnswer} from './apps/crm/chat-knowledge.js';
 import {checkResearch,researchHash} from './apps/crm/research-checks.js';
 const gss=fs.readFileSync('./tests/fixtures/ghana/gss-flight.txt','utf8'),gse=fs.readFileSync('./tests/fixtures/ghana/gse-home.html','utf8');
 assert.equal(parseGSS(gss).gdp.value,6);assert.equal(parseGSS(gss).inflation.period,'2026M08');
@@ -35,7 +35,11 @@ const fx={rates:{USD:11.6173,EUR:13.0695},more:{AED:3.1633},updated:'2026-10-05T
 for(const [l,q]of [['en','cedi to USD today'],['fr','taux dollar cedi aujourd’hui'],['es','cambio cedi dolar hoy']]){const a=ratesAnswer(q,l,fx,Date.parse('2026-10-05'));assert.match(a,/1 USD = GHS/);assert.match(a,/1 GHS = USD/);assert.match(a,/open.er-api/);}
 assert.match(ratesAnswer('cedi to AED','en',fx,clock),/1 AED/);assert.match(ratesAnswer('cedi USD','en',fx,clock+7*864e5),/older than three days/);
 assert.match(ratesAnswer('cedi USD','en',null),/cannot verify/);assert.equal(ratesAnswer('register for a forum','en',fx),null);
-console.log('  ok direct dated rates in three languages, inverse rates and outage honesty');
+assert.match(timeAnswer('what time is it in Dubai?','en',Date.parse('2026-10-05T12:30:00Z')),/16:30/);
+assert.match(timeAnswer('quelle heure est-il?','fr',Date.parse('2026-10-05T12:30:00Z')),/12:30/);
+assert.match(timeAnswer('que hora es en Londres?','es',Date.parse('2026-10-05T12:30:00Z')),/13:30/);
+assert.equal(timeAnswer('How much time is needed for registration?'),null);
+console.log('  ok direct dated rates and current city clocks in three languages');
 await import('./apps/site/public/assets/v2/ghana-market.js');const {stats,scenario}=globalThis.GothamFinance;
 assert.equal(stats([2,6.65,7.65,22,25.26,55.82]).gain,2691);assert.equal(scenario(100,10,10,5).foreignReturn,0);
 assert.ok(scenario(100,10,20,5).foreignReturn<0);assert.equal(scenario(100,0,0,10).local,100);assert.throws(()=>scenario(100,-100,0,5));
