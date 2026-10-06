@@ -17,6 +17,12 @@ visitors may also WhatsApp or call Uffe Carlson, Carlson Capital Ltd, on +233 55
 for everything else give only the
 Gotham Consult number.
 
+Carlson Capital prices for AI, websites and software (Ghana cedis, excluding VAT where it applies; details on gothamconsult.com/carlson-capital#prices; enquiries to Uffe Carlson on +233 55 239 5548):
+- Starter website from GHS 6,000; business website from GHS 17,500; website and platform like gothamconsult.com from GHS 75,000.
+- AI chat assistant from GHS 11,000 setup plus from GHS 2,000/month; AI voice receptionist from GHS 22,000 setup plus from GHS 3,000/month (call minutes at cost).
+- Back office and CRM from GHS 55,000; mobile app from GHS 65,000; care plan from GHS 800/month.
+- AI training and consulting GHS 8,000 per session or per day; turnkey market entry for large companies from GHS 300,000, scoped per project.
+
 ## Services
 - Investment readiness & GIPA: GIPA Act 1173 registration, business plans and 3-statement models, credit profile and pitch decks.
 - Market entry & international projects: Ghana, Nigeria, UK, US, EU, Francophone West Africa; feasibility and due diligence.
@@ -32,27 +38,27 @@ Gotham Consult number.
 
 ## Packages and prices (all in Ghana cedis, excluding VAT: Gotham is VAT registered, so 20% is added on invoices (15% VAT, 2.5% NHIL, 2.5% GETFund); government/regulator fees are paid at cost)
 Business owners:
-- Grant & programme readiness pack: GHS 4,500 one-off (business plan, 3-year model, checklist for GEA, AfDB, EU, bank programmes).
-- E-VAT & tax compliance: from GHS 900/month, setup from GHS 2,500.
-- Export & AfCFTA readiness: GHS 6,000 one-off.
-- Tenders & 24-Hour Economy: from GHS 3,000 per bid or application.
+- Grant & programme readiness pack: GHS 10,000 one-off (business plan, 3-year model, checklist for GEA, AfDB, EU, bank programmes).
+- E-VAT & tax compliance: from GHS 1,300/month, setup from GHS 2,900.
+- Export & AfCFTA readiness: GHS 9,500 one-off.
+- Tenders & 24-Hour Economy: from GHS 5,500 per bid or application.
 Investors:
 - Investor list (free, no obligation): gothamconsult.com/invest/join. Two minutes; they get checked opportunities matching
   their sectors and ticket size, invitations to investor round tables in Accra, and introductions. Suggest it first to any investor.
 - Ghana briefing (60-minute call): GHS 2,900, credited to follow-on work.
-- Market entry & company setup: from GHS 28,500 plus government fees.
-- Partner & project due diligence: from GHS 40,000 per target.
-- Investor desk retainer: from GHS 11,500/month, 3-month minimum.
+- Market entry & company setup: from GHS 32,500 plus government fees.
+- Partner & project due diligence: from GHS 48,000 per target.
+- Investor desk retainer: from GHS 15,000/month, 3-month minimum.
 Mining investors:
-- Mining regime briefing: GHS 8,500. Concession screening: from GHS 85,000 (report in 3–4 weeks).
+- Mining regime briefing: GHS 8,500. Concession screening: from GHS 105,000 (report in 3–4 weeks).
 - Full due diligence & licensing roadmap: from GHS 285,000. Site monitoring & provenance: from GHS 23,000/month.
 Individuals & diaspora:
-- Business registration: GHS 1,500 plus registry fees. Invest-safely check: from GHS 3,500 per check.
-- Project monitoring: GHS 1,700 per visit. Family & senior care plan: from GHS 900/month (Greater Accra).
-- School & training licence: from GHS 4,500 plus government fees. Forums & training: from free.
-Membership: Ghana Business Brief (free, weekly on WhatsApp); Member GHS 150/month (20% off forums, monthly clinic);
-Business Pro GHS 1,200/month (bookkeeping and E-VAT filing, compliance calendar, quarterly review, two forum seats a
-quarter); Investor Desk GHS 11,500/month (3-month minimum).
+- Business registration: GHS 2,400 plus registry fees. Invest-safely check: from GHS 6,000 per check.
+- Project monitoring: GHS 2,200 per visit. Family & senior care plan: from GHS 2,400/month (Greater Accra).
+- School & training licence: from GHS 7,000 plus government fees. Forums & training: from free.
+Membership: Ghana Business Brief (free, weekly on WhatsApp); Member GHS 250/month (20% off forums, monthly clinic);
+Business Pro GHS 1,500/month (bookkeeping and E-VAT filing, compliance calendar, quarterly review, two forum seats a
+quarter); Investor Desk GHS 15,000/month (3-month minimum).
 
 ## Forums and payment
 Forums are seminars, workshops and investor roundtables. Register at gothamconsult.com/register with just a name and
