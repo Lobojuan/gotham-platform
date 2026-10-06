@@ -25,4 +25,5 @@ sleep 2
 curl -fsS -o /dev/null -w "  home %{http_code}\n" "$PUBLIC/"
 curl -fsS -o /dev/null -w "  register %{http_code}\n" "$PUBLIC/register.html"
 curl -fsS -o /dev/null -w "  admin %{http_code}\n" "$PUBLIC/admin"
+SITE_URL="$PUBLIC" bash "$ROOT/scripts/indexnow.sh" || true   # Bing / IndexNow: the site changed
 echo "  done"
