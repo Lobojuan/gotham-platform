@@ -3,8 +3,8 @@
 check():  every claim in the register must still be written on the pages it names ("says" in "where"),
           so the register and the site cannot drift apart unnoticed (tests/api/30_facts.py fails on it).
 render(): the public /sources page: every law, fee, figure and price we state, its sources and when a
-          person last checked it; the server's weekly automatic check is shown on top by a small script.
-links():  every source link used in the articles and the register, for the server's weekly link check.
+          person last checked it; the server's daily automatic check is shown on top by a small script.
+links():  every source link used in the articles and the register, for the server's daily link check.
 """
 import os, json, html, glob
 from datetime import date, datetime
@@ -89,7 +89,7 @@ def render():
             '</div></section>\n'
             '<section class="sec" aria-labelledby="how-h"><div class="wrap"><h2 id="how-h" class="fc-h">How we keep it right</h2><div class="fc-how">'
             '<div class="box"><h3>Official sources first</h3><p>Each fact names its source: the Ghana Revenue Authority, the Registrar of Companies, GIPA, the Bank of Ghana and other official bodies, or a named publication where no official page exists.</p></div>'
-            '<div class="box"><h3>Checked every week</h3><p>Our system opens every source each week. If a source changes, disappears or no longer says what we rely on, or a live figure moves, the team is told the same day.</p></div>'
+            '<div class="box"><h3>Checked every day</h3><p>Our system opens every source every day. If a source changes, disappears or no longer says what we rely on, or a live figure moves, the team is told the same day.</p></div>'
             '<div class="box"><h3>A person confirms</h3><p>Nothing changes by itself: a person reads the source and confirms the fact or corrects the page. Every fact is re-checked by a person at least every three to six months.</p></div>'
             '</div><p class="fc-auto-all" id="fc-auto" hidden></p></div></section>\n'
             + '\n'.join(rows) +

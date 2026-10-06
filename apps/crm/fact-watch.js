@@ -1,6 +1,6 @@
 /* Fact watch: keeps the website's laws, fees, rates, figures and prices honest.
    facts.json lists every claim, where the site states it, its sources and when a person last checked it.
-   Once a week the server opens every source: is it still there, does it still say what we rely on
+   Every day (FACTS_EVERY_DAYS) the server opens every source: is it still there, does it still say what we rely on
    (the "expect" phrases), has the page changed since a person last looked, and does a live figure
    (Bank of Ghana, Statistical Service) still match what the page states. Problems go to the back office
    (Settings → Facts and sources) and, once per new problem, to the safety-net email/WhatsApp.

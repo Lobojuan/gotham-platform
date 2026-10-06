@@ -103,7 +103,7 @@ languages, tools, registration): `PLAYWRIGHT=… CHROMIUM=… bash tests/e2e/run
   `apps/crm/facts.json` (where it appears, the exact words, its sources, when a
   person checked it). Change a fact on the site → change the register in the
   same commit and set `checked` to today; `tests/api/30_facts.py` fails when
-  they drift. The server re-checks every source weekly (`fact-watch.js`);
+  they drift. The server re-checks every source daily (`fact-watch.js`, `FACTS_EVERY_DAYS`);
   admins confirm in Settings → Facts and sources; public view at `/sources`.
 - Images are resized to fixed sizes on upload so the layout cannot break.
   `storeImage` crops to fill (photos), `storeLogo` fits inside (logos, keeps

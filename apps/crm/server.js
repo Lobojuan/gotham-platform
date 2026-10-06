@@ -42,10 +42,10 @@ const REDIRECT_HOSTS = (process.env.REDIRECT_HOSTS || '').toLowerCase().split(',
    reaches us through the WordPress bridge, so pictures load directly instead of through PHP */
 const MEDIA_URL = (process.env.MEDIA_URL || PUBLIC_URL).replace(/\/$/, '');
 const SITE_URL = (process.env.SITE_URL || process.env.PUBLIC_URL || 'https://gothamconsult.com').replace(/\/$/, '');
-/* Fact watch (fact-watch.js, facts.json): weekly source checks for every law, fee, figure and price on the site */
+/* Fact watch (fact-watch.js, facts.json): daily source checks for every law, fee, figure and price on the site */
 const FACTS = makeFactWatch({
   facts: loadFacts(process.env.FACTS_FILE || new URL('./facts.json', import.meta.url)),
-  everyDays: +process.env.FACTS_EVERY_DAYS || 7,
+  everyDays: +process.env.FACTS_EVERY_DAYS || 1,   // daily (Uffe, 6 Oct 2026)
   load: async () => JSON.parse((await q("select value from settings where key='facts_state'")).rows[0]?.value || 'null'),
   save: async st => q("insert into settings(key,value) values ('facts_state',$1) on conflict(key) do update set value=excluded.value", [JSON.stringify(st)]),
   live: async () => (await GHANA.read()).sources,
@@ -5257,7 +5257,7 @@ async function runJobs() {
   } catch (e) { console.error('jobs', e); }
   await runSchedules().catch(e => console.error('schedules', e.message));
   await watchdog().catch(e => console.error('watchdog', e.message));
-  if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await FACTS.run().catch(e => console.error('facts', e.message));   // weekly, see FACTS_EVERY_DAYS
+  if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await FACTS.run().catch(e => console.error('facts', e.message));   // daily, see FACTS_EVERY_DAYS
 }
 
 /* ---------- website visitors, privacy-friendly ----------
