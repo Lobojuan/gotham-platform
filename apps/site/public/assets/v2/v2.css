@@ -1005,3 +1005,14 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 @keyframes chart-reveal { from { stroke-dashoffset:1000; } to { stroke-dashoffset:0; } } @keyframes chart-fade { from {opacity:0;} to {opacity:1;} }
 @media(max-width:520px) { .chart-years {grid-template-columns:repeat(3,minmax(0,1fr));}.chart-toolbar {align-items:stretch;}#investor-research .market-visual select {width:100%;}.chart-summary {gap:16px;} }
 @media(prefers-reduced-motion:reduce) { .chart-line,.chart-area {animation:none;}.chart-dot {transition:none;} }
+
+/* Carlson Capital credit: a visible "built by" band with a call to action */
+.gf .gf-made { margin-top: 20px; padding: 14px 16px; gap: 10px 14px; font-size: 14px; line-height: 1.5; color: rgba(255,255,255,.78); background: rgba(255,255,255,.05); border: 1px solid rgba(224,174,85,.28); border-radius: 14px; }
+.gf .gf-made .cl { width: 20px; height: 20px; margin: 0; flex: none; }
+.gf .gf-made > span:first-of-type { flex: 1 1 320px; min-width: 0; }
+.gf .gf-made b { color: var(--gold-2, #E0AE55); }
+.gf .gf-made a { color: #fff; min-height: 40px; }
+.gf .gf-made-act { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.gf .gf-made a.gf-cta { padding: 0 16px; border-radius: 999px; background: var(--gold-2, #E0AE55); color: #14110B; font-weight: 600; min-height: 40px; }
+.gf .gf-made a.gf-cta:hover { background: #F0C46E; color: #14110B; }
+.gf .gf-made > span:first-of-type a { display: inline; min-height: 0; }
