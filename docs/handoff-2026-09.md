@@ -335,3 +335,13 @@ for reduced motion.
   - A live strip shows Accra's clock and GHS against USD/EUR/GBP.
   - Each city card shows distance, local time, the difference from Accra, whether it is day or night there now, and what 1 unit of its currency is worth in cedis.
   - `/api/rates` now also returns `more` for those currencies.
+
+## Prices at a 70% markup, Carlson prices, fact register and weekly source checks (6 Oct 2026, Claude)
+
+- Pricing rule (Uffe): price = cost × 1.7; government fees at cost; Gotham is VAT registered, so every price says "excluding VAT (20% in total)". New Gotham list and Carlson Capital's AI/web price section went live in `e81870a` (back-office memberships moved from old default prices). Cost assumptions: `Gotham_pricing_review_DRAFT.xlsx` → "Draft 70% markup" (Joy to confirm real costs).
+- Fact register `apps/crm/facts.json` (22 facts): claim, kind, `where` + `says` (must be on those pages), sources with `expect` phrases, `checked`, `review_days`, optional `live` (Bank of Ghana / GSS figure).
+- `apps/crm/fact-watch.js`: weekly from `runJobs` in production (`FACTS_EVERY_DAYS`, default 7). Statuses: ok, changed (page changed since the last human check: soft), review (expected words gone, 404 twice, unreachable three times, live figure moved, overdue), unverified. Alerts via the safety-net contacts, once per new problem. State in `settings.facts_state`.
+- API: `GET /api/facts` and `POST /api/facts/check|review` (admin), `GET /api/facts/public`. Back office: Settings → Facts and sources (“Still correct” records who/when/why in `jobs_log`).
+- Site: `apps/site/facts_page.py` builds `/sources` (footer link “Sources & fact checks”, EN/FR/ES chrome) and `dist/source-links.json` (every article source link, checked weekly for 404s). Build prints `WARNING fact …` if the register drifted.
+- Found and fixed while building it: the ORC VIP fee is GHS 1,300 on top (1,885 in total), not 1,885 on top; the free tools again show the GHS 130 business-name fee (ORC 2026).
+

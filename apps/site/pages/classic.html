@@ -1241,7 +1241,7 @@ $('#hcq').onsubmit=e=>{e.preventDefault();const k=['ty','st','se','sa','tin','bo
  if(k.some(n=>!a[n])){$('#hcr').hidden=false;$('#hcr').innerHTML='<p>Please answer every question to get your checklist.</p>';return}
  const L=[],add=(state,t,d,help)=>L.push({state,t,d,help});
  const goods=!['Services & consulting','Tech & creative','Health & education','Church, NGO or association'].includes(a.se);
- if(a.ty==='Not registered yet')add('do','Register your business with the Registrar of Companies (ORC)','A company costs GHS 585 in registry fees plus 1% stamp duty on its stated capital (ORC, 2026 schedule). You need it for bank loans, contracts and most programmes.','We register it for you: GHS 2,400 plus registry fees');
+ if(a.ty==='Not registered yet')add('do','Register your business with the Registrar of Companies (ORC)','Registry fees (ORC, 2026 schedule): a business name (sole proprietorship) GHS 130; a company GHS 585 plus 1% stamp duty on its stated capital. You need it for bank loans, contracts and most programmes.','We register it for you: GHS 2,400 plus registry fees');
  else if(a.ty==='NGO, church or association')add('chk','Check your registration and annual filings','Associations and NGOs must stay registered and file every year to receive donor money.','We prepare filings and donor-ready documents');
  else add('ok','Registered with the ORC','Keep your annual returns up to date.','');
  add(a.tin==='Yes'?'ok':'do','Tax Identification Number (TIN)',a.tin==='Yes'?'Good. File your returns on time to avoid penalties.':'Every business owner needs a TIN (your Ghana Card number) linked to the business with GRA.','We link it and set up your tax calendar');

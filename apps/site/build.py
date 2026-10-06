@@ -10,6 +10,7 @@ from datetime import date
 import chrome_css
 import insights_fr as IF
 import investor_content as INVESTOR
+import facts_page as FACTSP
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
@@ -33,7 +34,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=25">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=26">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 # Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
@@ -92,6 +93,9 @@ for _a in ARTS:
     _n = f'insights/{_a["slug"]}.html'
     META[_n] = dict(title=_a['title'], desc=_a['description'], og='img/og/real-bog.jpg', extra=V2_EXTRA + '\n' + IF.article_ld(_a, 'en', SITE))
     GEN[_n] = IF.article_body(_a, 'en', [o for o in ARTS if o is not _a][:3])
+# sources and fact checks: every law, fee, figure and price with its source (apps/crm/facts.json)
+META['sources.html'] = dict(title='Sources and Fact Checks | Gotham Consult', desc='Every law, government fee, rate, figure and price on gothamconsult.com, with its official source and the date a person last checked it.', og='img/og/real-bog.jpg', extra=V2_EXTRA)
+GEN['sources.html'] = FACTSP.render()
 # the partner's page
 META['carlson-capital.html'] = dict(title='Carlson Capital Ltd: Market Entry, AI & Mining | Gotham Consult',
   desc="Carlson Capital Ltd, Gotham Consult's partner for company set-up and market entry for large companies, AI, software, apps and mining. Registered in Ghana.",
@@ -368,9 +372,12 @@ def main():
                 if h2 != h: open(fp, 'w', encoding='utf-8').write(h2)
         print(f'  static files from {asset}')
 
+    # the fact register: source links for the server's weekly check, and any claim that drifted from the site
+    open(os.path.join(DIST, 'source-links.json'), 'w', encoding='utf-8').write(json.dumps(FACTSP.links(), ensure_ascii=False))
+    for fid, prob in FACTSP.check(): print(f'  WARNING fact {fid}: {prob}')
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /i/\nSitemap: {SITE}/sitemap.xml\n')
-    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'invest/join', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'demo/receptionist', 'tools', 'family', 'teaser', 'privacy', 'terms']
+    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'invest/join', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'demo/receptionist', 'tools', 'sources', 'family', 'teaser', 'privacy', 'terms']
     pages += ['fr', *[f'fr/{p}' for p in ['services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS]]]]
     today = date.today().isoformat()
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc><lastmod>{today}</lastmod></url>\n' for p in pages)

@@ -16,6 +16,7 @@ import * as TTS from './tts.js';
 import * as STT from './stt.js';
 import { makeAskVoice } from './ask-voice.js';
 import { makeGhanaData } from './ghana-data.js';
+import { makeFactWatch, loadFacts } from './fact-watch.js';
 import { ratesAnswer, websiteKnowledge, welcomeAnswer, paymentAnswer, unavailableAnswer, timeAnswer } from './chat-knowledge.js';
 const ASK_VOICE = makeAskVoice();
 
@@ -41,6 +42,20 @@ const REDIRECT_HOSTS = (process.env.REDIRECT_HOSTS || '').toLowerCase().split(',
    reaches us through the WordPress bridge, so pictures load directly instead of through PHP */
 const MEDIA_URL = (process.env.MEDIA_URL || PUBLIC_URL).replace(/\/$/, '');
 const SITE_URL = (process.env.SITE_URL || process.env.PUBLIC_URL || 'https://gothamconsult.com').replace(/\/$/, '');
+/* Fact watch (fact-watch.js, facts.json): weekly source checks for every law, fee, figure and price on the site */
+const FACTS = makeFactWatch({
+  facts: loadFacts(process.env.FACTS_FILE || new URL('./facts.json', import.meta.url)),
+  everyDays: +process.env.FACTS_EVERY_DAYS || 7,
+  load: async () => JSON.parse((await q("select value from settings where key='facts_state'")).rows[0]?.value || 'null'),
+  save: async st => q("insert into settings(key,value) values ('facts_state',$1) on conflict(key) do update set value=excluded.value", [JSON.stringify(st)]),
+  live: async () => (await GHANA.read()).sources,
+  links: async () => {   // article source links, listed by the site build
+    if (SITE_DIR && fs.existsSync(path.join(SITE_DIR, 'source-links.json'))) return JSON.parse(fs.readFileSync(path.join(SITE_DIR, 'source-links.json'), 'utf8'));
+    const r = await fetch(SITE_URL + '/source-links.json', { signal: AbortSignal.timeout(15000) }); return r.ok ? r.json() : [];
+  },
+  alert: (subject, lines) => alertTeam(subject, lines),
+});
+
 fs.mkdirSync(MEDIA, { recursive: true });
 
 /* ---------- image sizes, fixed to the website layout ---------- */
@@ -1680,6 +1695,29 @@ const server = http.createServer(async (req, res) => {
       const langs = await one(`select lang k, count(distinct (day, visitor))::int n from page_hits where ${W} and kind='view' group by 1 order by 2 desc`);
       const enq = await one(`select what k, count(*)::int n from page_hits where ${W} and kind='enquiry' group by 1 order by 2 desc`);
       return json(res, 200, { days, totals: tot, series, pages, sources, devices, langs, enquiries: enq });
+    }
+    /* ---- fact register: public status for /sources, the full picture for admins ---- */
+    if (p === '/api/facts/public' && req.method === 'GET') {
+      res.setHeader('cache-control', 'public, max-age=900'); return json(res, 200, await FACTS.publicReport(), cors);
+    }
+    if (p === '/api/facts' && req.method === 'GET') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      return json(res, 200, await FACTS.report());
+    }
+    if (p === '/api/facts/check' && req.method === 'POST') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      const job = FACTS.run(true);
+      const b = await body(req).catch(() => ({}));
+      if (b && b.wait) await job.catch(() => {}); else job.catch(e => console.error('facts', e.message));
+      return json(res, 200, await FACTS.report());
+    }
+    if (p === '/api/facts/review' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      const r = await FACTS.review(clean(b.id, 80), u.email, clean(b.note, 500));
+      if (!r) return json(res, 404, { error: 'unknown_fact' });
+      await q('insert into jobs_log(job,detail) values ($1,$2)', ['facts_review', `${b.id} confirmed by ${u.email}${b.note ? ': ' + clean(b.note, 200) : ''}`]);
+      return json(res, 200, await FACTS.report());
     }
     // Public, non-personal economic publications; bounded background refresh with persisted last-good data.
     if (p === '/api/ghana-data' && req.method === 'GET') {
@@ -5219,6 +5257,7 @@ async function runJobs() {
   } catch (e) { console.error('jobs', e); }
   await runSchedules().catch(e => console.error('schedules', e.message));
   await watchdog().catch(e => console.error('watchdog', e.message));
+  if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await FACTS.run().catch(e => console.error('facts', e.message));   // weekly, see FACTS_EVERY_DAYS
 }
 
 /* ---------- website visitors, privacy-friendly ----------

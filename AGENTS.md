@@ -99,6 +99,12 @@ languages, tools, registration): `PLAYWRIGHT=… CHROMIUM=… bash tests/e2e/run
   currency maths in floats in SQL.
 - Ghanaian phone numbers are normalised to `+233…` by `phoneGH()` on the way
   in, so WhatsApp links always work. Use it for any new phone field.
+- Every law, government fee, rate, figure and price the site states is in
+  `apps/crm/facts.json` (where it appears, the exact words, its sources, when a
+  person checked it). Change a fact on the site → change the register in the
+  same commit and set `checked` to today; `tests/api/30_facts.py` fails when
+  they drift. The server re-checks every source weekly (`fact-watch.js`);
+  admins confirm in Settings → Facts and sources; public view at `/sources`.
 - Images are resized to fixed sizes on upload so the layout cannot break.
   `storeImage` crops to fill (photos), `storeLogo` fits inside (logos, keeps
   transparency). Pick the right one.
