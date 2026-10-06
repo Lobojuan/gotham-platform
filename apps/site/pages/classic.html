@@ -842,7 +842,7 @@ nav.main a{white-space:nowrap}
 <section id="join" style="padding-top:24px"><div class="wrap">
   <div class="shead">
     <div><p class="eyebrow">Membership</p><h2>Stay ahead, <em class="serif">every month.</em></h2></div>
-    <p>Most clients start free, join a forum, then move to a plan. Pay monthly with MTN MoMo, Telecel Cash or AirtelTigo Money. Cancel any time.</p>
+    <p>Most clients start free, join a forum, then move to a plan. Pay monthly with MTN MoMo, Telecel Cash or AirtelTigo Money. Cancel any time. Prices exclude VAT.</p>
   </div>
   <div class="tiers" id="tiers"></div>
 </div></section>
@@ -1241,7 +1241,7 @@ $('#hcq').onsubmit=e=>{e.preventDefault();const k=['ty','st','se','sa','tin','bo
  if(k.some(n=>!a[n])){$('#hcr').hidden=false;$('#hcr').innerHTML='<p>Please answer every question to get your checklist.</p>';return}
  const L=[],add=(state,t,d,help)=>L.push({state,t,d,help});
  const goods=!['Services & consulting','Tech & creative','Health & education','Church, NGO or association'].includes(a.se);
- if(a.ty==='Not registered yet')add('do','Register your business with the Registrar of Companies (ORC)','Sole proprietorship from about GHS 130 in fees, a company about GHS 510 plus stamp duty. You need it for bank loans, contracts and most programmes.','We register it for you, from GHS 500 plus ORC fees');
+ if(a.ty==='Not registered yet')add('do','Register your business with the Registrar of Companies (ORC)','A company costs GHS 585 in registry fees plus 1% stamp duty on its stated capital (ORC, 2026 schedule). You need it for bank loans, contracts and most programmes.','We register it for you: GHS 1,500 plus registry fees');
  else if(a.ty==='NGO, church or association')add('chk','Check your registration and annual filings','Associations and NGOs must stay registered and file every year to receive donor money.','We prepare filings and donor-ready documents');
  else add('ok','Registered with the ORC','Keep your annual returns up to date.','');
  add(a.tin==='Yes'?'ok':'do','Tax Identification Number (TIN)',a.tin==='Yes'?'Good. File your returns on time to avoid penalties.':'Every business owner needs a TIN (your Ghana Card number) linked to the business with GRA.','We link it and set up your tax calendar');
@@ -1250,12 +1250,12 @@ $('#hcq').onsubmit=e=>{e.preventDefault();const k=['ty','st','se','sa','tin','bo
  if(['Food, drinks & chop bar','Beauty & cosmetics'].includes(a.se))add('do','FDA registration and permits','Food, drinks and cosmetics need Food and Drugs Authority approval, and food handlers need health certificates.','We prepare your FDA application');
  if(['Manufacturing','Construction & real estate','Farming & agro'].includes(a.se))add('chk','Check EPA and sector permits','Factories, processing and construction may need an Environmental Protection Agency permit and standards (GSA) certification.','We map the permits your project needs');
  if(a.se==='Health & education')add('chk','Check your sector regulator licence','Clinics, pharmacies and schools need licences from their own regulators, renewed yearly.','We track renewals for you');
- if(a.sa==='Over GHS 750,000'&&goods)add('do','Register for VAT and move to E-VAT','Since 1 January 2026, businesses selling goods above GHS 750,000 a year must register for VAT (now 20%) and issue E-VAT invoices.','E-VAT setup from GHS 2,500, filing from GHS 900/month');
+ if(a.sa==='Over GHS 750,000'&&goods)add('do','Register for VAT and move to E-VAT','Since 1 January 2026, businesses selling goods above GHS 750,000 a year must register for VAT (20% in total with NHIL and GETFund) and issue E-VAT invoices.','E-VAT setup from GHS 2,500, filing from GHS 900/month');
  else if(!goods&&a.ty!=='NGO, church or association')add('chk','Check if VAT applies to your services','VAT rules for service businesses differ from goods sellers. Check your position with GRA before you invoice big clients.','Free 15-minute VAT check on WhatsApp');
  else add('ok','VAT: probably not required yet','Goods sellers under GHS 750,000 a year do not have to register. Keep records so you know when you cross it.','');
  if(['Company (Ltd)','NGO, church or association'].includes(a.ty)||['Health & education','Tech & creative'].includes(a.se))add('chk','Data Protection Commission registration','If you keep customer, patient or member records, you may need to register as a data controller (Act 843).','We handle the registration');
  add(a.bank==='Yes'?'ok':'do','Business bank or MoMo merchant account',a.bank==='Yes'?'Good: banks and lenders look at 6–12 months of business transactions.':'Keep business money separate. Lenders and programmes ask for statements in the business name.','We help you open one and set up simple bookkeeping');
- add(a.web==='Yes'?'ok':(a.web==='A little'?'chk':'do'),'Be easy to find online',a.web==='Yes'?'Keep it active: post weekly, reply fast.':'A free Google Business Profile and WhatsApp Business catalogue bring customers who search on their phones.','Setup from GHS 350; AI posters and jingles from GHS 5');
+ add(a.web==='Yes'?'ok':(a.web==='A little'?'chk':'do'),'Be easy to find online',a.web==='Yes'?'Keep it active: post weekly, reply fast.':'A free Google Business Profile and WhatsApp Business catalogue bring customers who search on their phones.','');
  const ok=L.filter(x=>x.state==='ok').length,score=Math.round(ok/L.length*100),col=score>=75?'var(--green)':score>=45?'var(--amber)':'#A8321F';
  const order={do:0,chk:1,ok:2};L.sort((x,y)=>order[x.state]-order[y.state]);
  const todo=L.filter(x=>x.state!=='ok').map(x=>'- '+x.t).join('\n');
@@ -1309,7 +1309,7 @@ const TIERS=[
  {t:'Ghana Business Brief',p:'Free',s:'',f:['Weekly brief on WhatsApp','Grant & tender alerts','Forum announcements'],c:'Join free',m:'Please add me to the free Ghana Business Brief on WhatsApp.'},
  {t:'Member',p:'GHS 150',s:'/ month',f:['Everything in Brief','20% off all forums','Monthly online business clinic','Priority grant alerts'],c:'Become a member',m:'I would like to become a Member (GHS 150/month).'},
  {t:'Business Pro',hot:1,p:'GHS 1,200',s:'/ month',f:['Bookkeeping & E-VAT filing','Tax & compliance calendar','Quarterly finance review','Two forum seats per quarter'],c:'Start Business Pro',m:'I would like Business Pro (GHS 1,200/month).'},
- {t:'Investor Desk',p:'GHS 11,500',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Deal pipeline & introductions'],c:'Talk to us',m:'I am interested in the Investor Desk (GHS 11,500/month).'}];
+ {t:'Investor Desk',p:'GHS 11,500',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Deal pipeline & introductions','3-month minimum'],c:'Talk to us',m:'I am interested in the Investor Desk (GHS 11,500/month).'}];
 $('#tiers').innerHTML=TIERS.map(x=>`<div class="tier reveal ${x.hot?'hot':''}"><h3>${x.t}</h3><div class="price">${x.p} <small>${x.s}</small></div><ul>${x.f.map(i=>`<li>${i}</li>`).join('')}</ul><a class="btn ${x.hot?'btn-dark':'btn-line'}" href="${wa('Hello Gotham Consult. '+x.m)}" target="_blank" rel="noopener">${x.c}</a></div>`).join('');
 
 /* Ask Gotham: provided by the shared chrome script (/assets/v2/v2.js) */

@@ -30,7 +30,7 @@ Gotham Consult number.
   check-in visits, property oversight for absent families, wills and estate paperwork with partner lawyers.
 - Media, forums & inclusive enterprise: features, investor roundtables, trade missions, training for persons with disabilities.
 
-## Packages and prices (all in Ghana cedis; government/regulator fees and VAT extra where they apply)
+## Packages and prices (all in Ghana cedis, excluding VAT: Gotham is VAT registered, so 20% is added on invoices (15% VAT, 2.5% NHIL, 2.5% GETFund); government/regulator fees are paid at cost)
 Business owners:
 - Grant & programme readiness pack: GHS 4,500 one-off (business plan, 3-year model, checklist for GEA, AfDB, EU, bank programmes).
 - E-VAT & tax compliance: from GHS 900/month, setup from GHS 2,500.
@@ -52,7 +52,7 @@ Individuals & diaspora:
 - School & training licence: from GHS 4,500 plus government fees. Forums & training: from free.
 Membership: Ghana Business Brief (free, weekly on WhatsApp); Member GHS 150/month (20% off forums, monthly clinic);
 Business Pro GHS 1,200/month (bookkeeping and E-VAT filing, compliance calendar, quarterly review, two forum seats a
-quarter); Investor Desk GHS 11,500/month.
+quarter); Investor Desk GHS 11,500/month (3-month minimum).
 
 ## Forums and payment
 Forums are seminars, workshops and investor roundtables. Register at gothamconsult.com/register with just a name and
