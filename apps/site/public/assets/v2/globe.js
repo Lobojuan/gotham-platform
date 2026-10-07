@@ -304,7 +304,7 @@
     } catch { return null; } };
   const clock = tz => new Date().toLocaleTimeString(LOC(), { hour: '2-digit', minute: '2-digit', timeZone: tz });
   const facts = () => { const w = L(); return [
-    { t: w.f1t, b: w.f1 },
+    { t: lang()==='ar' ? `${cityName('Accra')} · <bdi dir="ltr">5.6°N, 0.2°W</bdi>` : w.f1t, b: w.f1 },
     { t: `${w.f2t} · ${clock('Africa/Accra')}`, b: w.f2, live: true },
     { t: w.f3t, b: w.f3 },
     { t: w.f4t, b: w.f4, live: true },

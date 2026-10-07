@@ -1057,3 +1057,5 @@ html[dir="rtl"] .price-chart,html[dir="rtl"] .chart-years,html[dir="rtl"] .chart
 html[dir="rtl"] .currency-grid b,html[dir="rtl"] .currency-grid strong,html[dir="rtl"] .currency-grid small,html[dir="rtl"] [data-ghana-key] b{direction:ltr;unicode-bidi:isolate;display:block}
 html[dir="rtl"] input[type="tel"],html[dir="rtl"] input[type="email"],html[dir="rtl"] input[type="url"]{direction:ltr;text-align:left}
 html[dir="rtl"] .m{unicode-bidi:plaintext;text-align:start}
+/* Keep payment numbers readable as a single LTR group inside native RTL answers. */
+#chat .m bdi { white-space: nowrap; unicode-bidi: isolate; }
