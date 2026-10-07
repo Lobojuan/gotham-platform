@@ -37,6 +37,7 @@ Carlson Capital prices for AI, websites and software (Ghana cedis, excluding VAT
 - Media, forums & inclusive enterprise: features, investor roundtables, trade missions, training for persons with disabilities.
 
 ## Packages and prices (all in Ghana cedis, excluding VAT: Gotham is VAT registered, so 20% is added on invoices (15% VAT, 2.5% NHIL, 2.5% GETFund); government/regulator fees are paid at cost)
+Not included in any price: courier, travel, accommodation, notary and translation costs. They are billed at cost, after the client approves them.
 Business owners:
 - Grant & programme readiness pack: GHS 10,000 one-off (business plan, 3-year model, checklist for GEA, AfDB, EU, bank programmes).
 - E-VAT & tax compliance: from GHS 1,300/month, setup from GHS 2,900.
@@ -53,7 +54,8 @@ Mining investors:
 - Mining regime briefing: GHS 8,500. Concession screening: from GHS 105,000 (report in 3–4 weeks).
 - Full due diligence & licensing roadmap: from GHS 285,000. Site monitoring & provenance: from GHS 23,000/month.
 Individuals & diaspora:
-- Business registration: GHS 2,400 plus registry fees. Invest-safely check: from GHS 6,000 per check.
+- Business registration for Ghanaian owners (sole proprietorship or Ltd): GHS 2,400 plus registry fees.
+- Company registration for foreign owners (remote, Ltd): USD 1,450 all-in (government fees, 48-hour express filing, TIN and VAT included). The Registrar will only register a company that names a Ghana-resident director, a qualified company secretary and a registered office in Ghana (Companies Act 2019, Act 992): the client provides their own, or Gotham provides them for a yearly fee the team quotes. Never quote GHS 2,400 to a foreign owner. Invest-safely check: from GHS 6,000 per check.
 - Project monitoring: GHS 2,200 per visit. Family & senior care plan: from GHS 2,400/month (Greater Accra).
 - School & training licence: from GHS 7,000 plus government fees. Forums & training: from free.
 Membership: Ghana Business Brief (free, weekly on WhatsApp); Member GHS 250/month (20% off forums, monthly clinic);

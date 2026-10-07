@@ -107,6 +107,7 @@
      "where": ["pages/services.html", "pages/register.html", "../crm/assistant.md"], "says": ["From GHS 32,500", "From GHS 15,000 / month", "From GHS 2,400 / month", "excluding VAT"],
      "sources": [], "owner": "Joy Preston and Uffe Carlson",
      "checked": "2026-10-06", "review_days": 90},
+    {"id": "gotham-foreign-registration", "topic": "Our prices", "kind": "price", "claim": "Company registration for foreign owners: USD 1,450 all-in (government fees, express filing, TIN, VAT); Ghanaian owners GHS 2,400 plus registry fees. Courier, travel, notary and translation costs are extra, at cost. Approved 7 October 2026.", "where": ["pages/services.html", "pages/classic.html", "pages/services/market-entry.html", "pages/services/investment-readiness.html", "content/insights/register-company-ghana-foreigner.json", "../crm/assistant.md"], "says": ["USD 1,450"], "sources": [], "owner": "Joy Preston and Uffe Carlson", "checked": "2026-10-07", "review_days": 90},
     {"id": "carlson-prices", "topic": "Our prices", "kind": "price",
      "claim": "Carlson Capital's prices for AI, websites and software, approved 6 October 2026: e.g. starter website from GHS 6,000, AI chat assistant from GHS 11,000.",
      "where": ["pages/carlson-capital.html", "../crm/assistant.md"], "says": ["From GHS 6,000", "From GHS 11,000"],
