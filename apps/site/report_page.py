@@ -548,7 +548,7 @@ def contact(r, L):
         for a in r.get('authors', []))
     P = PUBLISHER; names = t(' and ').join(a['name'] for a in r.get('authors', []))
     imprint = (f'<div class="rp-imp"><h3>{esc(t("Publisher"))}</h3><p>{esc(P["name"])}, {esc(t(P["city"]))} · '
-               f'<a href="mailto:{P["email"]}">{P["email"]}</a> · <bdi dir="ltr">{P["phone"]}</bdi> · <a href="/">{P["site"]}</a></p>'
+               f'<a href="mailto:{P["email"]}">{P["email"]}</a> · <bdi dir="ltr">{P["phone"]}</bdi> · <a href="{"/" if L.lang == "en" else "/" + L.lang}">{P["site"]}</a></p>'
                f'<p>{esc(t("Responsible for the content: {names}").format(names=names))}</p>'
                f'<p>{esc(t("© 2026 Gotham Consult. All rights reserved. Quoting with attribution is welcome."))}</p>'
                + (f'<p>{esc(t("This is a translation of the English original. Sources are cited in their original language. If the versions differ, the English version prevails."))}</p>' if L.lang != 'en' else '')
@@ -594,7 +594,7 @@ def render(lang='en', L=None):
     I['months'] = MONTHS[L.lang]; I['lang'] = L.lang
     body = (CSS + '\n<!--#top-->\n<main id="main" data-no-tr>\n'
         '<section class="phero" aria-labelledby="h1"><img class="bgimg" src="/img/real-airportcity.webp" alt="" fetchpriority="high"><div class="wrap">'
-        f'<nav class="crumb" aria-label="{esc(t("Breadcrumb"))}"><a href="{pre}/">{esc(t("Home"))}</a><span aria-hidden="true">/</span><a href="{pre}/invest">{esc(t("Invest in Ghana"))}</a><span aria-hidden="true">/</span><span>{esc(t("Ghana Investment Report"))}</span></nav>'
+        f'<nav class="crumb" aria-label="{esc(t("Breadcrumb"))}"><a href="{pre or "/"}">{esc(t("Home"))}</a><span aria-hidden="true">/</span><a href="{pre}/invest">{esc(t("Invest in Ghana"))}</a><span aria-hidden="true">/</span><span>{esc(t("Ghana Investment Report"))}</span></nav>'
         f'<p class="eyebrow">{esc(t(r["title"]))} · {esc(r["publisher"])}</p>'
         f'<h1 id="h1">{esc(t("Ghana, sector by sector."))} <span class="serif">{esc(t("Every number sourced."))}</span></h1>'
         f'<p class="lead">{esc(t("An independent investor guide to Ghana’s economy and its five key sectors: the figures, the rules, the opportunities and the risks, each linked to its official source and checked again every week."))}</p>'
