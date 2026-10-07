@@ -288,7 +288,7 @@ def main():
 
     # Crawlable six-language twins share dictionaries, article data and reciprocal alternates.
     locale_pages = ['index.html', 'services.html', *[f'services/{p}.html' for p in PRACTICES], 'invest.html', 'mining.html', 'forums.html', 'about.html']
-    twins = locale_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS]
+    twins = locale_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS] + ['ghana-investment-report.html']
     def path_of(n): return '' if n == 'index.html' else n[:-5]
     paths = {('/' + path_of(n)).rstrip('/') or '/' for n in twins}
     def language_links(doc, n, lang):
@@ -330,6 +330,15 @@ def main():
                 m = META[n]
                 doc = HEAD.format(site=SITE, path=path_of(n), ogsize='', **{**{k: v for k, v in m.items() if k != 'crumb'}, 'extra': V2_EXTRA}) + body + '\n</body>\n</html>'
                 title, desc = (IF.L[lang]['idx_title'], IF.L[lang]['idx_desc']) if a is None else (a[lang]['title'], a[lang]['description'])
+            elif n == 'ghana-investment-report.html':
+                # The report is written per language (apps/crm/report-i18n): its own numbers, dates and direction; only the site chrome goes through the dictionary.
+                RL = REPORTP.Loc(lang); body = REPORTP.render(lang, RL)
+                for part in ('top', 'bottom'):
+                    body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
+                m = META[n]
+                doc = HEAD.format(site=SITE, path=path_of(n), ogsize='', **{**{k: v for k, v in m.items() if k != 'crumb'}, 'extra': V2_EXTRA}) + body + '\n</body>\n</html>'
+                title, desc = RL.t(m['title']), RL.t(m['desc'])
+                if RL.miss: print(f'  WARNING report {lang}: {len(RL.miss)} untranslated strings')
             else:
                 doc = open(os.path.join(DIST, n), encoding='utf-8').read()
                 title, desc = metadata[n]

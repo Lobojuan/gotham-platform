@@ -73,9 +73,16 @@ const REPORT = makeReportWatch({
    address that works for 30 days. The file ships with the server (report-files/); its name and the authors are in report.json. */
 const REPORT_PDF_DIR = process.env.REPORT_PDF_DIR || path.join(path.dirname(new URL(import.meta.url).pathname), 'report-files');
 const REPORT_META = loadReport(process.env.REPORT_FILE || new URL('./report.json', import.meta.url));
-const reportPdfLink = (email, now = Date.now()) => {
-  const e = Buffer.from(email).toString('base64url'), x = Math.floor(now / 1000) + 30 * 86400;
-  return `${BASE}/api/report/pdf?e=${e}&x=${x}&s=${sign('report-pdf:' + e + ':' + x)}`;
+/* the report in six languages: the page, the PDF edition and these emails (apps/crm/report-i18n/<lang>.json, keyed by the English text) */
+const REPORT_LANGS = ['en', 'fr', 'es', 'de', 'ar', 'zh'];
+const REPORT_TR = Object.fromEntries(REPORT_LANGS.slice(1).map(l => {
+  try { return [l, JSON.parse(fs.readFileSync(path.join(path.dirname(new URL(import.meta.url).pathname), 'report-i18n', l + '.json'), 'utf8')).strings || {}]; } catch { return [l, {}]; }
+}));
+const rt = (lang, s) => (REPORT_TR[lang] || {})[s] || s;
+const pdfPayload = (e, x, l) => 'report-pdf:' + e + ':' + x + (l && l !== 'en' ? ':' + l : '');
+const reportPdfLink = (email, lang = 'en', now = Date.now()) => {
+  const e = Buffer.from(email).toString('base64url'), x = Math.floor(now / 1000) + 30 * 86400, l = REPORT_LANGS.includes(lang) ? lang : 'en';
+  return `${BASE}/api/report/pdf?e=${e}&x=${x}${l !== 'en' ? '&l=' + l : ''}&s=${sign(pdfPayload(e, x, l))}`;
 };
 
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -1747,14 +1754,15 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/report/pdf' && req.method === 'GET') {    // the signed download link from the report form
       const e = String(url.searchParams.get('e') || ''), x = +url.searchParams.get('x') || 0, sg = String(url.searchParams.get('s') || '');
+      const l = REPORT_LANGS.includes(url.searchParams.get('l')) ? url.searchParams.get('l') : 'en';
       const good = /^[A-Za-z0-9_-]{4,300}$/.test(e) && sg.length > 20 && sg.length < 100 && x * 1000 > Date.now()
-        && crypto.timingSafeEqual(Buffer.from(sign('report-pdf:' + e + ':' + x).padEnd(100)), Buffer.from(sg.padEnd(100)));
-      const ed = REPORT_META.edition || {}, file = path.join(REPORT_PDF_DIR, path.basename(ed.file || 'none'));
-      if (!good || !ed.file || !fs.existsSync(file)) { res.writeHead(302, { location: '/ghana-investment-report?link=expired#download' }); return res.end(); }
+        && crypto.timingSafeEqual(Buffer.from(sign(pdfPayload(e, x, l)).padEnd(100)), Buffer.from(sg.padEnd(100)));
+      const ed = REPORT_META.edition || {}, fname = (ed.files || {})[l] || ed.file, file = path.join(REPORT_PDF_DIR, path.basename(fname || 'none'));
+      if (!good || !fname || !fs.existsSync(file)) { res.writeHead(302, { location: (l === 'en' ? '' : '/' + l) + '/ghana-investment-report?link=expired#download' }); return res.end(); }
       if (rateLimited(ip, 30, 3600e3, 'report-pdf')) return json(res, 429, { error: 'too_many' });
       q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'report_pdf', Buffer.from(e, 'base64url').toString('utf8').slice(0, 160)]).catch(() => {});
       res.writeHead(200, { 'content-type': 'application/pdf', 'content-length': fs.statSync(file).size, 'cache-control': 'private, no-store',
-        'x-robots-tag': 'noindex', 'content-disposition': 'attachment; filename="Ghana-Investment-Report-2026-Gotham-Consult.pdf"' });
+        'x-robots-tag': 'noindex', 'content-disposition': `attachment; filename="Ghana-Investment-Report-2026-Gotham-Consult${l === 'en' ? '' : '-' + l.toUpperCase()}.pdf"` });
       return fs.createReadStream(file).pipe(res);
     }
     if (p === '/api/report' && req.method === 'GET') {
@@ -1800,6 +1808,7 @@ const server = http.createServer(async (req, res) => {
       const pack = ['profile', 'sector', 'lead'].includes(b.package) ? b.package : '';
       const chapter = clean(b.chapter, 40), message = clean(b.message, 1500);
       const role = ROLES[b.role] ? b.role : '', country = clean(b.country, 80), updates = b.updates === true;
+      const lang = REPORT_LANGS.includes(b.lang) ? b.lang : 'en', T = s => rt(lang, s), rtl = lang === 'ar';
       const clientType = { investor: 'investor', company: 'corporate', government: 'government', media: 'media', adviser: 'partner' }[role] || (b.kind === 'investor' ? 'investor' : '');
       const errors = [];
       if (!kind) errors.push('kind');
@@ -1819,13 +1828,13 @@ const server = http.createServer(async (req, res) => {
         await q(`update contacts set full_name=coalesce(nullif($1,''),full_name), phone=coalesce(nullif($2,''),phone),
             company=coalesce(nullif(company,''),nullif($3,'')), tags=$4, extra=coalesce(extra,'{}'::jsonb) || $5::jsonb,
             notes=concat_ws(E'\\n', nullif(notes,''), $6::text), country=coalesce(nullif($8,''),country),
-            client_type=coalesce(nullif(client_type,''),nullif($9,''))
+            client_type=coalesce(nullif(client_type,''),nullif($9,'')), language=coalesce(nullif($10,'en'),language)
           where id=$7 and unsubscribed_at is null and status <> 'do_not_contact'`,
-          [full_name, phone, company, mergeTags(ex.rows[0].tags, tags), JSON.stringify(extra), notes, ex.rows[0].id, country, clientType]);
+          [full_name, phone, company, mergeTags(ex.rows[0].tags, tags), JSON.stringify(extra), notes, ex.rows[0].id, country, clientType, lang]);
       } else {
-        await q(`insert into contacts(company,full_name,email,phone,sector,tags,source,notes,extra,status,country,client_type)
-                 values ($1,$2,$3,$4,$5,$6,'Website: Ghana Investment Report',$7,$8::jsonb,'new',$9,$10)`,
-          [company || null, full_name, email, phone || null, kind === 'investor' || role === 'investor' ? 'Investor' : kind === 'download' ? 'Report reader' : 'Media / partner', tag, notes, JSON.stringify(extra), country || null, clientType || null]);
+        await q(`insert into contacts(company,full_name,email,phone,sector,tags,source,notes,extra,status,country,client_type,language)
+                 values ($1,$2,$3,$4,$5,$6,'Website: Ghana Investment Report',$7,$8::jsonb,'new',$9,$10,$11)`,
+          [company || null, full_name, email, phone || null, kind === 'investor' || role === 'investor' ? 'Investor' : kind === 'download' ? 'Report reader' : 'Media / partner', tag, notes, JSON.stringify(extra), country || null, clientType || null, lang]);
       }
       if (updates) await q(`update contacts set consent_email='yes', consent_source='Ghana Investment Report: asked for quarterly updates', consent_at=now()
           where lower(email)=lower($1) and status <> 'do_not_contact' and unsubscribed_at is null`, [email]);
@@ -1835,23 +1844,26 @@ const server = http.createServer(async (req, res) => {
         title: `${KINDS[kind]} · ${company || full_name}`, source: 'Website Ghana Investment Report',
         task: kind === 'download' ? `Follow up with ${firstName(full_name)} (downloaded the report${role ? ', ' + ROLES[role] : ''})`
           : `Reply to ${firstName(full_name)} (${KINDS[kind]}${pack ? ', ' + PACK[pack] : ''})` }).catch(e => console.error('inboundDeal', e.message));
-      const contactsHtml = (REPORT_META.authors || []).length ? `<p style="color:#5A6472;font-size:15px;line-height:1.6;margin:18px 0 6px">Questions about Ghana, or about investing here? Write or call us directly:</p>`
-        + REPORT_META.authors.map(a => `<p style="font-size:15px;line-height:1.6;margin:0 0 10px;color:#0F1B2D"><b>${esc(a.name)}</b>, ${esc(a.role)}<br>
+      const contactsHtml = (REPORT_META.authors || []).length ? `<p style="color:#5A6472;font-size:15px;line-height:1.6;margin:18px 0 6px">${esc(T('Questions about Ghana, or about investing here? Write or call us directly:'))}</p>`
+        + REPORT_META.authors.map(a => `<p style="font-size:15px;line-height:1.6;margin:0 0 10px;color:#0F1B2D"><b>${esc(a.name)}</b>, ${esc(T(a.role))}<br>
           <a href="mailto:${esc(a.email)}" style="color:#0F1B2D">${esc(a.email)}</a> · <a href="https://wa.me/${esc(a.whatsapp)}" style="color:#0F1B2D">WhatsApp ${esc(a.phone)}</a></p>`).join('') : '';
       let link = '';
       if (kind === 'download') {
-        link = reportPdfLink(email);
-        await queueMail(email, full_name, 'Your Ghana Investment Report 2026',
-          wrapMail('Your Ghana Investment Report, ' + esc(firstName(full_name)),
-            `<p style="color:#5A6472;font-size:15px;line-height:1.6">Thank you for your interest. Your copy of the Ghana Investment Report 2026 is ready.</p>
-            <p style="margin:22px 0"><a href="${esc(link)}" style="background:#B8862F;color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px;display:inline-block">Download the PDF</a></p>
-            <p style="color:#5A6472;font-size:13px;line-height:1.6">The link works for 30 days. The web version at <a href="${BASE}/ghana-investment-report" style="color:#5A6472">gothamconsult.com/ghana-investment-report</a> is checked against its sources every week.</p>` + contactsHtml), 'report_pdf', null);
+        link = reportPdfLink(email, lang);
+        const page = `${BASE}${lang === 'en' ? '' : '/' + lang}/ghana-investment-report`;
+        const web = `<a href="${page}" style="color:#5A6472">${page.replace(/^https?:\/\//, '')}</a>`;
+        await queueMail(email, full_name, T('Your Ghana Investment Report 2026'),
+          wrapMail(esc(T('Your Ghana Investment Report, {name}').replace('{name}', firstName(full_name))),
+            `<div dir="${rtl ? 'rtl' : 'ltr'}"><p style="color:#5A6472;font-size:15px;line-height:1.6">${esc(T('Thank you for your interest. Your copy of the Ghana Investment Report 2026 is ready.'))}</p>
+            <p style="margin:22px 0"><a href="${esc(link)}" style="background:#B8862F;color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px;display:inline-block">${esc(T('Download the PDF'))}</a></p>
+            <p style="color:#5A6472;font-size:13px;line-height:1.6">${esc(T('The link works for 30 days. The web version at {link} is checked against its sources every week.')).replace('{link}', web)}</p>` + contactsHtml + '</div>'), 'report_pdf', null);
       } else {
-        await queueMail(email, full_name, 'Thank you for contacting Gotham Consult',
-          wrapMail('Thank you, ' + esc(firstName(full_name)),
-            `<p style="color:#5A6472;font-size:15px;line-height:1.6">We have your message about the Ghana Investment Report and will reply within one working day.</p>` + contactsHtml), 'report_ack', null);
+        await queueMail(email, full_name, T('Thank you for contacting Gotham Consult'),
+          wrapMail(esc(T('Thank you, {name}').replace('{name}', firstName(full_name))),
+            `<div dir="${rtl ? 'rtl' : 'ltr'}"><p style="color:#5A6472;font-size:15px;line-height:1.6">${esc(T('We have your message about the Ghana Investment Report and will reply within one working day.'))}</p>` + contactsHtml + '</div>'), 'report_ack', null);
       }
       const rows = [['Type', KINDS[kind]], ['Name', full_name], ['Email', email], ['WhatsApp / phone', phone || '(not given)'], ['Company', company || '(not given)'],
+        ['Language of the page', lang.toUpperCase()],
         ...(kind === 'download' ? [['Role', ROLES[role] || '(not given)'], ['Country', country || '(not given)'], ['Quarterly updates', updates ? 'Yes, opted in' : 'No']]
           : [['Package', PACK[pack] || '(none)'], ['Chapter', chapter || '(none)'], ['Message', message || '(none)']])];
       const alertHtml = wrapMail('Ghana Investment Report enquiry', `<table style="font-size:14px;color:#0F1B2D;border-collapse:collapse">${rows.map(([k, v]) =>

@@ -60,10 +60,11 @@ json.dump({'updated': '2026-10-07', 'review_days': 120, 'chapters': [{'id': 'mac
     {'id': 'macro-cpi', 'label': 'Inflation', 'value': '5.0', 'unit': '%', 'period': 'Aug 2026', 'source_label': 'GSS', 'source_url': 'http://127.0.0.1:4297/cpi', 'official': True, 'quote': 'inflation 9.9%'}],
     'watch': [{'label': 'Newsroom', 'url': 'http://127.0.0.1:4297/news', 'why': ''}]}],
     'authors': [{'name': 'Uffe Carlson', 'role': 'Partner', 'email': 'uffe@test.gh', 'phone': '+233 55 000 0001', 'whatsapp': '233550000001'}],
-    'edition': {'label': 'Test edition', 'file': 'test-edition.pdf'}}, open(tf, 'w'))
+    'edition': {'label': 'Test edition', 'file': 'test-edition.pdf', 'files': {'fr': 'test-edition-fr.pdf'}}}, open(tf, 'w'))
 os.environ['REPORT_FILE'] = tf
 os.makedirs('/tmp/report-pdf-test', exist_ok=True); PDF = b'%PDF-1.4 test edition ' + os.urandom(64)
 open('/tmp/report-pdf-test/test-edition.pdf', 'wb').write(PDF); os.environ['REPORT_PDF_DIR'] = '/tmp/report-pdf-test'
+PDF_FR = b'%PDF-1.4 edition francaise ' + os.urandom(32); open('/tmp/report-pdf-test/test-edition-fr.pdf', 'wb').write(PDF_FR)
 exec(open(os.path.join(os.path.dirname(__file__), '07_family_desk.py')).read().split("ok=lambda m: print('  ok',m)")[0])
 ok = lambda m: print('  ok', m)
 import subprocess as _sp
@@ -131,6 +132,24 @@ row = _sp.run(['psql', DB, '-tAc', "select tags||'|'||consent_email from contact
 assert st == 200 and row == 'report-download|unknown', row
 assert _sp.run(['psql', DB, '-tAc', "select kind from deals where title like 'Report download · Ama%'"], capture_output=True, text=True).stdout.strip() == 'other'
 ok('without the updates box no marketing consent is recorded; a non-investor download is an "other" lead')
+# the same in French: French email, French PDF, the contact remembers the language
+FR = json.load(open(os.path.join(ROOT, 'apps', 'crm', 'report-i18n', 'fr.json')))['strings']
+st, b, _ = call('/api/report/enquiry', {'kind': 'download', 'lang': 'fr', 'full_name': 'Claire Dubois', 'email': 'claire@fonds.test', 'role': 'investor', 'country': 'France', 'consent': True})
+assert st == 200 and '&l=fr&' in b['url'], b
+row = _sp.run(['psql', DB, '-tAc', "select language from contacts where email='claire@fonds.test'"], capture_output=True, text=True).stdout.strip(); assert row == 'fr', row
+subj = _sp.run(['psql', DB, '-tAc', "select subject from outbox where to_email='claire@fonds.test'"], capture_output=True, text=True).stdout.strip()
+assert subj == FR['Your Ghana Investment Report 2026'] != 'Your Ghana Investment Report 2026', subj
+st, ct, data = raw_get(b['url'].split('4199', 1)[1]); assert st == 200 and data == PDF_FR, (st, ct)
+st, loc, _ = raw_get(b['url'].split('4199', 1)[1].replace('&l=fr', '&l=de')); assert st == 302 and loc.startswith('/de/'), 'the language is part of the signature'
+ok('a French reader gets the French email and the French PDF; the language is signed into the link and saved on the contact')
+# every language has a complete translation and its own page
+assert not [p for p in report_page.check() if p[0].startswith('i18n')], report_page.check()
+for lang in ('fr', 'es', 'de', 'ar', 'zh'):
+    h = report_page.render(lang)
+    assert 'Key takeaways' not in h and 'Rules that matter' not in h, lang
+ar, zh, fr = report_page.render('ar'), report_page.render('zh'), report_page.render('fr')
+assert '亿美元' in zh and '年' in zh and '\u202f' in fr and 'أكتوبر' in ar
+ok('the report reads fully in French, Spanish, German, Arabic and Chinese, with local numbers, dates and money')
 st, b, _ = call('/ghana-investment-report', raw=True)
 if st == 200: assert b'Ghana Investment Report' in b; ok('/ghana-investment-report is served')
 print('PASSED')

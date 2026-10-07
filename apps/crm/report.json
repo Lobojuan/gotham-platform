@@ -15,19 +15,21 @@
     "gss",
     "gdp"
    ],
-   "source_url": "https://www.statsghana.gov.gh/"
+   "source_url": "https://www.statsghana.gov.gh/",
+   "asof": "2026-06"
   },
   {
    "id": "inflation",
    "label": "Inflation",
-   "value": "5.0",
+   "value": "5.2",
    "unit": "%",
-   "period": "August 2026",
+   "period": "September 2026",
    "live": [
     "gss",
     "inflation"
    ],
-   "source_url": "https://statsghana.gov.gh/highlights/inflation-rate"
+   "source_url": "https://www.gbcghanaonline.com/news/business/inflation-rises-to-5-2-in-september-gss/2026/",
+   "asof": "2026-09"
   },
   {
    "id": "policy",
@@ -39,15 +41,17 @@
     "bog",
     "policy"
    ],
-   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf"
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+   "asof": "2026-09"
   },
   {
    "id": "fx",
    "label": "Cedi per US dollar",
    "value": "11.55",
    "unit": "GHS",
-   "period": "September 2026",
-   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf"
+   "period": "18 September 2026",
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
+   "asof": "2026-09"
   },
   {
    "id": "reserves",
@@ -55,7 +59,8 @@
    "value": "12.0",
    "unit": "USD bn",
    "period": "22 September 2026",
-   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf"
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+   "asof": "2026-09"
   },
   {
    "id": "exports",
@@ -67,7 +72,8 @@
     "bog",
     "exports"
    ],
-   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf"
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
+   "asof": "2026-08"
   },
   {
    "id": "debt",
@@ -75,28 +81,31 @@
    "value": "45.9",
    "unit": "% of GDP",
    "period": "End-July 2026",
-   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf"
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+   "asof": "2026-07"
   },
   {
    "id": "fdi",
    "label": "Foreign direct investment",
-   "value": "2.61",
+   "value": "2.62",
    "unit": "USD bn",
-   "period": "2025, 253 projects",
-   "source_url": "https://www.citinewsroom.com/2026/05/ghana-records-2-6bn-in-fdi-inflows-as-china-leads-project-count/"
+   "period": "2025, 245 projects",
+   "source_url": "https://www.myjoyonline.com/ghana-secured-us2-6bn-fdis-in-2025-gipc-report/",
+   "asof": "2025-12"
   }
  ],
  "calendar": [
   {
-   "when": "Mid-October 2026",
-   "what": "September inflation (Ghana Statistical Service)"
+   "when": "Mid-November 2026",
+   "what": "October inflation (Ghana Statistical Service)",
+   "source_url": "https://statsghana.gov.gh/news-and-events/release-calendar"
   },
   {
-   "when": "Early November 2026",
+   "when": "Early November 2026 (expected)",
    "what": "2027 Budget Statement (Ministry of Finance)"
   },
   {
-   "when": "November 2026",
+   "when": "16–18 November 2026",
    "what": "Bank of Ghana Monetary Policy Committee decision"
   },
   {
@@ -140,8 +149,8 @@
   "growth": {
    "title": "What is growing fastest",
    "period": "Real growth, Q2 2026, % year on year",
-   "source_label": "Ghana Statistical Service, Q2 2026 GDP (reported by MyJoyOnline and GNA)",
-   "source_url": "https://www.myjoyonline.com/ghanas-economy-grows-6-0-in-q2-2026-first-half-growth-hits-6-2-gss/",
+   "source_label": "Ghana Statistical Service, Q2 2026 GDP release, as reported by the Ghana News Agency (9 Sep 2026)",
+   "source_url": "https://gna.org.gh/2026/09/digital-economy-powers-ghanas-gdp-to-six-per-cent/",
    "rows": [
     [
      "ICT",
@@ -149,7 +158,7 @@
     ],
     [
      "Oil and gas",
-     21.4
+     22.4
     ],
     [
      "Services",
@@ -180,7 +189,7 @@
   },
   "fdi": {
    "title": "Who is investing",
-   "period": "New projects registered in 2025, by source country",
+   "period": "New projects registered in 2025, by source country (provisional figures, May 2026)",
    "source_label": "GIPC, 2025 investment report (reported by Citi Newsroom)",
    "source_url": "https://www.citinewsroom.com/2026/05/ghana-records-2-6bn-in-fdi-inflows-as-china-leads-project-count/",
    "rows": [
@@ -234,8 +243,8 @@
   {
    "id": "macro",
    "title": "Economy and investment climate",
-   "headline": "Ghana's real GDP grew 6.0% in Q2 2026 (6.2% in H1) with inflation at 5.0% and the Bank of Ghana policy rate held at 14.0%, as the country exited its US$3bn IMF programme in July 2026.",
-   "summary": "Ghana has moved from crisis recovery to post-programme consolidation: the IMF Board completed the final ECF review on 27 July 2026 and Ghana now operates under a 36-month non-financing Policy Coordination Instrument. Growth remains solid (6.0% in Q2 2026, led by services and ICT at +30.9%), inflation is low at 5.0% (August 2026), public debt is 45.9% of GDP and gross reserves stood at US$12.0bn (4.5 months of imports) on 22 September 2026. The main macro watch-points are a cedi that has weakened 9.5% year-to-date to GHS 11.55/USD (September 2026), a slower IMF growth projection of 4.9% for 2026, ratings still in single-B territory, and February 2027 domestic debt repayments. For investors, the new GIPA Act 2026 (Act 1173) removes blanket minimum capital for wholly foreign-owned firms and joint ventures, and the 2027 Budget is expected in the first week of November 2026.",
+   "headline": "Ghana's real GDP grew 6.0% in Q2 2026 (6.2% in H1) with inflation at 5.2% in September and the Bank of Ghana policy rate held at 14.0%, as the country exited its US$3bn IMF programme in July 2026.",
+   "summary": "Ghana has moved from crisis recovery to post-programme consolidation: the IMF Board completed the final ECF review on 27 July 2026 and also reviewed a 36-month non-financing Policy Coordination Instrument (PCI) requested by the authorities. Growth remains solid (6.0% in Q2 2026, led by services and ICT at +30.9%), inflation is low at 5.2% (September 2026), public debt is 45.9% of GDP and gross reserves stood at US$12.0bn (4.5 months of imports) on 22 September 2026. The main macro watch-points are a cedi that has weakened 9.5% year-to-date to GHS 11.55/USD by 18 September 2026, a slower IMF growth projection of 4.9% for 2026, ratings still in single-B territory, and February 2027 domestic debt repayments. For investors, the new GIPA Act 2026 (Act 1173) removes blanket minimum capital for wholly foreign-owned firms and joint ventures, and press reports expect the 2027 Budget in the first week of November 2026.",
    "figures": [
     {
      "id": "macro-real-gdp-growth",
@@ -251,24 +260,26 @@
     {
      "id": "macro-nominal-gdp",
      "label": "Nominal GDP",
-     "value": "118.29",
+     "value": "114.71",
      "unit": "US$ billion",
-     "period": "2025 (IMF estimate, shown by GIPA, updated 6 Oct 2026)",
-     "source_label": "Ghana Investment Promotion Authority homepage indicators",
-     "source_url": "https://gipa.gov.gh/",
+     "period": "2025 (IMF estimate)",
+     "source_label": "IMF World Economic Outlook database (DataMapper, GDP in current US dollars)",
+     "source_url": "https://www.imf.org/external/datamapper/NGDPD@WEO/GHA",
      "official": true,
-     "quote": "118.29"
+     "quote": "114.708",
+     "note": "The IMF projects US$118.29bn for 2026."
     },
     {
      "id": "macro-headline-cpi-inflation",
      "label": "Headline CPI inflation",
-     "value": "5.0",
+     "value": "5.2",
      "unit": "% y/y",
-     "period": "August 2026",
-     "source_label": "Ghana Statistical Service – Inflation highlights",
-     "source_url": "https://statsghana.gov.gh/highlights/inflation-rate",
-     "official": true,
-     "quote": "Inflation rate stands at 5.0 in August 2026"
+     "period": "September 2026",
+     "source_label": "GBC, \"Inflation rises to 5.2% in September – GSS\" (7 Oct 2026)",
+     "source_url": "https://www.gbcghanaonline.com/news/business/inflation-rises-to-5-2-in-september-gss/2026/",
+     "official": false,
+     "quote": "5.2",
+     "note": "August 2026: 5.0%. Released by the Ghana Statistical Service on 7 October 2026."
     },
     {
      "id": "macro-bank-of-ghana-monetary-policy-rate",
@@ -284,24 +295,26 @@
     {
      "id": "macro-cedi-exchange-rate-interbank",
      "label": "Cedi exchange rate (interbank)",
-     "value": "11.55 (9.5% depreciation year-to-date)",
+     "value": "11.55",
      "unit": "GHS per USD",
-     "period": "September 2026 (Aug 2026: 11.25; Dec 2025: 10.45)",
+     "period": "18 September 2026",
      "source_label": "Bank of Ghana Summary of Economic and Financial Data, September 2026",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
      "official": true,
-     "quote": "11.5500"
+     "quote": "11.5500",
+     "note": "9.5% depreciation year-to-date. August 2026: 11.25; December 2025: 10.45; about 11.76 on 6 October 2026 (GIPA indicators)."
     },
     {
      "id": "macro-gross-international-reserves",
      "label": "Gross international reserves",
-     "value": "12.0 (4.5 months of import cover)",
+     "value": "12.0",
      "unit": "US$ billion",
      "period": "22 September 2026",
      "source_label": "Bank of Ghana MPC Press Release, September 2026",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
      "official": true,
-     "quote": "equivalent to 4.5 months of import cover"
+     "quote": "equivalent to 4.5 months of import cover",
+     "note": "4.5 months of import cover."
     },
     {
      "id": "macro-public-debt",
@@ -317,24 +330,26 @@
     {
      "id": "macro-gold-export-receipts",
      "label": "Gold export receipts",
-     "value": "14.86 (cocoa 2.76; crude oil 2.42)",
+     "value": "14.86",
      "unit": "US$ billion",
      "period": "January–August 2026 cumulative",
      "source_label": "Bank of Ghana Summary of Economic and Financial Data, September 2026",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
      "official": true,
-     "quote": "14,863.2"
+     "quote": "14,863.2",
+     "note": "Cocoa: US$2.76bn; crude oil: US$2.42bn."
     },
     {
      "id": "macro-fdi-inflows-gipc-recorded",
-     "label": "FDI inflows (GIPC-recorded)",
-     "value": "2.61 (253 projects; China leads by count with 70)",
+     "label": "FDI inflows (registered projects: GIPA, Petroleum Commission, Free Zones Authority)",
+     "value": "2.62",
      "unit": "US$ billion",
-     "period": "Calendar year 2025 (2024: US$617.61m)",
-     "source_label": "Graphic Online reporting GIPC 2025 investment report (May 2026)",
-     "source_url": "https://www.graphic.com.gh/news/general-news/ghana-news-investor-confidence-in-economy-improves-nation-received-2-61-billion-fdis-in-2025.html",
+     "period": "2025",
+     "source_label": "MyJoyOnline, reporting the GIPA 2025 Investment Report (21 Aug 2026)",
+     "source_url": "https://www.myjoyonline.com/ghana-secured-us2-6bn-fdis-in-2025-gipc-report/",
      "official": false,
-     "quote": "2.61 billion"
+     "quote": "2.62 billion",
+     "note": "245 projects. 2024: US$651.7m. On a balance-of-payments basis the Bank of Ghana records US$1.91bn for 2025."
     },
     {
      "id": "macro-fitch-sovereign-rating",
@@ -352,7 +367,7 @@
      "label": "S&P sovereign rating",
      "value": "B-/B (affirmed, outlook stable)",
      "unit": "",
-     "period": "28 September 2026",
+     "period": "September 2026 (reported 28 Sep 2026; previously affirmed 27 Mar 2026)",
      "source_label": "Modern Ghana reporting S&P Global Ratings action",
      "source_url": "https://www.modernghana.com/news/1531557/sp-holds-ghana-at-b-b-as-fiscal-risks-persist.amp",
      "official": false,
@@ -376,8 +391,12 @@
      "source_url": "https://gipc.gov.gh/wp-content/uploads/2026/07/PRESS-RELEASE-PRESIDENT-PASSES-GIPA-BILL-2026.pdf"
     },
     {
-     "text": "Trading enterprises with non-citizen participation still require a minimum of US$500,000 in cash equity (down from US$1m), and at least 75% of the workforce must be skilled Ghanaians; activities reserved for Ghanaians are retained.",
-     "source_url": "https://www.myjoyonline.com/gipa-explains-key-changes-to-ghanas-investment-regime-to-prospective-investors-in-atlanta/"
+     "text": "Trading enterprises with non-citizen participation still require a minimum of US$500,000 in cash equity (down from US$1m under Act 865), and at least 75% of the workforce must be skilled Ghanaians; the list of activities reserved for Ghanaians is retained but cut from eight to six (sources: GIPA via MyJoyOnline; Legal Ink/Clyde & Co).",
+     "source_url": "https://www.myjoyonline.com/gipa-explains-key-changes-to-ghanas-investment-regime-to-prospective-investors-in-atlanta/",
+     "source2": {
+      "url": "https://www.clydeco.com/en/insights/2026/08/understanding-ghana-s-new-investment-law",
+      "label": "Clyde & Co / Legal Ink – Understanding Ghana's new investment law (3 Sep 2026)"
+     }
     },
     {
      "text": "Profit repatriation: Act 1173 protects the free transfer of capital, profits and dividends and retains protection against unlawful expropriation (law-firm summary; check the Act text before relying on specific clauses).",
@@ -388,17 +407,21 @@
      "source_url": "https://gfza.gov.gh/"
     },
     {
-     "text": "VAT reform effective 1 January 2026: effective VAT rate 20% (15% VAT + 2.5% NHIL + 2.5% GETFund), registration threshold for goods traders raised from GH₵200,000 to GH₵750,000, VAT Flat Rate Scheme and COVID-19 Health Recovery Levy abolished.",
-     "source_url": "https://gra.gov.gh/news/?p=6191"
+     "text": "VAT reform under the VAT Act, 2025 (Act 1151), effective 1 January 2026: effective VAT rate 20% (15% VAT + 2.5% NHIL + 2.5% GETFund, with NHIL/GETFund now creditable as input tax), registration threshold for goods traders raised from GH₵200,000 to GH₵750,000, VAT Flat Rate Scheme and COVID-19 Health Recovery Levy abolished.",
+     "source_url": "https://gra.gov.gh/news/?p=6191",
+     "source2": {
+      "url": "https://www.graphic.com.gh/business/business-news/gra-announces-overhaul-vat-rate-cut-flat-rate-scheme-scrapped-covid-levy-abolished-from-jan-1.html",
+      "label": "Graphic Online – GRA announces VAT overhaul, COVID levy abolished from Jan 1 (30 Dec 2025)"
+     }
     },
     {
-     "text": "24-Hour Economy incentives are performance-based (tied to jobs, investment and productivity), carry sunset clauses of typically four to five years, and beneficiaries will be listed on a public register; investors above US$50m can negotiate customised packages.",
+     "text": "24-Hour Economy incentives are still being designed: the Presidential Advisor said (Aug 2026) that packages will be performance-based (tied to jobs, investment and productivity), carry sunset clauses of typically four to five years, and that beneficiaries will be listed on a public register; details are due 'in the coming months'. Separately, existing investment law already lets investors above US$50m negotiate tailored incentive packages under specific conditions.",
      "source_url": "https://gna.org.gh/2026/08/businesses-seeking-24-hour-economy-incentives-to-undergo-performance-assessment/"
     }
    ],
    "opportunities": [
     {
-     "text": "Digital economy momentum: ICT was the fastest-growing activity in Q2 2026 at +30.9%, and investment (gross capital formation) rose 53.0%, supporting demand for data, connectivity and software services.",
+     "text": "Digital economy momentum: ICT led services growth in Q2 2026 at +30.9% y/y and contributed 41.5% of total GDP growth, while investment rose 53.0%, supporting demand for data, connectivity and software services.",
      "source_url": "https://www.myjoyonline.com/ghanas-economy-grows-6-0-in-q2-2026-first-half-growth-hits-6-2-gss/"
     },
     {
@@ -406,7 +429,7 @@
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf"
     },
     {
-     "text": "24-Hour Economy programme: the 24-Hour Economy Authority Act was assented in February 2026; reported incentives include 25% (two shifts) and 50% (three shifts) corporate tax rebates across eight sub-programmes (Grow24, Make24, Build24, Show24, Connect24, Fund24, Aspire24, Go24).",
+     "text": "24-Hour Economy programme: the 24-Hour Economy Authority Act was assented in February 2026; announced incentives include 25% (two shifts) and 50% (three shifts) corporate tax rebates across eight sub-programmes (Grow24, Make24, Build24, Show24, Connect24, Fund24, Aspire24, Go24), though detailed incentive packages were still to be published as of August 2026.",
      "source_url": "https://gna.org.gh/2026/02/24-hour-economy-rollout-accelerates-as-president-mahama-assents-implementation-bill/"
     },
     {
@@ -420,46 +443,62 @@
    ],
    "risks": [
     {
-     "text": "Currency risk has returned: after strong appreciation in 2025, the cedi weakened 9.5% year-to-date to GHS 11.55/USD by September 2026, and gross reserves fell from US$14.16bn (March 2026) to US$11.07bn (August 2026).",
+     "text": "Currency risk has returned: after strong appreciation in 2025, the cedi weakened 9.5% year-to-date to GHS 11.55/USD by 18 September 2026 (about GHS 11.76 by 6 October), and gross reserves fell from US$14.16bn (March 2026) to US$11.07bn (August 2026) before recovering to US$12.05bn on 22 September.",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf"
     },
     {
-     "text": "Growth expected to slow: the IMF projects real GDP growth of 4.9% for 2026, below the 6%+ prints of H1 2026; the government's own 2026 floor is 4.8%.",
-     "source_url": "https://www.imf.org/en/news/articles/2026/07/27/pr25260-ghana-imf-exec-board-completes-6th-rev-arr-ecf-concludes-2026-aiv-consult-rev-req-36mo-pci"
+     "text": "Growth expected to slow: the IMF projects real GDP growth of 4.9% for 2026, below the 6%+ prints of H1 2026; the government's 2026 budget target, unchanged at the mid-year review, is 4.8%.",
+     "source_url": "https://www.imf.org/en/news/articles/2026/07/27/pr25260-ghana-imf-exec-board-completes-6th-rev-arr-ecf-concludes-2026-aiv-consult-rev-req-36mo-pci",
+     "source2": {
+      "url": "https://www.citinewsroom.com/2026/07/12-economic-figures-that-matter-from-ghanas-2026-mid-year-budget-review/",
+      "label": "Citi Newsroom – 12 economic figures from the 2026 Mid-Year Budget Review (Jul 2026)"
+     }
     },
     {
      "text": "Banking vulnerabilities persist in some state-owned banks, some private banks and specialised deposit-taking institutions (IMF).",
      "source_url": "https://www.imf.org/en/news/articles/2026/07/27/pr25260-ghana-imf-exec-board-completes-6th-rev-arr-ecf-concludes-2026-aiv-consult-rev-req-36mo-pci"
     },
     {
-     "text": "Debt-service and refinancing: S&P kept Ghana at B-/B, noting stronger reserves and exports have not removed constraints from high debt-service costs; government targets a GHS30bn sinking fund by end-2026 for February 2027 domestic debt exchange repayments.",
-     "source_url": "https://www.modernghana.com/news/1531557/sp-holds-ghana-at-b-b-as-fiscal-risks-persist.amp"
+     "text": "Debt-service and refinancing: S&P kept Ghana at B-/B (Sept 2026), noting stronger reserves and exports have not removed constraints from high debt-service costs; the 2026 Mid-Year Budget Review targets a GHS30bn sinking fund by end-2026 to repay DDEP bonds falling due in February 2027.",
+     "source_url": "https://www.modernghana.com/news/1531557/sp-holds-ghana-at-b-b-as-fiscal-risks-persist.amp",
+     "source2": {
+      "url": "https://gna.org.gh/2026/07/highlights-2026-mid-year-budget-review/",
+      "label": "GNA – Highlights: 2026 Mid-Year Budget Review (23 Jul 2026)"
+     }
     },
     {
-     "text": "Export concentration and price inflation drift: gold accounted for US$14.86bn of US$22.4bn total exports in Jan–Aug 2026, and headline inflation rose from 4.6% (July) to 5.0% (August), with non-food inflation at 6.8%.",
-     "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf"
+     "text": "Export concentration and price inflation drift: gold accounted for US$14.86bn of US$22.44bn total exports (about 66%) in Jan–Aug 2026, and headline inflation has risen for two months, from 4.6% (July) to 5.0% (August) and 5.2% (September 2026).",
+     "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
+     "source2": {
+      "url": "https://www.gbcghanaonline.com/news/business/inflation-rises-to-5-2-in-september-gss/2026/",
+      "label": "GBC – Inflation rises to 5.2% in September – GSS (7 Oct 2026)"
+     }
     }
    ],
    "players": [
     {
      "name": "Bank of Ghana (BoG)",
-     "what": "Central bank; sets the Monetary Policy Rate (14.0%), manages reserves and foreign-exchange regulation; publishes monthly economic and financial data.",
+     "what": "Central bank; sets the Monetary Policy Rate (14.0%, held 24 Sep 2026; next decision 18 Nov 2026), manages reserves and foreign-exchange regulation; publishes the Summary of Economic and Financial Data (monthly series, released around each MPC meeting).",
      "source_url": "https://www.bog.gov.gh/?p=56326"
     },
     {
      "name": "Ministry of Finance (MoF)",
-     "what": "Prepares the annual budget and mid-year review; 2027 Budget expected first week of November 2026; manages the IMF PCI relationship.",
-     "source_url": "https://mofep.gov.gh/"
+     "what": "Prepares the annual budget and mid-year review; the 2027 Budget is likely to be presented in the first week of November 2026 (press reports, not yet officially dated); manages the IMF PCI relationship.",
+     "source_url": "https://mofep.gov.gh/",
+     "source2": {
+      "url": "https://www.ghanaweb.com/mobile/wap/article.php?ID=2052264",
+      "label": "GhanaWeb Business News (15 Sep 2026)"
+     }
     },
     {
      "name": "Ghana Statistical Service (GSS)",
-     "what": "Publishes quarterly GDP and monthly CPI; September 2026 CPI scheduled for the second week of October 2026.",
+     "what": "Publishes quarterly GDP and monthly CPI; September 2026 CPI (5.2%) was released on 7 October 2026; Q3 2026 GDP is due later in the year per the release calendar.",
      "source_url": "https://statsghana.gov.gh/news-and-events/release-calendar"
     },
     {
      "name": "Ghana Investment Promotion Authority (GIPA, formerly GIPC)",
      "what": "Registers foreign-participation enterprises, administers Act 1173, the One-Stop-Shop and the Investor Grievance Mechanism.",
-     "source_url": "https://gipa.gov.gh/"
+     "source_url": "https://gipc.gov.gh/wp-content/uploads/2026/07/PRESS-RELEASE-PRESIDENT-PASSES-GIPA-BILL-2026.pdf"
     },
     {
      "name": "Ghana Free Zones Authority (GFZA)",
@@ -475,13 +514,13 @@
    "watch": [
     {
      "label": "Bank of Ghana – Summary of Economic and Financial Data (listing page)",
-     "url": "https://www.bog.gov.gh/?p=56261",
-     "why": "Monthly exchange rate, reserves, debt, commodity exports and remittances; source for cedi and export figures."
+     "url": "https://www.bog.gov.gh/economic-data/summary-of-economic-and-financial-data/",
+     "why": "Released around each MPC meeting (roughly every two months) with monthly series: exchange rate, reserves, debt, commodity exports and private transfers; source for cedi and export figures."
     },
     {
      "label": "GSS – Inflation rate highlight",
      "url": "https://statsghana.gov.gh/highlights/inflation-rate",
-     "why": "Official monthly CPI headline; September 2026 figure due second week of October."
+     "why": "Official monthly CPI headline; September 2026 = 5.2% (released 7 Oct 2026); October 2026 figure due in November."
     },
     {
      "label": "GSS – Release calendar",
@@ -491,7 +530,7 @@
     {
      "label": "Ministry of Finance – Press releases",
      "url": "https://mofep.gov.gh/press-release",
-     "why": "2027 Budget (expected early November 2026), debt operations and PCI updates; budget statements at /publications/budget-statements."
+     "why": "2027 Budget (press reports point to the first week of November 2026; not yet officially dated), debt operations and PCI updates; budget statements at /publications/budget-statements."
     },
     {
      "label": "GIPA – News articles",
@@ -509,7 +548,7 @@
    "id": "mining",
    "title": "Gold, mining and critical minerals",
    "headline": "Gold drives two-thirds of Ghana's exports as the state resets royalties, ASM trading and licensing rules",
-   "summary": "Gold exports reached USD 14.86bn in January–August 2026 out of USD 22.44bn in total exports (Bank of Ghana), after a record USD 20.98bn in 2025. Output hit a provisional record of about 6 million ounces in 2025, with artisanal and small-scale mining (about 3.1 Moz) overtaking large-scale mines (2.9 Moz), and the Ghana Gold Board (GoldBod) is now the sole buyer and exporter of ASM gold. Since 10 March 2026 a sliding-scale gold royalty of 5% to 12% applies under L.I. 2517, partly offset by a cut in the Growth and Sustainability Levy from 3% to 1% of gross production. Ghana ratified its first lithium mining lease (Ewoyaa) in March 2026, and a revised Minerals and Mining Act that would phase out stability agreements is awaiting Parliament, which makes regulatory change the main thing for investors to watch.",
+   "summary": "Gold exports reached USD 14.86bn in January–August 2026 out of USD 22.44bn in total exports (Bank of Ghana), after a record USD 20.98bn in 2025. Output reached 5.94 million ounces in 2025 (up 23.4%, Ghana Chamber of Mines), with artisanal and small-scale mining (3.11 Moz) overtaking large-scale mines (2.83 Moz), and the Ghana Gold Board (GoldBod) is now the sole buyer and exporter of ASM gold. Since 10 March 2026 a sliding-scale gold royalty of 5% to 12% applies under L.I. 2517, partly offset by a cut in the Growth and Sustainability Levy from 3% to 1% of gross production. Ghana ratified its first lithium mining lease (Ewoyaa) in March 2026, and a draft Minerals and Mining Bill, 2026, which would replace the 2006 Act, shorten mining leases and give the state a special share, is awaiting Parliament, which makes regulatory change the main thing for investors to watch.",
    "figures": [
     {
      "id": "mining-gold-exports-cumulative",
@@ -546,80 +585,84 @@
     },
     {
      "id": "mining-international-gold-price-bog-reported",
-     "label": "International gold price (BoG reported)",
+     "label": "International gold price, monthly average",
      "value": "4,408.4",
      "unit": "USD per fine ounce",
-     "period": "Aug 2026 (2026:08 column)",
+     "period": "August 2026",
      "source_label": "Bank of Ghana, Summary of Economic and Financial Data, September 2026",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
      "official": true,
-     "quote": "International (USD per fine ounce)"
+     "quote": "International (USD per fine ounce)",
+     "note": "Bank of Ghana, from Reuters data."
     },
     {
      "id": "mining-total-gold-production-provisional",
-     "label": "Total gold production (provisional)",
-     "value": "6",
+     "label": "Total gold production",
+     "value": "5.94",
      "unit": "million ounces",
      "period": "2025",
-     "source_label": "Ghana Chamber of Mines data, reported by Mining Weekly (13 Feb 2026)",
-     "source_url": "https://www.miningweekly.com/article/ghanas-gold-output-hits-record-6moz-in-2025-industry-group-says-2026-02-13",
+     "source_label": "Ghana Chamber of Mines 2025 industry data (annual report, June 2026), reported by Citi Newsroom (17 Aug 2026)",
+     "source_url": "https://www.citinewsroom.com/2026/08/small-scale-mining-overtakes-large-scale-operations-in-ghanas-gold-production/",
      "official": false,
-     "quote": "Ghana produced a record 6 million ounces of gold in 2025"
+     "quote": "from 4.82 million ounces in 2024 to 5.94 million ounces in 2025"
     },
     {
      "id": "mining-large-scale-mine-gold-production-provisi",
-     "label": "Large-scale mine gold production (provisional)",
-     "value": "2.9",
+     "label": "Large-scale mine gold production",
+     "value": "2.83",
      "unit": "million ounces",
      "period": "2025",
-     "source_label": "Ghana Chamber of Mines data, reported by Mining Weekly (13 Feb 2026)",
-     "source_url": "https://www.miningweekly.com/article/ghanas-gold-output-hits-record-6moz-in-2025-industry-group-says-2026-02-13",
+     "source_label": "Ghana Chamber of Mines 2025 industry data, reported by Citi Newsroom (17 Aug 2026)",
+     "source_url": "https://www.citinewsroom.com/2026/08/small-scale-mining-overtakes-large-scale-operations-in-ghanas-gold-production/",
      "official": false,
-     "quote": "large‑scale mines contributing 2.9-million ounces, unchanged from last year"
+     "quote": "from 2.92 million ounces in 2024 to 2.83 million ounces in 2025"
     },
     {
      "id": "mining-artisanal-and-small-scale-asm-gold-produ",
-     "label": "Artisanal and small-scale (ASM) gold production (provisional)",
-     "value": "3.1",
+     "label": "Artisanal and small-scale (ASM) gold production",
+     "value": "3.11",
      "unit": "million ounces",
      "period": "2025",
-     "source_label": "Ghana Chamber of Mines data, reported by Mining Weekly (13 Feb 2026)",
-     "source_url": "https://www.miningweekly.com/article/ghanas-gold-output-hits-record-6moz-in-2025-industry-group-says-2026-02-13",
+     "source_label": "Ghana Chamber of Mines 2025 industry data, reported by Citi Newsroom (17 Aug 2026)",
+     "source_url": "https://www.citinewsroom.com/2026/08/small-scale-mining-overtakes-large-scale-operations-in-ghanas-gold-production/",
      "official": false,
-     "quote": "rose to about 3.1-million ounces"
+     "quote": "from 1.90 million ounces in 2024 to 3.11 million ounces in 2025"
     },
     {
      "id": "mining-goldbod-asm-gold-exported",
      "label": "GoldBod ASM gold exported",
-     "value": "104 (generating over USD 10bn)",
+     "value": "104",
      "unit": "metric tonnes",
      "period": "Jan–Dec 2025",
      "source_label": "Deputy Minister for Finance to Parliament (24 Jun 2026), reported by MyJoyOnline",
      "source_url": "https://www.myjoyonline.com/goldbod-earned-over-10bn-from-gold-exports-in-2025-deputy-finance-minister/",
      "official": false,
-     "quote": "exported ASM gold totaling 104 metric tons"
+     "quote": "exported ASM gold totaling 104 metric tons",
+     "note": "Generating over US$10bn."
     },
     {
      "id": "mining-goldbod-gold-purchase-spending",
      "label": "GoldBod gold purchase spending",
-     "value": "16.1 (of which 9.8 in 2025)",
+     "value": "16.1",
      "unit": "USD billion",
      "period": "Jan 2025–May 2026",
      "source_label": "Deputy Minister for Finance to Parliament (24 Jun 2026), reported by MyJoyOnline",
      "source_url": "https://www.myjoyonline.com/goldbod-earned-over-10bn-from-gold-exports-in-2025-deputy-finance-minister/",
      "official": false,
-     "quote": "the Gold Board expended approximately $16.1 billion on the purchase of gold"
+     "quote": "the Gold Board expended approximately $16.1 billion on the purchase of gold",
+     "note": "Of which US$9.8bn in 2025."
     },
     {
      "id": "mining-goldbod-asm-gold-purchases-year-to-date",
-     "label": "GoldBod ASM gold purchases year-to-date",
-     "value": "50–54",
+     "label": "GoldBod gold purchases from small-scale miners, year-to-date",
+     "value": "69–70",
      "unit": "metric tonnes",
-     "period": "2026 to mid-July (H1 2026)",
-     "source_label": "GoldBod CEO, reported by Citi Newsroom (15 Jul 2026)",
-     "source_url": "https://www.citinewsroom.com/2026/07/goldbod-buys-54-tonnes-of-gold-from-small-scale-miners-in-first-half-of-2026/",
+     "period": "2026, to early August",
+     "source_label": "GoldBod CEO, interview reported by MyJoyOnline (10 Aug 2026)",
+     "source_url": "https://www.myjoyonline.com/goldbod-managing-gold-trade-very-effectively-sammy-gyamfi/",
      "official": false,
-     "quote": "around 50- 54 metric tons this year"
+     "quote": "70 tonnes",
+     "note": "About US$9.4bn. Spoken estimate by the GoldBod CEO, not audited data."
     },
     {
      "id": "mining-newmont-ahafo-north-expected-output",
@@ -627,26 +670,27 @@
      "value": "275,000–325,000",
      "unit": "ounces per year",
      "period": "Next five years from commercial production (announced 24 Oct 2025); 13-year mine life",
-     "source_label": "Newmont news release",
+     "source_label": "Newmont news release (24 Oct 2025)",
      "source_url": "https://www.newmont.com/investors/news-release/news-details/2025/Newmont-Announces-Commercial-Production-at-Ahafo-North-in-Ghana/default.aspx",
-     "official": true,
+     "official": false,
      "quote": "between 275,000 and 325,000 ounces of gold annually over a 13-year mine life"
     },
     {
      "id": "mining-forest-reserve-area-degraded-by-illegal-",
      "label": "Forest reserve area degraded by illegal mining",
      "value": "8,923.8",
-     "unit": "hectares (45 forest reserves and a national park)",
+     "unit": "hectares",
      "period": "As at 31 Dec 2024 (released 24 Feb 2026)",
      "source_label": "Forestry Commission remote-sensing study, reported by Graphic Online",
      "source_url": "https://www.graphic.com.gh/news/general-news/ghana-news-galamsey-destroys-9-000-hectares-of-forest-reserves-forestry-commission-research.html",
      "official": false,
-     "quote": "8,923.8 hectares of the country's forest reserves"
+     "quote": "8,923.8 hectares of the country's forest reserves",
+     "note": "45 forest reserves and a national park."
     }
    ],
    "rules": [
     {
-     "text": "Royalties: the Minerals and Mining (Royalties) Regulations, 2025 (L.I. 2517), in force since 10 March 2026, replace the flat 5% gold royalty with a price-linked scale. The rate is 5% up to US$1,900/oz and steps up in bands of about US$500/oz to 12% above US$4,500/oz, based on the weekly LBMA London PM average. Small-scale gold pays 2%. Diamonds, bauxite, manganese, iron ore and industrial minerals stay at 5%. At the Bank of Ghana's August 2026 gold price of US$4,408.4/oz, the 11% band (above US$4,000 to US$4,500) applies.",
+     "text": "Royalties: the Minerals and Mining (Royalties) Regulations, 2025 (L.I. 2517), in force since 10 March 2026, replace the flat 5% gold royalty with a price-linked scale. The rate is 5% up to US$1,900/oz and 6% from US$1,900 to US$2,000, then rises one point per US$500/oz band to 12% above US$4,500/oz. The gold price is the weekly average of the LBMA London PM price for the month's sales. Small-scale gold pays 2%, and lithium (spodumene) has its own 5%–12% scale. Diamonds, bauxite, manganese, iron ore and industrial minerals stay at 5%. At the Bank of Ghana's August 2026 average gold price of US$4,408.4/oz, the 11% band (above US$4,000 to US$4,500) would apply.",
      "source_url": "https://ghtaxclub.com/wp-content/uploads/2026/04/Minerals-and-Mining-Royalty-Regulations-2025-L.I.-2517.pdf"
     },
     {
@@ -654,12 +698,20 @@
      "source_url": "https://gna.org.gh/2026/03/parliament-passes-growth-and-sustainability-levy/"
     },
     {
-     "text": "Mineral rights (Minerals and Mining Act, 2006, Act 703), granted through the Minerals Commission. The reconnaissance licence runs 12 months (up to 5,000 blocks of 21 ha). The prospecting licence runs 3 years (up to 750 blocks). The mining lease runs up to 30 years (up to 300 blocks) and the restricted mining lease up to 15 years for building and industrial minerals. The small-scale mining licence lasts 5 years and is reserved for Ghanaians only. The Government holds a 10% free carried interest in mining operations.",
-     "source_url": "https://www.mincom.gov.gh/mineral-rights/"
+     "text": "Mineral rights (Minerals and Mining Act, 2006, Act 703) are granted by the Minister for Lands and Natural Resources on the recommendation of the Minerals Commission. The reconnaissance licence runs 12 months (up to 5,000 blocks of 21 ha). The prospecting licence runs 3 years (up to 750 blocks). The mining lease runs up to 30 years (up to 300 blocks) and the restricted mining lease up to 15 years for building and industrial minerals. The small-scale mining licence lasts 5 years and is reserved for Ghanaians only. The Government holds a 10% free carried interest in mining operations.",
+     "source_url": "https://www.mincom.gov.gh/mineral-rights/",
+     "source2": {
+      "url": "https://www.mincom.gov.gh/fiscal-regime/",
+      "label": "Minerals Commission – Fiscal Regime (additional source for the 10% carried interest)"
+     }
     },
     {
-     "text": "Gold trading: under the Ghana Gold Board Act, 2025 (Act 1140), GoldBod has the exclusive right to buy, sell, assay, value and export ASM gold. Foreign nationals had to leave local gold trading by 30 April 2025, and dealing in gold without a GoldBod licence has been an offence since 1 May 2025. Large-scale miners' export arrangements are not covered by these restrictions. From 1 September 2026, Self-Financing Aggregators must refine gold doré at a GoldBod-approved refinery in Ghana before export.",
-     "source_url": "https://goldbod.gov.gh/news/goldbod-orders-mandatory-local-refining-of-gold-dore-before-export-effective-september-1"
+     "text": "Gold trading: under the Ghana Gold Board Act, 2025 (Act 1140), GoldBod has the exclusive right to buy, sell, assay, value and export ASM gold. Foreign nationals had to leave local gold trading by 30 April 2025, and dealing in gold without a GoldBod licence has been an offence since 1 May 2025. Licences held by large-scale mining companies were not revoked under this reset. From 1 September 2026, Self-Financing Aggregators must refine gold doré at a GoldBod-approved refinery in Ghana before export.",
+     "source_url": "https://goldbod.gov.gh/news/goldbod-orders-mandatory-local-refining-of-gold-dore-before-export-effective-september-1",
+     "source2": {
+      "url": "https://www.graphic.com.gh/business/business-news/9-things-to-note-as-ghana-prohibits-foreigners-from-local-gold-trading.html",
+      "label": "Graphic Online, 15 Apr 2025 (GoldBod directive of 14 Apr 2025) – additional source"
+     }
     },
     {
      "text": "Forest reserves: the Environmental Protection (Mining in Forest Reserves) Revocation Instrument, 2025 matured into law on 10 December 2025. It revokes L.I. 2462, which had allowed the President to authorise mining in forest reserves.",
@@ -676,7 +728,7 @@
      "source_url": "https://www.mincom.gov.gh/mineral-rights/"
     },
     {
-     "text": "Lithium: Parliament ratified Atlantic Lithium's Ewoyaa mining lease on 20 March 2026, the first lithium lease granted and ratified in Ghana (initial 15-year term, sliding royalty of 5% to 12%). The project is moving towards a final investment decision, creating openings for offtake, financing, EPC and services.",
+     "text": "Lithium: in March 2026 Parliament ratified Atlantic Lithium's Ewoyaa mining lease (announced 20 March 2026), the first lithium lease granted and ratified in Ghana (initial 15-year term, sliding royalty of 5% to 12%). The project is moving towards a final investment decision, creating openings for offtake, financing, EPC and services.",
      "source_url": "https://wcsecure.weblink.com.au/LSE_news/2026/03/20/Parliamentary-Ratification-of-Ewoyaa-Mining-Lease.pdf"
     },
     {
@@ -684,7 +736,7 @@
      "source_url": "https://goldbod.gov.gh/news/goldbod-orders-mandatory-local-refining-of-gold-dore-before-export-effective-september-1"
     },
     {
-     "text": "Bauxite and aluminium: GIADEC is seeking partners to build an integrated bauxite–alumina–aluminium value chain on about 920 million tonnes of reserves (Awaso, Nyinahin, Kyebi). It offers resource-for-credit swaps, long-term offtake and joint-venture partnerships.",
+     "text": "Bauxite and aluminium: GIADEC is seeking partners to build an integrated bauxite–alumina–aluminium value chain on an estimated 920 million tonnes of bauxite (Awaso, Nyinahin, Kyebi). It offers resource-for-credit swaps, long-term offtake and joint-venture partnerships (as at June 2025).",
      "source_url": "https://www.citinewsroom.com/2025/06/giadec-to-unlock-full-potential-of-ghanas-bauxite/"
     },
     {
@@ -698,11 +750,15 @@
      "source_url": "https://www.miningweekly.com/article/ghanas-gold-output-hits-record-6moz-in-2025-industry-group-says-2026-02-13"
     },
     {
-     "text": "Legal reform: in July 2026 Cabinet approved amendments to the Minerals and Mining Act for Parliament. They would phase out fiscal stability agreements, replace reconnaissance and prospecting licences with a single exploration licence capped at five years, and require community development agreements negotiated with host communities. The final text is pending.",
-     "source_url": "https://www.myjoyonline.com/cabinet-approves-revised-mining-law-to-strengthen-oversight/"
+     "text": "Legal reform: in July 2026 Cabinet approved a revised mining law for Parliament. A draft Minerals and Mining Bill, 2026 would replace the 2006 Act. It would replace reconnaissance and prospecting licences with a single exploration licence capped at five years, cut mining lease terms to 15 years (or the life of the mine, if shorter), give the state a special share, and require community development agreements negotiated with host communities. The government has also signalled plans to phase out fiscal stability agreements. The bill had not been debated as of end-September 2026 and could be taken up when Parliament resumes in October.",
+     "source_url": "https://www.myjoyonline.com/cabinet-approves-revised-mining-law-to-strengthen-oversight/",
+     "source2": {
+      "url": "https://www.mining.com/web/ghana-bill-would-give-state-special-share-rights-in-mining-firms-draft-shows",
+      "label": "Reuters via MINING.COM, 30 Sep 2026 (additional source)"
+     }
     },
     {
-     "text": "Lease renewal risk: the Damang mining lease was not renewed for Gold Fields. Gold Fields exited on 19 April 2026, and the Ministry of Lands and Natural Resources granted the lease to Engineers and Planners after a tender.",
+     "text": "Lease renewal risk: the Damang mining lease was not renewed for Gold Fields beyond a one-year extension to 18 April 2026. After a tender, the Ministry of Lands and Natural Resources granted the lease to Engineers and Planners, which took over the mine on 18–19 April 2026. Gold Fields' main Tarkwa leases are due to expire in April 2027 (renewal applied for).",
      "source_url": "https://www.miningweekly.com/article/ghanaian-ministry-grants-damang-mining-lease-to-engineers-and-planners-2026-04-08"
     },
     {
@@ -732,8 +788,8 @@
     },
     {
      "name": "Gold Fields",
-     "what": "Holds 90% of the Tarkwa mine, with the Government of Ghana holding 10%. The mine has a 6.1 Moz reserve and 13.5 Mtpa plant capacity. Gold Fields exited Damang in April 2026.",
-     "source_url": "https://www.goldfields.com/tarkwa.php"
+     "what": "Holds 90% of the Tarkwa mine, with the Government of Ghana holding 10%. Attributable Mineral Reserves are about 6.6 Moz (31 Dec 2025) and the CIL plant has 14.7 Mtpa capacity. The main Tarkwa leases expire in April 2027 (renewal applied for). Gold Fields exited Damang in April 2026.",
+     "source_url": "https://www.sec.gov/Archives/edgar/data/1172724/000162828026021904/exhibit962_tarkwatrs.htm"
     },
     {
      "name": "AngloGold Ashanti",
@@ -752,7 +808,7 @@
     },
     {
      "name": "Atlantic Lithium",
-     "what": "Developer of the Ewoyaa lithium project (Central Region), holder of Ghana's first ratified lithium mining lease (20 March 2026).",
+     "what": "Developer of the Ewoyaa lithium project (Central Region), holder of Ghana's first ratified lithium mining lease (ratified March 2026).",
      "source_url": "https://wcsecure.weblink.com.au/LSE_news/2026/03/20/Parliamentary-Ratification-of-Ewoyaa-Mining-Lease.pdf"
     }
    ],
@@ -764,7 +820,7 @@
     },
     {
      "label": "GoldBod news",
-     "url": "https://goldbod.gov.gh/news/goldbod-orders-mandatory-local-refining-of-gold-dore-before-export-effective-september-1",
+     "url": "https://goldbod.gov.gh/news/",
      "why": "Directives on ASM gold trading, licensing, refining and export volumes (news index under goldbod.gov.gh/news/)."
     },
     {
@@ -780,7 +836,7 @@
     {
      "label": "Newmont – Operations (Ahafo South/North)",
      "url": "https://operations.newmont.com/",
-     "why": "Largest large-scale operator; quarterly production and project updates."
+     "why": "A leading large-scale operator (Ahafo South and Ahafo North); quarterly production and project updates."
     }
    ]
   },
@@ -788,7 +844,7 @@
    "id": "energy",
    "title": "Oil and gas, power and renewables",
    "headline": "Jubilee drilling reverses a six-year oil decline while power-sector finances improve but remain the main investor risk",
-   "summary": "Ghana's crude output fell for a sixth consecutive year in 2025 to 37.3 million barrels, but a 2026 Jubilee infill campaign lifted oil and gas activity by 21.4% in Q2 2026, and oil exports reached US$2.42bn in January–August 2026. Jubilee and TEN licences have been extended to 2040, which brings up to 20 additional Jubilee wells; a further 10-well campaign is signed for 2027–28. The power system has 5,818 MW installed and depends on thermal plants for about three-quarters of generation. The IMF reports the energy-sector shortfall fell to US$1.4bn in 2025, but legacy payables to IPPs and fuel suppliers were still US$1.7bn in March 2026, so offtaker credit risk remains the central issue for power investors.",
+   "summary": "Ghana's crude output fell for a sixth consecutive year in 2025 to 37.3 million barrels, but a 2026 Jubilee infill campaign lifted oil and gas activity by 22.4% in Q2 2026, and oil exports reached US$2.42bn in January–August 2026. Jubilee and TEN licences have been extended to 2040, which brings up to 20 additional Jubilee wells; a further 10-well campaign is signed for 2027–28. The power system has 5,818 MW installed and depends on thermal plants for about three-quarters of generation. The IMF reports the energy-sector shortfall fell to US$1.4bn in 2025, but legacy payables to IPPs and fuel suppliers were still US$1.7bn in March 2026, so offtaker credit risk remains the central issue for power investors.",
    "figures": [
     {
      "id": "energy-crude-oil-export-earnings-year-to-date",
@@ -799,29 +855,31 @@
      "source_label": "Bank of Ghana, Summary of Economic and Financial Data, September 2026",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
      "official": true,
-     "quote": "Oil Exports 2,424.9"
+     "quote": "Oil Exports"
     },
     {
      "id": "energy-oil-and-gas-sector-real-growth",
      "label": "Oil and gas sector real growth",
-     "value": "21.4",
+     "value": "22.4",
      "unit": "% year on year",
      "period": "Q2 2026",
-     "source_label": "Ghana Statistical Service Q2 2026 GDP release, reported by MyJoyOnline",
-     "source_url": "https://www.myjoyonline.com/ghanas-economy-grows-6-0-in-q2-2026-first-half-growth-hits-6-2-gss/",
+     "source_label": "Ghana Statistical Service Q2 2026 GDP release, reported by the Ghana News Agency (9 Sep 2026)",
+     "source_url": "https://gna.org.gh/2026/09/digital-economy-powers-ghanas-gdp-to-six-per-cent/",
      "official": false,
-     "quote": "Oil and gas activity grew by 21.4% during the period"
+     "quote": "22.4 per cent growth in Q2 2026",
+     "note": "Some outlets reported 21.4%; the Ghana News Agency and Ghana Business News report 22.4%."
     },
     {
      "id": "energy-total-crude-oil-production-jubilee-ten-s",
      "label": "Total crude oil production (Jubilee, TEN, Sankofa-Gye Nyame)",
-     "value": "37.3 (37,302,798 barrels)",
+     "value": "37.3",
      "unit": "million barrels",
      "period": "Calendar year 2025",
      "source_label": "PIAC 2025 Annual Report",
      "source_url": "https://www.piacghana.org/wp-content/uploads/2026/04/2025-PIAC-ANNUAL-REPORT_TS_4_mrgd.pdf",
      "official": true,
-     "quote": "total crude oil production from Ghana's three producing fields amounted to 37,302,798.01 barrels"
+     "quote": "total crude oil production from Ghana's three producing fields amounted to 37,302,798.01 barrels",
+     "note": "37,302,798 barrels."
     },
     {
      "id": "energy-total-petroleum-receipts-to-the-state",
@@ -832,29 +890,31 @@
      "source_label": "PIAC 2025 Annual Report",
      "source_url": "https://www.piacghana.org/wp-content/uploads/2026/04/2025-PIAC-ANNUAL-REPORT_TS_4_mrgd.pdf",
      "official": true,
-     "quote": "Total petroleum receipts fell by 43.27% to US$770.27 million"
+     "quote": "Total petroleum receipts declined by 43.27%"
     },
     {
      "id": "energy-jubilee-field-gross-oil-production",
      "label": "Jubilee field gross oil production",
-     "value": "72,000 (approximate)",
+     "value": "72,000",
      "unit": "barrels per day",
      "period": "Q2 2026 average",
      "source_label": "Kosmos Energy, Second Quarter 2026 Results (3 Aug 2026)",
      "source_url": "https://investors.kosmosenergy.com/node/17226",
-     "official": true,
-     "quote": "oil production in the second quarter averaged approximately 72,000 bopd gross"
+     "official": false,
+     "quote": "oil production in the second quarter averaged approximately 72,000 bopd gross",
+     "note": "Approximate."
     },
     {
      "id": "energy-ten-fields-gross-oil-production",
      "label": "TEN fields gross oil production",
-     "value": "14,700 (approximate)",
+     "value": "14,700",
      "unit": "barrels per day",
      "period": "Q2 2026 average",
      "source_label": "Kosmos Energy, Second Quarter 2026 Results (3 Aug 2026)",
      "source_url": "https://investors.kosmosenergy.com/node/17226",
-     "official": true,
-     "quote": "oil production averaged approximately 14,700 bopd gross for the second quarter"
+     "official": false,
+     "quote": "oil production averaged approximately 14,700 bopd gross for the second quarter",
+     "note": "Approximate."
     },
     {
      "id": "energy-installed-grid-generation-capacity-depen",
@@ -882,12 +942,13 @@
      "id": "energy-energy-sector-financial-shortfall-revenu",
      "label": "Energy-sector financial shortfall (revenue vs cost gap)",
      "value": "1.4",
-     "unit": "USD billion (1.2% of GDP)",
+     "unit": "USD billion",
      "period": "2025 (from US$1.6bn in 2024)",
      "source_label": "IMF Country Report No. 26/212, Ghana Sixth ECF Review / 2026 Article IV",
      "source_url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf",
      "official": true,
-     "quote": "declined to US$1.4 billion (1.2 percent of GDP) in 2025"
+     "quote": "declined to US$1.4 billion (1.2 percent of GDP) in 2025",
+     "note": "1.2% of GDP."
     },
     {
      "id": "energy-net-payables-owed-to-ipps-and-fuel-suppl",
@@ -903,24 +964,26 @@
     {
      "id": "energy-electricity-tariff-adjustment-quarterly-",
      "label": "Electricity tariff adjustment (quarterly mechanism)",
-     "value": "+3.49 (Q3 2026); 0 (Q4 2026)",
-     "unit": "%",
-     "period": "Q3 2026 (from 1 July 2026); Q4 2026 (1 Oct–31 Dec 2026)",
+     "value": "0",
+     "unit": "% tariff change",
+     "period": "Q4 2026 (1 Oct–31 Dec)",
      "source_label": "IMF Country Report No. 26/212 (Q3); PURC Q4 decision reported by GNA (24 Sep 2026)",
      "source_url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf",
      "official": true,
-     "quote": "increased electricity tariffs by 3.49 percent"
+     "quote": "increased electricity tariffs by 3.49 percent",
+     "note": "Q3 2026: +3.49%."
     },
     {
      "id": "energy-share-of-upstream-service-contract-value",
      "label": "Share of upstream service contract value awarded to indigenous Ghanaian companies",
-     "value": "29 (US$324.1m)",
+     "value": "29",
      "unit": "%",
      "period": "Calendar year 2025",
      "source_label": "PIAC 2025 Annual Report",
      "source_url": "https://www.piacghana.org/wp-content/uploads/2026/04/2025-PIAC-ANNUAL-REPORT_TS_4_mrgd.pdf",
      "official": true,
-     "quote": "US$ 324,100,572.33 (29%) was awarded to Indigenous Ghanaian Companies"
+     "quote": "US$ 324,100,572.33 (29%) was awarded to Indigenous Ghanaian Companies",
+     "note": "US$324.1m."
     }
    ],
    "rules": [
@@ -933,7 +996,7 @@
      "source_url": "https://ghalii.org/akn/gh/act/2011/832/eng@2020-12-29"
     },
     {
-     "text": "Act 832 as amended by Act 1045 (2020), s.25: grid-connected renewable power must go through a competitive procurement scheme (tender or auction). Public utilities may not negotiate PPAs unless the power has gone through an open, competitive and transparent procurement process.",
+     "text": "Act 832 as amended by Act 1045 (2020), s.25: renewable electricity bought by public utilities and wholesale suppliers must go through a competitive procurement scheme (tender or auction). Public utilities may not negotiate PPAs for renewable power unless it has gone through an open, competitive and transparent procurement process.",
      "source_url": "https://ghalii.org/akn/gh/act/2011/832/eng@2020-12-29"
     },
     {
@@ -941,17 +1004,17 @@
      "source_url": "https://ghalii.org/akn/gh/act/2011/832/eng@2020-12-29"
     },
     {
-     "text": "PURC resets electricity and water tariffs every quarter. It indexes them to the cedi–dollar rate, inflation, the weighted average cost of gas (US$7.9708/MMBtu used for Q4 2026) and the generation mix. For Q4 2026 (1 Oct–31 Dec) the change is 0%.",
-     "source_url": "https://gna.org.gh/2026/09/no-increment-in-electricity-water-tariffs-for-fourth-quarter-purc/"
+     "text": "PURC resets electricity and water tariffs every quarter. It indexes them to the cedi–dollar rate, inflation, the weighted average cost of gas (US$7.8379/MMBtu used for Q4 2026, down from US$7.9708 in Q3) and the hydro–thermal generation mix. For Q4 2026 (1 Oct–31 Dec) the change is 0%.",
+     "source_url": "https://myjoyonline.com/purc-keeps-electricity-and-water-tariffs-unchanged-for-fourth-quarter-of-2026/"
     },
     {
-     "text": "Energy Commission standards and labelling regulations (in force; moratorium ended Nov 2023) cover imports of solar panels (L.I. 2449), renewable-energy batteries (L.I. 2452) and inverters (L.I. 2461). Importers must meet registration and labelling requirements.",
-     "source_url": "https://www.energycom.gov.gh/media-center/public-notices/261-enforcement-of-new-regulations"
+     "text": "Energy Commission standards and labelling regulations (in force since November 2022; enforced from November 2023 after a one-year transition) cover solar panels (L.I. 2449), renewable-energy batteries (L.I. 2452) and inverters (L.I. 2461). Importers must register products with the Energy Commission (accredited test reports) and meet labelling requirements.",
+     "source_url": "https://efficiency.energycom.gov.gh/"
     }
    ],
    "opportunities": [
     {
-     "text": "Upstream services and drilling supply chain. Six Jubilee producers and one injector came onstream in H1 2026. A 2027–28 Ghana campaign of up to 10 wells is signed, with the rig expected around mid-2027. The Jubilee and TEN licence extensions to 2040 allow up to 20 additional Jubilee wells. Service firms must meet the 10% indigenous joint-venture rule.",
+     "text": "Upstream services and drilling supply chain. Tullow's 2025–26 Jubilee campaign was completed in September 2026, with six producers and one water injector onstream. A rig contract for a 2027–28 campaign of up to 10 wells is signed, with the rig expected around mid-2027. The Jubilee and TEN licence extensions to 2040 (ratified February 2026) allow up to 20 additional Jubilee wells. Service firms must meet the 10% indigenous joint-venture rule.",
      "source_url": "https://www.tullowoil.com/media/press-releases/2026-half-year-results/"
     },
     {
@@ -959,7 +1022,7 @@
      "source_url": "https://gridcogh.com/wp-content/uploads/2025/11/2025-Electricity-Supply-Plan-1.pdf"
     },
     {
-     "text": "Utility-scale solar plus storage for industry. The 24-Hour Economy Secretariat is co-developing up to 1.5 GW of solar with battery storage at Buipe. The joint development agreement was signed on 10 April 2026, and construction of the first 100 MW was announced for August 2026. The target is to cut industrial power costs from 18–23 to 7–9 US cents/kWh.",
+     "text": "Utility-scale solar plus storage for industry. Up to 1.5 GW of solar with battery storage is being developed at Buipe under the government's 24-Hour Economy (24H+) Programme. The joint development agreement was signed on 10 April 2026, and in July 2026 the presidential adviser said construction of the first 100 MW would begin in August 2026. The target is to cut industrial power costs from 18–23 to 7–9 US cents/kWh.",
      "source_url": "https://www.graphic.com.gh/news/general-news/ghana-news-buipe-solar-project-to-take-off-next-month-goosie-tanoh.html"
     },
     {
@@ -977,7 +1040,7 @@
      "source_url": "https://www.myjoyonline.com/imf-cautions-ghana-over-energy-sector-despite-progress-made-in-reducing-energy-debt/"
     },
     {
-     "text": "Reserve decline. Ghana's crude output fell for the sixth consecutive year in 2025, down 22.7% to 37.3m barrels. Production gains depend on continued infill drilling in mature fields.",
+     "text": "Mature-field production decline. Ghana's crude output fell for the sixth consecutive year in 2025, down 22.7% to 37.3m barrels. New Jubilee wells lifted output in 2026 (about 72,000 bopd gross in Q2; GNPC cites more than 80,000 bopd in September), but sustaining it depends on continued infill drilling in mature fields.",
      "source_url": "https://www.piacghana.org/wp-content/uploads/2026/04/2025-PIAC-ANNUAL-REPORT_TS_4_mrgd.pdf"
     },
     {
@@ -989,8 +1052,8 @@
      "source_url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf"
     },
     {
-     "text": "Thermal and gas dependence. Thermal plants supplied 74.33% of generation in July 2026, and PURC's Q4 2026 tariff assumed a mix that is 79.10% thermal. Supply depends on domestic gas availability and pricing, which exposes generators and offtakers to field outages and gas cost changes.",
-     "source_url": "https://gna.org.gh/2026/09/no-increment-in-electricity-water-tariffs-for-fourth-quarter-purc/"
+     "text": "Thermal and gas dependence. Thermal plants supplied 74.33% of generation in July 2026, and PURC's Q4 2026 tariff assumed a mix that is 75.75% thermal (79.10% in Q3). Supply depends on domestic gas availability and pricing, which exposes generators and offtakers to field outages and gas cost changes.",
+     "source_url": "https://myjoyonline.com/purc-keeps-electricity-and-water-tariffs-unchanged-for-fourth-quarter-of-2026/"
     }
    ],
    "players": [
@@ -1031,7 +1094,7 @@
     },
     {
      "name": "Energy Commission",
-     "what": "Licenses renewable-energy and electricity businesses, enforces equipment standards, and is leading validation of the 2026 Integrated Power System Master Plan.",
+     "what": "Licenses renewable-energy and electricity businesses, enforces equipment standards, and led stakeholder validation of the 2026 Integrated Power System Master Plan (September 2026).",
      "source_url": "https://www.modernghana.com/news/1526036/energy-commission-leads-stakeholders-to-validate.html"
     }
    ],
@@ -1072,29 +1135,31 @@
    "id": "agri",
    "title": "Cocoa, agribusiness and agro-processing",
    "headline": "Cocoa earnings rise and financing is moving onshore, as a 50% local-processing mandate begins with the 2026/27 season",
-   "summary": "Bank of Ghana data show cocoa exports of USD 2.76bn for January–August 2026, up from USD 2.47bn a year earlier, although gold still accounts for most export earnings. COCOBOD has replaced its decades-old offshore syndicated loan with a GH¢16.3bn domestic notes programme run by its subsidiary Cocoa Capital PLC, and opened the 2026/27 season at GH¢42,400 per tonne (71.18% of realised gross FOB, above the 70% floor in the new Ghana Cocoa Board Act, 2026). From 2026/27, Cabinet policy requires at least half of the cocoa crop to be processed locally, while the 13 existing grinders run at only 30–40% of about 500,000 tonnes of installed capacity. Beyond cocoa, the investment case rests on import substitution (2025 food imports were above GH¢36.5bn), cashew and shea processing, and cold chain. Swollen shoot disease, illegal mining, smuggling, EUDR compliance from 30 December 2026 and cedi volatility are the main risks.",
+   "summary": "Bank of Ghana data show cocoa exports of USD 2.76bn for January–August 2026, up from USD 2.47bn a year earlier, although gold still accounts for most export earnings. COCOBOD has replaced its decades-old offshore syndicated loan with a GH¢16.3bn domestic notes programme run by its subsidiary Cocoa Capital PLC, and opened the 2026/27 season at GH¢42,400 per tonne (about 27% below the 2025/26 opening price) (71.18% of realised gross FOB, above the 70% floor in the new Ghana Cocoa Board Act, 2026). From 2026/27, Cabinet policy requires at least half of the cocoa crop to be processed locally, while the 13 existing grinders run at only 30–40% of about 500,000 tonnes of installed capacity. Beyond cocoa, the investment case rests on import substitution (2025 food imports were GH¢36.46bn), cashew and shea processing, and cold chain. Swollen shoot disease, illegal mining, smuggling, EUDR compliance from 30 December 2026 and cedi volatility are the main risks.",
    "figures": [
     {
      "id": "agri-cocoa-export-earnings-cumulative",
      "label": "Cocoa export earnings, cumulative",
-     "value": "2,762.4 (Jan–Aug 2025: 2,467.3)",
+     "value": "2,762.4",
      "unit": "USD million",
      "period": "Jan–Aug 2026",
      "source_label": "Bank of Ghana, Summary of Economic and Financial Data, September 2026",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
      "official": true,
-     "quote": "2762.4"
+     "quote": "2762.4",
+     "note": "January–August 2025: US$2,467.3m."
     },
     {
      "id": "agri-cocoa-export-earnings-first-half",
      "label": "Cocoa export earnings, first half",
-     "value": "2,300.0 (H1 2025: 2,167.5)",
+     "value": "2,300.0",
      "unit": "USD million",
      "period": "Jan–Jun 2026",
      "source_label": "Bank of Ghana, Summary of Economic and Financial Data, September 2026",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
      "official": true,
-     "quote": "2300.0"
+     "quote": "2300.0",
+     "note": "H1 2025: US$2,167.5m."
     },
     {
      "id": "agri-cocoa-export-earnings-full-year",
@@ -1109,14 +1174,15 @@
     },
     {
      "id": "agri-cocoa-producer-price-gh-2-650-per-64kg-b",
-     "label": "Cocoa producer price (GH¢2,650 per 64kg bag; 71.18% of realised gross FOB)",
-     "value": "42,400 (2025/26: 41,392)",
+     "label": "Cocoa producer price, 2026/27 season",
+     "value": "42,400",
      "unit": "GH¢ per tonne",
-     "period": "2026/27 season, effective 25 Sep 2026",
-     "source_label": "Ghana News Agency, reporting COCOBOD announcement",
-     "source_url": "https://gna.org.gh/2026/09/ghana-opens-2026-27-cocoa-season-with-producer-price-of-ghc-42400-per-tonne/",
-     "official": false,
-     "quote": "translates into GH¢2,650 for a 64-kilogramme bag of cocoa"
+     "period": "2026/27 season, from 25 Sep 2026",
+     "source_label": "COCOBOD, Review of the producer price of cocoa for the 2026/27 season (25 Sep 2026)",
+     "source_url": "https://cocobod.gh/news/review-of-the-producer-price-of-cocoa-for-the-202627-cocoa-season",
+     "official": true,
+     "quote": "This represents 71.18% of the realized Gross FOB value",
+     "note": "GH¢2,650 per 64 kg bag; 71.18% of realised gross FOB. Up 2.4% on the February 2026 mid-season price of GH¢41,392, but about 27% below the 2025/26 opening price of GH¢58,000."
     },
     {
      "id": "agri-cocoa-capital-plc-domestic-financing-pro",
@@ -1131,22 +1197,23 @@
     },
     {
      "id": "agri-cocobod-cocoa-purchases-calendar-year",
-     "label": "COCOBOD cocoa purchases (calendar year)",
-     "value": "597,377 (2024: 448,969)",
+     "label": "COCOBOD cocoa purchases (financial year, Oct–Sep)",
+     "value": "597,377",
      "unit": "tonnes",
-     "period": "2025",
-     "source_label": "MyJoyOnline, reporting COCOBOD 2025 financial statements",
+     "period": "FY2025 (Oct 2024–Sep 2025)",
+     "source_label": "MyJoyOnline (31 Aug 2026), reporting SIGA 2025 State Ownership Report (COCOBOD management accounts)",
      "source_url": "https://www.myjoyonline.com/cocobod-revenue-surges-to-gh%C2%A248-6bn-returns-to-gh%C2%A25-1bn-profit-in-2025/",
      "official": false,
-     "quote": "COCOBOD purchased 597,377 tonnes of cocoa in 2025"
+     "quote": "COCOBOD purchased 597,377 tonnes of cocoa in 2025",
+     "note": "2024: 448,969 tonnes."
     },
     {
      "id": "agri-cocobod-net-profit-2024-loss-of-gh-5-73b",
      "label": "COCOBOD net profit (2024: loss of GH¢5.73bn)",
      "value": "5.11",
      "unit": "GH¢ billion",
-     "period": "FY2025",
-     "source_label": "MyJoyOnline, reporting COCOBOD 2025 financial statements",
+     "period": "FY2025 (Oct 2024–Sep 2025; management accounts)",
+     "source_label": "MyJoyOnline (31 Aug 2026), reporting SIGA 2025 State Ownership Report (COCOBOD management accounts)",
      "source_url": "https://www.myjoyonline.com/cocobod-revenue-surges-to-gh%C2%A248-6bn-returns-to-gh%C2%A25-1bn-profit-in-2025/",
      "official": false,
      "quote": "recording a net profit of GH¢5.11 billion"
@@ -1154,13 +1221,14 @@
     {
      "id": "agri-agriculture-real-gdp-growth-year-on-year",
      "label": "Agriculture real GDP growth, year on year (crops +5.2%, livestock +5.9%, fishing -24.7%)",
-     "value": "3.9 (Q2 2025: 7.1)",
+     "value": "3.9",
      "unit": "%",
      "period": "Q2 2026",
      "source_label": "Ghana News Agency, reporting Ghana Statistical Service quarterly GDP",
      "source_url": "https://gna.org.gh/2026/09/digital-economy-powers-ghanas-gdp-to-six-per-cent/",
      "official": false,
-     "quote": "growth in agriculture slowed to 3.9 per cent in the second quarter"
+     "quote": "growth in agriculture slowed to 3.9 per cent in the second quarter",
+     "note": "Q2 2025: 7.1%."
     },
     {
      "id": "agri-combined-installed-cocoa-processing-capa",
@@ -1197,14 +1265,15 @@
     },
     {
      "id": "agri-food-import-bill-largest-items-processed",
-     "label": "Food import bill (largest items: processed cereals, frozen chicken, rice)",
-     "value": ">36.5",
+     "label": "Food import bill",
+     "value": "36.46",
      "unit": "GH¢ billion",
      "period": "2025",
      "source_label": "Graphic Online, reporting GSS Annual International Merchandise Trade Statistics",
      "source_url": "https://graphiconline.com/news/general-news/ghana-spent-over-ghc36bn-importing-food-in-2025-gss-report-reveals.html",
      "official": false,
-     "quote": "more than GH¢36.5 billion"
+     "quote": "puts the value of food imports at GH¢36.46 billion",
+     "note": "Largest items: processed cereal grains, frozen chicken and animal offal (GH¢2.72bn); rice, including broken rice, about GH¢3.6bn."
     }
    ],
    "rules": [
@@ -1217,15 +1286,15 @@
      "source_url": "https://gna.org.gh/2026/02/cpc-welcomes-50-local-cocoa-processing-directive/"
     },
     {
-     "text": "Non-citizens may hold land only as leasehold, for no more than 50 years at any one time (Land Act 2020, Act 1036, s.10). Any grant of freehold to a non-citizen is void. Leases are renewable and can be mortgaged.",
-     "source_url": "https://www.myjoyonline.com/freehold-leasehold-and-the-50-year-rule-what-foreign-and-diaspora-buyers-can-actually-own-in-ghana/"
+     "text": "Non-citizens (including companies with more than 40% non-citizen ownership) may hold land only as leasehold, for no more than 50 years at any one time (Land Act 2020, Act 1036, s.10). Any grant of freehold to a non-citizen is void. A fixed-term lease to a non-Ghanaian is not renewable unless the lease expressly provides for renewal (s.50(17)), so renewal terms must be negotiated up front. Registered leases can be mortgaged.",
+     "source_url": "https://ghalii.org/akn/gh/act/2020/1036/eng@2020-12-23"
     },
     {
      "text": "Free zone enterprises pay no income tax for 10 years (confirm the rate that applies afterwards with GFZA and GRA, as it has changed). Imports for production are duty-free and dividends are exempt from withholding tax. At least 70% of output must be exported, so up to 30% may be sold locally.",
      "source_url": "https://gfza.gov.gh/frequently-asked-questions"
     },
     {
-     "text": "Outside free zones, agro-processors get a 5-year tax holiday. After that, location-based rates apply: 5% in the Northern, Upper East and Upper West Regions, 10% outside regional capitals, 15% in other regional capitals and 20% in Accra/Tema. Tree-crop farming gets a 10-year holiday, and exporters of non-traditional agricultural products pay a concessionary 8% rate.",
+     "text": "Outside free zones, agro-processors that mainly use local raw materials get a 5-year concessionary period. GRA calls it a tax holiday, but its table shows a 5% special rate during it. After that, location-based rates apply: 5% in the Northern, Upper East and Upper West Regions, 10% outside regional capitals, 15% in other regional capitals and 20% in Accra/Tema. Tree-crop farming gets a 10-year concessionary period, and exporters of non-traditional products pay a concessionary 8% rate. GRA's guidance is internally inconsistent, so confirm current rates with GRA.",
      "source_url": "https://gra.gov.gh/domestic-tax/tax-types/tax-exemptions-for-businesses/"
     },
     {
@@ -1239,20 +1308,28 @@
      "source_url": "https://www.graphic.com.gh/business/business-news/africa-losing-out-on-130bn-cocoa-industry-cmc-md.html"
     },
     {
-     "text": "Domestic cocoa paper. COCOBOD's new commercial-paper model (three tranches covering an 8-month season, with escrow over cocoa sale proceeds) is open to pension funds and non-resident investors. Cocoa Capital PLC's GH¢16.3bn programme is repaid from assigned forward-sales receivables.",
-     "source_url": "https://www.gbcghanaonline.com/news/business/govt-ends-longstanding-syndicated-loan-arrangement-set-to-introduce-new-financing-model-for-cocobod/2026/"
+     "text": "Domestic cocoa paper. Cocoa Capital PLC's GH¢16.3bn programme (GH¢14bn of commercial paper for 2026/27 purchases, GH¢2.3bn of bonds to refinance legacy debt) is repaid from assigned forward-sales receivables through ring-fenced accounts. The Finance Minister said the paper would be issued in three tranches over an 8-month season and would widen participation to pension funds and non-resident investors. The first 266-day tranche raised GH¢3.39bn against a GH¢4bn target at 11% (October 2026).",
+     "source_url": "https://cocobod.gh/news/ghs-163-billion-domestic-cocoa-notes-programme-to-boost-cocoa-financing",
+     "source2": {
+      "url": "https://www.adomonline.com/cocobod-raises-gh%C2%A23-39bn-at-11-in-first-commercial-paper-tranche/",
+      "label": "Adom Online, 5 Oct 2026 (first CP tranche result)"
+     }
     },
     {
-     "text": "Import substitution in rice and poultry. The 2025 food import bill was above GH¢36.5bn. The Feed Ghana coordinator reports rice sufficiency up from 42% to 56% and poultry from 5% to 21%, which still leaves a large gap for integrated poultry, feed and rice-milling investment.",
+     "text": "Import substitution in rice and poultry. GSS puts the 2025 food import bill at GH¢36.46bn. The Feed Ghana coordinator reports rice sufficiency up from 42% to 56% and poultry from 5% to 21%, which still leaves a large gap for integrated poultry, feed and rice-milling investment.",
      "source_url": "https://gna.org.gh/2026/10/feed-ghana-programme-cuts-food-import-dependence/"
     },
     {
-     "text": "Cashew and shea processing. A Nitidae/ACPG study found about 6% of cashew output is processed locally, and the government has announced a phased ban on raw shea-nut exports. Both point to supply for local processors, and GEPA reports shea-nut exports more than doubled to USD 177.79m in 2025.",
-     "source_url": "https://www.myjoyonline.com/ghana-processes-less-than-6-of-cashew-output-as-farmers-face-price-plunge/"
+     "text": "Cashew and shea processing. A Nitidae/ACPG study found Ghana processed only about 15,000 t of raw cashew in 2025, under 6% of estimated output of 262,000 t, while about 444,000 t of raw nuts (including informal imports from neighbours) were exported. In July 2025 the government announced a phased ban on raw shea-nut exports from 2026. GEPA reports shea-nut exports more than doubled to USD 177.79m in 2025, partly because exporters front-loaded shipments ahead of the ban.",
+     "source_url": "https://www.myjoyonline.com/ghana-processes-less-than-6-of-cashew-output-as-farmers-face-price-plunge/",
+     "source2": {
+      "url": "https://citinewsroom.com/2025/07/govt-to-ban-raw-shea-nut-exports-by-2026/",
+      "label": "Citi Newsroom, 9 Jul 2025 (shea ban announcement)"
+     }
     },
     {
-     "text": "Cold chain and processed food for AfCFTA markets. US Commerce puts cold-chain revenue potential in fruit and vegetables at up to USD 900m a year, largely untapped. Government is repositioning special economic zones around agro-processing and offering rules-of-origin support for AfCFTA trade, with the AfCFTA Secretariat based in Accra.",
-     "source_url": "https://www.graphic.com.gh/business/business-news/ghana-loses-out-2-5-billion-yearly-from-raw-exports-trade-minister.html"
+     "text": "Cold chain and processed food for AfCFTA markets. The US International Trade Administration (2022) put the revenue potential of cold-chain solutions in Ghana's fruit and vegetable value chains at up to USD 900m a year. Government is repositioning special economic zones around agro-processing and offering rules-of-origin support for AfCFTA trade, with the AfCFTA Secretariat based in Accra.",
+     "source_url": "https://www.trade.gov/market-intelligence/ghana-cold-chain"
     }
    ],
    "risks": [
@@ -1261,7 +1338,7 @@
      "source_url": "https://www.citinewsroom.com/2024/02/ghana-loses-over-500000-hectares-of-cocoa-farms-to-swollen-shoot-disease/"
     },
     {
-     "text": "Illegal mining (galamsey) on farmland. COCOBOD reported more than 19,000 ha of cocoa farms destroyed or affected, concentrated in the Eastern, Western and Ashanti regions, which produce over 90% of the crop. This is the latest official figure found and dates from 2022.",
+     "text": "Illegal mining (galamsey) on farmland. A 2022 COCOBOD study reported more than 19,000 ha of surveyed cocoa farms destroyed or affected (some outlets reported acres). The damage was concentrated in the Eastern, Western and Ashanti regions, which produce over 90% of the crop. This covers selected farms, not a national total, and COCOBOD said in 2024 it had no up-to-date national data.",
      "source_url": "https://www.graphic.com.gh/business/business-news/ghana-news-galamsey-threatens-cocoa-production-19-000ha-of-farmland-affected.html"
     },
     {
@@ -1273,7 +1350,7 @@
      "source_url": "https://gna.org.gh/2026/09/ghana-opens-2026-27-cocoa-season-with-producer-price-of-ghc-42400-per-tonne/"
     },
     {
-     "text": "FX and financing. The cedi depreciated 7.1% against the USD year-to-date to August 2026 (BoG). Crop finance now depends on domestic money-market appetite for COCOBOD paper rather than offshore syndicated loans.",
+     "text": "FX and financing. The cedi depreciated 7.1% against the USD in the year to end-August 2026, and 9.5% by 18 September 2026 (BoG). Crop finance now depends on domestic money-market appetite for COCOBOD paper rather than offshore syndicated loans.",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf"
     }
    ],
@@ -1295,7 +1372,7 @@
     },
     {
      "name": "Cocoa Processing Company (CPC)",
-     "what": "Listed state-linked chocolate and semi-finished cocoa producer. It plans to more than double output with new machinery.",
+     "what": "Listed state-linked chocolate and semi-finished cocoa producer. It plans to more than double its chocolate output (currently 700–1,000 cartons a day) through new machinery and refurbishment.",
      "source_url": "https://gna.org.gh/2026/02/cpc-welcomes-50-local-cocoa-processing-directive/"
     },
     {
@@ -1350,8 +1427,8 @@
   {
    "id": "industry",
    "title": "ICT and fintech, manufacturing, real estate and logistics",
-   "headline": "ICT is Ghana's fastest-growing sector and mobile money exceeds GH¢500bn a month, while ports run near capacity and industrial policy has moved from 1D1F to the 24-Hour Economy (24H+) framework",
-   "summary": "Ghana's Statistical Service reported ICT growth of 30.9% year-on-year in Q2 2026, the main driver of 6.0% real GDP growth, and Bank of Ghana data show monthly mobile money transactions of GH¢518.8bn in August 2026. The new Ghana Investment Promotion Authority Act, 2026 (Act 1173) removes blanket minimum capital for non-trading foreign enterprises, and the 24-Hour Economy Authority Act (assented February 2026) is the new channel for manufacturing incentives after the One District One Factory programme was discontinued in 2025. Housing remains structurally short (deficit estimated at over 1.8 million units), with non-citizens limited to 50-year renewable leaseholds. Container traffic through Tema and Takoradi rose 12.2% in January–May 2026, but congestion at Tema and slow delivery of inland port and rail projects are binding constraints.",
+   "headline": "ICT leads Ghana's growth and mobile money exceeds GH¢500bn a month, while ports run near capacity and industrial policy has moved from 1D1F to the 24-Hour Economy (24H+) framework",
+   "summary": "Ghana's Statistical Service reported ICT growth of 30.9% year-on-year in Q2 2026, the main driver of 6.0% real GDP growth, and Bank of Ghana data show monthly mobile money transactions of GH¢518.8bn in August 2026. The new Ghana Investment Promotion Authority Act, 2026 (Act 1173) removes blanket minimum capital for non-trading foreign enterprises, and the 24-Hour Economy Authority Act (assented February 2026) is the new channel for manufacturing incentives after the One District One Factory programme was discontinued in 2025. Housing remains structurally short (deficit estimated at over 1.8 million units), with non-citizens limited to leaseholds of up to 50 years, renewable only if the lease says so. Container traffic through Tema and Takoradi rose 12.2% in January–May 2026, but congestion at Tema and slow delivery of inland port and rail projects are binding constraints.",
    "figures": [
     {
      "id": "industry-ict-information-communication-real-growt",
@@ -1412,23 +1489,24 @@
      "id": "industry-mobile-money-transaction-value-full-year",
      "label": "Mobile money transaction value, full year",
      "value": "4.54",
-     "unit": "GH¢ trillion (+50.8% y/y)",
+     "unit": "GH¢ trillion",
      "period": "2025",
-     "source_label": "MyJoyOnline, citing Bank of Ghana (24 Sep 2026)",
-     "source_url": "https://www.myjoyonline.com/total-mobile-money-transaction-value-hits-gh%c2%a23-8trn-as-of-august-2026/",
-     "official": false,
-     "quote": "grew by 50.8% to GH¢4.54 trillion"
+     "source_label": "Bank of Ghana, Payment Systems Oversight Annual Report 2025",
+     "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/08/Payment-Systems-Annual-Report-2025.pdf",
+     "official": true,
+     "quote": "grew by 50.8 percent to GH¢4.54 trillion",
+     "note": "+50.8% y/y."
     },
     {
      "id": "industry-mobile-voice-subscriptions-penetration-1",
-     "label": "Mobile voice subscriptions (penetration 128.26%)",
-     "value": "43.50",
+     "label": "Mobile voice subscriptions (penetration 129.55%)",
+     "value": "44.15",
      "unit": "million",
-     "period": "Q1 2026 (end-March)",
-     "source_label": "National Communications Authority, Q1 2026 Statistical Bulletin",
-     "source_url": "https://nca.org.gh/wp-content/uploads/2026/06/Q1_2026_Statistical_Bulletin.pdf",
+     "period": "June 2026",
+     "source_label": "National Communications Authority, Monthly Industry Voice June 2026",
+     "source_url": "https://nca.org.gh/wp-content/uploads/2026/07/Monthly-Industry-Voice_June_2026.pdf",
      "official": true,
-     "quote": "43,500,269"
+     "quote": "44,151,279"
     },
     {
      "id": "industry-total-data-subscriptions-penetration-90-",
@@ -1456,23 +1534,25 @@
      "id": "industry-container-traffic-tema-and-takoradi-lade",
      "label": "Container traffic, Tema and Takoradi (laden, inbound + outbound)",
      "value": "394,742",
-     "unit": "containers (+12.2% y/y)",
+     "unit": "containers",
      "period": "January–May 2026",
      "source_label": "Bank of Ghana, Monetary Policy Report July 2026",
      "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/08/Monetary-Policy-Report-July-2026.pdf",
      "official": true,
-     "quote": "went up by 12.2 percent to 394,742"
+     "quote": "went up by 12.2 percent to 394,742",
+     "note": "+12.2% y/y."
     },
     {
      "id": "industry-national-container-throughput-tema-1-668",
      "label": "National container throughput (Tema 1,668,688 TEU; Takoradi 32,558 TEU)",
      "value": "1,701,246",
-     "unit": "TEU (projected)",
+     "unit": "TEU",
      "period": "2024",
      "source_label": "Citi Newsroom, reporting GPHA statistics (30 Sep 2025)",
      "source_url": "https://www.citinewsroom.com/2025/09/ghanas-container-traffic-hits-record-high-driven-by-tema-port-gpha/",
      "official": false,
-     "quote": "to a projected 1,701,246 TEUs in 2024"
+     "quote": "to a projected 1,701,246 TEUs in 2024",
+     "note": "Projected."
     },
     {
      "id": "industry-mps-terminal-3-tema-annual-handling-capa",
@@ -1487,14 +1567,15 @@
     },
     {
      "id": "industry-boankra-integrated-logistics-terminal-pr",
-     "label": "Boankra Integrated Logistics Terminal progress vs. target",
+     "label": "Boankra inland port: construction progress against the April 2026 target",
      "value": "6 vs 20",
-     "unit": "% complete (US$308m project)",
+     "unit": "% of the period target achieved",
      "period": "April 2026",
      "source_label": "News Ghana (24 Apr 2026)",
      "source_url": "https://www.newsghana.com.gh/boankra-inland-port-six-percent-complete-against-20-percent-target-as-funding-gap-widens/",
      "official": false,
-     "quote": "falling sharply short of the 20 percent milestone"
+     "quote": "has progressed by just six percent of its construction target for April 2026",
+     "note": "Not overall completion: phase one, due in Q1 2025, was reported more than 80% complete in April 2026. US$308m project."
     }
    ],
    "rules": [
@@ -1511,7 +1592,7 @@
      "source_url": "https://dpc.gov.gh/"
     },
     {
-     "text": "Free Zones Act, 1995 (Act 504): free-zone enterprises must export at least 70% of annual output (up to 30% may be sold locally), receive a 10-year corporate income tax holiday, exemption from import duties on production inputs and from dividend withholding tax, and may be 100% foreign-owned. Sources disagree on the tax rate after the holiday, so confirm it with GFZA and GRA before modelling.",
+     "text": "Free Zones Act, 1995 (Act 504): free-zone enterprises must export at least 70% of annual output (up to 30% may be sold locally) and may be 100% foreign-owned. GFZA lists a 10-year corporate income tax holiday, exemption from duties on imports for production, and exemption from dividend withholding tax. EY (Oct 2025) reports that the reduced post-holiday rate and dividend exemptions were repealed by later tax laws, so confirm the post-holiday rate and dividend treatment with GFZA and GRA before modelling.",
      "source_url": "https://gfza.gov.gh/frequently-asked-questions"
     },
     {
@@ -1519,12 +1600,16 @@
      "source_url": "https://www.myjoyonline.com/freehold-leasehold-and-the-50-year-rule-what-foreign-and-diaspora-buyers-can-actually-own-in-ghana/"
     },
     {
-     "text": "Real Estate Agency Act, 2020 (Act 1047): agents, brokers and persons developing, managing or marketing property for sale or rent must be licensed by the Real Estate Agency Council, which also monitors anti-money-laundering risk in property transactions.",
-     "source_url": "https://reac.gov.gh/"
+     "text": "Real Estate Agency Act, 2020 (Act 1047): anyone who, for a fee, lists, markets, sells, buys, rents or leases property on behalf of others must be licensed by the Real Estate Agency Council as a real estate broker or agent. The Council keeps a transaction database and works with the Financial Intelligence Centre on anti-money-laundering compliance.",
+     "source_url": "https://ghalii.org/akn/gh/act/2020/1047/eng@2020-12-29"
     },
     {
-     "text": "24-Hour Economy Authority Act (assented 19 Feb 2026) creates the authority that coordinates 24H+ incentives. The published package includes import-tax exemptions on machinery and inputs, CIT reductions for two- and three-shift operations, priority power and water access for 24-hour operators, and a local value-addition rebate (G-LVAR). The government has announced duty- and tax-free import of expansion and retooling equipment for factories registered under the initiative.",
-     "source_url": "https://24hplus.gov.gh/24h-private-sector-incentives/"
+     "text": "24-Hour Economy Authority Act (assented 19 Feb 2026) creates the authority that coordinates 24H+ incentives. The published 24H+ package (Aug 2025) includes import-tax exemptions on manufacturing machinery and some inputs, CIT reductions for two- and three-shift operations, priority power and water access for three-shift operators, and a local value-addition rebate (G-LVAR). President Mahama has proposed duty- and tax-free import of expansion and retooling equipment for factories registered under the initiative. Confirm which measures have been enacted in tax law.",
+     "source_url": "https://24hplus.gov.gh/24h-private-sector-incentives/",
+     "source2": {
+      "url": "https://isd.gov.gh/equipment-for-24-hour-economy-factories-to-enter-duty-and-tax-free/",
+      "label": "Information Services Department (Ghana)"
+     }
     },
     {
      "text": "The Electronic Transfer Levy (E-Levy, 1%) on mobile money and electronic transfers was abolished by the Electronic Transfer Levy Repeal Bill 2025, approved by Parliament on 26 March 2025.",
@@ -1533,7 +1618,7 @@
    ],
    "opportunities": [
     {
-     "text": "Payments and embedded finance: mobile money reached GH¢518.8bn and 1.05bn transactions in August 2026, but only about 26.4m of 85.8m registered accounts are active. This leaves room for merchant acquiring, cross-border remittance, credit and B2B payment products under PSP-Enhanced or PFTSP licences.",
+     "text": "Payments and embedded finance: mobile money reached GH¢518.8bn and 1.05bn transactions in August 2026, but only about 26.4m of 85.8m registered accounts are active. This leaves room for merchant acquiring, cross-border remittance and B2B payments (PSP-Enhanced licence), digital credit (Digital Credit Services Provider licence or bank partnership) and KYC, scoring and fraud tooling (PFTSP licence).",
      "source_url": "https://www.bog.gov.gh/finTech-statistics/"
     },
     {
@@ -1563,20 +1648,24 @@
      "source_url": "https://www.myjoyonline.com/transport-minister-orders-urgent-action-to-tackle-surge-in-port-congestion/"
     },
     {
-     "text": "Infrastructure delivery: the Boankra inland terminal was 6% complete against a 20% target in April 2026. The Tema–Mpakadan railway needed a US$21m EU grant (July 2026) to fix incomplete signalling and other systems after commissioning. Do not base logistics plans on rail or inland-port capacity yet.",
+     "text": "Infrastructure delivery: Boankra inland terminal construction achieved only 6% against a 20% milestone for April 2026, and phase one, due in Q1 2025, is still unfinished. The Tema–Mpakadan railway needed a US$21m EU grant (July 2026) to fix signalling and other systems that were incomplete at commissioning. Do not base logistics plans on rail or inland-port capacity yet.",
      "source_url": "https://www.citinewsroom.com/2026/07/ghana-secures-21m-eu-grant-to-complete-tema-mpakadan-railway-works/"
     },
     {
-     "text": "Industrial policy discontinuity: the Trade Minister told Parliament in July 2025 that 'there is no policy as 1D1F' and that its incentives had lapsed, leaving many factories idle. Incentives under the successor 24H+ programme depend on the new Authority and enabling tax measures.",
+     "text": "Industrial policy discontinuity: the Trade Minister told Parliament on 8 July 2025 that 'there is no policy as 1D1F' and that no incentives currently applied under it, with the ministry still assessing the fallout for 1D1F companies. Incentives under the successor 24H+ programme depend on the new Authority and enabling tax measures.",
      "source_url": "https://www.graphic.com.gh/news/general-news/1d1f-programme-cancelled-trade-minister-confirms-to-parliament.html"
     },
     {
-     "text": "Free-zone tax erosion: EY reports that the reduced post-holiday rate was repealed and domestic sales are taxed at the standard 25% CIT, while Official sources disagree on the rate after the holiday, so confirm it with GRA before modelling.",
+     "text": "Free-zone tax erosion: EY (Oct 2025) reports that Act 504's reduced post-holiday rate (8%) and dividend exemptions were repealed, with domestic sales taxed at the standard 25% CIT; the same note cites 15% on export profits after the holiday. GFZA still advertises a maximum of 8%. Confirm the applicable rate with GRA before modelling.",
      "source_url": "https://globaltaxnews.ey.com/news/2025-2176"
     },
     {
-     "text": "Telecom market concentration: MTN Ghana holds 80.10% of mobile data subscriptions (June 2026) and about 72% of voice. Pricing, interconnection and significant-market-power rules can change quickly for entrants and partners.",
-     "source_url": "https://nca.org.gh/wp-content/uploads/2026/07/Monthly-Industry-Data_June_2026.pdf"
+     "text": "Telecom market concentration: MTN Ghana holds 80.10% of mobile data subscriptions and 72.5% of mobile voice subscriptions (June 2026). Pricing, interconnection and significant-market-power rules can change quickly for entrants and partners.",
+     "source_url": "https://nca.org.gh/wp-content/uploads/2026/07/Monthly-Industry-Data_June_2026.pdf",
+     "source2": {
+      "url": "https://nca.org.gh/wp-content/uploads/2026/07/Monthly-Industry-Voice_June_2026.pdf",
+      "label": "National Communications Authority, Monthly Industry Voice June 2026"
+     }
     },
     {
      "text": "Regulatory and ownership limits in fintech and land: PSP-Standard licences are reserved for Ghanaians; all data controllers must register with the DPC; non-citizens cannot hold land leases above 50 years at a time. Title diligence through the Lands Commission is essential.",
@@ -1596,8 +1685,8 @@
     },
     {
      "name": "Telecel Ghana / AT Ghana",
-     "what": "Second and third mobile operators (20.99% and 7.16% of voice subscriptions, Q1 2026), each with licensed mobile-money affiliates",
-     "source_url": "https://nca.org.gh/wp-content/uploads/2026/06/Q1_2026_Statistical_Bulletin.pdf"
+     "what": "second and third mobile operators (20.72% and 6.77% of mobile voice subscriptions, June 2026), each with a BoG-licensed mobile-money affiliate",
+     "source_url": "https://nca.org.gh/wp-content/uploads/2026/07/Monthly-Industry-Voice_June_2026.pdf"
     },
     {
      "name": "Hubtel, Paystack Ghana, Flutterwave, eTranzact, Cellulant",
@@ -1621,7 +1710,7 @@
     },
     {
      "name": "Ghana Ports and Harbours Authority / Meridian Port Services",
-     "what": "GPHA owns and regulates the Tema and Takoradi ports (plus the Boankra and Keta projects); MPS operates Tema Terminal 3 and is expanding capacity to 3.0m TEU",
+     "what": "GPHA owns and regulates the Tema and Takoradi ports, leads the Keta port project and co-develops Boankra with the Ghana Shippers' Authority. MPS (a GPHA/AGL/APM Terminals joint venture) operates Tema Terminal 3 and is expanding its capacity to 3.0m TEU.",
      "source_url": "https://mps-gh.com/2026/03/17/mps-expects-next-gen-equipment-fleet-to-power-expansion-to-3-million-teus/"
     }
    ],
@@ -1670,17 +1759,17 @@
     "prob": 55,
     "story": "Growth stays around 5% as the gold boom cools but ICT, services and oil keep expanding. Inflation drifts back into the Bank of Ghana’s 8% ± 2 band as the cedi weakens gradually, so rate cuts are slow. The February 2027 domestic bond repayments are met from the sinking fund.",
     "assumptions": [
-     "Gold about US$4,700/oz in 2026 and US$4,300 in 2027 (World Bank)",
-     "Cocoa about US$3.80/kg in 2026 and US$4.20 in 2027 (World Bank); a smaller 2026/27 crop",
-     "Oil output around 95,000 barrels a day in 2026, rising with new Jubilee wells from 2027",
-     "Primary surplus of 1.5% of GDP in 2026 and 0.5% from 2027, as legislated"
+     "Gold about US$4,700/oz in 2026 and US$4,300 in 2027 (World Bank, April 2026)",
+     "Cocoa about US$3.80/kg in 2026 and US$4.20 in 2027 (World Bank, April 2026); our assumption of a smaller 2026/27 crop",
+     "Oil output above 100,000 barrels a day in 2026 (our assumption; Jubilee alone above 80,000 b/d per GNPC), rising further as new Jubilee wells come on stream",
+     "Primary surplus of 1.5% of GDP in 2026 (legislated floor) and 0.5% from 2027 (proposed in the 2026 Mid-Year Review; requires amending the PFM Act)"
     ]
    },
    {
     "id": "up",
     "name": "Upside",
     "prob": 20,
-    "story": "Gold stays above US$4,500 into 2027, new Jubilee wells lift oil output above 100,000 barrels a day and the cocoa crop recovers. Reserves rise towards six months of imports, the cedi is broadly stable and the Bank of Ghana can cut rates further.",
+    "story": "Gold stays above US$4,500 into 2027, new Jubilee wells push the field above 90,000 barrels a day and the cocoa crop recovers. Reserves rise towards six months of imports, the cedi is broadly stable and the Bank of Ghana can cut rates further.",
     "assumptions": [
      "Gold above US$4,500/oz through 2027",
      "Jubilee above 90,000 barrels a day from 2027",
@@ -1697,7 +1786,7 @@
      "Gold below US$3,800/oz by 2027",
      "Cocoa crop near or below 650,000 tonnes",
      "Energy-sector arrears rise again",
-     "Fiscal slippage ahead of the December 2028 election"
+     "Fiscal slippage ahead of the 2028 general election"
     ]
    }
   ],
@@ -1740,7 +1829,7 @@
       "what": "4.8 / 4.9 / 5.0%",
       "url": "https://thedocs.worldbank.org/en/doc/bae48ff2fefc5a869546775b3f010735-0500062021/related/mpo-gha.pdf",
       "official": true,
-      "quote": "Growth is projected to ease to 4.8 percent in 2026"
+      "quote": "GDP growth is projected to moderate to 4.8 percent in 2026"
      },
      {
       "publisher": "Ministry of Finance",
@@ -1754,7 +1843,7 @@
       "what": "Fitch Solutions: 5.7% in 2026",
       "url": "https://www.myjoyonline.com/fitch-solutions-predicts-inflation-to-rise-to-9-by-end-2026-despite-recent-gains/",
       "official": false,
-      "quote": "reaching 9% by the end of 2026"
+      "quote": "Fitch Solutions forecasts Ghana's economy to grow by 5.7% in 2026"
      }
     ]
    },
@@ -1764,7 +1853,7 @@
     "unit": "%",
     "basis": "December",
     "history": "cpi_dec",
-    "actual_2026": "August 2026: 5.0%",
+    "actual_2026": "September 2026: 5.2%",
     "f": {
      "2026": [
       7.0,
@@ -1782,7 +1871,7 @@
       14.0
      ]
     },
-    "why": "Inflation is below the 8% ± 2 target band now; the Bank of Ghana expects it to move up into the band as the weaker cedi feeds through.",
+    "why": "Inflation (5.2% in September) is below the 8% ± 2 target band. The Bank of Ghana expects it to move up into the band over the next few quarters as higher utility tariffs and fuel prices pass through; Fitch Solutions expects a weaker cedi to push it to 9% by end-2026.",
     "anchors": [
      {
       "publisher": "IMF",
@@ -1926,7 +2015,7 @@
     "anchors": [
      {
       "publisher": "IMF",
-      "what": "IMF: 4.5 / 5.0 / 5.5 months",
+      "what": "IMF: 4.5 / 5.0 / 5.5 months of prospective imports (IMF basis; not comparable with BoG import cover)",
       "url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf",
       "official": true,
       "quote": "GIR are expected to reach 6 months of import coverage by end-2029"
@@ -1993,16 +2082,18 @@
     "what": "GH¢30bn of restructured domestic bonds fall due"
    },
    {
-    "when": "Mar 2027",
-    "what": "First IMF review under the new Policy Coordination Instrument"
+    "when": "Oct 2026 – Jan 2027",
+    "what": "First IMF review under the Policy Coordination Instrument (mission October; Board completion expected by January 2027)",
+    "source_url": "https://www.ghanaweb.com/GhanaHomePage/business/Ghana-faces-1st-IMF-review-of-ongoing-PCI-programme-2054870"
    },
    {
     "when": "2027–2028",
     "what": "Domestic bond repayments of GH¢58bn and GH¢53bn"
    },
    {
-    "when": "Dec 2028",
-    "what": "General election"
+    "when": "7 Dec 2028",
+    "what": "General election (could move to early November 2028 if a proposed constitutional amendment is passed)",
+    "source_url": "https://rainbowradioonline.com/2026/07/30/govt-approves-proposal-to-move-presidential-polls-to-november-extends-term-to-5-years-and-reduces-age-eligibility-to-35/"
    }
   ],
   "method": "Scenarios start from the latest official projections and add our judgement on the drivers listed. They are estimates from public data, not a statistical model, and not investment advice. We review them every quarter and after major data releases, and keep a public scorecard of our forecasts against the outcomes."
@@ -2047,8 +2138,8 @@
   "mpr": {
    "label": "Bank of Ghana monetary policy rate, end-year",
    "unit": "%",
-   "source_label": "Bank of Ghana, Summary of Economic and Financial Data",
-   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
+   "source_label": "Bank of Ghana, Monetary Policy Rate history",
+   "source_url": "https://www.bog.gov.gh/economic-data/policy-rate/",
    "points": {
     "2016": 25.5,
     "2017": 20.0,
@@ -2117,6 +2208,14 @@
  ],
  "edition": {
   "label": "October 2026 edition",
-  "file": "ghana-investment-report-2026-10.pdf"
+  "file": "ghana-investment-report-2026-10.pdf",
+  "files": {
+   "en": "ghana-investment-report-2026-10.pdf",
+   "fr": "ghana-investment-report-2026-10-fr.pdf",
+   "es": "ghana-investment-report-2026-10-es.pdf",
+   "de": "ghana-investment-report-2026-10-de.pdf",
+   "ar": "ghana-investment-report-2026-10-ar.pdf",
+   "zh": "ghana-investment-report-2026-10-zh.pdf"
+  }
  }
 }
