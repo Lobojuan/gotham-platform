@@ -286,7 +286,7 @@ def main():
     open(os.path.join(DIST, 'tools.html'), 'w', encoding='utf-8').write(h)
     print('  tools.html (from classic)')
 
-    # Crawlable EN/FR/ES twins share dictionaries, article data and reciprocal alternates.
+    # Crawlable six-language twins share dictionaries, article data and reciprocal alternates.
     locale_pages = ['index.html', 'services.html', *[f'services/{p}.html' for p in PRACTICES], 'invest.html', 'mining.html', 'forums.html', 'about.html']
     twins = locale_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS]
     def path_of(n): return '' if n == 'index.html' else n[:-5]

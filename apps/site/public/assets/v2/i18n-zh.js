@@ -3317,5 +3317,7 @@ window.GC_I18N.zh = {
   "Inflation, Aug 2026": "通胀率，2026 年 8 月",
   "Outlook ratings are Gotham Consult's view for discussion, not investment advice. Figures: Ghana Statistical Service (Q2 2026 GDP, Aug 2026 CPI), Bank of Ghana (July 2026 MPC, 2025 trade data), GIPC (2025 FDI report). Updated September 2026.": "前景评级是 Gotham Consult 提供的讨论观点，不构成投资建议。数据来源：加纳统计局（2026 年第二季度 GDP、2026 年 8 月 CPI）、加纳央行（2026 年 7 月货币政策委员会、2025 年贸易数据）、GIPC（2025 年外国直接投资报告）。更新于 2026 年 9 月。",
   "Ghana Investment Report": "加纳投资报告",
-  "Read the Ghana Investment Report 2026": "阅读 2026 年加纳投资报告"
+  "Read the Ghana Investment Report 2026": "阅读 2026 年加纳投资报告",
+  "Ghana Investment Report 2026: Economy and Key Sectors | Gotham Consult": "2026 年加纳投资报告：经济与重点行业 | Gotham Consult",
+  "Independent investor guide to Ghana in 2026: growth, inflation, rates and reserves, plus mining, energy, cocoa and agribusiness, ICT, manufacturing, real estate and logistics. Every figure sourced and re-checked weekly.": "2026 年加纳独立投资者指南：经济增长、通胀、利率和储备，以及采矿、能源、可可与农业、信息通信技术、制造业、房地产和物流。每项数据均注明来源，并每周复查。"
 };
