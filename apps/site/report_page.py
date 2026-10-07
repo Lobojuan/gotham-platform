@@ -42,6 +42,15 @@ def check():
         for sec in ('rules', 'opportunities', 'risks'):
             for x in c[sec]:
                 if not x['source_url'].startswith('http'): out.append((c['id'], f'{sec}: unsourced line'))
+    o = r.get('outlook')
+    if o:
+        if sum(x['prob'] for x in o['scenarios']) != 100: out.append(('outlook', 'scenario probabilities do not add up to 100'))
+        for i in o['indicators']:
+            for y in ('2026', '2027', '2028'):
+                b, u, d = i['f'][y]
+                if not (min(u, d) <= b <= max(u, d)): out.append((i['id'], f'{y}: base case outside the scenario range'))
+            if not i['anchors'] or any(not a['url'].startswith('https://') for a in i['anchors']): out.append((i['id'], 'forecast without sourced anchors'))
+            if i['history'] not in r.get('history', {}): out.append((i['id'], 'no history series'))
     ex = dict(r['charts']['exports']['rows'])
     if abs(sum(ex.values()) - 22.44) > 0.02: out.append(('charts', 'export parts do not add up to the total'))
     return out
@@ -133,6 +142,76 @@ def chapter(i, c, r):
 </div></section>'''
 
 
+# ---------- outlook: scenarios, small-multiple charts, forecast table, scorecard ----------
+YEARS = list(range(2016, 2029))
+
+
+def spark(ind, hist):
+    """History 2016-2025 (solid), base case 2026-2028 (dashed) and the upside-downside range (shaded)."""
+    pts = {int(k): v for k, v in hist['points'].items() if v is not None}
+    f = {int(y): v for y, v in ind['f'].items()}
+    vals = list(pts.values()) + [x for v in f.values() for x in v]
+    lo, hi = min(vals), max(vals); pad = (hi - lo) * .12 or 1; lo, hi = lo - pad, hi + pad
+    W, H, L, R, T, B = 360, 190, 34, 46, 14, 26
+    x = lambda y: L + (y - YEARS[0]) * (W - L - R) / (YEARS[-1] - YEARS[0])
+    yv = lambda v: T + (hi - v) * (H - T - B) / (hi - lo)
+    last = max(pts); out = [f'<svg viewBox="0 0 {W} {H}" class="rp-spark" role="img" aria-label="{esc(ind["label"])}: history and forecast">']
+    for g in (lo + pad, (lo + hi) / 2, hi - pad):
+        out.append(f'<line x1="{L}" x2="{W - R}" y1="{yv(g):.1f}" y2="{yv(g):.1f}" stroke="#E3E5E8"/><text x="{L - 6}" y="{yv(g) + 4:.1f}" text-anchor="end" class="rp-ax">{g:.0f}</text>')
+    out.append(f'<rect x="{x(2025.5):.1f}" y="{T}" width="{x(2028) - x(2025.5) + 8:.1f}" height="{H - T - B}" fill="#FBF6EC"/>')
+    band = [(last, pts[last], pts[last])] + [(y, f[y][1], f[y][2]) for y in (2026, 2027, 2028)]
+    top = ' '.join(f'{x(y):.1f},{yv(max(a, b)):.1f}' for y, a, b in band)
+    bot = ' '.join(f'{x(y):.1f},{yv(min(a, b)):.1f}' for y, a, b in reversed(band))
+    out.append(f'<polygon points="{top} {bot}" fill="#F0BE5A" opacity=".35"/>')
+    out.append('<polyline fill="none" stroke="#0F1B2D" stroke-width="2.4" points="' + ' '.join(f'{x(y):.1f},{yv(v):.1f}' for y, v in sorted(pts.items())) + '"/>')
+    out.append('<polyline fill="none" stroke="#B8862F" stroke-width="2.6" stroke-dasharray="6 5" points="' +
+               ' '.join(f'{x(y):.1f},{yv(v):.1f}' for y, v in [(last, pts[last])] + [(y, f[y][0]) for y in (2026, 2027, 2028)]) + '"/>')
+    out.append(f'<circle cx="{x(last):.1f}" cy="{yv(pts[last]):.1f}" r="3.5" fill="#0F1B2D"/><circle cx="{x(2028):.1f}" cy="{yv(f[2028][0]):.1f}" r="3.5" fill="#B8862F"/>')
+    out.append(f'<text x="{x(2028) + 7:.1f}" y="{yv(f[2028][0]) + 4:.1f}" class="rp-axv">{f[2028][0]:.1f}</text>')
+    for y in (2016, 2020, 2025, 2028):
+        out.append(f'<text x="{x(y):.1f}" y="{H - 6}" text-anchor="middle" class="rp-ax">{y}</text>')
+    out.append('</svg>')
+    return ''.join(out)
+
+
+def outlook(r):
+    o, hist = r.get('outlook'), r.get('history', {})
+    if not o: return ''
+    sc = ''.join(f'<div class="box rp-sc rp-sc-{s["id"]}"><p class="eyebrow" style="margin:0">{esc(s["name"])}</p>'
+                 f'<p class="rp-prob"><b>{s["prob"]}%</b> likely</p><span class="rp-pbar"><i style="width:{s["prob"]}%"></i></span>'
+                 f'<p>{esc(s["story"])}</p><ul>{"".join("<li>" + esc(a) + "</li>" for a in s["assumptions"])}</ul></div>' for s in o['scenarios'])
+    cards = []
+    for ind in o['indicators']:
+        h = hist.get(ind['history'])
+        if not h: continue
+        anchors = ''.join(f'<li>{esc(a["publisher"])}: {esc(a["what"])} <a class="rp-s" href="{esc(a["url"])}" target="_blank" rel="noopener">source</a></li>' for a in ind['anchors'])
+        cards.append(f'<figure class="box rp-ind"><figcaption><b>{esc(ind["label"])}</b><span>{esc(ind["unit"])} · latest: {esc(ind["actual_2026"])}</span></figcaption>'
+                     f'{spark(ind, h)}<p class="rp-why">{esc(ind["why"])}</p>'
+                     f'<details><summary>Official forecasts we start from</summary><ul class="rp-anc">{anchors}</ul></details>'
+                     f'<p class="rp-src">History: <a href="{esc(h["source_url"])}" target="_blank" rel="noopener">{esc(h["source_label"])}</a></p></figure>')
+    rows = ''.join(f'<tr><th scope="row">{esc(i["label"])} <small>({esc(i["unit"])})</small></th>' +
+                   ''.join(f'<td><b>{i["f"][y][0]:.1f}</b><small>{min(i["f"][y][1], i["f"][y][2]):.1f}–{max(i["f"][y][1], i["f"][y][2]):.1f}</small></td>' for y in ('2026', '2027', '2028')) + '</tr>'
+                   for i in o['indicators'])
+    sec = ''.join(f'<tr><th scope="row">{esc(x["sector"])}</th><td>{esc(x["base"])}</td><td>{esc(x["up"])}</td><td>{esc(x["down"])}</td></tr>' for x in o['sectors'])
+    ev = ''.join(f'<li class="box"><b>{esc(e["when"])}</b><span>{esc(e["what"])}</span></li>' for e in o['events'])
+    score = ''.join(f'<tr><th scope="row">{esc(i["label"])}</th><td>{i["f"]["2026"][0]:.1f} {esc(i["unit"])}</td><td class="rp-pend">Due {"Dec 2026" if i["id"] == "gdp" else "Jan 2027"}</td></tr>' for i in o['indicators'])
+    return f'''<section class="sec rp-out" id="outlook" aria-labelledby="out-h"><div class="wrap">
+<div class="sec-head split"><div><p class="eyebrow">Gotham view · as of {nice(o["as_of"])}</p><h2 id="out-h">{esc(o["title"])}: three scenarios</h2></div><p class="lead">{esc(o["lead"])}</p></div>
+<div class="rp-scs">{sc}</div>
+<h3 class="rp-h3">Our forecasts at a glance</h3>
+<div class="rp-tablewrap"><table class="rp-table rp-ft"><thead><tr><th scope="col">Indicator</th><th scope="col">2026</th><th scope="col">2027</th><th scope="col">2028</th></tr></thead><tbody>{rows}</tbody></table></div>
+<p class="rp-src">Bold: base case. Small: range from downside to upside scenario.</p>
+<h3 class="rp-h3">History and outlook</h3><p class="rp-src" style="margin:-4px 0 12px"><span class="rp-k k1"></span> Actual   <span class="rp-k k2"></span> Base case   <span class="rp-k k3"></span> Upside–downside range</p>
+<div class="rp-inds">{"".join(cards)}</div>
+<h3 class="rp-h3">What it means by sector</h3>
+<div class="rp-tablewrap"><table class="rp-table rp-st"><thead><tr><th scope="col">Sector</th><th scope="col">Base case</th><th scope="col">Upside</th><th scope="col">Downside</th></tr></thead><tbody>{sec}</tbody></table></div>
+<h3 class="rp-h3">Events that could move the forecast</h3><ul class="rp-cal">{ev}</ul>
+<h3 class="rp-h3">Scorecard</h3><p class="rp-src" style="margin:-4px 0 12px">We publish how our base-case forecasts compare with the outcomes, every quarter.</p>
+<div class="rp-tablewrap"><table class="rp-table rp-score"><thead><tr><th scope="col">2026 forecast</th><th scope="col">Base case</th><th scope="col">Outcome</th></tr></thead><tbody>{score}</tbody></table></div>
+<p class="rp-src" style="margin-top:14px">{esc(o["method"])}</p>
+</div></section>'''
+
+
 CSS = '''<style>
 .rp-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin:18px 0 0;padding:0;list-style:none;font-size:14px;color:rgba(255,255,255,.82)}
 .rp-meta b{color:#fff}
@@ -183,6 +262,26 @@ CSS = '''<style>
 .rp-fig .fs{font-size:12px;color:var(--mute);margin-top:auto;padding-top:8px;line-height:1.45}
 .rp-fig .fs a{color:inherit;overflow-wrap:anywhere}
 .rp-fig.review{border-color:#E9B872}.rp-fig.review .fp::after{content:" \\2022 being re-checked";font-weight:700;color:#9A5B00}
+.rp-out{background:linear-gradient(180deg,#F6F3EC,#FAFAF8)}
+.rp-scs{display:grid;gap:14px}
+@media(min-width:900px){.rp-scs{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rp-sc{padding:20px 22px;display:flex;flex-direction:column;gap:8px}
+.rp-sc p{margin:0;font-size:14.5px;color:var(--mute)}.rp-sc ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--ink);display:grid;gap:4px}
+.rp-prob{color:var(--ink)!important}.rp-prob b{font-size:26px}
+.rp-pbar{display:block;height:6px;border-radius:99px;background:#EEF0F3;overflow:hidden}.rp-pbar i{display:block;height:100%;background:#0F1B2D}
+.rp-sc-up .rp-pbar i{background:#1E6B3A}.rp-sc-down .rp-pbar i{background:#B45309}.rp-sc-base{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.rp-ft{min-width:0}.rp-ft td{white-space:nowrap}.rp-ft td b{font-size:17px;display:block}.rp-ft td small{color:var(--mute);font-size:12px}
+.rp-ft th small{color:var(--mute);font-weight:500}
+.rp-inds{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+.rp-ind{margin:0;padding:18px 20px;display:flex;flex-direction:column;gap:8px}
+.rp-ind figcaption{display:flex;flex-direction:column;gap:2px}.rp-ind figcaption span{font-size:12.5px;color:var(--mute)}
+.rp-spark{width:100%;height:auto;display:block}.rp-ax{font:500 12px var(--font);fill:#6B7280}.rp-axv{font:700 13px var(--font);fill:#9A6A12}
+.rp-why{margin:0;font-size:13.5px;color:var(--ink);line-height:1.5}
+.rp-ind details summary{cursor:pointer;font-size:13px;font-weight:600;min-height:32px;display:flex;align-items:center}
+.rp-anc{margin:0;padding-left:18px;font-size:13px;display:grid;gap:4px;color:var(--mute)}
+.rp-k{display:inline-block;width:18px;height:0;border-top:2.5px solid #0F1B2D;vertical-align:4px}.rp-k.k2{border-top:2.5px dashed #B8862F}.rp-k.k3{height:10px;border:0;background:#F0BE5A;opacity:.5;vertical-align:-1px}
+.rp-st{min-width:760px}.rp-st td{font-size:13.5px;color:var(--mute)}.rp-st tbody th{width:18%}
+.rp-pend{color:var(--mute);font-style:italic}
 .rp-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:#fff}
 .rp-table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:640px}
 .rp-table th,.rp-table td{padding:12px 16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
@@ -268,12 +367,12 @@ def render():
         '<div class="hero-cta" style="margin-top:22px"><a class="btn btn-gold" href="#macro">Read the report <span class="arrow">→</span></a> '
         '<a class="btn btn-line" href="#partner">Feature your company</a></div>'
         '</div></section>\n'
-        f'<nav class="rp-toc" aria-label="Chapters"><div class="wrap"><ol><li><a href="#snapshot">Snapshot</a></li>{toc}<li><a href="#dates">Dates to watch</a></li><li><a href="#partner">Partners</a></li></ol></div></nav>\n'
+        f'<nav class="rp-toc" aria-label="Chapters"><div class="wrap"><ol><li><a href="#snapshot">Snapshot</a></li><li><a href="#outlook">Outlook 2026–2028</a></li>{toc}<li><a href="#dates">Dates to watch</a></li><li><a href="#partner">Partners</a></li></ol></div></nav>\n'
         '<section class="sec" id="snapshot" aria-labelledby="snap-h"><div class="wrap">'
         '<div class="sec-head split"><div><p class="eyebrow">Economy snapshot</p><h2 id="snap-h">Ghana in eight numbers</h2></div>'
         '<p class="lead">Growth, prices, rates and reserves. Figures marked <span class="rp-live" style="margin:0">Live</span> refresh automatically from the Bank of Ghana and the Ghana Statistical Service.</p></div>'
         f'<div class="rp-kpis">{kpis}</div><div class="rp-charts">{charts}</div></div></section>\n'
-        + chapters +
+        + outlook(r) + chapters +
         '\n<section class="sec" id="dates" aria-labelledby="dates-h"><div class="wrap"><p class="eyebrow">Dates to watch</p><h2 id="dates-h">What could move the numbers next</h2>'
         f'<ul class="rp-cal">{cal}</ul></div></section>\n'
         '<section class="sec" aria-labelledby="how-h"><div class="wrap"><p class="eyebrow">How this report stays current</p><h2 id="how-h">Checked every week, confirmed by a person</h2><div class="rp-how">'

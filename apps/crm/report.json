@@ -1658,5 +1658,445 @@
     }
    ]
   }
- ]
+ ],
+ "outlook": {
+  "title": "Outlook 2026–2028",
+  "as_of": "2026-10-07",
+  "lead": "Our view of where Ghana’s economy is heading, in three scenarios. Each starts from the official forecasts of the IMF, the World Bank, the Bank of Ghana and the Ministry of Finance, and adds our reading of the drivers that matter most: gold, cocoa, oil, the cedi and public finances.",
+  "scenarios": [
+   {
+    "id": "base",
+    "name": "Base case",
+    "prob": 55,
+    "story": "Growth stays around 5% as the gold boom cools but ICT, services and oil keep expanding. Inflation drifts back into the Bank of Ghana’s 8% ± 2 band as the cedi weakens gradually, so rate cuts are slow. The February 2027 domestic bond repayments are met from the sinking fund.",
+    "assumptions": [
+     "Gold about US$4,700/oz in 2026 and US$4,300 in 2027 (World Bank)",
+     "Cocoa about US$3.80/kg in 2026 and US$4.20 in 2027 (World Bank); a smaller 2026/27 crop",
+     "Oil output around 95,000 barrels a day in 2026, rising with new Jubilee wells from 2027",
+     "Primary surplus of 1.5% of GDP in 2026 and 0.5% from 2027, as legislated"
+    ]
+   },
+   {
+    "id": "up",
+    "name": "Upside",
+    "prob": 20,
+    "story": "Gold stays above US$4,500 into 2027, new Jubilee wells lift oil output above 100,000 barrels a day and the cocoa crop recovers. Reserves rise towards six months of imports, the cedi is broadly stable and the Bank of Ghana can cut rates further.",
+    "assumptions": [
+     "Gold above US$4,500/oz through 2027",
+     "Jubilee above 90,000 barrels a day from 2027",
+     "Cocoa output recovers towards 750,000 tonnes",
+     "Fiscal discipline holds through the 2028 election year"
+    ]
+   },
+   {
+    "id": "down",
+    "name": "Downside",
+    "prob": 25,
+    "story": "Gold falls back towards US$3,800, the cocoa crop disappoints and election-cycle spending returns. With large domestic bond repayments in 2027–2028, the cedi weakens faster, inflation moves above the target band and the Bank of Ghana has to raise rates again.",
+    "assumptions": [
+     "Gold below US$3,800/oz by 2027",
+     "Cocoa crop near or below 650,000 tonnes",
+     "Energy-sector arrears rise again",
+     "Fiscal slippage ahead of the December 2028 election"
+    ]
+   }
+  ],
+  "indicators": [
+   {
+    "id": "gdp",
+    "label": "Real GDP growth",
+    "unit": "%",
+    "basis": "year",
+    "history": "gdp_growth",
+    "actual_2026": "H1 2026: 6.2%",
+    "f": {
+     "2026": [
+      5.5,
+      6.0,
+      5.0
+     ],
+     "2027": [
+      5.0,
+      6.0,
+      3.5
+     ],
+     "2028": [
+      5.0,
+      6.0,
+      3.5
+     ]
+    },
+    "why": "H1 2026 grew 6.2%; we expect a slower second half as the oil boost fades. Official forecasts (4.8% for 2026) look cautious; Fitch Solutions expects 5.7%.",
+    "anchors": [
+     {
+      "publisher": "IMF",
+      "what": "4.8 / 4.9 / 5.0% (2026/27/28)",
+      "url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf",
+      "official": true,
+      "quote": "Real GDP growth is projected at 4.8 percent in 2026"
+     },
+     {
+      "publisher": "World Bank",
+      "what": "4.8 / 4.9 / 5.0%",
+      "url": "https://thedocs.worldbank.org/en/doc/bae48ff2fefc5a869546775b3f010735-0500062021/related/mpo-gha.pdf",
+      "official": true,
+      "quote": "Growth is projected to ease to 4.8 percent in 2026"
+     },
+     {
+      "publisher": "Ministry of Finance",
+      "what": "at least 4.8% in 2026",
+      "url": "https://mofep.gov.gh/sites/default/files/budget-statements/2026-Budget-Speech.pdf",
+      "official": true,
+      "quote": "at least 4.8 percent"
+     },
+     {
+      "publisher": "Fitch Solutions/BMI",
+      "what": "Fitch Solutions: 5.7% in 2026",
+      "url": "https://www.myjoyonline.com/fitch-solutions-predicts-inflation-to-rise-to-9-by-end-2026-despite-recent-gains/",
+      "official": false,
+      "quote": "reaching 9% by the end of 2026"
+     }
+    ]
+   },
+   {
+    "id": "cpi",
+    "label": "Inflation, end of year",
+    "unit": "%",
+    "basis": "December",
+    "history": "cpi_dec",
+    "actual_2026": "August 2026: 5.0%",
+    "f": {
+     "2026": [
+      7.0,
+      6.0,
+      9.0
+     ],
+     "2027": [
+      8.5,
+      7.0,
+      13.0
+     ],
+     "2028": [
+      9.0,
+      7.5,
+      14.0
+     ]
+    },
+    "why": "Inflation is below the 8% ± 2 target band now; the Bank of Ghana expects it to move up into the band as the weaker cedi feeds through.",
+    "anchors": [
+     {
+      "publisher": "IMF",
+      "what": "IMF: 8.0% at end of each year",
+      "url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf",
+      "official": true,
+      "quote": "return within the BoG target band (8±2 percent) by end-2026"
+     },
+     {
+      "publisher": "Bank of Ghana",
+      "what": "Bank of Ghana target: 8% ± 2",
+      "url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+      "official": true,
+      "quote": "the medium-term target range of 8 ± 2 percent"
+     },
+     {
+      "publisher": "Ministry of Finance",
+      "what": "Budget target: 8.0% at end-2026",
+      "url": "https://mofep.gov.gh/sites/default/files/budget-statements/2026-Budget-Speech.pdf",
+      "official": true,
+      "quote": "within the 8±2 percent target band"
+     },
+     {
+      "publisher": "Fitch Solutions/BMI",
+      "what": "Fitch Solutions: 9.0% end-2026, 13.2% end-2027",
+      "url": "https://www.myjoyonline.com/fitch-solutions-predicts-inflation-to-rise-to-9-by-end-2026-despite-recent-gains/",
+      "official": false,
+      "quote": "reaching 9% by the end of 2026"
+     }
+    ]
+   },
+   {
+    "id": "mpr",
+    "label": "Bank of Ghana policy rate, end of year",
+    "unit": "%",
+    "basis": "December",
+    "history": "mpr",
+    "actual_2026": "Since March 2026: 14.0%",
+    "f": {
+     "2026": [
+      14.0,
+      13.0,
+      14.0
+     ],
+     "2027": [
+      13.0,
+      11.0,
+      17.0
+     ],
+     "2028": [
+      13.0,
+      10.5,
+      18.0
+     ]
+    },
+    "why": "With inflation near 5% the real policy rate is about 9%, very high; but rising inflation and a weaker cedi argue for holding in November and cutting slowly.",
+    "anchors": [
+     {
+      "publisher": "Bank of Ghana",
+      "what": "held at 14.0% on 24 September 2026",
+      "url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+      "official": true,
+      "quote": "voted by a unanimous decision to maintain the Monetary Policy Rate at 14.0 percent"
+     },
+     {
+      "publisher": "Bank of Ghana",
+      "what": "next decision 16–18 November 2026",
+      "url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+      "official": true,
+      "quote": "scheduled for 16 to 18 November 2026"
+     }
+    ]
+   },
+   {
+    "id": "fx",
+    "label": "Cedi per US dollar, end of year",
+    "unit": "GHS",
+    "basis": "December",
+    "history": "fx_end",
+    "actual_2026": "September 2026: 11.55",
+    "f": {
+     "2026": [
+      12.2,
+      11.8,
+      12.8
+     ],
+     "2027": [
+      13.4,
+      12.5,
+      15.5
+     ],
+     "2028": [
+      14.8,
+      13.5,
+      18.0
+     ]
+    },
+    "why": "The cedi has lost 9.5% this year after a 40.7% gain in 2025. Our base case assumes about 10% a year of depreciation from 2027, more in the 2028 election year.",
+    "anchors": [
+     {
+      "publisher": "Databank Research",
+      "what": "Databank: GH¢12.20 at end-2026",
+      "url": "https://www.myjoyonline.com/cedi-to-end-year-at-gh%C2%A212-20-to-a-us-dollar-databank-research/",
+      "official": false,
+      "quote": "stronger foreign exchange inflows and an improving external position"
+     },
+     {
+      "publisher": "Bank of Ghana data",
+      "what": "down 9.5% in January–September 2026",
+      "url": "https://www.myjoyonline.com/cedi-depreciates-by-9-5-in-nine-months-of-2026-bog/",
+      "official": false,
+      "quote": "the cedi traded at GH¢11.55 to one American greenback"
+     }
+    ]
+   },
+   {
+    "id": "res",
+    "label": "Gross reserves, months of imports",
+    "unit": "months",
+    "basis": "December",
+    "history": "gir_months",
+    "actual_2026": "22 September 2026: 4.5",
+    "f": {
+     "2026": [
+      4.5,
+      4.8,
+      4.0
+     ],
+     "2027": [
+      4.8,
+      5.5,
+      3.5
+     ],
+     "2028": [
+      5.0,
+      6.0,
+      3.0
+     ]
+    },
+    "why": "Reserves fell from US$14.2bn in March to US$11.1bn in August; a lower gold price would slow the rebuild the IMF expects.",
+    "anchors": [
+     {
+      "publisher": "IMF",
+      "what": "IMF: 4.5 / 5.0 / 5.5 months",
+      "url": "https://www.imf.org/-/media/files/publications/cr/2026/english/1ghaea2026001.pdf",
+      "official": true,
+      "quote": "GIR are expected to reach 6 months of import coverage by end-2029"
+     },
+     {
+      "publisher": "Bank of Ghana",
+      "what": "US$12.0bn, 4.5 months on 22 September 2026",
+      "url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/MPC-Press-Release-September-2026.pdf",
+      "official": true,
+      "quote": "US$12.0 billion, equivalent to 4.5 months of import cover"
+     }
+    ]
+   }
+  ],
+  "sectors": [
+   {
+    "sector": "Gold and mining",
+    "base": "Margins stay strong even with the sliding royalty; watch the Minerals and Mining Act amendments on stability agreements.",
+    "up": "Record export earnings; strongest case for new large-scale projects and local refining.",
+    "down": "A lower gold price and the higher royalty bands squeeze new projects; small-scale output falls first."
+   },
+   {
+    "sector": "Oil, gas and power",
+    "base": "New Jubilee wells support output; power offtaker arrears remain the key risk for IPPs.",
+    "up": "Output back above 100,000 barrels a day; more room to clear energy arrears.",
+    "down": "Arrears build up again; prefer commercial and industrial solar with private offtakers."
+   },
+   {
+    "sector": "Cocoa and agribusiness",
+    "base": "Lower world cocoa prices cut export earnings; the 50% local-processing mandate supports grinders.",
+    "up": "Crop recovery plus processing incentives make 2027 a good entry point for processors.",
+    "down": "A small crop and EU deforestation rules hit volumes; traceability becomes a must-have."
+   },
+   {
+    "sector": "ICT and fintech",
+    "base": "Still the fastest-growing sector; a weaker cedi raises the cost of imported equipment.",
+    "up": "Strong demand for payments, data centres and software services.",
+    "down": "Growth slows but stays positive; cedi revenue loses value in dollars."
+   },
+   {
+    "sector": "Real estate and construction",
+    "base": "High interest rates keep mortgages scarce; demand for mid-market housing remains.",
+    "up": "Rate cuts open up mortgage finance and construction activity.",
+    "down": "Higher rates and a weaker cedi raise building costs and stall projects."
+   },
+   {
+    "sector": "Exporters and importers",
+    "base": "A gradually weaker cedi favours exporters with costs in cedis.",
+    "up": "A stable cedi helps importers and companies with dollar debt.",
+    "down": "Dollar earners win; importers and dollar borrowers should hedge."
+   }
+  ],
+  "events": [
+   {
+    "when": "16–18 Nov 2026",
+    "what": "Bank of Ghana policy-rate decision"
+   },
+   {
+    "when": "Early Nov 2026",
+    "what": "2027 Budget Statement"
+   },
+   {
+    "when": "Feb 2027",
+    "what": "GH¢30bn of restructured domestic bonds fall due"
+   },
+   {
+    "when": "Mar 2027",
+    "what": "First IMF review under the new Policy Coordination Instrument"
+   },
+   {
+    "when": "2027–2028",
+    "what": "Domestic bond repayments of GH¢58bn and GH¢53bn"
+   },
+   {
+    "when": "Dec 2028",
+    "what": "General election"
+   }
+  ],
+  "method": "Scenarios start from the latest official projections and add our judgement on the drivers listed. They are estimates from public data, not a statistical model, and not investment advice. We review them every quarter and after major data releases, and keep a public scorecard of our forecasts against the outcomes."
+ },
+ "history": {
+  "gdp_growth": {
+   "label": "Real GDP growth",
+   "unit": "%",
+   "source_label": "IMF World Economic Outlook (Ghana Statistical Service data)",
+   "source_url": "https://www.imf.org/external/datamapper/api/v1/NGDP_RPCH/GHA",
+   "points": {
+    "2016": 3.4,
+    "2017": 8.1,
+    "2018": 6.2,
+    "2019": 6.5,
+    "2020": 0.5,
+    "2021": 5.1,
+    "2022": 3.8,
+    "2023": 3.1,
+    "2024": 5.8,
+    "2025": 6.0
+   }
+  },
+  "cpi_dec": {
+   "label": "CPI inflation, end-year (December y/y)",
+   "unit": "%",
+   "source_label": "Bank of Ghana, Summary of Economic and Financial Data",
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
+   "points": {
+    "2016": 15.4,
+    "2017": 11.8,
+    "2018": 9.4,
+    "2019": 7.9,
+    "2020": 10.4,
+    "2021": 12.6,
+    "2022": 54.1,
+    "2023": 23.2,
+    "2024": 23.8,
+    "2025": 5.4
+   }
+  },
+  "mpr": {
+   "label": "Bank of Ghana monetary policy rate, end-year",
+   "unit": "%",
+   "source_label": "Bank of Ghana, Summary of Economic and Financial Data",
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/09/Summary-of-Economic-and-Financial-Data-September-2026.pdf",
+   "points": {
+    "2016": 25.5,
+    "2017": 20.0,
+    "2018": 17.0,
+    "2019": 16.0,
+    "2020": 14.5,
+    "2021": 14.5,
+    "2022": 27.0,
+    "2023": 30.0,
+    "2024": 27.0,
+    "2025": 18.0
+   }
+  },
+  "fx_end": {
+   "label": "Cedi per US dollar, end-year interbank rate",
+   "unit": "GH¢/US$",
+   "source_label": "Bank of Ghana, Summary of Economic and Financial Data",
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/01/Summary-of-Economic-and-Financial-Data-January-2026.pdf",
+   "points": {
+    "2016": 4.2002,
+    "2017": 4.4157,
+    "2018": 4.82,
+    "2019": 5.5337,
+    "2020": 5.7602,
+    "2021": 6.0061,
+    "2022": 8.576,
+    "2023": 11.88,
+    "2024": 14.7,
+    "2025": 10.45
+   }
+  },
+  "gir_months": {
+   "label": "Gross international reserves, months of import cover (goods and services)",
+   "unit": "months",
+   "source_label": "Bank of Ghana, Summary of Economic and Financial Data",
+   "source_url": "https://www.bog.gov.gh/wp-content/uploads/2026/01/Summary-of-Economic-and-Financial-Data-January-2026.pdf",
+   "points": {
+    "2016": 3.5,
+    "2017": 4.3,
+    "2018": 3.6,
+    "2019": 4.0,
+    "2020": 4.0,
+    "2021": 4.4,
+    "2022": 2.7,
+    "2023": 2.7,
+    "2024": 4.1,
+    "2025": 5.7
+   }
+  }
+ }
 }

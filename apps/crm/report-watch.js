@@ -18,11 +18,15 @@ export function loadReport(file = new URL('./report.json', import.meta.url)) {
 }
 
 export function reportFacts(r) {
-  return r.chapters.flatMap(c => c.figures.map(f => ({
+  // the official forecasts the outlook starts from are watched too: a new IMF or Bank of Ghana figure means the scenarios need a look
+  const anchors = (r.outlook?.indicators || []).flatMap(i => i.anchors.filter(a => a.quote).map((a, n) => ({
+    id: `outlook-${i.id}-${n + 1}`, topic: 'Outlook', kind: 'stat', claim: `${i.label}: ${a.publisher}, ${a.what}`,
+    checked: r.outlook.as_of || r.updated, review_days: 90, sources: [{ label: a.publisher, url: a.url, official: !!a.official, expect: [a.quote] }] })));
+  return anchors.concat(r.chapters.flatMap(c => c.figures.map(f => ({
     id: f.id, topic: c.title, kind: 'stat', claim: `${f.label}: ${f.value} ${f.unit} (${f.period})`.replace(/\s+/g, ' '),
     checked: r.updated, review_days: r.review_days || 120,
     sources: [{ label: f.source_label, url: f.source_url, official: !!f.official, expect: f.quote ? [f.quote] : [] }],
-  })));
+  }))));
 }
 
 export function makeReportWatch({ report = loadReport(), load = async () => null, save = async () => {}, loadLog = async () => null, saveLog = async () => {},
