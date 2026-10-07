@@ -32,13 +32,26 @@ RUN python3 -m venv /opt/kokoro-venv && /opt/kokoro-venv/bin/pip install --no-ca
  && curl -fsSL --retry 3 -o voices-v1.0.bin https://github.com/thewh1teagle/kokoro-onnx/releases/download/model-files-v1.0/voices-v1.0.bin \
  && echo "7d5df8ecf7d4b1878015a32686053fd0eebe2bc377234608764cc0ef3636a6c5  kokoro-v1.0.onnx" | sha256sum -c - \
  && echo "bca610b8308e8d99f32e6fe4197e7ec01679264efed0cac9140fe9c29f1fbf7d  voices-v1.0.bin" | sha256sum -c -
-COPY ask-welcome.json make-intros.py ./
-RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt/kokoro/voices-v1.0.bin ask-welcome.json /opt/kokoro-intros
+# Regional speech: France French (UPMC Pierre) and Spain Spanish (Sharvard male).
+# Model cards and dataset attributions: website /downloads/voice-credits.txt.
+RUN cd /opt/voices \
+ && curl -fsSL --retry 3 -o fr_FR-upmc-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/upmc/medium/fr_FR-upmc-medium.onnx \
+ && curl -fsSL --retry 3 -o fr_FR-upmc-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/fr/fr_FR/upmc/medium/fr_FR-upmc-medium.onnx.json \
+ && curl -fsSL --retry 3 -o es_ES-sharvard-medium.onnx https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx \
+ && curl -fsSL --retry 3 -o es_ES-sharvard-medium.onnx.json https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_ES/sharvard/medium/es_ES-sharvard-medium.onnx.json \
+ && echo "9abb3800c199148897a9ed64e100d224f3de83579f100044174ad19418f1786f  fr_FR-upmc-medium.onnx" | sha256sum -c - \
+ && echo "e8636ec15dfd5d72db37a02cb5320a20f2b8d339f2a0e4337da64c58a33a5868  fr_FR-upmc-medium.onnx.json" | sha256sum -c - \
+ && echo "40febfb1679c69a4505ff311dc136e121e3419a13a290ef264fdf43ddedd0fb1  es_ES-sharvard-medium.onnx" | sha256sum -c - \
+ && echo "7438c9b699c72b0c3388dae1b68d3f364dc66a2150fe554a1c11f03372957b2c  es_ES-sharvard-medium.onnx.json" | sha256sum -c -
+COPY ask-welcome.json ask-voices.json make-intros.py ./
+RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt/kokoro/voices-v1.0.bin ask-welcome.json /opt/kokoro-intros en \
+ && /opt/piper/bin/python make-intros.py /opt/voices - ask-welcome.json /opt/kokoro-intros fr,es
 COPY ask-payment.json ./
-RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt/kokoro/voices-v1.0.bin ask-payment.json /opt/kokoro-payments
+RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt/kokoro/voices-v1.0.bin ask-payment.json /opt/kokoro-payments en \
+ && /opt/piper/bin/python make-intros.py /opt/voices - ask-payment.json /opt/kokoro-payments fr,es
 COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund
-COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-welcome.json ask-payment.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json fact-watch.js facts.json schema.sql assistant.md ./
+COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-piper.py ask-voices.json ask-welcome.json ask-payment.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json fact-watch.js facts.json schema.sql assistant.md ./
 COPY public ./public
 RUN mkdir -p /data/media
 ENV NODE_ENV=production MEDIA_DIR=/data/media

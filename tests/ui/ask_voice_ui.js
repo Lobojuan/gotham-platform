@@ -1,4 +1,4 @@
-// Fable widget: auto speech, mute, replay/stop, close, errors, and all three languages.
+// Native-language widget: auto speech, mute, replay/stop, close, errors, and all three languages.
 const {chromium}=require(process.env.PLAYWRIGHT || 'playwright');
 const B=process.env.BASE || 'http://127.0.0.1:4199';
 const ok=(c,m)=>{if(!c)throw new Error(m);console.log('  ok',m);};
@@ -19,13 +19,14 @@ const ok=(c,m)=>{if(!c)throw new Error(m);console.log('  ok',m);};
    const p=await ctx.newPage(), errors=[];p.on('pageerror',e=>errors.push(e.message));
    let speechRequests=0, polls=0, cancelled=0, fail=false, delayed=false;
    await p.route('**/api/ask/voice/cancel',r=>{cancelled++;return r.fulfill({json:{ok:true}});});
-   await p.route('**/api/ask',r=>{const b=r.request().postDataJSON();return r.fulfill({json:{answer:b.intro?'Welcome':'Reply in '+b.language, speech:b.speech?{token:'answer-token',voice:'bm_fable'}:null}});});
+   await p.route('**/api/ask',r=>{const b=r.request().postDataJSON();ok(b.language===lang,lang+': selected language reaches the answer API');return r.fulfill({json:{answer:b.intro?'Welcome':'Reply in '+b.language, speech:b.speech?{token:'answer-token',voice:({en:'bm_fable',fr:'pierre_fr_FR',es:'sharvard_es_ES'})[b.language]}:null}});});
    await p.route('**/api/ask/voice',async r=>{speechRequests++;if(delayed)await new Promise(resolve=>setTimeout(resolve,600));
     if(lang==='en' && speechRequests===1)return r.fulfill({status:202,json:{job:'queued-voice-123',retry_after:.01}});
     await r.fulfill({status:fail?503:200,contentType:fail?'application/json':'audio/mpeg',body:fail?'{}':'mock audio'}).catch(()=>{});});
    await p.route('**/api/ask/voice/result',r=>{polls++;return polls===1?r.fulfill({status:202,json:{retry_after:.01}}):r.fulfill({contentType:'audio/mpeg',body:'mock audio'});});
-   await p.goto(B+(lang==='fr'?'/fr/':'/')); await p.locator('.dock [data-open-chat]').click();
+   await p.goto(B+({en:'/',fr:'/fr/',es:'/es/'})[lang]); await p.locator('.dock [data-open-chat]').click();
    await p.waitForFunction(()=>window.__played===1);
+   ok((await p.textContent('#chatVoiceStatus')).includes(({en:'Fable',fr:'Pierre',es:'castellano'})[lang]),lang+': voice label matches the native speaker');
    if(lang==='en')ok(polls===2,'background preparation polls until the answer audio is ready');
    ok(/services|services de conseil|servicios de consultoría/.test(await p.textContent('#msgs')),lang+': broad site introduction speaks after opening the chatbot');
    const send=async q=>{await p.fill('#chatI',q);await p.press('#chatI','Enter');};

@@ -1,0 +1,29 @@
+Ask Gotham — synthetic speech voice credits
+
+English: Kokoro bm_fable (British English), Kokoro-82M / kokoro-onnx.
+https://huggingface.co/hexgrad/Kokoro-82M
+https://github.com/thewh1teagle/kokoro-onnx
+Model licence: Apache 2.0; runtime licence: MIT.
+
+French (France): Piper fr_FR-upmc-medium, speaker pierre (ID 1).
+Pierre Chauvin, UPMC Pierre Voice Data (recorded at ISIR, UPMC, 2013).
+https://github.com/marytts/upmc-pierre-data
+Model card: https://huggingface.co/rhasspy/piper-voices/blob/main/fr/fr_FR/upmc/medium/MODEL_CARD
+Dataset licence: Creative Commons Attribution-ShareAlike 4.0 International.
+https://creativecommons.org/licenses/by-sa/4.0/
+
+Spanish (Spain): Piper es_ES-sharvard-medium, male speaker M (ID 0).
+Cooke, Martin; Garcia Lecumberri, Maria Luisa; Aubanel, Vincent (2013).
+Sharvard corpus, LISTA Consortium; University of the Basque Country / Ikerbasque.
+https://doi.org/10.7488/ds/133
+https://datashare.ed.ac.uk/handle/10283/574
+Model card: https://huggingface.co/rhasspy/piper-voices/blob/main/es/es_ES/sharvard/medium/MODEL_CARD
+Dataset licence: Creative Commons Attribution 3.0 Unported.
+https://creativecommons.org/licenses/by/3.0/
+
+Regional voice models are downloaded without modification and verified by SHA256.
+Synthetic speech is made locally with Piper (piper-tts 1.8.0), OHF-Voice/piper1-gpl.
+https://github.com/OHF-Voice/piper1-gpl
+Piper runtime licence: GPL 3.0. The English receptionist demo uses a separate Jenny voice.
+No human recording is played as a chatbot answer. These are AI-generated voices.
+The Spanish model is labelled Spanish (Spain); no specific Madrid birthplace is claimed.

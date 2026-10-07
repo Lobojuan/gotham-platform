@@ -1,15 +1,104 @@
-"""Fable answer tickets: binding, expiry, bounded work, failures, and the public route without a voice installation."""
-import json, os, subprocess, time, urllib.request, urllib.error
+"""Native-language answer tickets: binding, expiry, voice routing, bounded work and failures."""
+import io, json, os, subprocess, sys, time, types, urllib.request, urllib.error
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(ROOT + '/apps/crm')
+# Exercise both real Python entry points with a tiny synthesis double. This catches
+# a worker/build mapping mismatch without downloading models in the API suite.
+voices = json.load(open('ask-voices.json'))
+expected = {'en': ('bm_fable', 'en-gb'), 'fr': ('pierre_fr_FR', 'fr-FR'), 'es': ('sharvard_es_ES', 'es-ES')}
+assert {lang: (s['voice'], s['lang']) for lang, s in voices.items()} == expected
+calls, piper_calls, encoded = [], [], []
+class Kokoro:
+    def __init__(self, *args): pass
+    def create(self, text, **kwargs):
+        calls.append((kwargs['voice'], kwargs['lang']))
+        return [0.1, -0.1], 24000
+def write_wav(buf, *args, **kwargs): buf.write(b'RIFF-test-wave')
+class SynthesisConfig:
+    def __init__(self, speaker_id): self.speaker_id = speaker_id
+class PiperVoice:
+    @classmethod
+    def load(cls, model):
+        instance = cls(); instance.model = model; return instance
+    def synthesize_wav(self, text, output, config):
+        piper_calls.append((os.path.basename(self.model), config.speaker_id))
+        output.setnchannels(1); output.setsampwidth(2); output.setframerate(22050)
+        output.writeframes(b'\x01\x00'*10)
+saved_modules = {name: sys.modules.get(name) for name in ['kokoro_onnx', 'soundfile', 'numpy', 'piper']}
+sys.modules.update(kokoro_onnx=types.SimpleNamespace(Kokoro=Kokoro),
+    soundfile=types.SimpleNamespace(write=write_wav), numpy=types.SimpleNamespace(asarray=lambda x:x),
+    piper=types.SimpleNamespace(PiperVoice=PiperVoice,SynthesisConfig=SynthesisConfig))
+saved_in, saved_out, saved_argv = sys.stdin, sys.stdout, sys.argv
+saved_run = subprocess.run
+try:
+    os.environ['KOKORO_VOICES'] = '/tmp/test-voices'
+    sys.argv = ['ask-voice.py', '/tmp/test-model']
+    sys.stdin = io.StringIO(''.join(json.dumps({'text':'Native language test.', 'language':lang})+'\n' for lang in ['en','fr','es','invalid']))
+    output = io.BytesIO(); sys.stdout = types.SimpleNamespace(buffer=output)
+    exec(compile(open('ask-voice.py').read(), 'ask-voice.py', 'exec'), {'__file__':os.path.abspath('ask-voice.py')})
+    assert calls == [expected['en']]*2
+    assert output.getvalue().startswith(b'READY\n') and output.getvalue().count(b'RIFF-test-wave') == 2
+    for language in ['fr','es']:
+        piper_calls.clear()
+        os.environ['ASK_PIPER_LANGUAGE'] = language
+        sys.argv = ['ask-piper.py', voices[language]['model']+'.onnx']
+        sys.stdin = io.StringIO(''.join(json.dumps({'text':'Regional speech test.', 'language':l})+'\n' for l in [language,'en']))
+        output = io.BytesIO(); sys.stdout = types.SimpleNamespace(buffer=output)
+        exec(compile(open('ask-piper.py').read(), 'ask-piper.py', 'exec'), {'__file__':os.path.abspath('ask-piper.py')})
+        assert piper_calls == [(voices[language]['model']+'.onnx', voices[language]['speaker'])]
+        assert output.getvalue().startswith(b'READY\n') and output.getvalue().count(b'RIFF') == 1
+        assert output.getvalue().endswith(b'\0\0\0\0'), 'must reject a different language'
+    sys.stdout = saved_out
+    for copy in ['ask-welcome.json','ask-payment.json']:
+        calls.clear(); piper_calls.clear(); encoded.clear()
+        for selected in ['en','fr,es']:
+            sys.argv = ['make-intros.py','model','voices',copy,'/tmp/gotham-native-voice-fixture',selected]
+            subprocess.run = lambda args, **kwargs: encoded.append(args[-1])
+            exec(compile(open('make-intros.py').read(), 'make-intros.py', 'exec'), {'__file__':os.path.abspath('make-intros.py')})
+        assert calls == [expected['en']]
+        assert piper_calls == [(voices[l]['model']+'.onnx',voices[l]['speaker']) for l in ['fr','es']]
+        assert [os.path.basename(f) for f in encoded] == [s[0]+'-'+l+'.mp3' for l,s in expected.items()]
+finally:
+    sys.stdin, sys.stdout, sys.argv = saved_in, saved_out, saved_argv
+    subprocess.run = saved_run
+    os.environ.pop('KOKORO_VOICES', None)
+    os.environ.pop('ASK_PIPER_LANGUAGE', None)
+    for name, old in saved_modules.items():
+        if old is None: sys.modules.pop(name, None)
+        else: sys.modules[name] = old
+print('  ok native EN/FR/ES voices in dynamic worker, both fixed builds and versioned recordings')
 code = r'''
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import {makeAskVoice} from './ask-voice.js';
 let clock=Date.now(), calls=[];
 const v=makeAskVoice({enabled:()=>true, now:()=>clock, dailyCap:3,
  render:async(text,language)=>{calls.push({text,language});return Buffer.from('mp3');}});
 const a=v.issue('Bonjour.','one','fr');
-assert.equal(a.voice,'bm_fable');
+assert.equal(a.voice,'pierre_fr_FR');
+const mapping=makeAskVoice({enabled:()=>true});
+for(const [language,voice] of Object.entries({en:'bm_fable',fr:'pierre_fr_FR',es:'sharvard_es_ES',invalid:'bm_fable'}))
+  assert.equal(mapping.issue('Voice test','one',language).voice,voice);
+console.log('  ok native voice metadata and unsupported-language English fallback');
+const fixed=fs.mkdtempSync(path.join(os.tmpdir(),'gotham-native-cache-'));
+const copy=JSON.parse(fs.readFileSync('./ask-payment.json','utf8'));
+const oldPayments=process.env.KOKORO_PAYMENTS;process.env.KOKORO_PAYMENTS=fixed;
+try {
+ const cache=makeAskVoice({enabled:()=>true,render:async()=>Buffer.from('fresh synthesis')});
+ for(const [language,speaker] of Object.entries({en:'bm_fable',fr:'pierre_fr_FR',es:'sharvard_es_ES'})) {
+  fs.writeFileSync(path.join(fixed,language+'.mp3'),'stale English voice');
+  const text=copy[language];
+  const stale=cache.start(cache.issue(text,'one',language).token,'one');
+  assert.equal(stale.status,202);await new Promise(setImmediate);
+  assert.equal(cache.result(stale.job,'one').audio.toString(),'fresh synthesis');
+  fs.writeFileSync(path.join(fixed,speaker+'-'+language+'.mp3'),speaker);
+  const hit=cache.start(cache.issue(text,'one',language).token,'one');
+  assert.equal(hit.status,200);assert.equal(hit.audio.toString(),speaker);
+ }
+} finally {if(oldPayments===undefined)delete process.env.KOKORO_PAYMENTS;else process.env.KOKORO_PAYMENTS=oldPayments;fs.rmSync(fixed,{recursive:true});}
+console.log('  ok fixed recordings select native speaker and reject stale English audio');
 assert.equal((await v.speak(a.token,'two')).status,403);
 assert.equal((await v.speak('forged','one')).status,403);
 assert.equal((await v.speak(a.token,'one')).status,200);

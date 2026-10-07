@@ -1,5 +1,6 @@
-/* Fable for Ask Gotham. Only an answer just issued to this visitor may be spoken.
-   Tokens and audio never go into the database. Kokoro's bm_fable is the same local voice as Jarvis. */
+/* Native-language voices for Ask Gotham. Only an answer just issued to this visitor may be spoken.
+   Tokens and audio never go into the database. English retains Jarvis's Kokoro bm_fable;
+   France/Spain speech uses regional Piper recordings rather than English speaker embeddings. */
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,28 +13,38 @@ const voice = makeTTS({ python: process.env.KOKORO_PYTHON || '/opt/kokoro-venv/b
 
 const welcomes=JSON.parse(fs.readFileSync(fileURLToPath(new URL('./ask-welcome.json',import.meta.url)),'utf8'));
 const payments=JSON.parse(fs.readFileSync(fileURLToPath(new URL('./ask-payment.json',import.meta.url)),'utf8'));
+const voices=JSON.parse(fs.readFileSync(fileURLToPath(new URL('./ask-voices.json',import.meta.url)),'utf8'));
+const regional=Object.fromEntries(['fr','es'].map(language=>[language,makeTTS({
+  python:process.env.PIPER_PYTHON || '/opt/piper/bin/python',
+  model:path.join(process.env.ASK_PIPER_VOICES || '/opt/voices',voices[language].model+'.onnx'),
+  script:fileURLToPath(new URL('./ask-piper.py',import.meta.url)),maxChars:2000,cacheMax:20,timeoutMs:300000,
+  workerEnv:{ASK_PIPER_LANGUAGE:language,OMP_NUM_THREADS:'1'}
+})]));
+const installationAvailable=()=>voice.available() && Object.values(regional).every(worker=>worker.available());
 function introAudio(text,language) {
-  const intro=path.join(process.env.KOKORO_INTROS || '/opt/kokoro-intros',language+'.mp3');
+  const filename=voices[language].voice+'-'+language+'.mp3';
+  const intro=path.join(process.env.KOKORO_INTROS || '/opt/kokoro-intros',filename);
   if(text===welcomes[language] && fs.existsSync(intro))return fs.readFileSync(intro);
-  const payment=path.join(process.env.KOKORO_PAYMENTS || '/opt/kokoro-payments',language+'.mp3');
+  const payment=path.join(process.env.KOKORO_PAYMENTS || '/opt/kokoro-payments',filename);
   if(text===payments[language] && fs.existsSync(payment))return fs.readFileSync(payment);
   return null;
 }
 async function renderVoice(text,language,signal) {
   const cached=introAudio(text,language);if(cached)return cached;
-  return voice.say(text,language,signal);
+  return (regional[language] || voice).say(text,language,signal);
 }
-export function makeAskVoice({ enabled = () => voice.available(), render = renderVoice,
+export function makeAskVoice({ enabled = installationAvailable, render = renderVoice,
   dailyCap = Number(process.env.ASK_TTS_DAILY_CAP ?? 400), now = Date.now } = {}) {
   const tickets = new Map(),jobs=new Map(); let day = '', used = 0, minute = 0, burst = 0, active = 0;
   const available = () => enabled() && Number.isFinite(dailyCap) && dailyCap > 0;
   function issue(text, ip, language = 'en') {
     if (!available()) return null;
+    language = ['en', 'fr', 'es'].includes(language) ? language : 'en';
     for (const [k, t] of tickets) if (t.expires <= now()) tickets.delete(k);
     while (tickets.size >= 1000) tickets.delete(tickets.keys().next().value);
     const token = crypto.randomBytes(24).toString('base64url');
     tickets.set(token, { text: String(text).slice(0, 2000).replace(/https?:\/\/\S+/g,({en:'source link in the chat',fr:'lien source dans le chat',es:'enlace de la fuente en el chat'})[language] || 'source link in the chat'), language: ['en', 'fr', 'es'].includes(language) ? language : 'en', ip, expires: now() + 10 * 60e3 });
-    return { token, voice: 'bm_fable' };
+    return { token, voice: voices[language].voice };
   }
   function take(token, ip) {
     if (!available()) return { status: 503, error: 'voice_unavailable' };

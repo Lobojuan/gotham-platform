@@ -84,6 +84,19 @@ deploy script snapshots its prior release and does not overwrite the server's
 
 ## Configuration
 
+**Ask Gotham speech:** `apps/crm/ask-voices.json` is the shared regional voice map used by
+answer tickets, dynamic workers and Docker-built welcome/payment recordings. English keeps
+Kokoro `bm_fable` (`en-gb`). French uses Piper `fr_FR-upmc-medium`, Pierre (speaker 1),
+trained on France French; Spanish uses `es_ES-sharvard-medium`, male speaker M (0), labelled
+Spanish (Spain). Uffe approved both regional demos on 7 October. No specific Madrid birthplace
+is claimed by the model documentation.
+
+The workers make synthetic speech on our server with existing local Kokoro/Piper runtimes.
+Fixed filenames identify the speaker, preventing old English or generic-language recordings
+from being reused. Public model/dataset credits and licence links: `/downloads/voice-credits.txt`.
+Piper model/config downloads are SHA256-verified in the Dockerfile. The English Fable voice is
+distinct from OpenAI's voice of the same name; no new provider key is needed.
+
 The CRM reads its settings from the environment. On the server these live in
 `/srv/gotham/.env`, which is deliberately not in this repo. See `.env.example`.
 

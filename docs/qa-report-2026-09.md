@@ -1,5 +1,12 @@
 # QA sweep, 28 September 2026
 
+## Regional France/Spain speech, 7 October 2026 — Codex
+
+- Root cause: British English speaker reused for French/Spanish. Initial language-matched Kokoro candidates passed 33 API suites and the complete E2E sweep (8,557 site checks over 86 routes/six screens, plus voice/investor/presentation/locale suites), but were not published. User clarified the desired France and Spain accents.
+- Revised real Piper demos: France French UPMC Pierre (speaker 1), 12.43 seconds; Spain Spanish Sharvard M (speaker 0), 11.23 seconds; valid mono 22.05 kHz MP3s. Uffe listened and explicitly approved both. Models specify country locales; no documented Madrid birthplace is claimed. Synthesis including model loading: 4.96 / 4.44 seconds, excluding the WordPress bridge.
+- API 28 now exercises all three worker paths and the split-runtime fixed builds, with regional model/speaker IDs, wrong-language rejection, ticket metadata, English fallback and stale-cache rejection. Mock synthesis proves routing; the actual approved demos prove the selected voices can synthesize.
+- Evidence: `/Users/uffe/Documents/CRM/Gotham audit/2026-10-07/native-voices/`, including `regional-demo-copy.json`, `demo-fr-france.mp3`, `demo-es-spain.mp3`. Revised full regression passed: 33 API suites; 8,557 browser sweep checks, zero failures (568 seconds); 591 presentation checks; 16 locale checks; focused voice checks passed. Public welcome/payment/dynamic speech smoke checks follow guarded deployment.
+
 ## SEO verification, 7 October 2026 — Codex
 
 - Full API regression: **33 suites passed, zero failed**, including the new SEO suite (850 assertions), exact signed-host redirects, chat/voice, financial sources, fact monitoring and payment reports. Run with bundled Node 22/Python and disposable `gotham_seo_test` on loopback PostgreSQL.
