@@ -363,3 +363,11 @@ for reduced motion.
 - API: `GET /api/facts` and `POST /api/facts/check|review` (admin), `GET /api/facts/public`. Back office: Settings → Facts and sources (“Still correct” records who/when/why in `jobs_log`).
 - Site: `apps/site/facts_page.py` builds `/sources` (footer link “Sources & fact checks”, EN/FR/ES chrome) and `dist/source-links.json` (every article source link, checked weekly for 404s). Build prints `WARNING fact …` if the register drifted.
 - Found and fixed while building it: the ORC VIP fee is GHS 1,300 on top (1,885 in total), not 1,885 on top; the free tools again show the GHS 130 business-name fee (ORC 2026).
+
+## Approved free six-language release — 7 October 2026, Codex
+
+Uffe approved German, Mandarin Chinese and formal Modern Standard Arabic demos. All speech is synthesized locally without an ElevenLabs subscription. English Fable, France French Pierre and Spain Castilian Sharvard remain. Site selection controls chatbot answers and native voice routing. New DE/AR/ZH public pages include Simplified Chinese and Arabic RTL, reciprocal SEO alternates, native investor content and translated globe labels. Public provenance/licence notices are linked from terms and voice credits. New five-slide PDF/PPTX/QR presentations are staged in all three languages; source lives under docs/presentation.
+
+Actual Mac workers and HTTP welcome/payment/clock packets passed decoding and speaker-ID checks. Local warm timings exclude WordPress and production hardware. All 34 API suites passed before integration with Claude’s investment-report commit. The combined regression and guarded deployment remain pending; do not call the new languages live until those pass. Claude’s pricing/source claims are preserved. Models are pinned by SHA256 in apps/crm/voice-models.json, not stored in Git.
+
+Open: verify combined full six-screen E2E and Linux Docker build; deploy only through guarded scripts; check all six voices on the public domain; append deployment evidence. Editable Arabic PowerPoint should also receive a native PowerPoint app check; reviewed browser/PDF slides already use correct RTL rasters.

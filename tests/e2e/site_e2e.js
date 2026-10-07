@@ -59,7 +59,7 @@ async function crawl(req) {
     check(`${page}: <title>`, /<title>[^<]{10,}<\/title>/.test(h));
     check(`${page}: meta description`, /<meta name="description" content="[^"]{40,}"/.test(h));
     check(`${page}: canonical`, /<link rel="canonical" href="https?:\/\/[^"]+"/.test(h));
-    check(`${page}: html lang`, /^\/(fr|es)(\/|$)/.test(page) ? h.includes('<html lang="' + page.split('/')[1] + '" data-page-lang="' + page.split('/')[1] + '"') : /<html lang="en"/.test(h));
+    check(`${page}: html lang`, /^\/(fr|es|de|ar|zh)(\/|$)/.test(page) ? h.includes('<html lang="' + page.split('/')[1] + '" data-page-lang="' + page.split('/')[1] + '"') : /<html lang="en"/.test(h));
     check(`${page}: exactly one h1`, (h.match(/<h1[\s>]/g) || []).length === 1, String((h.match(/<h1[\s>]/g) || []).length));
     check(`${page}: viewport meta`, /name="viewport" content="width=device-width/.test(h));
   }

@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createRequire} from 'node:module';
+import {execFileSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
 if(!process.env.RUNTIME_NODE_MODULES)throw new Error('Set RUNTIME_NODE_MODULES');
 const runtimeRequire=createRequire(path.join(process.env.RUNTIME_NODE_MODULES,'../package.json'));
@@ -15,13 +16,15 @@ const require=createRequire(path.join(repo,'apps/crm/package.json'));
 const QR=require('qrcode');
 const {finalizePresentation}=await import(pathToFileURL(path.join(skill,'container_tools/artifact_tool_utils.mjs')));
 const out=path.join(workspaceDir,'output'),tmp=path.join(workspaceDir,'.build');
-await fs.mkdir(out,{recursive:true});
+await fs.mkdir(out,{recursive:true});await fs.mkdir(tmp,{recursive:true});
 const copy=JSON.parse(await fs.readFile(path.join(repo,'docs/presentation/copy.json'),'utf8'));
 const outputStem=process.env.PRESENTATION_OUTPUT_STEM || 'Gotham-services-screen';
 const ink='#101C2E',gold='#C59946',white='#FFFFFF',light='#E4E8EF';
+let scriptLang='en';
 function text(s,t,x,y,w,h,size=40,color=ink,bold=false){
  const a=s.shapes.add({geometry:'textbox',position:{left:x,top:y,width:w,height:h},fill:'none',line:{fill:'none',width:0}});
- a.text=t;a.text.style={typeface:'Arial',fontSize:size,color,bold,autoFit:'none'};return a;
+ const native=scriptLang==='ar'&&/[\u0600-\u06ff]/.test(t),chinese=scriptLang==='zh'&&/[\u4e00-\u9fff]/.test(t);
+ a.text=t;a.text.style={typeface:native?'Geeza Pro':chinese?'Arial Unicode MS':'Arial',fontSize:size,color,bold,autoFit:'none'};if(native)a.text.alignment='right';return a;
 }
 async function pic(s,name,x,y,w,h,fit='cover'){
  const png=await sharp(path.join(repo,'apps/site/public/img',name)).png().toBuffer();
@@ -33,6 +36,8 @@ async function brand(s,dark=true){
 }
 function notes(s,body,source){s.speakerNotes.textFrame.setText(body+'\nPublished service source: '+source+'\nContent date: 5 October 2026. No prices, investment returns or delivery guarantees are asserted.');}
 for(const [lang,c]of Object.entries(copy)){
+ if(process.env.PRESENTATION_LANGUAGES&&!process.env.PRESENTATION_LANGUAGES.split(',').includes(lang))continue;
+ scriptLang=lang;
 const p=Presentation.create({slideSize:{width:1280,height:720}});
 const cover=p.slides.add();cover.background.fill=ink;
 await pic(cover,'real-airportcity.webp',780,0,500,720);await brand(cover);
@@ -65,12 +70,13 @@ for(const [label,url,caption,x]of links){
 }
 notes(scan,'Leave this slide on screen after the talk so the audience can scan. The first QR opens the public website, including services, forums and the chatbot. The second opens the LinkedIn company page linked in the website footer. Invite people to follow the page in LinkedIn; scanning alone does not follow an account. Phone: +233 55 041 6627. Email: info@gothamconsult.com.','https://gothamconsult.com/');
 const candidate=path.join(tmp,`candidate-${lang}.pptx`);await(await PresentationFile.exportPptx(p)).save(candidate);
+if(lang==='ar')execFileSync(python,[path.join(repo,'docs/presentation/rtl_pptx.py'),candidate]);
 const finalPath=path.join(out,`${outputStem}-${lang}.pptx`);
 await finalizePresentation({workspaceDir,candidatePath:candidate,finalPath,pythonExecutable:python,
  integrityValidatorPath:path.join(skill,'container_tools/inspect_presentation_package_integrity.py'),
  layoutValidatorPath:path.join(skill,'container_tools/inspect_presentation_layout_geometry.py'),
  layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-heading-fit'],
- explicitTotalSlideCount:5,fontPolicy:{basis:'design',families:['Arial']},verifyArtifactToolImport:true,
+ explicitTotalSlideCount:5,fontPolicy:{basis:'design',families:lang==='ar'?['Arial','Geeza Pro']:lang==='zh'?['Arial','Arial Unicode MS']:['Arial'],scriptFonts:lang==='ar'?{cs:'Geeza Pro'}:lang==='zh'?{ea:'Arial Unicode MS'}:{}},verifyArtifactToolImport:true,
  receiptPath:path.join(tmp,`${outputStem}-validation-${lang}.json`)});
 await fs.mkdir(path.join(tmp,lang),{recursive:true});
 for(let i=0;i<p.slides.items.length;i++){

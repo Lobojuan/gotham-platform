@@ -5,7 +5,7 @@ os.chdir(ROOT + '/apps/crm')
 # Exercise both real Python entry points with a tiny synthesis double. This catches
 # a worker/build mapping mismatch without downloading models in the API suite.
 voices = json.load(open('ask-voices.json'))
-expected = {'en': ('bm_fable', 'en-gb'), 'fr': ('pierre_fr_FR', 'fr-FR'), 'es': ('sharvard_es_ES', 'es-ES')}
+expected = {'en': ('bm_fable', 'en-gb'), 'fr': ('pierre_fr_FR', 'fr-FR'), 'es': ('sharvard_es_ES', 'es-ES'), 'de': ('thorsten_de_DE','de-DE'), 'ar':('M1','ar'), 'zh':('zf_001','zh-CN')}
 assert {lang: (s['voice'], s['lang']) for lang, s in voices.items()} == expected
 calls, piper_calls, encoded = [], [], []
 class Kokoro:
@@ -38,7 +38,7 @@ try:
     exec(compile(open('ask-voice.py').read(), 'ask-voice.py', 'exec'), {'__file__':os.path.abspath('ask-voice.py')})
     assert calls == [expected['en']]*2
     assert output.getvalue().startswith(b'READY\n') and output.getvalue().count(b'RIFF-test-wave') == 2
-    for language in ['fr','es']:
+    for language in ['fr','es','de']:
         piper_calls.clear()
         os.environ['ASK_PIPER_LANGUAGE'] = language
         sys.argv = ['ask-piper.py', voices[language]['model']+'.onnx']
@@ -51,13 +51,13 @@ try:
     sys.stdout = saved_out
     for copy in ['ask-welcome.json','ask-payment.json']:
         calls.clear(); piper_calls.clear(); encoded.clear()
-        for selected in ['en','fr,es']:
+        for selected in ['en','fr,es,de']:
             sys.argv = ['make-intros.py','model','voices',copy,'/tmp/gotham-native-voice-fixture',selected]
             subprocess.run = lambda args, **kwargs: encoded.append(args[-1])
             exec(compile(open('make-intros.py').read(), 'make-intros.py', 'exec'), {'__file__':os.path.abspath('make-intros.py')})
         assert calls == [expected['en']]
-        assert piper_calls == [(voices[l]['model']+'.onnx',voices[l]['speaker']) for l in ['fr','es']]
-        assert [os.path.basename(f) for f in encoded] == [s[0]+'-'+l+'.mp3' for l,s in expected.items()]
+        assert piper_calls == [(voices[l]['model']+'.onnx',voices[l]['speaker']) for l in ['fr','es','de']]
+        assert [os.path.basename(f) for f in encoded] == [s[0]+'-'+l+'.mp3' for l,s in expected.items() if l in ['en','fr','es','de']]
 finally:
     sys.stdin, sys.stdout, sys.argv = saved_in, saved_out, saved_argv
     subprocess.run = saved_run
@@ -79,7 +79,7 @@ const v=makeAskVoice({enabled:()=>true, now:()=>clock, dailyCap:3,
 const a=v.issue('Bonjour.','one','fr');
 assert.equal(a.voice,'pierre_fr_FR');
 const mapping=makeAskVoice({enabled:()=>true});
-for(const [language,voice] of Object.entries({en:'bm_fable',fr:'pierre_fr_FR',es:'sharvard_es_ES',invalid:'bm_fable'}))
+for(const [language,voice] of Object.entries({en:'bm_fable',fr:'pierre_fr_FR',es:'sharvard_es_ES',de:'thorsten_de_DE',ar:'M1',zh:'zf_001',invalid:'bm_fable'}))
   assert.equal(mapping.issue('Voice test','one',language).voice,voice);
 console.log('  ok native voice metadata and unsupported-language English fallback');
 const fixed=fs.mkdtempSync(path.join(os.tmpdir(),'gotham-native-cache-'));
@@ -87,7 +87,7 @@ const copy=JSON.parse(fs.readFileSync('./ask-payment.json','utf8'));
 const oldPayments=process.env.KOKORO_PAYMENTS;process.env.KOKORO_PAYMENTS=fixed;
 try {
  const cache=makeAskVoice({enabled:()=>true,render:async()=>Buffer.from('fresh synthesis')});
- for(const [language,speaker] of Object.entries({en:'bm_fable',fr:'pierre_fr_FR',es:'sharvard_es_ES'})) {
+ for(const [language,speaker] of Object.entries({en:'bm_fable',fr:'pierre_fr_FR',es:'sharvard_es_ES',de:'thorsten_de_DE',ar:'M1',zh:'zf_001'})) {
   fs.writeFileSync(path.join(fixed,language+'.mp3'),'stale English voice');
   const text=copy[language];
   const stale=cache.start(cache.issue(text,'one',language).token,'one');
@@ -149,22 +149,22 @@ assert.equal(chunks.join(' '),full.trim());console.log('  ok streaming retains e
 '''
 subprocess.run(['node', '--input-type=module', '-e', code], check=True)
 env = dict(os.environ, DATABASE_URL=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test'),
-    SESSION_SECRET='test', PORT='4199', ADMIN_EMAIL='admin', ADMIN_PASSWORD='ownerpass123', ADMIN_NAME='Admin',
+    SESSION_SECRET='test', PORT='4214', ADMIN_EMAIL='admin', ADMIN_PASSWORD='ownerpass123', ADMIN_NAME='Admin',
     MEDIA_DIR='/tmp/mediatest', KOKORO_MODEL='/tmp/definitely-missing-kokoro', OPENAI_API_KEY='')
 srv = subprocess.Popen(['node','server.js'], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 try:
     for _ in range(60):
         try:
-            if urllib.request.urlopen('http://127.0.0.1:4199/api/health',timeout=2).status==200: break
+            if urllib.request.urlopen('http://127.0.0.1:4214/api/health',timeout=2).status==200: break
         except Exception: time.sleep(.4)
-    req=urllib.request.Request('http://127.0.0.1:4199/api/ask/voice',data=json.dumps({'text':'arbitrary text','token':'fake'}).encode(),headers={'content-type':'application/json'})
+    req=urllib.request.Request('http://127.0.0.1:4214/api/ask/voice',data=json.dumps({'text':'arbitrary text','token':'fake'}).encode(),headers={'content-type':'application/json'})
     try: urllib.request.urlopen(req); raise AssertionError('should refuse')
     except urllib.error.HTTPError as e: assert e.code==503 and json.loads(e.read())=={'error':'voice_unavailable'}
     print('  ok public voice route refuses arbitrary text and degrades without a model')
-    for lang, phrase in [('en','consulting services'),('fr','services de conseil'),('es','servicios de consultoría')]:
-        req=urllib.request.Request('http://127.0.0.1:4199/api/ask',data=json.dumps({'intro':True,'language':lang,'speech':True}).encode(),headers={'content-type':'application/json'})
+    for lang, phrase in [('en','consulting services'),('fr','services de conseil'),('es','servicios de consultoría'),('de','Beratungsleistungen'),('ar','خدماتنا'),('zh','服务')]:
+        req=urllib.request.Request('http://127.0.0.1:4214/api/ask',data=json.dumps({'intro':True,'language':lang,'speech':True}).encode(),headers={'content-type':'application/json'})
         answer=json.load(urllib.request.urlopen(req)); assert phrase in answer['answer'] and answer['speech'] is None
-    print('  ok broad site introduction in three languages without a model-provider call')
+    print('  ok broad site introduction in six languages without a model-provider call')
     print('PASSED')
 finally:
     srv.terminate(); srv.wait(timeout=5)

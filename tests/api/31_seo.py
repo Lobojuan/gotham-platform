@@ -23,7 +23,7 @@ def ok(condition, message):
     count += 1
 
 def read(path):
-    return (DIST / (path.strip('/') + '.html' if path.strip('/') not in ('', 'fr', 'es') else (path.strip('/') + '/' if path.strip('/') else '') + 'index.html')).read_text()
+    return (DIST / (path.strip('/') + '.html' if path.strip('/') not in ('', 'fr', 'es', 'de', 'ar', 'zh') else (path.strip('/') + '/' if path.strip('/') else '') + 'index.html')).read_text()
 
 def graphs(doc):
     for raw in re.findall(r'<script type="application/ld\+json">(.*?)</script>', doc, re.S):
@@ -32,13 +32,13 @@ def graphs(doc):
 
 urls = [n.text for n in ET.parse(DIST / 'sitemap.xml').findall('.//{*}loc')]
 ok(len(urls) == len(set(urls)), 'Sitemap has no duplicate URLs')
-for lang in ('fr', 'es'):
+for lang in ('fr', 'es', 'de', 'ar', 'zh'):
     localized = [u for u in urls if u == SITE + '/' + lang or u.startswith(SITE + '/' + lang + '/')]
     ok(len(localized) == 24, lang + ': all 24 translated pages in sitemap')
     for url in localized:
         path = url.removeprefix(SITE); name = path.removeprefix('/' + lang).strip('/')
         doc = read(path)
-        ok(f'<html lang="{lang}" data-page-lang="{lang}">' in doc, path + ': language')
+        ok(f'<html lang="{lang}" data-page-lang="{lang}"' in doc, path + ': language')
         title = unescape(re.search(r'<title>(.*?)</title>', doc, re.S)[1])
         desc = unescape(re.search(r'<meta name="description" content="([^"]+)"', doc)[1])
         ok(f'rel="canonical" href="{url}"' in doc and f'property="og:url" content="{url}"' in doc, path + ': canonical and sharing address')
@@ -61,11 +61,11 @@ for lang in ('fr', 'es'):
                 visible = build.faqs_in(doc)
                 # Article summaries include SVG icons; build.faqs_in strips them the same way.
                 ok(node['mainEntity'] == visible, path + ': FAQ agrees with visible translated questions')
-        for code in ('en', 'fr', 'es', 'x-default'):
+        for code in ('en', 'fr', 'es', 'de', 'ar', 'zh', 'x-default'):
             target = SITE + ('/' + name if name else '/') if code in ('en', 'x-default') else SITE + '/' + code + ('/' + name if name else '')
             ok(f'hreflang="{code}" href="{target}"' in doc, path + ': alternate ' + code)
             ok(f'hreflang="{lang}" href="{url}"' in read(target.removeprefix(SITE)), path + ': reciprocal ' + code)
-        ok(len(re.findall(r'<a data-lang="(?:en|fr|es)" href="/', doc)) == 6, path + ': crawlable desktop/phone language anchors')
+        ok(len(re.findall(r'<a data-lang="(?:en|fr|es|de|ar|zh)"[^>]* href="/', doc)) == 12, path + ': crawlable desktop/phone language anchors')
         nav = re.sub(r'<a data-lang=".*?</a>', '', doc)
         twin_paths = {u.removeprefix(SITE + '/fr') or '/' for u in urls if u == SITE + '/fr' or u.startswith(SITE + '/fr/')}
         ok(not any(h.split('#')[0].split('?')[0] in twin_paths for h in re.findall(r'href="(/[^"]*)"', nav)), path + ': translated navigation stays in selected language')
@@ -82,5 +82,5 @@ except ValueError:
     ok(True, 'Proxy patch refuses unexpected configuration')
 else:
     raise AssertionError('Unexpected Caddy shape was accepted')
-print('  ok SEO:', count, 'checks across 48 localized pages')
+print('  ok SEO:', count, 'checks across 120 localized pages')
 print('PASSED')

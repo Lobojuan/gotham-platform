@@ -2,11 +2,30 @@
   "en": {
     "cover": "Build partnerships\nin Ghana",
     "subtitle": "Business advisory, technology\nand international projects",
-    "titles": ["Business & investment", "AI, digital & creative services", "Projects, people & partnerships"],
+    "titles": [
+      "Business & investment",
+      "AI, digital & creative services",
+      "Projects, people & partnerships"
+    ],
     "services": [
-      ["Company setup and market entry", "Business plans and financial models", "Partner and project due diligence", "Compliance and ESG support"],
-      ["AI readiness audits and staff training", "Finance and reporting automation", "Websites, apps and managed hosting", "Jingles, adverts and voiceovers"],
-      ["Energy, mining and infrastructure", "Education and school development", "Senior citizens and family support", "Forums, media and investor roundtables"]
+      [
+        "Company setup and market entry",
+        "Business plans and financial models",
+        "Partner and project due diligence",
+        "Compliance and ESG support"
+      ],
+      [
+        "AI readiness audits and staff training",
+        "Finance and reporting automation",
+        "Websites, apps and managed hosting",
+        "Jingles, adverts and voiceovers"
+      ],
+      [
+        "Energy, mining and infrastructure",
+        "Education and school development",
+        "Senior citizens and family support",
+        "Forums, media and investor roundtables"
+      ]
     ],
     "scan": "Stay connected with Gotham",
     "website": "Explore our services",
@@ -22,11 +41,30 @@
   "fr": {
     "cover": "Des partenariats\nau Ghana",
     "subtitle": "Conseil aux entreprises, technologie\net projets internationaux",
-    "titles": ["Entreprises et investissement", "IA, numérique et création", "Projets et partenariats"],
+    "titles": [
+      "Entreprises et investissement",
+      "IA, numérique et création",
+      "Projets et partenariats"
+    ],
     "services": [
-      ["Création d’entreprise et accès au marché", "Plans d’affaires et modèles financiers", "Vérification des partenaires et projets", "Conformité et accompagnement ESG"],
-      ["Audits IA et formation des équipes", "Automatisation financière et des rapports", "Sites web, applications et hébergement", "Jingles, publicités et voix off"],
-      ["Énergie, mines et infrastructures", "Éducation et développement des écoles", "Soutien aux seniors et aux familles", "Forums, médias et rencontres d’investisseurs"]
+      [
+        "Création d’entreprise et accès au marché",
+        "Plans d’affaires et modèles financiers",
+        "Vérification des partenaires et projets",
+        "Conformité et accompagnement ESG"
+      ],
+      [
+        "Audits IA et formation des équipes",
+        "Automatisation financière et des rapports",
+        "Sites web, applications et hébergement",
+        "Jingles, publicités et voix off"
+      ],
+      [
+        "Énergie, mines et infrastructures",
+        "Éducation et développement des écoles",
+        "Soutien aux seniors et aux familles",
+        "Forums, médias et rencontres d’investisseurs"
+      ]
     ],
     "scan": "Restons en contact avec Gotham",
     "website": "Découvrez nos services",
@@ -42,11 +80,30 @@
   "es": {
     "cover": "Alianzas de negocio\nen Ghana",
     "subtitle": "Asesoría empresarial, tecnología\ny proyectos internacionales",
-    "titles": ["Empresas e inversión", "IA, servicios digitales y creativos", "Proyectos y alianzas"],
+    "titles": [
+      "Empresas e inversión",
+      "IA, servicios digitales y creativos",
+      "Proyectos y alianzas"
+    ],
     "services": [
-      ["Creación de empresas y entrada al mercado", "Planes de negocio y modelos financieros", "Evaluación de socios y proyectos", "Cumplimiento y apoyo en ESG"],
-      ["Auditorías de IA y formación de equipos", "Automatización financiera y de informes", "Sitios web, aplicaciones y alojamiento", "Jingles, anuncios y locuciones"],
-      ["Energía, minería e infraestructura", "Educación y desarrollo de escuelas", "Apoyo a personas mayores y familias", "Foros, medios y encuentros de inversores"]
+      [
+        "Creación de empresas y entrada al mercado",
+        "Planes de negocio y modelos financieros",
+        "Evaluación de socios y proyectos",
+        "Cumplimiento y apoyo en ESG"
+      ],
+      [
+        "Auditorías de IA y formación de equipos",
+        "Automatización financiera y de informes",
+        "Sitios web, aplicaciones y alojamiento",
+        "Jingles, anuncios y locuciones"
+      ],
+      [
+        "Energía, minería e infraestructura",
+        "Educación y desarrollo de escuelas",
+        "Apoyo a personas mayores y familias",
+        "Foros, medios y encuentros de inversores"
+      ]
     ],
     "scan": "Sigue en contacto con Gotham",
     "website": "Descubre nuestros servicios",
@@ -58,5 +115,122 @@
     "exit": "Salir de pantalla completa",
     "download": "Descargar",
     "help": "Usa las flechas para cambiar de diapositiva. Deja los códigos QR en pantalla al final para que el público pueda escanearlos."
+  },
+  "de": {
+    "cover": "Partnerschaften\nin Ghana aufbauen",
+    "subtitle": "Unternehmensberatung, Technologie\nund internationale Projekte",
+    "titles": [
+      "Unternehmen und Investitionen",
+      "KI, digitale und kreative Leistungen",
+      "Projekte und Partnerschaften"
+    ],
+    "services": [
+      [
+        "Unternehmensgründung und Markteintritt",
+        "Geschäftspläne und Finanzmodelle",
+        "Prüfung von Partnern und Projekten",
+        "Unterstützung bei Compliance und ESG"
+      ],
+      [
+        "KI-Bestandsaufnahme und Mitarbeiterschulung",
+        "Automatisierung von Finanzen und Berichten",
+        "Websites, Apps und betreutes Hosting",
+        "Jingles, Werbung und Sprecheraufnahmen"
+      ],
+      [
+        "Energie, Bergbau und Infrastruktur",
+        "Bildung und Schulentwicklung",
+        "Unterstützung für Senioren und Familien",
+        "Wirtschaftsforen, Medien und Investorentreffen"
+      ]
+    ],
+    "scan": "Mit Gotham in Verbindung bleiben",
+    "website": "Leistungen entdecken",
+    "follow": "Folgen Sie uns auf LinkedIn",
+    "start": "Präsentation starten",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "fullscreen": "Vollbild",
+    "exit": "Vollbild verlassen",
+    "download": "Herunterladen",
+    "help": "Wechseln Sie die Folien mit den Pfeiltasten. Lassen Sie die letzte Folie mit den QR-Codes stehen, damit Ihr Publikum sie scannen kann."
+  },
+  "ar": {
+    "cover": "ابنوا شراكات\nفي غانا",
+    "subtitle": "استشارات الأعمال والتكنولوجيا\nوالمشاريع الدولية",
+    "titles": [
+      "الأعمال والاستثمار",
+      "الذكاء الاصطناعي والخدمات الرقمية والإبداعية",
+      "المشاريع والشراكات"
+    ],
+    "services": [
+      [
+        "تأسيس الشركات ودخول السوق",
+        "خطط الأعمال والنماذج المالية",
+        "العناية الواجبة للشركاء والمشاريع",
+        "دعم الامتثال والحوكمة البيئية والاجتماعية والمؤسسية"
+      ],
+      [
+        "تقييم الجاهزية للذكاء الاصطناعي وتدريب الموظفين",
+        "أتمتة الشؤون المالية وإعداد التقارير",
+        "المواقع الإلكترونية والتطبيقات والاستضافة المُدارة",
+        "الأناشيد الإعلانية والإعلانات والتعليق الصوتي"
+      ],
+      [
+        "الطاقة والتعدين والبنية التحتية",
+        "التعليم وتطوير المدارس",
+        "دعم كبار السن والأسر",
+        "المنتديات والإعلام وموائد المستثمرين المستديرة"
+      ]
+    ],
+    "scan": "ابقوا على تواصل مع Gotham",
+    "website": "تعرّفوا على خدماتنا",
+    "follow": "تابعونا على LinkedIn",
+    "start": "ابدؤوا العرض",
+    "next": "التالي",
+    "previous": "السابق",
+    "fullscreen": "ملء الشاشة",
+    "exit": "الخروج من ملء الشاشة",
+    "download": "تنزيل",
+    "help": "استخدموا مفاتيح الأسهم للتنقل بين الشرائح. اتركوا الشريحة الأخيرة على الشاشة ليتمكن الجمهور من مسح رموز QR."
+  },
+  "zh": {
+    "cover": "在加纳\n建立合作伙伴关系",
+    "subtitle": "企业咨询、技术\n与国际项目",
+    "titles": [
+      "企业与投资",
+      "人工智能、数字化与创意服务",
+      "项目与合作伙伴关系"
+    ],
+    "services": [
+      [
+        "企业设立与市场准入",
+        "商业计划与财务模型",
+        "合作伙伴与项目尽职调查",
+        "合规与 ESG 支持"
+      ],
+      [
+        "人工智能准备度评估与员工培训",
+        "财务与报告自动化",
+        "网站、应用程序与托管服务",
+        "广告配乐、广告制作与配音"
+      ],
+      [
+        "能源、采矿与基础设施",
+        "教育与学校发展",
+        "长者与家庭支持",
+        "商务论坛、媒体与投资者圆桌会议"
+      ]
+    ],
+    "scan": "与 Gotham 保持联系",
+    "website": "了解我们的服务",
+    "follow": "在 LinkedIn 上关注我们",
+    "start": "开始演示",
+    "next": "下一页",
+    "previous": "上一页",
+    "fullscreen": "全屏",
+    "exit": "退出全屏",
+    "download": "下载",
+    "help": "使用方向键切换幻灯片。请在结束时保留最后一页，让观众扫描二维码。"
   }
 }

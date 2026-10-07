@@ -225,3 +225,11 @@ SEO regression: `python3 tests/api/31_seo.py` after building, plus
 The normal API/E2E runners include these checks. Use the bundled Python runtime
 with Pillow and openpyxl when running the full API suite. E2E cleanup stops only
 its own server processes; the fact-check suite uses local source fixtures.
+
+## Six public languages and free speech (7 October 2026)
+
+Public core pages and insight articles have crawlable English, French, Spanish, German, Arabic and Simplified Chinese URLs. The shared public English copy remains the source for numbers, law IDs and linked evidence. New translations live in `apps/site/public/assets/v2/i18n-{de,ar,zh}.js`; `locale_support.py` prepares localized article, research and search metadata. Arabic uses RTL layout with isolated phone numbers and financial charts; Chinese uses native Han font fallbacks. Dynamic chat answers follow the selected website language.
+
+Uffe approved the German, Mandarin and Arabic demos on 7 October before publication. German uses CC0 Piper Thorsten (`de_DE-thorsten-high`); Mandarin uses Apache-2.0 Kokoro 1.1 Chinese (`zf_001`, Misaki Chinese G2P); formal Arabic uses Supertonic 3 (`M1`, OpenRAIL-M model / MIT worker). These are local CPU workers with no ElevenLabs subscription or per-answer speech API bill. Existing hosting resources and Groq text-provider limits still apply. Country/language metadata does not certify a particular city accent.
+
+`voice-models.json` pins upstream asset URLs and SHA256 checksums. `download-voices.py` verifies the weights before image installation. Each language has its own lazily loaded warm worker, matching welcome/payment files, and bounded visitor-bound speech tickets. English retains Kokoro Fable; France French and Spain Spanish retain the approved Piper voices. `/downloads/voice-credits.txt` links provenance; `/terms#ai-voices` incorporates Arabic model use restrictions and links the full model licence. The separate receptionist demo retains its existing scope.

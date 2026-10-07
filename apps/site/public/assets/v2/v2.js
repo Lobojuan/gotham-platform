@@ -14,7 +14,7 @@
   nb?.addEventListener('click', e => { e.stopPropagation(); setMega(mega.hidden); closeLang(); });
   mega?.addEventListener('click', e => e.stopPropagation());
 
-  /* ---- language (EN / FR / ES) ---- */
+  /* ---- language: English, France French, Spain Spanish, German, Arabic, Mandarin ---- */
   const langb = $('.langb'), langp = $('#langp');
   const closeLang = () => { if (langp) { langp.hidden = true; langb?.setAttribute('aria-expanded', 'false'); } };
   langb?.addEventListener('click', e => { e.stopPropagation(); const open = langp.hidden; setMega(false); langp.hidden = !open; langb.setAttribute('aria-expanded', open); });
@@ -26,17 +26,19 @@
   };
   /* translations: English is in the HTML; French/Spanish come from i18n.js, loaded only when chosen.
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
-  let dict = {}; const dictReady = {};
+  let dict = {}; const dictReady = {}; const dictionaries = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=23';
-    sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=24';
+    sc.onload = () => { dictionaries[l] = window.GC_I18N || {}; dict = dictionaries[l]; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
   /* text the back office fills in (dates, seats left, "a · b · c" lines) is translated by pattern or piece by piece */
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const pat = (k, lang) => {
     let m;
+    if ((m = k.match(/^(\d+) of (\d+) seats (left|still open)$/)) && ['de','ar','zh'].includes(lang)) return ({de:`${m[1]} von ${m[2]} Plätzen verfügbar`,ar:`${m[1]} مقاعد متاحة من أصل ${m[2]}`,zh:`共 ${m[2]} 个名额，剩余 ${m[1]} 个`})[lang];
     if ((m = k.match(/^(\d+) of (\d+) seats (left|still open)$/))) return lang === 'fr' ? `${m[1]} places ${m[3] === 'left' ? 'restantes' : 'encore disponibles'} sur ${m[2]}` : `${m[1]} de ${m[2]} plazas ${m[3] === 'left' ? 'disponibles' : 'aún disponibles'}`;
+    if ((m = k.match(/^(\d+) seats left(\.?)$/)) && ['de','ar','zh'].includes(lang)) return ({de:`${m[1]} Plätze verfügbar`,ar:`${m[1]} مقاعد متاحة`,zh:`剩余 ${m[1]} 个名额`})[lang]+m[2];
     if ((m = k.match(/^(\d+) seats left(\.?)$/))) return (lang === 'fr' ? `${m[1]} places restantes` : `Quedan ${m[1]} plazas`) + m[2];
     if ((m = k.match(/^(?:(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),? )?(\d{1,2}) (January|February|March|April|May|June|July|August|September|October|November|December) (\d{4})$/))) {
       const d = new Date(Date.UTC(+m[4], MONTHS.indexOf(m[3]), +m[2], 12));
@@ -84,10 +86,12 @@
       ORIG.delete(n); if (mine(n)) applyNode(n, current); continue;
     }
     for (const n of r.addedNodes) if (mine(n)) applyNode(n, current); } });
+  let languageEpoch = 0;
   const setLang = async l => {
+    const epoch = ++languageEpoch;
     markLang(l); try { localStorage.setItem('gc-language', l); } catch {}
-    document.documentElement.lang = l;
-    if (l !== 'en') await loadDict(l);
+    document.documentElement.lang = l; document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+    if (l !== 'en') { await loadDict(l); if (epoch !== languageEpoch) return; dict = dictionaries[l] || {}; }
     if (l === 'en' && !Object.keys(dict).length) { const old = $('#gc-language-switch select'); if (old && old.value !== 'en') { old.value = 'en'; old.dispatchEvent(new Event('change')); } return; }
     roots().forEach(r => applyNode(r, l));
     if (!observing) { mo.observe(document.body, { childList: true, subtree: true, characterData: true }); observing = true; }
@@ -103,6 +107,7 @@
     setLang(l);
   };
   $$('[data-lang]').forEach(b => b.addEventListener('click', e => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); choose(b.dataset.lang); closeLang(); }));
+  if (!['en','fr','es','de','ar','zh'].includes(current)) current='en';
   if (pageLang !== 'en') current = pageLang;
   else if (current !== 'en' && twin(current)) { location.replace(twin(current)); return; }   // carry a saved preference to the corresponding crawlable twin
   markLang(current); if (current !== 'en') setLang(current);
@@ -233,7 +238,7 @@
   }
 
   /* ---- current page in the menu ---- */
-  const here = location.pathname.replace(/^\/(fr|es)(?=\/|$)/, '').replace(/\/$/, '');
+  const here = location.pathname.replace(/^\/(fr|es|de|ar|zh)(?=\/|$)/, '').replace(/\/$/, '');
   const navKey = /^\/(services|mining)/.test(here) ? 'services' : here.startsWith('/invest') ? 'invest'
     : here.startsWith('/forums') ? 'forums' : here.startsWith('/about') ? (location.hash === '#contact' ? 'contact' : 'about') : '';
   $$('[data-nav]').forEach(a => { if (a.dataset.nav === navKey) { a.tagName === 'A' ? a.setAttribute('aria-current', 'page') : a.classList.add('cur'); } });
@@ -251,7 +256,7 @@
   });
 
   /* ---- forums page: every upcoming event, live from the back office ---- */
-  const LOC = () => ({ fr: 'fr-FR', es: 'es-ES' })[current] || 'en-GB';
+  const LOC = () => ({ fr: 'fr-FR', es: 'es-ES', de:'de-DE', ar:'ar-u-nu-latn', zh:'zh-CN' })[current] || 'en-GB';
   const TZ = { timeZone: 'Africa/Accra' };
   const icsT = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
   const evEnd = i => i.ends_at && new Date(i.ends_at) > new Date(i.starts_at) ? i.ends_at : new Date(new Date(i.starts_at).getTime() + 3 * 36e5).toISOString();
@@ -463,6 +468,11 @@
     fr: { on: 'Voix activée', off: 'Voix désactivée', play: 'Écouter la réponse', stop: 'Arrêter la voix', ready: 'Pierre · français de France · voix IA', loading: 'Préparation de la voix française…', speaking: 'Pierre parle…', blocked: 'Appuyez sur Écouter la réponse.', unavailable: 'Voix indisponible. La réponse reste lisible.', disclosure: 'Pierre est une voix française de France générée par IA sur notre serveur. Crédits : /downloads/voice-credits.txt' },
     es: { on: 'Voz activada', off: 'Voz desactivada', play: 'Escuchar respuesta', stop: 'Detener voz', ready: 'Castellano de España · voz IA', loading: 'Preparando la voz en castellano…', speaking: 'Respuesta en castellano…', blocked: 'Pulsa Escuchar respuesta para oírla.', unavailable: 'Voz no disponible. Puedes leer la respuesta.', disclosure: 'La voz de Sharvard es una voz de España generada por IA en nuestro servidor. Créditos: /downloads/voice-credits.txt' }
   };
+  Object.assign(VOICE_TEXT, {
+    de:{on:'Stimme an',off:'Stimme aus',play:'Antwort anhören',stop:'Sprachausgabe stoppen',ready:'Thorsten · Deutsch · KI-Stimme',loading:'Deutsche Sprachausgabe wird vorbereitet…',speaking:'Thorsten spricht…',blocked:'Tippen Sie auf Antwort anhören.',unavailable:'Stimme nicht verfügbar. Sie können die Antwort lesen.',disclosure:'Thorsten ist eine lokal erzeugte deutsche KI-Stimme. Credits: /downloads/voice-credits.txt'},
+    zh:{on:'语音已开启',off:'语音已关闭',play:'播放回答',stop:'停止播放',ready:'普通话 · 人工智能语音',loading:'正在准备普通话语音…',speaking:'正在用普通话朗读回答…',blocked:'请点击播放回答。',unavailable:'语音暂不可用，您仍可阅读回答。',disclosure:'这是在我们的服务器上生成的普通话人工智能语音。来源：/downloads/voice-credits.txt'},
+    ar:{on:'الصوت مفعّل',off:'الصوت متوقف',play:'استمع إلى الإجابة',stop:'أوقف الصوت',ready:'العربية الفصحى · صوت بالذكاء الاصطناعي',loading:'جارٍ إعداد الصوت العربي…',speaking:'جارٍ قراءة الإجابة بالعربية الفصحى…',blocked:'اضغطوا على استمع إلى الإجابة.',unavailable:'الصوت غير متاح. يمكنكم قراءة الإجابة.',disclosure:'صوت عربي مولّد بالذكاء الاصطناعي على خادمنا. المصدر: /downloads/voice-credits.txt'}
+  });
   let voiceOn = true, voiceState = 'ready', audioContext, audioSource, audioBuffer, voiceRequest, voiceEpoch = 0, voiceJob=null, nextAudioAt=0;
   const playingSources=new Set();
   try { voiceOn = localStorage.getItem('gc-chat-voice') !== 'off'; } catch {}
@@ -547,7 +557,8 @@
   new MutationObserver(() => { stopVoice(true); updateVoiceUI(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   document.addEventListener('visibilitychange', () => { if (document.hidden) stopVoice(); });
   window.addEventListener('pagehide', () => stopVoice(true)); updateVoiceUI();
-  const say = (t, who) => { const m = document.createElement('div'); m.className = 'm ' + who; m.textContent = t; msgs.append(m); msgs.scrollTop = msgs.scrollHeight; return m; };
+  const say = (t, who) => { const m = document.createElement('div'); m.className = 'm ' + who; m.dir='auto';
+    String(t).split(/(\+233[\d ]{8,16})/g).forEach(part=>{if(/^\+233/.test(part)){const bdi=document.createElement('bdi');bdi.dir='ltr';bdi.textContent=part;m.append(bdi);}else m.append(document.createTextNode(part));}); msgs.append(m); msgs.scrollTop = msgs.scrollHeight; return m; };
   const WELCOME = (()=>{try{return JSON.parse($('#ask-welcome')?.textContent || '{}');}catch{return {};}})();
   function speakIntro() {
     if (!voiceOn) return;
@@ -566,7 +577,11 @@
   const FALLBACK = 'The AI is temporarily unavailable. Please try again, or browse our services at /services and forums at /forums.';
   // Known public facts remain useful when the AI provider is temporarily unavailable.
   function offlineAnswer(q) {
-    const pay = /\b(pay|payment|momo|money|payer|paiement|pagar|pago)\b/i.test(q);
+    const pay = /\b(pay|payment|momo|money|payer|paiement|pagar|pago|bezahl|zahlung)\b|付款|支付|الدفع|ادفع|أدفع/i.test(q);
+    if (['de','ar','zh'].includes(current)) {
+      if (pay) return ({de:'Zahlen Sie den auf der Anmeldeseite angegebenen Betrag an die MoMo-Nummer +233 55 041 6627. Prüfen Sie den Empfängernamen und geben Sie Ihre Anmeldereferenz an. Melden Sie anschließend die Transaktions-ID auf der Bestätigungsseite. Unser Team prüft den Zahlungseingang. Geben Sie niemals Ihre MoMo-PIN weiter.',zh:'请将报名页面显示的金额支付至 MoMo 号码 +233 55 041 6627。转账前请核对收款人姓名，使用报名参考编号，并在报名确认页面提交交易编号。工作人员会核实收款。切勿透露您的 MoMo PIN 码。',ar:'ادفعوا المبلغ الظاهر في صفحة التسجيل إلى رقم MoMo: +233 55 041 6627. تحققوا من اسم المستفيد واستخدموا الرقم المرجعي للتسجيل، ثم أبلغوا عن معرّف المعاملة على صفحة التأكيد. سيتحقق فريقنا من استلام المبلغ. لا تشاركوا الرقم السري لخدمة MoMo.'})[current];
+      return ({de:'Die KI ist vorübergehend nicht verfügbar. Bitte versuchen Sie Ihre Frage hier erneut.',zh:'人工智能助手暂时无法使用，请在这里重试您的问题。',ar:'الذكاء الاصطناعي غير متاح مؤقتاً. يرجى إعادة طرح سؤالكم هنا.'})[current];
+    }
     if (pay) return ({
       en: 'Pay by Mobile Money to +233 55 041 6627, Joy’s payment number. Use the amount and registration reference shown in your account, then submit the transaction ID so the team can verify it. Bank transfer details are on your invoice. Never share your MoMo PIN here.',
       fr: 'Payez par Mobile Money au +233 55 041 6627, le numéro de paiement de Joy. Utilisez le montant et la référence affichés dans votre compte, puis transmettez l’identifiant de transaction pour vérification. Les coordonnées bancaires figurent sur votre facture. Ne partagez jamais votre code PIN MoMo ici.',
@@ -600,7 +615,7 @@
     for (const x of list) {
       if (x.type === 'register') box.insertAdjacentHTML('beforeend', `<a class="chat-act gold" href="/register?e=${encodeURIComponent(x.code)}"><span>${x.approval ? 'Request your invitation' : 'Reserve your seat'}</span><small>${esc(x.title)}</small></a>`);
       if (x.type === 'lead') { const b = document.createElement('button'); b.type = 'button'; b.className = 'chat-act'; b.innerHTML = '<span>Leave your details</span>'; b.addEventListener('click', () => { b.disabled = true; leadForm(q); }); box.append(b); }
-      if (x.type === 'person') { const b=document.createElement('button');b.type='button';b.className='chat-act';b.textContent=({en:'Ask our team here',fr:'Demander à notre équipe ici',es:'Pregunta a nuestro equipo aquí'})[current] || 'Ask our team here';b.addEventListener('click',()=>{b.disabled=true;leadForm(q);});box.append(b); }
+      if (x.type === 'person') { const b=document.createElement('button');b.type='button';b.className='chat-act';b.textContent=({en:'Ask our team here',fr:'Demander à notre équipe ici',es:'Pregunta a nuestro equipo aquí',de:'Unser Team hier fragen',ar:'اسألوا فريقنا هنا',zh:'在这里咨询我们的团队'})[current] || 'Ask our team here';b.addEventListener('click',()=>{b.disabled=true;leadForm(q);});box.append(b); }
     }
     msgs.append(box); msgs.scrollTop = msgs.scrollHeight;
   }

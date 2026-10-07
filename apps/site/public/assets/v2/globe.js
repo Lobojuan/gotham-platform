@@ -61,8 +61,19 @@
       f4t: 'Luz real', f4: 'El día y la noche en este globo siguen al sol ahora mismo. Las luces son ciudades.',
       aria: 'La Tierra dando una vuelta completa, con el día y la noche de ahora y rutas desde Accra', next: 'Siguiente',
       day: 'Allí es de día', night: 'Allí es de noche', sunB: 'El punto de la Tierra donde el sol está en el cenit en este momento. Da la vuelta al planeta cada 24 horas.', fx: n => `1 ${n} =`, sunAt: 'Sol en el cenit', cities: n => `${n} ciudades conectadas`, routes: 'de rutas', gmt: 'GMT' } };
+  Object.assign(T, {
+    de:{km:'km von Accra',local:'Ortszeit',same:'gleiche Zeit wie in Accra',ahead:n=>`${n} Std. vor Accra`,behind:n=>`${n} Std. hinter Accra`,route:'Partnerverbindung',live:'Live',f1t:'Accra · 5.6°N, 0.2°W',f1:'Die Hauptstadt am nächsten bei 0° 0°, wo sich Äquator und Nullmeridian treffen.',f2t:'Uhrzeit in Accra',f2:'Ghana nutzt ganzjährig GMT ohne Sommerzeit. Das erleichtert die Planung von Gesprächen aus Europa.',f3t:'Sitz des AfCFTA-Sekretariats',f3:'Die Afrikanische Kontinentale Freihandelszone wird von Accra aus verwaltet.',f4t:'Aktuelles Sonnenlicht',f4:'Tag und Nacht auf diesem Globus folgen dem aktuellen Sonnenstand. Die Lichter zeigen Städte.',aria:'Die Erde dreht sich vollständig, mit aktuellem Tag und Nacht und Verbindungen von Accra zu 30 Wirtschaftsstädten weltweit',next:'Weiter',day:'Dort ist gerade Tag',night:'Dort ist gerade Nacht',sunB:'Der Punkt auf der Erde, an dem die Sonne gerade senkrecht steht. Er umrundet die Erde alle 24 Stunden.',fx:n=>`1 ${n} =`,sunAt:'Sonne im Zenit',cities:n=>`${n} verbundene Städte`,routes:'Verbindungen',regions:'Europa, Golfregion, Asien, Amerika und Afrika',gmt:'GMT'},
+    ar:{km:'كم من أكرا',local:'الوقت المحلي',same:'نفس توقيت أكرا',ahead:n=>`متقدّم على أكرا بمقدار ${n} ساعات`,behind:n=>`متأخر عن أكرا بمقدار ${n} ساعات`,route:'مسار الشراكة',live:'مباشر',f1t:'أكرا · 5.6°N, 0.2°W',f1:'أقرب عاصمة إلى الإحداثيات 0° 0°، حيث يلتقي خط الاستواء بخط الطول الرئيسي.',f2t:'توقيت أكرا',f2:'تلتزم غانا بتوقيت GMT طوال العام، دون توقيت صيفي، مما يسهّل تنسيق المكالمات من أوروبا.',f3t:'مقر أمانة AfCFTA',f3:'تُدار منطقة التجارة الحرة القارية الأفريقية من أكرا.',f4t:'ضوء الشمس الفعلي',f4:'يتبع الليل والنهار على هذا المجسّم موقع الشمس الآن. وتمثّل الأضواء المدن.',aria:'الأرض تدور دورة كاملة، مع الليل والنهار الحاليين ومسارات من أكرا إلى 30 مدينة أعمال حول العالم',next:'التالي',day:'النهار الآن هناك',night:'الليل الآن هناك',sunB:'النقطة التي تكون الشمس عمودية فوقها في هذه اللحظة. وتدور حول الأرض كل 24 ساعة.',fx:n=>`1 ${n} =`,sunAt:'الشمس في سمت الرأس',cities:n=>`${n} مدينة متصلة`,routes:'من المسارات',regions:'أوروبا والخليج وآسيا والأمريكتان وأفريقيا',gmt:'GMT'},
+    zh:{km:'公里，距阿克拉',local:'当地时间',same:'与阿克拉同一时间',ahead:n=>`比阿克拉早 ${n} 小时`,behind:n=>`比阿克拉晚 ${n} 小时`,route:'合作伙伴连线',live:'实时',f1t:'阿克拉 · 5.6°N, 0.2°W',f1:'最接近赤道与本初子午线交点（0° 0°）的首都。',f2t:'阿克拉时间',f2:'加纳全年使用 GMT，不实行夏令时，便于安排与欧洲的通话。',f3t:'AfCFTA 秘书处所在地',f3:'非洲大陆自由贸易区由阿克拉的秘书处负责管理。',f4t:'实时日照',f4:'地球上的昼夜按照太阳此刻的位置显示，灯光代表城市。',aria:'地球完整旋转一周，展示当前昼夜及阿克拉与全球 30 座商业城市的连线',next:'下一项',day:'当地现在是白天',night:'当地现在是夜晚',sunB:'此刻太阳直射地球的位置，每 24 小时绕地球一周。',fx:n=>`1 ${n} =`,sunAt:'太阳直射点',cities:n=>`连接 ${n} 座城市`,routes:'条连线',regions:'欧洲、海湾地区、亚洲、美洲和非洲',gmt:'GMT'}
+  });
+  const nativeCities={
+   ar:['لندن','كوبنهاغن','برلين','باريس','أمستردام','ستوكهولم','زيورخ','مدريد','إسطنبول','دبي','الرياض','مومباي','سنغافورة','شنغهاي','هونغ كونغ','طوكيو','سيدني','نيويورك','واشنطن','تورونتو','هيوستن','ساو باولو','لاغوس','أبيدجان','داكار','الدار البيضاء','القاهرة','نيروبي','كيغالي','جوهانسبرغ'],
+   zh:['伦敦','哥本哈根','柏林','巴黎','阿姆斯特丹','斯德哥尔摩','苏黎世','马德里','伊斯坦布尔','迪拜','利雅得','孟买','新加坡','上海','香港','东京','悉尼','纽约','华盛顿','多伦多','休斯敦','圣保罗','拉各斯','阿比让','达喀尔','卡萨布兰卡','开罗','内罗毕','基加利','约翰内斯堡']
+  };
+  const cityName=name=>name==='Accra'?({ar:'أكرا',zh:'阿克拉'})[lang()]||name:nativeCities[lang()]?.[CITIES.findIndex(row=>row[0]===name)]||name;
+  T.fr.regions='Europe, Golfe, Asie, Amériques et Afrique'; T.es.regions='Europa, Golfo, Asia, Américas y África';
   const L = () => T[lang()] || T.en;
-  const LOC = () => ({ fr: 'fr-FR', es: 'es-ES' })[lang()] || 'en-GB';
+  const LOC = () => ({ fr: 'fr-FR', es: 'es-ES', de:'de-DE', ar:'ar-u-nu-latn', zh:'zh-CN' })[lang()] || 'en-GB';
 
   /* ---- geometry ---- */
   const vec = (lat, lon) => [Math.cos(rad(lat)) * Math.cos(rad(lon)), Math.cos(rad(lat)) * Math.sin(rad(lon)), Math.sin(rad(lat))];
@@ -227,7 +238,7 @@
         const X = cx + end[0] * R, Y = cy - end[1] * R, pulse = reduce ? .6 : (Math.sin(t * 2 + arc.phase * 9) + 1) / 2;
         ctx.fillStyle = `rgba(110,232,200,${.18 + pulse * .22})`; ctx.beginPath(); ctx.arc(X, Y, (on ? 5 : 3) + pulse * 5, 0, TAU); ctx.fill();
         ctx.fillStyle = on ? '#F4C66A' : '#6EE8C8'; ctx.beginPath(); ctx.arc(X, Y, on ? 3.2 : 2.3, 0, TAU); ctx.fill();
-        if ((on || (!small() && LABEL.includes(arc.name))) && end[2] > .3) label(small() ? arc.name : `${arc.name} ${clockOf(arc.tz)}`, X + 8, Y + 4, on);
+        if ((on || (!small() && LABEL.includes(arc.name))) && end[2] > .3) label(small() ? cityName(arc.name) : `${cityName(arc.name)} ${clockOf(arc.tz)}`, X + 8, Y + 4, on);
       }
     }
     // Accra
@@ -236,7 +247,7 @@
       const X = cx + A[0] * R, Y = cy - A[1] * R, p = reduce ? .5 : (Math.sin(t * 2.4) + 1) / 2;
       ctx.fillStyle = `rgba(240,190,90,${.2 + p * .25})`; ctx.beginPath(); ctx.arc(X, Y, 6 + p * 9, 0, TAU); ctx.fill();
       ctx.fillStyle = '#F4C66A'; ctx.beginPath(); ctx.arc(X, Y, 3.8, 0, TAU); ctx.fill();
-      label('Accra', X + 9, Y - 8, true);
+      label(cityName('Accra'), X + 9, Y - 8, true);
     }
   }
   const clocks = {}; let clockAt = 0;
@@ -245,6 +256,7 @@
     return clocks[tz] ||= new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz });
   }
   function label(text, x, y, strong) {
+    ctx.direction = lang()==='ar'?'rtl':'ltr'; ctx.textAlign='left';
     ctx.font = `${strong ? 700 : 500} ${strong ? 12 : 11}px "Hanken Grotesk",system-ui,sans-serif`;
     const tw = ctx.measureText(text).width; if (x + tw > W - 4) x = x - tw - 16;   // near the right edge: write it on the left of the dot
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(5,10,20,.75)'; ctx.strokeText(text, x, y);
@@ -299,7 +311,7 @@
     (() => { sun(performance.now()); const sl = Math.asin(sD) * 180 / Math.PI, so = ((sunLon * 180 / Math.PI + 540) % 360) - 180;
       const deg = (v, p, n) => `${Math.abs(v).toFixed(1)}°${v >= 0 ? p : n}`;
       return { t: `${w.sunAt} · ${deg(sl, 'N', 'S')}, ${deg(so, 'E', 'W')}`, b: w.sunB, live: true }; })(),
-    { t: w.cities(arcs.length), b: `${Math.round(total / 1000).toLocaleString(LOC())} 000 km ${w.routes}: Europe, the Gulf, Asia, the Americas and Africa.` }]; };
+    { t: w.cities(arcs.length), b: `${Math.round(total / 1000).toLocaleString(LOC())} 000 km ${w.routes}: ${w.regions || 'Europe, the Gulf, Asia, the Americas and Africa'}.` }]; };
   const order = []; { const f = [0, 1, 5, 4, 2, 3], c = arcs.map((_, i) => i); let a = 0, b = 0; while (a < f.length || b < c.length) { if (b < c.length) order.push(['c', c[b++]]); if (b < c.length) order.push(['c', c[b++]]); if (a < f.length) order.push(['f', f[a++]]); } }
   let at = -1, cardTimer = 0;
   function card(step) {
@@ -311,13 +323,13 @@
       sun(performance.now());
       const up = Math.sin(rad(a.lat)) * sD + Math.cos(rad(a.lat)) * cD * Math.cos(rad(a.lon) - sunLon) > 0;
       const fx = RATES && (RATES[a.cur] || (RATES.more || {})[a.cur]);
-      html = `<p class="gc-k">${w.route}</p><p class="gc-t">${a.name}</p>
+      html = `<p class="gc-k">${w.route}</p><p class="gc-t">${cityName(a.name)}</p>
         <p class="gc-b"><b>${a.dist.toLocaleString(LOC())}</b> ${w.km}</p>
         <p class="gc-b">${w.local} <b>${clock(a.tz)}</b>${diff ? ' · ' + diff : ''}</p>
-        <p class="gc-b"><span class="gc-sun ${up ? 'd' : 'n'}" aria-hidden="true"></span>${up ? w.day : w.night}${fx ? ` · ${w.fx(a.cur)} <b>GHS ${fx.toLocaleString(LOC(), { maximumFractionDigits: fx < 1 ? 4 : 2 })}</b>` : ''}</p>`;
+        <p class="gc-b"><span class="gc-sun ${up ? 'd' : 'n'}" aria-hidden="true"></span>${up ? w.day : w.night}${fx ? ` · ${w.fx(a.cur)} <b><bdi dir="ltr">GHS ${fx.toLocaleString(LOC(), { maximumFractionDigits: fx < 1 ? 4 : 2 })}</bdi></b>` : ''}</p>`;
     } else {
       focus = null; const f = facts()[i];
-      html = `<p class="gc-k">${f.live ? `<span class="gc-live"></span>${w.live}` : 'Accra'}</p><p class="gc-t">${f.t}</p><p class="gc-b">${f.b}</p>`;
+      html = `<p class="gc-k">${f.live ? `<span class="gc-live"></span>${w.live}` : cityName('Accra')}</p><p class="gc-t">${f.t}</p><p class="gc-b">${f.b}</p>`;
 
     }
     box.innerHTML = html + `<button type="button" class="gc-next" aria-label="${w.next}">›</button>`;
@@ -344,7 +356,7 @@
   const hudBox = document.createElement('div'); hudBox.className = 'globe-hud'; hudBox.setAttribute('translate', 'no'); wrap.appendChild(hudBox);
   function hud() {
     sun(performance.now()); const w = L();
-    hudBox.innerHTML = `<span class="gh-live"><i></i>Accra <b>${clock('Africa/Accra')}</b> ${w.gmt}</span>
+    hudBox.innerHTML = `<span class="gh-live"><i></i>${cityName('Accra')} <b>${clock('Africa/Accra')}</b> ${w.gmt}</span>
       ${RATES ? `<span class="gh-fx">GHS <b>$${RATES.USD.toFixed(2)}</b> <b>€${RATES.EUR.toFixed(2)}</b> <b>£${RATES.GBP.toFixed(2)}</b></span>` : ''}`;
 
   }

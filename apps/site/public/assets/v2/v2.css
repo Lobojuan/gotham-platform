@@ -396,6 +396,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
     border: 1px solid rgba(255,255,255,.12); box-shadow: 0 16px 40px -12px rgba(0,0,0,.55); }
   .dock > * { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 0; background: none; color: rgba(255,255,255,.78);
     text-decoration: none; font-size: 12px; font-weight: 600; border-radius: 16px; cursor: pointer; min-width: 0; }
+  .dock > * span { max-width:100%; font-size:11px; line-height:1.15; text-align:center; }
   .dock > * .icon { width: 22px; height: 22px; }
   .dock > *:active { background: rgba(255,255,255,.08); }
   .dock .reg { background: linear-gradient(135deg, #F4C66A, #C8963E); color: #1a1205; }
@@ -1044,3 +1045,15 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 
 .langp a { text-decoration:none; color:inherit; }
 .sheet-langs a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 14px; text-decoration:none; color:inherit; }
+
+/* Native script typography and Arabic direction. Charts/numbers retain their numeric order. */
+html[lang="ar"]{--sans:"Noto Sans Arabic","Geeza Pro",Arial,sans-serif;--serif:var(--sans)}
+html[lang="ar"] h1,html[lang="ar"] h2,html[lang="ar"] h3{letter-spacing:0;line-height:1.45}
+html[lang="zh"]{--sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",Arial,sans-serif;--serif:"Songti SC","Noto Serif SC",serif}
+html[lang="zh"] h1,html[lang="zh"] h2,html[lang="zh"] h3{letter-spacing:0;line-height:1.4}
+html[dir="rtl"] .arrow{display:inline-block;transform:rotate(180deg)}
+html[dir="rtl"] .panes{direction:ltr}html[dir="rtl"] .p0,html[dir="rtl"] .p1{direction:rtl}
+html[dir="rtl"] .price-chart,html[dir="rtl"] .chart-years,html[dir="rtl"] .chart-values,html[dir="rtl"] .ticker li,html[dir="rtl"] #fx-live{direction:ltr;unicode-bidi:isolate}
+html[dir="rtl"] .currency-grid b,html[dir="rtl"] .currency-grid strong,html[dir="rtl"] .currency-grid small,html[dir="rtl"] [data-ghana-key] b{direction:ltr;unicode-bidi:isolate;display:block}
+html[dir="rtl"] input[type="tel"],html[dir="rtl"] input[type="email"],html[dir="rtl"] input[type="url"]{direction:ltr;text-align:left}
+html[dir="rtl"] .m{unicode-bidi:plaintext;text-align:start}

@@ -1,4 +1,4 @@
-"""Package reviewed Artifact Tool renders as screen PDFs and a trilingual browser presentation."""
+"""Package reviewed Artifact Tool renders as screen PDFs and a six-language browser presentation."""
 import json
 import os
 import shutil
@@ -14,6 +14,7 @@ copy = json.loads((repo / 'docs/presentation/copy.json').read_text())
 public = repo / 'apps/site/public/downloads'
 public.mkdir(parents=True, exist_ok=True)
 for lang in copy:
+    if os.environ.get('PRESENTATION_LANGUAGES') and lang not in os.environ['PRESENTATION_LANGUAGES'].split(','): continue
     pdf = workspace / 'output' / f'Gotham-services-{lang}.pdf'
     c = canvas.Canvas(str(pdf), pagesize=(960, 540))
     c.setTitle('Gotham Consult services — ' + lang)

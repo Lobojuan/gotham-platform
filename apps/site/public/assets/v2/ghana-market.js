@@ -12,7 +12,7 @@
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const parse=id=>{try{return JSON.parse($('#'+id)?.textContent||'null');}catch{return null;}};
  let economy=parse('ghana-snapshot'), content=parse('investor-content'), rates=null;
- let lang=()=>['fr','es'].includes(document.documentElement.lang)?document.documentElement.lang:'en';
+ let lang=()=>['fr','es','de','ar','zh'].includes(document.documentElement.lang)?document.documentElement.lang:'en';
  const basic={en:{source:'Source',period:'Period',rate:'Rate publication',mid:'Market mid-rate',gdp:'GDP growth',inflation:'Inflation',exportsAnnual:'Exports',tradeBalanceAnnual:'Trade surplus',reserves:'Reserves',services:'Services growth',fxdown:'Current rates unavailable'},fr:{source:'Source',period:'Période',rate:'Publication du taux',mid:'Taux moyen de marché',gdp:'Croissance du PIB',inflation:'Inflation',exportsAnnual:'Exportations',tradeBalanceAnnual:'Excédent commercial',reserves:'Réserves',services:'Croissance des services',fxdown:'Taux actuels indisponibles'},es:{source:'Fuente',period:'Periodo',rate:'Publicación del tipo',mid:'Tipo medio de mercado',gdp:'Crecimiento del PIB',inflation:'Inflación',exportsAnnual:'Exportaciones',tradeBalanceAnnual:'Superávit comercial',reserves:'Reservas',services:'Crecimiento de servicios',fxdown:'Tipos actuales no disponibles'}};
  Object.assign(basic.en,{"goldAnnual": "Gold exports", "cocoaAnnual": "Cocoa exports", "oilAnnual": "Oil exports", "otherAnnual": "Other exports", "industry": "Industry growth", "agriculture": "Agriculture growth"});
  Object.assign(basic.fr,{"goldAnnual": "Exportations d’or", "cocoaAnnual": "Exportations de cacao", "oilAnnual": "Exportations de pétrole", "otherAnnual": "Autres exportations", "industry": "Croissance industrielle", "agriculture": "Croissance agricole"});
@@ -20,7 +20,12 @@
  Object.assign(basic.en,{daily:'Research sources checked daily',lastCheck:'Last check',historic:'Historical figures retain their stated reporting periods.',review:'Source checks requiring review',pending:'Daily source verification pending'});
  Object.assign(basic.fr,{daily:'Sources de recherche vérifiées chaque jour',lastCheck:'Dernière vérification',historic:'Les chiffres historiques conservent leurs périodes de référence.',review:'Vérifications nécessitant une révision',pending:'Vérification quotidienne des sources en attente'});
  Object.assign(basic.es,{daily:'Fuentes de investigación comprobadas diariamente',lastCheck:'Última comprobación',historic:'Las cifras históricas conservan sus periodos de referencia.',review:'Comprobaciones que requieren revisión',pending:'Verificación diaria de fuentes pendiente'});
- const number=(n,d=2)=>Number(n).toLocaleString(({en:'en-GB',fr:'fr-FR',es:'es-ES'})[lang()],{minimumFractionDigits:d,maximumFractionDigits:d});
+ Object.assign(basic,{
+ de:{source:'Quelle',period:'Berichtszeitraum',rate:'Kursveröffentlichung',mid:'Marktmittelkurs',gdp:'BIP-Wachstum',inflation:'Inflation',exportsAnnual:'Exporte',tradeBalanceAnnual:'Handelsüberschuss',reserves:'Reserven',services:'Wachstum im Dienstleistungssektor',fxdown:'Aktuelle Kurse nicht verfügbar',goldAnnual:'Goldexporte',cocoaAnnual:'Kakaoexporte',oilAnnual:'Ölexporte',otherAnnual:'Sonstige Exporte',industry:'Industriewachstum',agriculture:'Wachstum in der Landwirtschaft',daily:'Quellen werden täglich geprüft',lastCheck:'Letzte Prüfung',historic:'Historische Zahlen behalten ihre angegebenen Berichtszeiträume.',review:'Quellenprüfungen mit Klärungsbedarf',pending:'Tägliche Quellenprüfung ausstehend'},
+ ar:{source:'المصدر',period:'الفترة المرجعية',rate:'نشرة سعر الصرف',mid:'متوسط سعر الصرف في السوق',gdp:'نمو الناتج المحلي الإجمالي',inflation:'التضخم',exportsAnnual:'الصادرات',tradeBalanceAnnual:'الفائض التجاري',reserves:'الاحتياطيات',services:'نمو قطاع الخدمات',fxdown:'أسعار الصرف الحالية غير متاحة',goldAnnual:'صادرات الذهب',cocoaAnnual:'صادرات الكاكاو',oilAnnual:'صادرات النفط',otherAnnual:'صادرات أخرى',industry:'نمو الصناعة',agriculture:'نمو الزراعة',daily:'تُفحص مصادر البحث يومياً',lastCheck:'آخر فحص',historic:'تحتفظ الأرقام التاريخية بفتراتها المرجعية المحددة.',review:'مصادر تتطلب مراجعة',pending:'الفحص اليومي للمصادر قيد الانتظار'},
+ zh:{source:'来源',period:'报告期',rate:'汇率发布日期',mid:'市场中间价',gdp:'国内生产总值增长率',inflation:'通胀率',exportsAnnual:'出口额',tradeBalanceAnnual:'贸易顺差',reserves:'储备',services:'服务业增长率',fxdown:'当前汇率暂不可用',goldAnnual:'黄金出口额',cocoaAnnual:'可可出口额',oilAnnual:'石油出口额',otherAnnual:'其他出口额',industry:'工业增长率',agriculture:'农业增长率',daily:'研究来源每日核查',lastCheck:'最近核查',historic:'历史数据保留其注明的报告期。',review:'需要复核的来源',pending:'每日来源核查待完成'}
+ });
+ const number=(n,d=2)=>Number(n).toLocaleString(({en:'en-GB',fr:'fr-FR',es:'es-ES',de:'de-DE',ar:'ar-u-nu-latn',zh:'zh-CN'})[lang()],{minimumFractionDigits:d,maximumFractionDigits:d});
  const value=v=>v.unit==='USD bn'?'$'+number(v.value)+'bn':number(v.value,2)+(v.unit==='%'?'%':'');
  const metric=k=>{for(const [name,s]of Object.entries(economy?.sources||{}))if(s.metrics?.[k])return {name,s,v:s.metrics[k]};return null;};
  const link=(url,label)=>`<a href="${esc(url)}" target="_blank" rel="noopener">${esc(label)}</a>`;
@@ -36,12 +41,17 @@
  function drawFX(){
   const t=basic[lang()], box=$('#fx-live'),all={...rates?.rates,...rates?.more};
   const codes=['USD','EUR','GBP','AED','CHF','CAD','CNY','XOF'].filter(c=>Number.isFinite(all[c])&&all[c]>0);
-  const stamp=rates?.updated?new Date(rates.updated).toLocaleString(({en:'en-GB',fr:'fr-FR',es:'es-ES'})[lang()],{timeZone:'UTC'}):'';
+  const stamp=rates?.updated?new Date(rates.updated).toLocaleString(({en:'en-GB',fr:'fr-FR',es:'es-ES',de:'de-DE',ar:'ar-u-nu-latn',zh:'zh-CN'})[lang()],{timeZone:'UTC'}):'';
   if(box){box.hidden=false;box.dataset.noTr='';box.innerHTML=codes.length?`<b>${esc(t.mid)}</b> · ${codes.map(c=>`1 ${c} = GHS ${number(all[c],4)}`).join(' · ')}<br>${esc(t.rate)}: ${esc(stamp)} UTC · ${link('https://open.er-api.com/v6/latest/USD',t.source)}`:esc(t.fxdown);}
   const tick=$('.ticker ul');if(tick&&codes.length){$$('.ticker [data-fx]').forEach(e=>e.remove());
    for(const hide of [false,true]){const list=codes.slice(0,4).map(c=>`<li data-fx data-no-tr${hide?' aria-hidden="true"':''}>1 ${c} <b>GHS ${number(all[c],2)}</b> · ${esc(rates.updated.slice(0,10))}</li>`).join('');tick.insertAdjacentHTML(hide?'beforeend':'afterbegin',list);}}
  }
  const chartCopy={en:{select:'Choose a company',hint:'Tap a year or explore the points',price:'Year-end share price',gain:'Five-year price change',note:'Nominal GHS prices · excludes dividends, fees, tax and FX'},fr:{select:'Choisir une société',hint:'Touchez une année ou explorez les points',price:'Cours de clôture annuel',gain:'Variation du cours sur cinq ans',note:'Cours nominaux en GHS · hors dividendes, frais, impôts et change'},es:{select:'Elegir una empresa',hint:'Toca un año o explora los puntos',price:'Precio al cierre del año',gain:'Variación del precio en cinco años',note:'Precios nominales en GHS · excluyen dividendos, costes, impuestos y cambio'}};
+ Object.assign(chartCopy,{
+ de:{select:'Unternehmen auswählen',hint:'Wählen Sie ein Jahr oder einen Datenpunkt',price:'Aktienkurs zum Jahresende',gain:'Kursveränderung über fünf Jahre',note:'Nominale GHS-Kurse · ohne Dividenden, Gebühren, Steuern und Wechselkurseffekte'},
+ ar:{select:'اختاروا شركة',hint:'اختاروا سنة أو استعرضوا نقاط البيانات',price:'سعر السهم في نهاية السنة',gain:'تغير سعر السهم خلال خمس سنوات',note:'أسعار اسمية بالسيدي الغاني · لا تشمل توزيعات الأرباح والرسوم والضرائب وأثر الصرف'},
+ zh:{select:'选择公司',hint:'选择年份或查看数据点',price:'年末股价',gain:'五年股价变动',note:'加纳塞地名义价格 · 不含股息、手续费、税费及汇率影响'}
+ });
  function chart(c){
   const top=Math.ceil(Math.max(...c.prices)/5)*5,points=c.prices.map((v,i)=>[56+i*137.6,230-v/top*204]);
   const line=points.map(([x,y],i)=>`${i?'L':'M'}${x} ${y}`).join(' '),t=chartCopy[lang()];

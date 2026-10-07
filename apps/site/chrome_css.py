@@ -46,6 +46,14 @@ def scope(css):
     return '\n'.join(out)
 
 EXTRA = '''
+/* Native script fonts and direction on legacy forms and their shared chrome. */
+html[lang=ar] body,html[lang=ar] .v2c{font-family:"Noto Sans Arabic","Geeza Pro",Arial,sans-serif}
+html[lang=ar] h1,html[lang=ar] h2,html[lang=ar] h3{letter-spacing:0;line-height:1.45}
+html[lang=zh] body,html[lang=zh] .v2c{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",Arial,sans-serif}
+html[dir=rtl] .v2c .panes{direction:ltr}html[dir=rtl] .v2c .p0,html[dir=rtl] .v2c .p1{direction:rtl}
+html[dir=rtl] input[type=tel],html[dir=rtl] input[type=email]{direction:ltr;text-align:left}
+html[dir=rtl] .v2c .m{unicode-bidi:plaintext;text-align:start}
+
 /* neutralise the older pages' own element rules on the new chrome */
 header.v2c, footer.v2c { border: 0; box-shadow: none; text-align: left; margin: 0; }
 header.v2c.gh { background: none; position: sticky; top: 0; z-index: 50; -webkit-backdrop-filter: none; backdrop-filter: none; padding: env(safe-area-inset-top) 0 0; }

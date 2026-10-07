@@ -1,5 +1,40 @@
 {
-  "en": { "engine": "kokoro", "voice": "bm_fable", "lang": "en-gb" },
-  "fr": { "engine": "piper", "voice": "pierre_fr_FR", "lang": "fr-FR", "model": "fr_FR-upmc-medium", "speaker": 1 },
-  "es": { "engine": "piper", "voice": "sharvard_es_ES", "lang": "es-ES", "model": "es_ES-sharvard-medium", "speaker": 0 }
+  "en": {
+    "engine": "kokoro",
+    "voice": "bm_fable",
+    "lang": "en-gb"
+  },
+  "fr": {
+    "engine": "piper",
+    "voice": "pierre_fr_FR",
+    "lang": "fr-FR",
+    "model": "fr_FR-upmc-medium",
+    "speaker": 1
+  },
+  "es": {
+    "engine": "piper",
+    "voice": "sharvard_es_ES",
+    "lang": "es-ES",
+    "model": "es_ES-sharvard-medium",
+    "speaker": 0
+  },
+  "de": {
+    "engine": "piper",
+    "voice": "thorsten_de_DE",
+    "lang": "de-DE",
+    "model": "de_DE-thorsten-high",
+    "speaker": 0
+  },
+  "zh": {
+    "engine": "kokoro-zh",
+    "voice": "zf_001",
+    "lang": "zh-CN",
+    "model": "kokoro-v1.1-zh"
+  },
+  "ar": {
+    "engine": "supertonic",
+    "voice": "M1",
+    "lang": "ar",
+    "model": "supertonic-3"
+  }
 }

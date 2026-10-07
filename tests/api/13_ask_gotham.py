@@ -22,16 +22,16 @@ class Mock(BaseHTTPRequestHandler):
 mock=HTTPServer(('127.0.0.1',0),Mock); threading.Thread(target=mock.serve_forever,daemon=True).start()
 mock_url='http://127.0.0.1:'+str(mock.server_port)
 def start(extra):
-    env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'t','PORT':'4199','ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123',
-      'ADMIN_NAME':'Admin','MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4199','SITE_DIR':ROOT+'/apps/site/dist'}); env.update(extra)
+    env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'t','PORT':'4213','ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123',
+      'ADMIN_NAME':'Admin','MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4213','SITE_DIR':ROOT+'/apps/site/dist'}); env.update(extra)
     srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
     for _ in range(60):
         try:
-            if urllib.request.urlopen('http://127.0.0.1:4199/api/health',timeout=3).status==200: return srv
+            if urllib.request.urlopen('http://127.0.0.1:4213/api/health',timeout=3).status==200: return srv
         except Exception: time.sleep(0.4)
     print('NO START'); print(srv.stdout.read()[:2000]); sys.exit(1)
 def ask(payload,ip='9.9.9.9'):
-    req=urllib.request.Request('http://127.0.0.1:4199/api/ask',data=json.dumps(payload).encode(),method='POST',
+    req=urllib.request.Request('http://127.0.0.1:4213/api/ask',data=json.dumps(payload).encode(),method='POST',
         headers={'content-type':'application/json','x-real-ip':ip})
     try: r=urllib.request.urlopen(req,timeout=40); return r.status,json.loads(r.read())
     except urllib.error.HTTPError as e: return e.code,json.loads(e.read() or b'{}')
@@ -120,10 +120,10 @@ try:
     ok('a rate-limited model hands over to the next one; all busy falls back to built-in answers')
     sysmsg = SEEN[-1]['body']['messages'][0]['content']
     assert 'Ghanaian language' in sysmsg and 'simple English' in sysmsg
-    assert 'A question written in English always gets an answer in English only' in sysmsg
+    assert 'Use the selected website language for both written and spoken answers' in sysmsg
     assert 'only use prices, fees, dates, rates and durations that appear word for word' in sysmsg
     assert SEEN[-1]['body'].get('temperature') == 0.2
-    ok('English questions get English answers; Ghanaian languages answered with an English summary line; no invented numbers; low temperature')
+    ok('Selected website language governs written/spoken answers; Ghanaian languages have an English summary line; no invented numbers; low temperature')
     print('PASSED')
 finally:
     srv.terminate(); mock.shutdown()

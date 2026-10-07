@@ -27,3 +27,26 @@ https://github.com/OHF-Voice/piper1-gpl
 Piper runtime licence: GPL 3.0. The English receptionist demo uses a separate Jenny voice.
 No human recording is played as a chatbot answer. These are AI-generated voices.
 The Spanish model is labelled Spanish (Spain); no specific Madrid birthplace is claimed.
+
+German (Germany): Piper de_DE-thorsten-high, Thorsten Müller.
+https://github.com/thorstenMueller/Thorsten-Voice
+https://huggingface.co/rhasspy/piper-voices/blob/main/de/de_DE/thorsten/high/MODEL_CARD
+Dataset licence: CC0 1.0 (public domain dedication).
+
+Mandarin Chinese: Kokoro-82M v1.1-zh, native Chinese speaker zf_001.
+https://huggingface.co/hexgrad/Kokoro-82M-v1.1-zh
+https://github.com/thewh1teagle/kokoro-onnx/blob/main/examples/chinese.py
+Model licence: Apache 2.0. Chinese pronunciation uses Misaki v1.1 Chinese G2P.
+
+Modern Standard Arabic: Supertonic 3, synthetic voice M1.
+https://huggingface.co/supertone-oss-archive/supertonic-3
+https://github.com/supertone-oss-archive/supertonic
+Model revision: aafc6e32416a594460b32413efc49d7fe4ce6d46
+Model licence: OpenRAIL-M; full copy: /downloads/supertonic-model-license.txt
+Use restrictions: paragraph 5 and Attachment A, incorporated in /terms#ai-voices.
+Runtime helper: MIT, vendored copyright/licence retained. Its ONNX sessions use one thread.
+Upstream repository is archived. This is local synthesis; no ElevenLabs subscription.
+
+Every additional model/config asset is verified by SHA256 in voice-models.json.
+These country/language labels describe the models and approved speech samples;
+they do not certify a human speaker's birthplace or every listener's accent preference.

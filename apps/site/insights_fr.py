@@ -39,6 +39,9 @@ MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'Au
 
 def day(iso, lang):
     y, m, d = iso.split('-')
+    if lang == 'de': return f'{int(d)}. {("Januar Februar März April Mai Juni Juli August September Oktober November Dezember".split())[int(m)-1]} {y}'
+    if lang == 'ar': return f'{int(d)} {("يناير فبراير مارس أبريل مايو يونيو يوليو أغسطس سبتمبر أكتوبر نوفمبر ديسمبر".split())[int(m)-1]} {y}'
+    if lang == 'zh': return f'{y}年{int(m)}月{int(d)}日'
     if lang == 'es': return f'{int(d)} de {MONTHS_ES[int(m) - 1]} de {y}'
     return f'{int(d)} {(MONTHS_FR if lang == "fr" else MONTHS_EN)[int(m) - 1]} {y}'
 
@@ -116,7 +119,7 @@ def article_ld(a, lang, site):
           'author': {'@type': 'Organization', 'name': 'Gotham Consult', 'url': site + '/'}, 'publisher': {'@type': 'Organization', 'name': 'Gotham Consult', 'url': site + '/', 'logo': {'@type': 'ImageObject', 'url': site + '/img/og/boot2.jpg'}}},
          {'@type': 'BreadcrumbList', 'itemListElement': [{'@type': 'ListItem', 'position': 1, 'name': L[lang]['home'], 'item': site + (pre or '/')},
            {'@type': 'ListItem', 'position': 2, 'name': L[lang]['insights'], 'item': f'{site}{pre}/insights'}, {'@type': 'ListItem', 'position': 3, 'name': v['h1'], 'item': url}]},
-         {'@type': 'FAQPage', 'mainEntity': [{'@type': 'Question', 'name': q['q'], 'acceptedAnswer': {'@type': 'Answer', 'text': q['a']}} for q in v['faq']]}]
+         {'@type': 'FAQPage', 'mainEntity': [{'@type': 'Question', 'name': re.sub(r'\s+', ' ', q['q']).strip(), 'acceptedAnswer': {'@type': 'Answer', 'text': re.sub(r'\s+', ' ', q['a']).strip()}} for q in v['faq']]}]
     return '<script type="application/ld+json">' + json.dumps({'@context': 'https://schema.org', '@graph': g}, ensure_ascii=False).replace('</', '<\\/') + '</script>'
 
 # ---------------- French pages from the translation dictionary ----------------
@@ -194,7 +197,7 @@ def localise_links(doc, paths, lang='fr'):
 def alternates(site, path):
     en = f'{site}/{path}'.rstrip('/') if path else f'{site}/'
     return (f'<link rel="alternate" hreflang="en" href="{en}">\n' +
-            ''.join(f'<link rel="alternate" hreflang="{lang}" href="{site}/{lang}{"/" + path if path else ""}">\n' for lang in ('fr', 'es')) +
+            ''.join(f'<link rel="alternate" hreflang="{lang}" href="{site}/{lang}{"/" + path if path else ""}">\n' for lang in ('fr', 'es', 'de', 'ar', 'zh')) +
             f'<link rel="alternate" hreflang="x-default" href="{en}">\n')
 
 def text_nodes(doc):

@@ -43,15 +43,27 @@ RUN cd /opt/voices \
  && echo "e8636ec15dfd5d72db37a02cb5320a20f2b8d339f2a0e4337da64c58a33a5868  fr_FR-upmc-medium.onnx.json" | sha256sum -c - \
  && echo "40febfb1679c69a4505ff311dc136e121e3419a13a290ef264fdf43ddedd0fb1  es_ES-sharvard-medium.onnx" | sha256sum -c - \
  && echo "7438c9b699c72b0c3388dae1b68d3f364dc66a2150fe554a1c11f03372957b2c  es_ES-sharvard-medium.onnx.json" | sha256sum -c -
+# Free German, mainland Mandarin and formal Arabic speech; models/configs pinned by hashes.
+COPY voice-models.json download-voices.py ./
+RUN python3 download-voices.py /opt/ask-voices \
+ && ln -s /opt/ask-voices/de/de_DE-thorsten-high.onnx /opt/voices/de_DE-thorsten-high.onnx \
+ && ln -s /opt/ask-voices/de/de_DE-thorsten-high.onnx.json /opt/voices/de_DE-thorsten-high.onnx.json \
+ && python3 -m venv /opt/kokoro-zh-venv \
+ && /opt/kokoro-zh-venv/bin/pip install --no-cache-dir kokoro-onnx==0.6.1 'misaki-fork[zh]==0.9.6' soundfile==0.13.1
+COPY vendor ./vendor
 COPY ask-welcome.json ask-voices.json make-intros.py ./
 RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt/kokoro/voices-v1.0.bin ask-welcome.json /opt/kokoro-intros en \
- && /opt/piper/bin/python make-intros.py /opt/voices - ask-welcome.json /opt/kokoro-intros fr,es
+ && /opt/piper/bin/python make-intros.py /opt/voices - ask-welcome.json /opt/kokoro-intros fr,es,de \
+ && /opt/kokoro-zh-venv/bin/python make-intros.py /opt/ask-voices/zh/kokoro-v1.1-zh.onnx /opt/ask-voices/zh/voices-v1.1-zh.bin ask-welcome.json /opt/kokoro-intros zh \
+ && /opt/kokoro-zh-venv/bin/python make-intros.py /opt/ask-voices/ar/onnx/tts.json /opt/ask-voices/ar/voice_styles/M1.json ask-welcome.json /opt/kokoro-intros ar
 COPY ask-payment.json ./
 RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt/kokoro/voices-v1.0.bin ask-payment.json /opt/kokoro-payments en \
- && /opt/piper/bin/python make-intros.py /opt/voices - ask-payment.json /opt/kokoro-payments fr,es
+ && /opt/piper/bin/python make-intros.py /opt/voices - ask-payment.json /opt/kokoro-payments fr,es,de \
+ && /opt/kokoro-zh-venv/bin/python make-intros.py /opt/ask-voices/zh/kokoro-v1.1-zh.onnx /opt/ask-voices/zh/voices-v1.1-zh.bin ask-payment.json /opt/kokoro-payments zh \
+ && /opt/kokoro-zh-venv/bin/python make-intros.py /opt/ask-voices/ar/onnx/tts.json /opt/ask-voices/ar/voice_styles/M1.json ask-payment.json /opt/kokoro-payments ar
 COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund
-COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-piper.py ask-voices.json ask-welcome.json ask-payment.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json fact-watch.js facts.json schema.sql assistant.md ./
+COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-piper.py ask-chinese.py ask-arabic.py ask-voices.json ask-welcome.json ask-payment.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json fact-watch.js facts.json schema.sql assistant.md ./
 COPY public ./public
 RUN mkdir -p /data/media
 ENV NODE_ENV=production MEDIA_DIR=/data/media

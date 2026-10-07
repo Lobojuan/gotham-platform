@@ -9,7 +9,7 @@ const B = process.env.BASE || 'http://127.0.0.1:4187';
   for(const [width,height] of [[320,640],[390,844],[360,800],[412,915],[768,1024],[1440,900]]){
    const page=await browser.newPage({viewport:{width,height}}),errors=[];
    page.on('pageerror',e=>errors.push(e.message));
-   for(const lang of ['en','fr','es']){
+   for(const lang of ['en','fr','es','de','ar','zh']){
     await page.goto(B+'/downloads/gotham-services.html?lang='+lang);
     assert.equal(await page.locator('#language').inputValue(),lang);checks++;
     assert.equal(await page.locator('html').getAttribute('lang'),lang);checks++;
@@ -45,6 +45,6 @@ const B = process.env.BASE || 'http://127.0.0.1:4187';
    }
    await page.close();
   }
-  console.log(`PASSED presentation (${checks} checks; English/French/Spanish on six screens)`);
+  console.log(`PASSED presentation (${checks} checks; six languages on six screens)`);
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exit(1);});

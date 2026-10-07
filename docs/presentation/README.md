@@ -10,7 +10,7 @@ Five slides, designed for a short introduction on a 16:9 projector:
 
 ## Present it
 
-Open `https://gothamconsult.com/downloads/gotham-services.html`. Choose English, French or Spanish before starting. It uses the website's saved `gc-language` preference when available. `?lang=en`, `?lang=fr` and `?lang=es` select a language explicitly. The slides, controls and download links all follow that choice. You can also change language during the presentation.
+Open `https://gothamconsult.com/downloads/gotham-services.html`. Choose English, French, Spanish, German, Arabic or Mandarin Chinese before starting. It uses the website's saved `gc-language` preference when available. `?lang=en|fr|es|de|ar|zh` select a language explicitly. The slides, controls and download links all follow that choice. You can also change language during the presentation.
 
 Use the Previous/Next buttons or arrow keys. Home/End go to the first/final slide. Full screen hides the controls until hovered or focused. Leave the final slide visible while the audience scans. A LinkedIn scan opens the company page; visitors still need to press Follow themselves.
 
@@ -20,7 +20,7 @@ Download the selected PDF before an event for offline projection. PowerPoint fil
 
 The copy summarizes the existing published services at https://gothamconsult.com/services, https://gothamconsult.com/services/ai and https://gothamconsult.com/about. The LinkedIn destination is the company page linked in the website footer: https://www.linkedin.com/company/gotham-consult/.
 
-No new prices, clients, project returns, certified integrations or delivery guarantees are asserted. Existing site pictures and the actual Gotham logo are reused. The PowerPoint notes describe scope and source URLs. English, French and Spanish copy is in `copy.json`.
+No new prices, clients, project returns, certified integrations or delivery guarantees are asserted. Existing site pictures and the actual Gotham logo are reused. The PowerPoint notes describe scope and source URLs. All six languages’ copy is in `copy.json`.
 
 ## Rebuild
 
@@ -28,4 +28,9 @@ No new prices, clients, project returns, certified integrations or delivery guar
 
 After visual review, run `package.py` with the same workspace/output stem plus `RUNTIME_NODE`. It makes the PDF, lossless WebP slide images and browser player in `apps/site/public/downloads/`. Do not regenerate public artifacts without reviewing the renders. The artifact runtime is a build-time document tool and is not needed by the live website.
 
-QA: all 15 rendered slides reviewed, final English cover wrapping corrected, both QR destinations decoded successfully from each language's final slide. `tests/ui/presentation_ui.js` covers all three languages, all five slides, downloads, stored language and full-screen/keyboard navigation across six screen sizes. It is part of `tests/e2e/run.sh`.
+QA: all 15 rendered slides reviewed, final English cover wrapping corrected, both QR destinations decoded successfully from each language's final slide. `tests/ui/presentation_ui.js` covers all six languages, all five slides, downloads, stored language and full-screen/keyboard navigation across six screen sizes. It is part of `tests/e2e/run.sh`.
+
+
+### Native Arabic and Chinese (7 October 2026)
+
+New decks reuse the existing five-slide layout, pictures and QR targets. Arabic editable PPTX paragraphs get native RTL attributes through `rtl_pptx.py` before finalization. Artifact Tool’s raster renderer reverses Arabic word order, so run `render-arabic.mjs` after `build.mjs` and before reviewing/package.py. Chromium renders the same layout and logical copy with native RTL shaping; these reviewed rasters supply the browser and PDF. The editable PPTX remains logically ordered with RTL paragraph markup; an actual PowerPoint app visual check is still advisable. Chinese uses Arial Unicode MS for Han text. All three new decks were finalized with package, geometry and import validation. Set `PRESENTATION_LANGUAGES=de,ar,zh` to rebuild just these assets.

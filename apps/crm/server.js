@@ -1687,7 +1687,7 @@ const server = http.createServer(async (req, res) => {
       let ref = null; try { const h = new URL(String(b.r || '')).hostname.replace(/^www\./, ''); if (h && !/gothamconsult\.com$|sslip\.io$|^127\.|localhost/.test(h)) ref = h.slice(0, 80); } catch {}
       const utm = String(b.u || '').replace(/[^\w\-./ ]/g, '').slice(0, 60) || null;
       const w = +b.w || 0, device = w && w < 700 ? 'phone' : w && w < 1100 ? 'tablet' : 'desktop';
-      const lang = ['en', 'fr', 'es'].includes(b.l) ? b.l : 'en';
+      const lang = ['en', 'fr', 'es', 'de', 'ar', 'zh'].includes(b.l) ? b.l : 'en';
       await q("insert into page_hits(path, ref, utm, device, lang, visitor, kind) values ($1,$2,$3,$4,$5,$6,'view')",
         [pth.replace(/\/+$/, '') || '/', ref, utm, device, lang, visitorHash(ip, ua)]);
       res.writeHead(204); return res.end();
@@ -1922,7 +1922,7 @@ const server = http.createServer(async (req, res) => {
         return json(res,200,{answer,actions:[],...(b.speech===true?{speech:ASK_VOICE.issue(answer,ip,b.language)}:{})},cors);
       }
       if (!question) return json(res, 400, { error: 'missing_question' }, cors);
-      if (/(cedi|ghs|exchange|currency|devis|taux|cambio|divisa)/i.test(question)) {
+      if (/(cedi|ghs|exchange|currency|devis|taux|cambio|divisa|wechselkurs|währung|汇率|塞地|سعر الصرف|سيدي)/i.test(question)) {
         const answer=ratesAnswer(question,b.language,await liveRates().catch(()=>null));
         if(answer)return json(res,200,{answer,actions:[],...(b.speech===true?{speech:ASK_VOICE.issue(answer,ip,b.language)}:{})},cors);
       }
@@ -1932,14 +1932,14 @@ const server = http.createServer(async (req, res) => {
       if(payment)return json(res,200,{answer:payment,actions:[],...(b.speech===true?{speech:ASK_VOICE.issue(payment,ip,b.language)}:{})},cors);
       if(askDay.n>=ASK_DAILY_CAP)return unavailable('daily_cap');
       if (!OPENAI_KEY) return unavailable();
-      const selectedLanguage = ({ en: 'English', fr: 'French', es: 'Spanish' })[b.language] || '';
+      const selectedLanguage = ({ en: 'English', fr: 'French', es: 'Spanish', de: 'German (Germany)', ar: 'Modern Standard Arabic', zh: 'Mandarin Chinese (Simplified characters)' })[b.language] || '';
       const history = (Array.isArray(b.history) ? b.history : []).slice(-6)
         .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
         .map(m => ({ role: m.role, content: m.content.slice(0, 1200) }));
       askDay.n++;
       const system = `You are "Ask Gotham", the assistant on the Gotham Consult website (Accra, Ghana).
 Answer ordinary general-knowledge questions directly using your general knowledge. For Gotham services, payments, fees and Ghana investment figures, use only the verified knowledge below. Be warm, clear and brief: at most about 120 words, plain text, no markdown headings.
-Language: reply in the language of the visitor's last message. A question written in English always gets an answer in English only. ${selectedLanguage && selectedLanguage !== 'English' ? `The selected website language is ${selectedLanguage}; if the message could be either, use ${selectedLanguage}. ` : ''}If the visitor writes in a Ghanaian language (Twi, Fante, Ga, Ewe, Dagbani, Hausa, Pidgin and others),
+Language: Use the selected website language for both written and spoken answers. ${selectedLanguage ? `The selected website language is ${selectedLanguage}. Answer entirely in that language, even if a quick-question button is written in English. ` : "No website language is selected; reply in the language of the visitor's last message. "}When no website language is selected and the visitor writes in a Ghanaian language (Twi, Fante, Ga, Ewe, Dagbani, Hausa, Pidgin and others),
 answer in that language as well as you can, keeping names, dates, prices and links exactly as given, then add one short
 line in simple English with the key facts, because your Ghanaian-language writing may be imperfect. Do not mix up
 Ga and Twi. Plain text only: no markdown, no asterisks. Always state our prices in Ghana cedis (GHS); if asked for foreign-currency pricing, keep Gotham’s advertised prices in GHS. Only discuss the cited Bank of Ghana non-resident/expatriate invoicing exception when explicitly asked, including its Foreign Exchange Account condition. Do not add invoicing advice to stock-market answers.

@@ -13,6 +13,7 @@ import investor_content as INVESTOR
 import facts_page as FACTSP
 import report_page as REPORTP
 from seo_locales import ES_META
+from locale_support import prepare_locale, localize_investor_data, NEW_LANGUAGES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
@@ -36,7 +37,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=27">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=29">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 # Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
@@ -133,7 +134,7 @@ ORG = {'@type': ['ProfessionalService', 'LocalBusiness'], '@id': SITE + '/#org',
   'telephone': '+233550416627', 'email': 'info@gothamconsult.com', 'priceRange': 'GHS',
   'address': {'@type': 'PostalAddress', 'addressLocality': 'Accra', 'addressRegion': 'Greater Accra', 'addressCountry': 'GH'},
   'areaServed': [{'@type': 'Country', 'name': 'Ghana'}, {'@type': 'Place', 'name': 'West Africa'}],
-  'knowsLanguage': ['en', 'fr', 'es'],
+  'knowsLanguage': ['en', 'fr', 'es', 'de', 'ar', 'zh'],
   'openingHoursSpecification': {'@type': 'OpeningHoursSpecification', 'dayOfWeek': ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'], 'opens': '09:00', 'closes': '17:00'},
   'knowsAbout': ['Business consulting in Ghana', 'Investing in Ghana', 'GIPA registration', 'Company registration in Ghana', 'Market entry', 'Mining due diligence', 'Compliance and ESG', 'Business forums in Accra']}
 SITE_LD = {'@type': 'WebSite', '@id': SITE + '/#site', 'url': SITE + '/', 'name': 'Gotham Consult', 'inLanguage': 'en', 'publisher': {'@id': SITE + '/#org'}}
@@ -153,7 +154,7 @@ def ld_for(name, m, body, lang="en"):
     if name.startswith('services/'):
         g.append({'@type': 'BreadcrumbList', 'itemListElement': [
           {'@type': 'ListItem', 'position': 1, 'name': IF.L[lang]['home'], 'item': home},
-          {'@type': 'ListItem', 'position': 2, 'name': {'en': 'Services', 'fr': 'Services', 'es': 'Servicios'}[lang], 'item': SITE + prefix + '/services'},
+          {'@type': 'ListItem', 'position': 2, 'name': {'en': 'Services', 'fr': 'Services', 'es': 'Servicios', 'de':'Leistungen', 'ar':'الخدمات', 'zh':'服务'}[lang], 'item': SITE + prefix + '/services'},
           {'@type': 'ListItem', 'position': 3, 'name': m.get('crumb', m['title']), 'item': page_url}]})
         g.append({'@type': 'Service', 'name': m.get('crumb', m['title']), 'serviceType': m.get('crumb', m['title']), 'description': m['desc'], 'provider': {'@id': SITE + '/#org'},
           'areaServed': {'@type': 'Country', 'name': 'Ghana'}, 'url': page_url})
@@ -236,7 +237,7 @@ def main():
     bottom = open(os.path.join(HERE, 'pages', '_partials', '_bottom.html'), encoding='utf-8').read()
     head_add = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
                 '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=7">\n'
+                '<link rel="stylesheet" href="/assets/v2/chrome.css?v=9">\n'
                 + ('<link rel="icon" href="/img/brand/icon-64.png" type="image/png"><link rel="apple-touch-icon" href="/img/brand/icon-180.png">\n'))
     # older scripts look for nav.main (#nav) to fill or to attach the old language switch: keep one, hidden
     keep = '<nav class="main" id="nav" hidden aria-hidden="true" style="display:none!important"><span class="navlog"></span></nav>\n'
@@ -295,12 +296,12 @@ def main():
         def link(m):
             code = m.group(1)
             url = '/' + path_of(n) if code == 'en' else '/' + code + ('/' + path_of(n) if path_of(n) else '')
-            return f'<a data-lang="{code}" href="{url}" aria-current="{str(code == lang).lower()}">{m.group(2)}</a>'
-        doc = re.sub(r'<button type="button" data-lang="(en|fr|es)">(.*?)</button>', link, doc)
+            return f'<a data-lang="{code}" data-no-tr href="{url}" aria-current="{str(code == lang).lower()}" lang="{code}" dir="auto">{m.group(2)}</a>'
+        doc = re.sub(r'<button type="button" data-lang="(en|fr|es|de|ar|zh)"[^>]*>(.*?)</button>', link, doc)
         return re.sub(r'(<span data-lang-code>).*?(</span>)', lambda m: m[1] + lang.upper() + m[2], doc)
     def set_meta(doc, n, title, desc, lang):
         pth = path_of(n); url = f'{SITE}/{lang}' + (f'/{pth}' if pth else '')
-        doc = doc.replace('<html lang="en">', f'<html lang="{lang}" data-page-lang="{lang}">', 1)
+        doc = doc.replace('<html lang="en">', f'<html lang="{lang}" data-page-lang="{lang}" dir="{"rtl" if lang == "ar" else "ltr"}">', 1)
         doc = re.sub(r'<title>.*?</title>', lambda m: f'<title>{htmlmod.escape(title)}</title>', doc, count=1, flags=re.S)
         for k in ('name="description"', 'property="og:description"', 'name="twitter:description"'):
             doc = re.sub(r'(<meta ' + re.escape(k) + r' content=")[^"]*"', lambda m: m.group(1) + htmlmod.escape(desc, quote=True) + '"', doc)
@@ -316,7 +317,9 @@ def main():
         a = next((x for x in ARTS if f'insights/{x["slug"]}.html' == n), None)
         ld = IF.article_ld(a, lang, SITE) if a else ld_for(n, m, doc, lang)
         return doc.replace('</head>', ld + '\n' + IF.alternates(SITE, pth) + '</head>', 1)
-    for lang, metadata in (('fr', IF.FR_META), ('es', ES_META)):
+    base_investor_html = INVESTOR.render()
+    for code in NEW_LANGUAGES: prepare_locale(code, META, ARTS)
+    for lang, metadata in (('fr', IF.FR_META), ('es', ES_META), *((code, {n:(IF.load_dict(code)[META[n]['title']],IF.load_dict(code)[META[n]['desc']]) for n in locale_pages}) for code in NEW_LANGUAGES)):
         d = IF.load_dict(lang); report = {}
         for n in twins:
             if n.startswith('insights'):
@@ -330,8 +333,14 @@ def main():
             else:
                 doc = open(os.path.join(DIST, n), encoding='utf-8').read()
                 title, desc = metadata[n]
-            if n == 'invest.html': doc = doc.replace(INVESTOR.render(), INVESTOR.render(lang))
+            if n == 'invest.html':
+                doc = doc.replace(base_investor_html, INVESTOR.render(lang))
+                if lang in NEW_LANGUAGES: doc = localize_investor_data(doc, lang, d)
             doc, miss = IF.translate_html(doc, d)
+            if n == 'index.html' and lang in NEW_LANGUAGES:
+                # Translate the complete headline, preserving natural word order in each language.
+                heading = {'de':'Partnerschaften in <span class="serif">Ghana aufbauen.</span>', 'ar':'ابنوا شراكات في <span class="serif">غانا.</span>', 'zh':'在加纳，<span class="serif">建立合作伙伴关系。</span>'}[lang]
+                doc = re.sub(r'(<h1 id="h1">).*?(</h1>)', lambda m:m[1]+heading+m[2], doc, count=1, flags=re.S)
             if not n.startswith('insights'): report[n] = miss
             doc = IF.localise_links(set_meta(doc, n, title, desc, lang), paths, lang)
             doc = language_links(doc, n, lang)
@@ -402,7 +411,7 @@ def main():
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /i/\nSitemap: {SITE}/sitemap.xml\n')
     pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'invest/join', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'demo/receptionist', 'tools', 'sources', 'ghana-investment-report', 'family', 'teaser', 'privacy', 'terms']
-    pages += [lang + ('/' + path_of(n) if path_of(n) else '') for lang in ('fr', 'es') for n in twins]
+    pages += [lang + ('/' + path_of(n) if path_of(n) else '') for lang in ('fr', 'es', *NEW_LANGUAGES) for n in twins]
     today = date.today().isoformat()
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc><lastmod>{today}</lastmod></url>\n' for p in pages)
     open(os.path.join(DIST, 'sitemap.xml'), 'w').write(
