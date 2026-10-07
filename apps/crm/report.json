@@ -220,21 +220,21 @@
   {
    "id": "profile",
    "name": "Company profile",
-   "price": "EUR 750",
+   "price": "GHS 9,800",
    "per": "per edition",
    "what": "A half-page profile in the chapter of your choice, with your logo, three key facts and a link. Marked “Partner”."
   },
   {
    "id": "sector",
    "name": "Sector partner",
-   "price": "EUR 2,500",
+   "price": "GHS 32,700",
    "per": "per edition",
    "what": "Your logo at the top of one chapter, a full profile and a short interview, plus a mention in the quarterly PDF sent to investors."
   },
   {
    "id": "lead",
    "name": "Lead partner",
-   "price": "EUR 6,000",
+   "price": "GHS 78,500",
    "per": "per edition",
    "what": "One partner per edition: logo on the report cover and the PDF, a full profile and interview, and a featured case study on gothamconsult.com."
   }

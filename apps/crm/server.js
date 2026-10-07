@@ -1817,7 +1817,7 @@ const server = http.createServer(async (req, res) => {
       if (b.consent !== true) errors.push('consent');
       if (kind === 'news' && !message) errors.push('message');
       if (errors.length) return json(res, 400, { error: 'missing_fields', fields: errors }, cors);
-      const PACK = { profile: 'Company profile (EUR 750)', sector: 'Sector partner (EUR 2,500)', lead: 'Lead partner (EUR 6,000)' };
+      const PACK = { profile: 'Company profile (GHS 9,800)', sector: 'Sector partner (GHS 32,700)', lead: 'Lead partner (GHS 78,500)' };   // cedis only
       const extra = { 'Investment report': KINDS[kind], 'Package': PACK[pack] || '', 'Chapter': chapter, 'Message': message, 'Role': ROLES[role] || '', 'Country': country,
         'Report updates': kind === 'download' ? (updates ? 'yes' : 'no') : '' };
       Object.keys(extra).forEach(k => { if (!extra[k]) delete extra[k]; });

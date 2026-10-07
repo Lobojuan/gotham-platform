@@ -44,7 +44,7 @@ assert not report_page.check(), report_page.check()
 html = report_page.render(); rep = report_page.load()
 ids = [f['id'] for c in rep['chapters'] for f in c['figures']]
 assert all(f'data-fig="{i}"' in html for i in ids) and '/api/report/public' in html and '/api/report/enquiry' in html and '/api/ghana-data' in html
-assert html.count('class="sec rp-ch"') == len(rep['chapters']) and 'EUR 750' in html and 'Partner' in html
+assert html.count('class="sec rp-ch"') == len(rep['chapters']) and 'GHS 9,800' in html and 'EUR' not in html and 'Partner' in html
 ok(f'the report page shows {len(ids)} sourced figures in {len(rep["chapters"])} chapters, live numbers, the change log and the partner form')
 
 # 3. the server
