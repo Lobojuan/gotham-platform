@@ -69,5 +69,6 @@ COPY ask-context.js ./
 RUN mkdir -p /data/media
 ENV NODE_ENV=production MEDIA_DIR=/data/media
 COPY report-watch.js report.json ./
+COPY report-files ./report-files
 EXPOSE 4100
 CMD ["node","server.js"]

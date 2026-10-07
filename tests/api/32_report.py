@@ -58,8 +58,12 @@ tf = '/tmp/report-test.json'
 json.dump({'updated': '2026-10-07', 'review_days': 120, 'chapters': [{'id': 'macro', 'title': 'Economy', 'figures': [
     {'id': 'macro-gdp', 'label': 'GDP growth', 'value': '6.0', 'unit': '%', 'period': 'Q2 2026', 'source_label': 'GSS', 'source_url': 'http://127.0.0.1:4297/gdp', 'official': True, 'quote': 'grew 6.0%'},
     {'id': 'macro-cpi', 'label': 'Inflation', 'value': '5.0', 'unit': '%', 'period': 'Aug 2026', 'source_label': 'GSS', 'source_url': 'http://127.0.0.1:4297/cpi', 'official': True, 'quote': 'inflation 9.9%'}],
-    'watch': [{'label': 'Newsroom', 'url': 'http://127.0.0.1:4297/news', 'why': ''}]}]}, open(tf, 'w'))
+    'watch': [{'label': 'Newsroom', 'url': 'http://127.0.0.1:4297/news', 'why': ''}]}],
+    'authors': [{'name': 'Uffe Carlson', 'role': 'Partner', 'email': 'uffe@test.gh', 'phone': '+233 55 000 0001', 'whatsapp': '233550000001'}],
+    'edition': {'label': 'Test edition', 'file': 'test-edition.pdf'}}, open(tf, 'w'))
 os.environ['REPORT_FILE'] = tf
+os.makedirs('/tmp/report-pdf-test', exist_ok=True); PDF = b'%PDF-1.4 test edition ' + os.urandom(64)
+open('/tmp/report-pdf-test/test-edition.pdf', 'wb').write(PDF); os.environ['REPORT_PDF_DIR'] = '/tmp/report-pdf-test'
 exec(open(os.path.join(os.path.dirname(__file__), '07_family_desk.py')).read().split("ok=lambda m: print('  ok',m)")[0])
 ok = lambda m: print('  ok', m)
 import subprocess as _sp
@@ -96,6 +100,35 @@ ok('an admin publishes the news or adds an update; the public log shows it witho
 st, r, _ = call('/api/report/review', {'id': 'macro-cpi', 'note': 'GSS page re-read'}, cookie=ck); assert st == 200
 assert {f['id']: f['status'] for f in r['facts']}['macro-cpi'] == 'ok' and call('/api/report/review', {'id': 'nope'}, cookie=ck)[0] == 404
 ok('"Still correct" is recorded')
+# the PDF edition in exchange for an email
+assert call('/api/report/enquiry', {'kind': 'download', 'full_name': 'Kwame Investor', 'email': 'kwame@fund.test'})[0] == 400, 'consent is required'
+st, b, _ = call('/api/report/enquiry', {'kind': 'download', 'full_name': 'Kwame Investor', 'email': 'Kwame@Fund.test', 'company': 'Volta Fund', 'role': 'investor',
+    'country': 'United Kingdom', 'phone': '+44 7700 900123', 'updates': True, 'consent': True})
+assert st == 200 and b['url'].startswith('http://127.0.0.1:4199/api/report/pdf?'), b
+row = _sp.run(['psql', DB, '-tAc', "select tags||'|'||consent_email||'|'||sector||'|'||phone from contacts where email='kwame@fund.test'"], capture_output=True, text=True).stdout.strip()
+assert row == 'report-download,report-updates|yes|Investor|+447700900123', row
+deal = _sp.run(['psql', DB, '-tAc', "select kind from deals where title like 'Report download%'"], capture_output=True, text=True).stdout.strip(); assert deal == 'investor', deal
+body = _sp.run(['psql', DB, '-tAc', "select body from outbox where to_email='kwame@fund.test' and subject='Your Ghana Investment Report 2026'"], capture_output=True, text=True).stdout
+assert b['url'].replace('&', '&amp;') in body and 'uffe@test.gh' in body and 'wa.me/233550000001' in body, body[:400]
+alert = _sp.run(['psql', DB, '-tAc', "select body from outbox where to_email='uffe.carlson@gmail.com' and subject like 'Report: Report download from Kwame%'"], capture_output=True, text=True).stdout
+assert 'United Kingdom' in alert and 'Investor or fund' in alert and 'opted in' in alert, alert[:300]
+ok('a download request becomes a tagged contact (opted in to updates), an investor lead, an email with the link and the authors, and an alert to Uffe')
+import http.client
+def raw_get(path):
+    c = http.client.HTTPConnection('127.0.0.1', 4199, timeout=10); c.request('GET', path, headers={'x-real-ip': '10.9.1.1'}); r = c.getresponse(); return r.status, r.getheader('location') or r.getheader('content-type'), r.read()
+path = b['url'].split('4199', 1)[1]
+st, ct, data = raw_get(path); assert st == 200 and ct == 'application/pdf' and data == PDF, (st, ct)
+st, loc, _ = raw_get(path[:-3] + 'abc'); assert st == 302 and 'link=expired' in loc, (st, loc)
+import re as _re
+st, loc, _ = raw_get(_re.sub(r'x=\d+', 'x=1000', path)); assert st == 302, 'an old or altered date is refused'
+st, loc, _ = raw_get('/api/report/pdf'); assert st == 302
+log = _sp.run(['psql', DB, '-tAc', "select count(*) from audit_log where action='report_pdf' and detail='kwame@fund.test'"], capture_output=True, text=True).stdout.strip(); assert log == '1', log
+ok('the signed link returns the PDF; a changed, expired or missing signature goes back to the form')
+st, b, _ = call('/api/report/enquiry', {'kind': 'download', 'full_name': 'Ama', 'email': 'ama2@x.test', 'consent': True})
+row = _sp.run(['psql', DB, '-tAc', "select tags||'|'||consent_email from contacts where email='ama2@x.test'"], capture_output=True, text=True).stdout.strip()
+assert st == 200 and row == 'report-download|unknown', row
+assert _sp.run(['psql', DB, '-tAc', "select kind from deals where title like 'Report download · Ama%'"], capture_output=True, text=True).stdout.strip() == 'other'
+ok('without the updates box no marketing consent is recorded; a non-investor download is an "other" lead')
 st, b, _ = call('/ghana-investment-report', raw=True)
 if st == 200: assert b'Ghana Investment Report' in b; ok('/ghana-investment-report is served')
 print('PASSED')

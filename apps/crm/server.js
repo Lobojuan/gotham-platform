@@ -69,6 +69,14 @@ const REPORT = makeReportWatch({
   saveLog: async l => q("insert into settings(key,value) values ('report_log',$1) on conflict(key) do update set value=excluded.value", [JSON.stringify(l)]),
   alert: (subject, lines) => alertTeam(subject, lines),
 });
+/* The report's PDF edition is given out in exchange for an email: the form returns (and emails) a link signed for that
+   address that works for 30 days. The file ships with the server (report-files/); its name and the authors are in report.json. */
+const REPORT_PDF_DIR = process.env.REPORT_PDF_DIR || path.join(path.dirname(new URL(import.meta.url).pathname), 'report-files');
+const REPORT_META = loadReport(process.env.REPORT_FILE || new URL('./report.json', import.meta.url));
+const reportPdfLink = (email, now = Date.now()) => {
+  const e = Buffer.from(email).toString('base64url'), x = Math.floor(now / 1000) + 30 * 86400;
+  return `${BASE}/api/report/pdf?e=${e}&x=${x}&s=${sign('report-pdf:' + e + ':' + x)}`;
+};
 
 fs.mkdirSync(MEDIA, { recursive: true });
 
@@ -1737,6 +1745,18 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/report/public' && req.method === 'GET') {
       res.setHeader('cache-control', 'public, max-age=600'); return json(res, 200, await REPORT.publicReport(), cors);
     }
+    if (p === '/api/report/pdf' && req.method === 'GET') {    // the signed download link from the report form
+      const e = String(url.searchParams.get('e') || ''), x = +url.searchParams.get('x') || 0, sg = String(url.searchParams.get('s') || '');
+      const good = /^[A-Za-z0-9_-]{4,300}$/.test(e) && sg.length > 20 && sg.length < 100 && x * 1000 > Date.now()
+        && crypto.timingSafeEqual(Buffer.from(sign('report-pdf:' + e + ':' + x).padEnd(100)), Buffer.from(sg.padEnd(100)));
+      const ed = REPORT_META.edition || {}, file = path.join(REPORT_PDF_DIR, path.basename(ed.file || 'none'));
+      if (!good || !ed.file || !fs.existsSync(file)) { res.writeHead(302, { location: '/ghana-investment-report?link=expired#download' }); return res.end(); }
+      if (rateLimited(ip, 30, 3600e3, 'report-pdf')) return json(res, 429, { error: 'too_many' });
+      q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'report_pdf', Buffer.from(e, 'base64url').toString('utf8').slice(0, 160)]).catch(() => {});
+      res.writeHead(200, { 'content-type': 'application/pdf', 'content-length': fs.statSync(file).size, 'cache-control': 'private, no-store',
+        'x-robots-tag': 'noindex', 'content-disposition': 'attachment; filename="Ghana-Investment-Report-2026-Gotham-Consult.pdf"' });
+      return fs.createReadStream(file).pipe(res);
+    }
     if (p === '/api/report' && req.method === 'GET') {
       if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
       return json(res, 200, await REPORT.report());
@@ -1770,7 +1790,8 @@ const server = http.createServer(async (req, res) => {
       if (rateLimited(ip, 5, 600e3, 'report')) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
       if (clean(b.website, 200)) return json(res, 200, { ok: true }, cors);      // honeypot
-      const KINDS = { partner: 'Report partner', investor: 'Investor (report)', news: 'Report news' };
+      const KINDS = { partner: 'Report partner', investor: 'Investor (report)', news: 'Report news', download: 'Report download' };
+      const ROLES = { investor: 'Investor or fund', company: 'Company or entrepreneur', adviser: 'Bank, adviser or lawyer', government: 'Government or development agency', media: 'Media or research', other: 'Other' };
       const kind = KINDS[b.kind] ? b.kind : '';
       const full_name = clean(b.full_name, 120), email = clean(b.email, 160).toLowerCase(), company = clean(b.company, 160);
       const rawPhone = clean(b.phone, 40), digits = rawPhone.replace(/[^0-9+]/g, '');
@@ -1778,6 +1799,7 @@ const server = http.createServer(async (req, res) => {
       const phone = /^\+\d{8,15}$/.test(phone0) ? phone0 : '';
       const pack = ['profile', 'sector', 'lead'].includes(b.package) ? b.package : '';
       const chapter = clean(b.chapter, 40), message = clean(b.message, 1500);
+      const role = ROLES[b.role] ? b.role : '', country = clean(b.country, 80), updates = b.updates === true;
       const errors = [];
       if (!kind) errors.push('kind');
       if (!full_name) errors.push('full_name');
@@ -1786,37 +1808,56 @@ const server = http.createServer(async (req, res) => {
       if (kind === 'news' && !message) errors.push('message');
       if (errors.length) return json(res, 400, { error: 'missing_fields', fields: errors }, cors);
       const PACK = { profile: 'Company profile (EUR 750)', sector: 'Sector partner (EUR 2,500)', lead: 'Lead partner (EUR 6,000)' };
-      const extra = { 'Investment report': KINDS[kind], 'Package': PACK[pack] || '', 'Chapter': chapter, 'Message': message };
+      const extra = { 'Investment report': KINDS[kind], 'Package': PACK[pack] || '', 'Chapter': chapter, 'Message': message, 'Role': ROLES[role] || '', 'Country': country,
+        'Report updates': kind === 'download' ? (updates ? 'yes' : 'no') : '' };
       Object.keys(extra).forEach(k => { if (!extra[k]) delete extra[k]; });
-      const tag = 'report-' + kind, notes = `${KINDS[kind]}${pack ? ', ' + PACK[pack] : ''}${chapter ? ', chapter ' + chapter : ''}.` + (message ? ` Says: ${message}` : '');
+      const tags = ['report-' + kind, ...(updates ? ['report-updates'] : [])], tag = tags.join(',');
+      const notes = `${KINDS[kind]}${pack ? ', ' + PACK[pack] : ''}${chapter ? ', chapter ' + chapter : ''}${role ? ', ' + ROLES[role] : ''}${country ? ', ' + country : ''}.` + (message ? ` Says: ${message}` : '');
       const ex = await q('select id, tags from contacts where lower(email)=lower($1)', [email]);
       if (ex.rows.length) {
         await q(`update contacts set full_name=coalesce(nullif($1,''),full_name), phone=coalesce(nullif($2,''),phone),
             company=coalesce(nullif(company,''),nullif($3,'')), tags=$4, extra=coalesce(extra,'{}'::jsonb) || $5::jsonb,
             notes=concat_ws(E'\\n', nullif(notes,''), $6::text)
           where id=$7 and unsubscribed_at is null and status <> 'do_not_contact'`,
-          [full_name, phone, company, mergeTags(ex.rows[0].tags, [tag]), JSON.stringify(extra), notes, ex.rows[0].id]);
+          [full_name, phone, company, mergeTags(ex.rows[0].tags, tags), JSON.stringify(extra), notes, ex.rows[0].id]);
       } else {
         await q(`insert into contacts(company,full_name,email,phone,sector,tags,source,notes,extra,status)
                  values ($1,$2,$3,$4,$5,$6,'Website: Ghana Investment Report',$7,$8::jsonb,'new')`,
-          [company || null, full_name, email, phone || null, kind === 'investor' ? 'Investor' : 'Media / partner', tag, notes, JSON.stringify(extra)]);
+          [company || null, full_name, email, phone || null, kind === 'investor' || role === 'investor' ? 'Investor' : kind === 'download' ? 'Report reader' : 'Media / partner', tag, notes, JSON.stringify(extra)]);
       }
+      if (updates) await q(`update contacts set consent_email='yes' where lower(email)=lower($1) and status <> 'do_not_contact'`, [email]);
       if (kind === 'news') await REPORT.submit({ kind: 'news', chapter, title: `News from ${company || full_name}`, text: message, url: (message.match(/https?:\/\/\S+/) || [''])[0], by: email });
-      if (kind !== 'news') await inboundDeal({ company: company || null, full_name, email, phone: phone || null, kind: kind === 'investor' ? 'investor' : 'sponsorship',
+      const dealKind = kind === 'investor' || (kind === 'download' && role === 'investor') ? 'investor' : kind === 'download' ? 'other' : 'sponsorship';
+      if (kind !== 'news') await inboundDeal({ company: company || null, full_name, email, phone: phone || null, kind: dealKind,
         title: `${KINDS[kind]} · ${company || full_name}`, source: 'Website Ghana Investment Report',
-        task: `Reply to ${firstName(full_name)} (${KINDS[kind]}${pack ? ', ' + PACK[pack] : ''})` }).catch(e => console.error('inboundDeal', e.message));
-      await queueMail(email, full_name, 'Thank you for contacting Gotham Consult',
-        wrapMail('Thank you, ' + esc(firstName(full_name)),
-          `<p style="color:#5A6472;font-size:15px;line-height:1.6">We have your message about the Ghana Investment Report and will reply within one working day.</p>`), 'report_ack', null);
+        task: kind === 'download' ? `Follow up with ${firstName(full_name)} (downloaded the report${role ? ', ' + ROLES[role] : ''})`
+          : `Reply to ${firstName(full_name)} (${KINDS[kind]}${pack ? ', ' + PACK[pack] : ''})` }).catch(e => console.error('inboundDeal', e.message));
+      const contactsHtml = (REPORT_META.authors || []).length ? `<p style="color:#5A6472;font-size:15px;line-height:1.6;margin:18px 0 6px">Questions about Ghana, or about investing here? Write or call us directly:</p>`
+        + REPORT_META.authors.map(a => `<p style="font-size:15px;line-height:1.6;margin:0 0 10px;color:#0F1B2D"><b>${esc(a.name)}</b>, ${esc(a.role)}<br>
+          <a href="mailto:${esc(a.email)}" style="color:#0F1B2D">${esc(a.email)}</a> · <a href="https://wa.me/${esc(a.whatsapp)}" style="color:#0F1B2D">WhatsApp ${esc(a.phone)}</a></p>`).join('') : '';
+      let link = '';
+      if (kind === 'download') {
+        link = reportPdfLink(email);
+        await queueMail(email, full_name, 'Your Ghana Investment Report 2026',
+          wrapMail('Your Ghana Investment Report, ' + esc(firstName(full_name)),
+            `<p style="color:#5A6472;font-size:15px;line-height:1.6">Thank you for your interest. Your copy of the Ghana Investment Report 2026 is ready.</p>
+            <p style="margin:22px 0"><a href="${esc(link)}" style="background:#B8862F;color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px;display:inline-block">Download the PDF</a></p>
+            <p style="color:#5A6472;font-size:13px;line-height:1.6">The link works for 30 days. The web version at <a href="${BASE}/ghana-investment-report" style="color:#5A6472">gothamconsult.com/ghana-investment-report</a> is checked against its sources every week.</p>` + contactsHtml), 'report_pdf', null);
+      } else {
+        await queueMail(email, full_name, 'Thank you for contacting Gotham Consult',
+          wrapMail('Thank you, ' + esc(firstName(full_name)),
+            `<p style="color:#5A6472;font-size:15px;line-height:1.6">We have your message about the Ghana Investment Report and will reply within one working day.</p>` + contactsHtml), 'report_ack', null);
+      }
       const rows = [['Type', KINDS[kind]], ['Name', full_name], ['Email', email], ['WhatsApp / phone', phone || '(not given)'], ['Company', company || '(not given)'],
-        ['Package', PACK[pack] || '(none)'], ['Chapter', chapter || '(none)'], ['Message', message || '(none)']];
+        ...(kind === 'download' ? [['Role', ROLES[role] || '(not given)'], ['Country', country || '(not given)'], ['Quarterly updates', updates ? 'Yes, opted in' : 'No']]
+          : [['Package', PACK[pack] || '(none)'], ['Chapter', chapter || '(none)'], ['Message', message || '(none)']])];
       const alertHtml = wrapMail('Ghana Investment Report enquiry', `<table style="font-size:14px;color:#0F1B2D;border-collapse:collapse">${rows.map(([k, v]) =>
         `<tr><td style="padding:4px 14px 4px 0;color:#5A6472;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>`).join('')}</table>`);
       const subject = `Report: ${KINDS[kind]} from ${full_name}${company ? ' (' + company + ')' : ''}`;
       await queueMail('uffe.carlson@gmail.com', 'Uffe Carlson', subject, alertHtml, 'staff_alert', null);
-      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'report_enquiry', `${kind} · ${pack} · ${chapter}`]);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'report_enquiry', `${kind} · ${pack || role} · ${chapter || country}`]);
       webEnquiry(req, ip, 'report').catch(() => {});
-      return json(res, 200, { ok: true }, cors);
+      return json(res, 200, link ? { ok: true, url: link } : { ok: true }, cors);
     }
     // Public, non-personal economic publications; bounded background refresh with persisted last-good data.
     if (p === '/api/ghana-data' && req.method === 'GET') {

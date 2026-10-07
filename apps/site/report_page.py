@@ -51,6 +51,10 @@ def check():
                 if not (min(u, d) <= b <= max(u, d)): out.append((i['id'], f'{y}: base case outside the scenario range'))
             if not i['anchors'] or any(not a['url'].startswith('https://') for a in i['anchors']): out.append((i['id'], 'forecast without sourced anchors'))
             if i['history'] not in r.get('history', {}): out.append((i['id'], 'no history series'))
+    for a in r.get('authors', []):
+        if not ('@' in a.get('email', '') and a.get('phone') and a.get('whatsapp', '').isdigit()): out.append(('authors', f'{a.get("name")}: email, phone or WhatsApp missing'))
+    if not r.get('authors'): out.append(('authors', 'no authors or contacts'))
+    if not str(r.get('edition', {}).get('file', '')).endswith('.pdf'): out.append(('edition', 'no PDF edition named'))
     ex = dict(r['charts']['exports']['rows'])
     if abs(sum(ex.values()) - 22.44) > 0.02: out.append(('charts', 'export parts do not add up to the total'))
     return out
@@ -317,7 +321,7 @@ tr.review .rp-val::after{content:" \\2022 being re-checked";font-size:11px;font-
 .rp-pk .hot{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
 .rp-form{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:24px}
 .rp-kinds legend{width:100%}
-@media(min-width:760px){.rp-form .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}}
+@media(min-width:760px){.rp-form .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}}
 .rp-form label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
 .rp-form input,.rp-form select,.rp-form textarea{font:inherit;font-weight:400;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
 .rp-form textarea{min-height:110px}
@@ -334,12 +338,74 @@ tr.review .rp-val::after{content:" \\2022 being re-checked";font-size:11px;font-
 .rp-how{display:grid;gap:14px}
 @media(min-width:860px){.rp-how{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .rp-how .box{padding:20px 22px}.rp-how h3{margin:0 0 6px;font-size:17px}.rp-how p{margin:0;color:var(--mute);font-size:14.5px}
-@media print{.gh,.gf,.rp-toc,.rp-form,.rp-help,#partner,.gf-made{display:none!important}.rp-ch{break-before:page}}
+.rp-by{margin:14px 0 0;font-size:15px;color:rgba(255,255,255,.86)}.rp-by b{color:#fff}
+.rp-dl{display:grid;gap:22px;align-items:start}
+@media(min-width:960px){.rp-dl{grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:40px}}
+.rp-dl h2{font-size:clamp(28px,3.2vw,40px)}
+.rp-cover{position:relative;border-radius:18px;overflow:hidden;background:linear-gradient(160deg,#0F1B2D,#1d2c47);color:#fff;padding:26px 24px;display:flex;flex-direction:column;gap:10px;box-shadow:0 18px 40px rgba(15,27,45,.18)}
+.rp-cover p{margin:0}.rp-cover .t{font:600 13px var(--font);letter-spacing:.08em;text-transform:uppercase;color:#F0BE5A}
+.rp-cover .h{font:700 26px/1.2 var(--font);letter-spacing:-.01em}.rp-cover .s{color:rgba(255,255,255,.78);font-size:14.5px}
+.rp-cover ul{margin:6px 0 0;padding-left:18px;font-size:14px;color:rgba(255,255,255,.88);display:grid;gap:4px}
+.rp-ready{display:flex;flex-direction:column;gap:10px;padding:22px;border:1px solid var(--gold);border-radius:16px;background:#FFFBF2}
+.rp-ready p{margin:0}
+.rp-people{display:grid;gap:14px}
+@media(min-width:760px){.rp-people{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rp-person{padding:22px;display:flex;flex-direction:column;gap:6px}
+.rp-person h3{margin:0;font-size:19px}.rp-person .r{margin:0;color:var(--mute);font-size:14px}
+.rp-person ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px;font-size:15px}
+.rp-person a{color:var(--ink);display:inline-flex;align-items:center;min-height:44px;overflow-wrap:anywhere}
+@media print{.gh,.gf,.rp-toc,.rp-form,.rp-help,#partner,#download,.gf-made{display:none!important}.rp-ch{break-before:page}}
 </style>'''
+
+
+ROLES = [('investor', 'Investor or fund'), ('company', 'Company or entrepreneur'), ('adviser', 'Bank, adviser or lawyer'),
+         ('government', 'Government or development agency'), ('media', 'Media or research'), ('other', 'Other')]
+
+
+def download(r, figs):
+    """The PDF edition, given in exchange for an email: the server answers with a signed link (and emails it)."""
+    ed = r.get('edition', {})
+    roles = ''.join(f'<option value="{k}">{esc(v)}</option>' for k, v in ROLES)
+    by = ' and '.join(esc(a['name']) for a in r.get('authors', []))
+    return (f'''<section class="sec rp-dlsec" id="download" aria-labelledby="dl-h"><div class="wrap"><div class="rp-dl">
+<div><p class="eyebrow">Free PDF edition</p><h2 id="dl-h">Take the full report with you</h2>
+<p class="lead">All {len(r["chapters"])} chapters, the Outlook 2026–2028 and {figs} sourced figures in one PDF to read offline or share with your board.</p>
+<div class="rp-cover" aria-hidden="true"><p class="t">{esc(ed.get("label", ""))}</p><p class="h">{esc(r["title"])}</p><p class="s">By {by}, {esc(r["publisher"])}</p>
+<ul><li>Economy snapshot and outlook to 2028</li><li>Mining, energy, agribusiness and industry</li><li>Rules, opportunities, risks and key players</li></ul></div></div>
+<form class="box rp-form" id="rp-dl" novalidate>
+<div class="two"><label>Your name<input name="full_name" autocomplete="name" required maxlength="120"></label>
+<label>Email<input name="email" type="email" autocomplete="email" inputmode="email" required maxlength="160"></label></div>
+<div class="two"><label>Company or organisation<input name="company" autocomplete="organization" maxlength="160"></label>
+<label>I am<select name="role"><option value="">Choose</option>{roles}</select></label></div>
+<div class="two"><label>Country<input name="country" autocomplete="country-name" maxlength="80"></label>
+<label>WhatsApp or phone (optional)<input name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="40"></label></div>
+<label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+<label class="chk"><input type="checkbox" name="updates"> Email me the quarterly update of this report. I can unsubscribe at any time.</label>
+<label class="chk"><input type="checkbox" name="consent" required> I agree that Gotham Consult may send me the report and contact me about it. My details are handled under Ghana’s Data Protection Act, 2012 (Act 843).</label>
+<div><button class="btn btn-gold" type="submit">Get the PDF <span class="arrow">→</span></button></div>
+<p class="rp-msg" id="rp-dl-msg" role="status" aria-live="polite"></p></form>
+</div></div></section>
+''')
+
+
+def contact(r):
+    """Who wrote the report and how to reach them; shown on the page and in the PDF."""
+    people = ''.join(
+        f'<div class="box rp-person"><h3>{esc(a["name"])}</h3><p class="r">{esc(a["role"])}</p><ul>'
+        f'<li><a href="mailto:{esc(a["email"])}">{esc(a["email"])}</a></li>'
+        f'<li><a href="tel:+{esc(a["whatsapp"])}">{esc(a["phone"])}</a> · <a href="https://wa.me/{esc(a["whatsapp"])}" target="_blank" rel="noopener">WhatsApp</a></li></ul></div>'
+        for a in r.get('authors', []))
+    return ('<section class="sec" id="contact" aria-labelledby="ct-h"><div class="wrap">'
+            '<div class="sec-head split"><div><p class="eyebrow">Authors and contact</p><h2 id="ct-h">Talk to the people behind this report</h2></div>'
+            '<p class="lead">Questions about a figure, a sector or investing in Ghana? Write or call us directly. Gotham Consult, Accra, '
+            '<a href="mailto:info@gothamconsult.com">info@gothamconsult.com</a>.</p></div>'
+            f'<div class="rp-people">{people}</div></div></section>\n')
 
 
 def render():
     r = load()
+    names = ' and '.join(f'<b>{esc(a["name"])}</b>' for a in r.get('authors', []))
+    byline = f'<p class="rp-by">Prepared by {names}, Gotham Consult</p>' if names else ''
     figs = sum(len(c['figures']) for c in r['chapters'])
     kpis = ''.join(
         f'<div class="box rp-kpi" data-kpi="{esc(k["id"])}"{" data-live=" + chr(34) + esc(":".join(k["live"])) + chr(34) if k.get("live") else ""}>'
@@ -363,16 +429,17 @@ def render():
         f'<p class="eyebrow">{esc(r["title"])} · {esc(r["publisher"])}</p>'
         '<h1 id="h1">Ghana, sector by sector. <span class="serif">Every number sourced.</span></h1>'
         '<p class="lead">An independent investor guide to Ghana’s economy and its five key sectors: the figures, the rules, the opportunities and the risks, each linked to its official source and checked again every week.</p>'
+        + byline +
         f'<ul class="rp-meta"><li>Updated <b id="rp-updated">{nice(r["updated"])}</b></li><li><b>{figs}</b> sourced figures</li><li><b>{len(r["chapters"])}</b> chapters</li><li>Sources re-checked <b>every week</b></li></ul>'
-        '<div class="hero-cta" style="margin-top:22px"><a class="btn btn-gold" href="#macro">Read the report <span class="arrow">→</span></a> '
-        '<a class="btn btn-line" href="#partner">Feature your company</a></div>'
+        '<div class="hero-cta" style="margin-top:22px"><a class="btn btn-gold" href="#download">Download the PDF <span class="arrow">→</span></a> '
+        '<a class="btn btn-line" href="#macro">Read online</a> <a class="btn btn-line" href="#partner">Feature your company</a></div>'
         '</div></section>\n'
-        f'<nav class="rp-toc" aria-label="Chapters"><div class="wrap"><ol><li><a href="#snapshot">Snapshot</a></li><li><a href="#outlook">Outlook 2026–2028</a></li>{toc}<li><a href="#dates">Dates to watch</a></li><li><a href="#partner">Partners</a></li></ol></div></nav>\n'
+        f'<nav class="rp-toc" aria-label="Chapters"><div class="wrap"><ol><li><a href="#snapshot">Snapshot</a></li><li><a href="#outlook">Outlook 2026–2028</a></li>{toc}<li><a href="#dates">Dates to watch</a></li><li><a href="#download">Download PDF</a></li><li><a href="#partner">Partners</a></li><li><a href="#contact">Contact</a></li></ol></div></nav>\n'
         '<section class="sec" id="snapshot" aria-labelledby="snap-h"><div class="wrap">'
         '<div class="sec-head split"><div><p class="eyebrow">Economy snapshot</p><h2 id="snap-h">Ghana in eight numbers</h2></div>'
         '<p class="lead">Growth, prices, rates and reserves. Figures marked <span class="rp-live" style="margin:0">Live</span> refresh automatically from the Bank of Ghana and the Ghana Statistical Service.</p></div>'
         f'<div class="rp-kpis">{kpis}</div><div class="rp-charts">{charts}</div></div></section>\n'
-        + outlook(r) + chapters +
+        + download(r, figs) + outlook(r) + chapters +
         '\n<section class="sec" id="dates" aria-labelledby="dates-h"><div class="wrap"><p class="eyebrow">Dates to watch</p><h2 id="dates-h">What could move the numbers next</h2>'
         f'<ul class="rp-cal">{cal}</ul></div></section>\n'
         '<section class="sec" aria-labelledby="how-h"><div class="wrap"><p class="eyebrow">How this report stays current</p><h2 id="how-h">Checked every week, confirmed by a person</h2><div class="rp-how">'
@@ -401,6 +468,7 @@ def render():
         '<label class="chk"><input type="checkbox" name="consent" required> I agree that Gotham Consult may contact me about this request. My details are handled under Ghana’s Data Protection Act, 2012 (Act 843).</label>'
         '<div><button class="btn btn-gold" type="submit">Send <span class="arrow">→</span></button></div><p class="rp-msg" id="rp-msg" role="status" aria-live="polite"></p></form>'
         '</div></section>\n'
+        + contact(r) +
         '<section class="sec" style="padding-top:0"><div class="wrap"><p class="rp-src">This report is general information compiled from public sources, not investment, legal or tax advice. '
         'Figures marked “Official” come from a government or regulator’s own publication; “Reported” figures are official data or statements as reported by named media. '
         'See also <a href="/sources">Sources &amp; fact checks</a>.</p></div></section>\n'
@@ -425,6 +493,19 @@ fetch("/api/report/public",{signal:T}).then(function(r){return r.ok?r.json():nul
   if(u.url){var a=document.createElement("a");a.href=u.url;a.target="_blank";a.rel="noopener";a.textContent=" Source";li.appendChild(a)}ul.appendChild(li)})}
  (j.partners||[]).forEach(function(p){var s=document.querySelector(".rp-partner-slot[data-chapter=\\""+p.chapter+"\\"]");if(!s)return;var a=document.createElement("a");a.className="rp-press";a.href=p.url;a.target="_blank";a.rel="noopener sponsored";a.textContent="Partner: "+p.name;s.appendChild(a)});
 }).catch(function(){});
+var g=document.getElementById("rp-dl"),gm=document.getElementById("rp-dl-msg");
+if(/[?&]link=expired/.test(location.search))gm.textContent="That download link has expired. Fill in the form again for a new one.";
+function ready(u){var w=document.createElement("div");w.className="rp-ready";w.setAttribute("tabindex","-1");
+ var p=document.createElement("p");p.innerHTML="<b>Your PDF is ready.</b> We have also emailed you the link (valid 30 days).";w.appendChild(p);
+ var a=document.createElement("a");a.className="btn btn-gold";a.href=u;a.textContent="Download the PDF";a.style.alignSelf="flex-start";w.appendChild(a);
+ g.replaceWith(w);w.focus();location.href=u}
+g.addEventListener("submit",function(e){e.preventDefault();var b={kind:"download",full_name:g.full_name.value,email:g.email.value,company:g.company.value,role:g.role.value,
+ country:g.country.value,phone:g.phone.value,website:g.website.value,updates:g.updates.checked,consent:g.consent.checked};
+ if(!b.full_name||!/^\\S+@\\S+\\.\\S+$/.test(b.email)||!b.consent){gm.textContent="Please add your name, a valid email and tick the box.";return}
+ var btn=g.querySelector("button");btn.disabled=true;gm.textContent="Preparing your copy\\u2026";
+ fetch("/api/report/enquiry",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})})
+ .then(function(x){if(x.ok&&x.j.url){ready(x.j.url)}else if(x.ok){gm.textContent="Thank you. Check your email for the link."}else{gm.textContent=x.j&&x.j.error==="too_many"?"Too many tries. Please wait a few minutes.":"Please check the form and try again.";btn.disabled=false}})
+ .catch(function(){gm.textContent="Could not send. Please email info@gothamconsult.com.";btn.disabled=false})});
 var f=document.getElementById("rp-form"),msg=document.getElementById("rp-msg");
 f.addEventListener("change",function(){var k=f.kind.value;f.package.closest("label").hidden=k!=="partner"});
 f.addEventListener("submit",function(e){e.preventDefault();var b={kind:f.kind.value,package:f.package.value,chapter:f.chapter.value,full_name:f.full_name.value,company:f.company.value,

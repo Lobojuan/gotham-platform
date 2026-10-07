@@ -2098,5 +2098,25 @@
     "2025": 5.7
    }
   }
+ },
+ "authors": [
+  {
+   "name": "Uffe Carlson",
+   "role": "Partner, Gotham Consult",
+   "email": "uffe.carlson@gmail.com",
+   "phone": "+233 55 239 5548",
+   "whatsapp": "233552395548"
+  },
+  {
+   "name": "Joy Preston",
+   "role": "Managing Partner, Gotham Consult",
+   "email": "joy@gothamconsult.com",
+   "phone": "+233 55 041 6627",
+   "whatsapp": "233550416627"
+  }
+ ],
+ "edition": {
+  "label": "October 2026 edition",
+  "file": "ghana-investment-report-2026-10.pdf"
  }
 }
