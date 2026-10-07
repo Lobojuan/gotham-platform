@@ -188,3 +188,27 @@ TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/run_api.
 The browser E2E scripts in `tests/ui/` require Chromium and `playwright-core`.
 Their last recorded device sweep is historical; rerun it against the current
 checkout before a public release.
+
+## Multilingual search pages
+
+The 24 core page and insight families are built as English `/`, French `/fr`,
+and Spanish `/es` URLs. Each has translated metadata and structured data, its own
+canonical, reciprocal EN/FR/ES/x-default links, and a sitemap entry. The desktop
+and phone language choices are real links; JavaScript keeps the current query
+and section when switching. `public/assets/v2/i18n-{fr,es}.js` remains the body
+translation source, article translations stay in `content/insights`, and Spanish
+search metadata is in `apps/site/seo_locales.py`. Legacy forms/events retain
+browser translation and are not advertised as untranslated locale twins.
+
+`deploy-crm.sh` also applies `scripts/bridge-host.py` to Gotham's Caddy block.
+Caddy normally replaces `X-Forwarded-Host`; the patch copies the incoming value
+to `X-GC-Forwarded-Host`. The CRM uses it only with the valid bridge key and only
+for the exact www hostname. The patch backs up the config, refuses an unexpected
+block, validates, reloads in place and rolls back on failure. No DNS or WordPress
+plugin changes are needed.
+
+SEO regression: `python3 tests/api/31_seo.py` after building, plus
+`BASE=http://127.0.0.1:4199 PLAYWRIGHT=… CHROMIUM=… node tests/ui/seo_locales_ui.js`.
+The normal API/E2E runners include these checks. Use the bundled Python runtime
+with Pillow and openpyxl when running the full API suite. E2E cleanup stops only
+its own server processes; the fact-check suite uses local source fixtures.

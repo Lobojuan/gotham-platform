@@ -11,6 +11,7 @@ import chrome_css
 import insights_fr as IF
 import investor_content as INVESTOR
 import facts_page as FACTSP
+from seo_locales import ES_META
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
@@ -34,7 +35,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=26">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=27">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 # Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
@@ -138,17 +139,20 @@ def faqs_in(body):
         t = lambda x: htmlmod.unescape(re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', x))).strip()
         if t(q) and t(a): out.append({'@type': 'Question', 'name': t(q), 'acceptedAnswer': {'@type': 'Answer', 'text': t(a)}})
     return out
-def ld_for(name, m, body):
+def ld_for(name, m, body, lang="en"):
+    prefix = "" if lang == "en" else "/" + lang
+    home = SITE + (prefix or "/")
     path = '' if name == 'index.html' else name[:-5]
+    page_url = home if not path else SITE + prefix + '/' + path
     g = [ORG, SITE_LD] if name in ('index.html', 'about.html') else [{'@type': 'ProfessionalService', '@id': SITE + '/#org', 'name': 'Gotham Consult', 'url': SITE + '/'}]
-    g.append({'@type': 'WebPage', '@id': f'{SITE}/{path}#page', 'url': f'{SITE}/{path}', 'name': m['title'], 'description': m['desc'], 'isPartOf': {'@id': SITE + '/#site'}, 'about': {'@id': SITE + '/#org'}, 'inLanguage': 'en'})
+    g.append({'@type': 'WebPage', '@id': page_url + '#page', 'url': page_url, 'name': m['title'], 'description': m['desc'], 'isPartOf': {'@id': SITE + '/#site'}, 'about': {'@id': SITE + '/#org'}, 'inLanguage': lang})
     if name.startswith('services/'):
         g.append({'@type': 'BreadcrumbList', 'itemListElement': [
-          {'@type': 'ListItem', 'position': 1, 'name': 'Home', 'item': SITE + '/'},
-          {'@type': 'ListItem', 'position': 2, 'name': 'Services', 'item': SITE + '/services'},
-          {'@type': 'ListItem', 'position': 3, 'name': m.get('crumb', m['title']), 'item': f'{SITE}/{path}'}]})
+          {'@type': 'ListItem', 'position': 1, 'name': IF.L[lang]['home'], 'item': home},
+          {'@type': 'ListItem', 'position': 2, 'name': {'en': 'Services', 'fr': 'Services', 'es': 'Servicios'}[lang], 'item': SITE + prefix + '/services'},
+          {'@type': 'ListItem', 'position': 3, 'name': m.get('crumb', m['title']), 'item': page_url}]})
         g.append({'@type': 'Service', 'name': m.get('crumb', m['title']), 'serviceType': m.get('crumb', m['title']), 'description': m['desc'], 'provider': {'@id': SITE + '/#org'},
-          'areaServed': {'@type': 'Country', 'name': 'Ghana'}, 'url': f'{SITE}/{path}'})
+          'areaServed': {'@type': 'Country', 'name': 'Ghana'}, 'url': page_url})
     if name == 'teaser.html':
         g.append({'@type': 'BusinessEvent', 'name': 'SMEs at the Centre: inclusive partnerships under the GIPA Act', 'startDate': '2026-10-24',
           'eventAttendanceMode': 'https://schema.org/OfflineEventAttendanceMode', 'eventStatus': 'https://schema.org/EventScheduled',
@@ -157,7 +161,7 @@ def ld_for(name, m, body):
           'offers': {'@type': 'Offer', 'price': '0', 'priceCurrency': 'GHS', 'availability': 'https://schema.org/InStock', 'url': SITE + '/teaser'},
           'url': SITE + '/teaser', 'image': SITE + '/img/og/boot2.jpg', 'description': m['desc']})
     f = faqs_in(body)
-    if f: g.append({'@type': 'FAQPage', '@id': f'{SITE}/{path}#faq', 'mainEntity': f})
+    if f: g.append({'@type': 'FAQPage', '@id': page_url + '#faq', 'mainEntity': f})
     return '<script type="application/ld+json">' + json.dumps({'@context': 'https://schema.org', '@graph': g}, ensure_ascii=False).replace('</', '<\\/') + '</script>'
 
 HEAD = '''<!doctype html>
@@ -277,50 +281,65 @@ def main():
     open(os.path.join(DIST, 'tools.html'), 'w', encoding='utf-8').write(h)
     print('  tools.html (from classic)')
 
-    # French pages: /fr/... made from the English pages and the same dictionary the language switch uses
-    d = IF.load_dict('fr')
-    fr_pages = ['index.html', 'services.html', *[f'services/{p}.html' for p in PRACTICES], 'invest.html', 'mining.html', 'forums.html', 'about.html']
+    # Crawlable EN/FR/ES twins share dictionaries, article data and reciprocal alternates.
+    locale_pages = ['index.html', 'services.html', *[f'services/{p}.html' for p in PRACTICES], 'invest.html', 'mining.html', 'forums.html', 'about.html']
+    twins = locale_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS]
     def path_of(n): return '' if n == 'index.html' else n[:-5]
-    fr_paths = {('/' + path_of(n)).rstrip('/') or '/' for n in fr_pages} | {'/insights'} | {f'/insights/{a["slug"]}' for a in ARTS}
-    def set_meta(doc, n, title, desc):
-        pth = path_of(n); fr_url = f'{SITE}/fr' + (f'/{pth}' if pth else '')
-        doc = doc.replace('<html lang="en">', '<html lang="fr" data-page-lang="fr">', 1)
-        doc = re.sub(r'<title>.*?</title>', lambda m: f'<title>{title}</title>', doc, count=1, flags=re.S)
+    paths = {('/' + path_of(n)).rstrip('/') or '/' for n in twins}
+    def language_links(doc, n, lang):
+        # Real anchors work without JavaScript and keep each page's twin discoverable.
+        def link(m):
+            code = m.group(1)
+            url = '/' + path_of(n) if code == 'en' else '/' + code + ('/' + path_of(n) if path_of(n) else '')
+            return f'<a data-lang="{code}" href="{url}" aria-current="{str(code == lang).lower()}">{m.group(2)}</a>'
+        doc = re.sub(r'<button type="button" data-lang="(en|fr|es)">(.*?)</button>', link, doc)
+        return re.sub(r'(<span data-lang-code>).*?(</span>)', lambda m: m[1] + lang.upper() + m[2], doc)
+    def set_meta(doc, n, title, desc, lang):
+        pth = path_of(n); url = f'{SITE}/{lang}' + (f'/{pth}' if pth else '')
+        doc = doc.replace('<html lang="en">', f'<html lang="{lang}" data-page-lang="{lang}">', 1)
+        doc = re.sub(r'<title>.*?</title>', lambda m: f'<title>{htmlmod.escape(title)}</title>', doc, count=1, flags=re.S)
         for k in ('name="description"', 'property="og:description"', 'name="twitter:description"'):
-            doc = re.sub(r'(<meta ' + re.escape(k) + r' content=")[^"]*"', lambda m: m.group(1) + desc.replace('"', '&quot;') + '"', doc)
-        for k in ('property="og:title"', 'name="twitter:title"'):
-            doc = re.sub(r'(<meta ' + re.escape(k) + r' content=")[^"]*"', lambda m: m.group(1) + title.replace('"', '&quot;') + '"', doc)
-        doc = re.sub(r'<link rel="canonical" href="[^"]*">', f'<link rel="canonical" href="{fr_url}">', doc, count=1)
-        doc = re.sub(r'(<meta property="og:url" content=")[^"]*"', lambda m: m.group(1) + fr_url + '"', doc)
-        doc = doc.replace('<meta property="og:locale" content="en_GB">', '<meta property="og:locale" content="fr_FR">')
-        doc = doc.replace('"inLanguage": "en"', '"inLanguage": "fr"')
-        return doc.replace('</head>', IF.alternates(SITE, pth) + '</head>', 1)
-    report = {}
-    for n in fr_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS]:
-        if n.startswith('insights'):
-            a = next((x for x in ARTS if f'insights/{x["slug"]}.html' == n), None)
-            body = IF.index_body(ARTS, 'fr') if a is None else IF.article_body(a, 'fr', [o for o in ARTS if o is not a][:3])
-            for part in ('top', 'bottom'):
-                body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
-            m = META[n]
-            extra = V2_EXTRA + ('\n' + IF.article_ld(a, 'fr', SITE) if a else '\n<script type="application/ld+json">' + json.dumps({'@context': 'https://schema.org', '@type': 'CollectionPage', 'url': SITE + '/fr/insights', 'name': IF.L['fr']['idx_title'], 'inLanguage': 'fr', 'publisher': {'@id': SITE + '/#org'}}, ensure_ascii=False) + '</script>')
-            doc = HEAD.format(site=SITE, path=path_of(n), ogsize='', **{**{k: v for k, v in m.items() if k != 'crumb'}, 'extra': extra}) + body + '\n</body>\n</html>'
-            title, desc = (IF.L['fr']['idx_title'], IF.L['fr']['idx_desc']) if a is None else (a['fr']['title'], a['fr']['description'])
-        else:
-            doc = open(os.path.join(DIST, n), encoding='utf-8').read()
-            title, desc = IF.FR_META[n]
-        if n == 'invest.html': doc = doc.replace(INVESTOR.render(), INVESTOR.render('fr'))
-        doc, miss = IF.translate_html(doc, d)
-        if not n.startswith('insights'): report[n] = miss
-        doc = IF.localise_links(set_meta(doc, n, title, desc), fr_paths)
-        out = os.path.join(DIST, 'fr', n); os.makedirs(os.path.dirname(out), exist_ok=True)
-        open(out, 'w', encoding='utf-8').write(doc)
-    for n in fr_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS]:   # English pages point to their French twin
-        fp = os.path.join(DIST, n); h = open(fp, encoding='utf-8').read()
-        if 'hreflang="fr"' not in h: open(fp, 'w', encoding='utf-8').write(h.replace('</head>', IF.alternates(SITE, path_of(n)) + '</head>', 1))
-    left = sorted({x for v in report.values() for x in v})
-    print(f'  fr/: {len(fr_pages) + 1 + len(ARTS)} French pages; {len(left)} phrases still in English')
-    open(os.path.join(HERE, '.fr-missing.txt'), 'w').write('\n'.join(left))
+            doc = re.sub(r'(<meta ' + re.escape(k) + r' content=")[^"]*"', lambda m: m.group(1) + htmlmod.escape(desc, quote=True) + '"', doc)
+        for k in ('property="og:title"', 'name="twitter:title"', 'property="og:image:alt"'):
+            doc = re.sub(r'(<meta ' + re.escape(k) + r' content=")[^"]*"', lambda m: m.group(1) + htmlmod.escape(title, quote=True) + '"', doc)
+        doc = re.sub(r'<link rel="canonical" href="[^"]*">', f'<link rel="canonical" href="{url}">', doc, count=1)
+        doc = re.sub(r'(<meta property="og:url" content=")[^"]*"', lambda m: m.group(1) + url + '"', doc)
+        doc = doc.replace('<meta property="og:locale" content="en_GB">', f'<meta property="og:locale" content="{IF.L[lang]["locale"]}">')
+        # Rebuild JSON-LD from the translated page: URLs, names, services and visible FAQs agree.
+        doc = re.sub(r'<script type="application/ld\+json">.*?</script>', '', doc, flags=re.S)
+        m = {**META[n], 'title': title, 'desc': desc}
+        if m.get('crumb'): m['crumb'] = IF.load_dict(lang).get(m['crumb'], m['crumb'])
+        a = next((x for x in ARTS if f'insights/{x["slug"]}.html' == n), None)
+        ld = IF.article_ld(a, lang, SITE) if a else ld_for(n, m, doc, lang)
+        return doc.replace('</head>', ld + '\n' + IF.alternates(SITE, pth) + '</head>', 1)
+    for lang, metadata in (('fr', IF.FR_META), ('es', ES_META)):
+        d = IF.load_dict(lang); report = {}
+        for n in twins:
+            if n.startswith('insights'):
+                a = next((x for x in ARTS if f'insights/{x["slug"]}.html' == n), None)
+                body = IF.index_body(ARTS, lang) if a is None else IF.article_body(a, lang, [o for o in ARTS if o is not a][:3])
+                for part in ('top', 'bottom'):
+                    body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
+                m = META[n]
+                doc = HEAD.format(site=SITE, path=path_of(n), ogsize='', **{**{k: v for k, v in m.items() if k != 'crumb'}, 'extra': V2_EXTRA}) + body + '\n</body>\n</html>'
+                title, desc = (IF.L[lang]['idx_title'], IF.L[lang]['idx_desc']) if a is None else (a[lang]['title'], a[lang]['description'])
+            else:
+                doc = open(os.path.join(DIST, n), encoding='utf-8').read()
+                title, desc = metadata[n]
+            if n == 'invest.html': doc = doc.replace(INVESTOR.render(), INVESTOR.render(lang))
+            doc, miss = IF.translate_html(doc, d)
+            if not n.startswith('insights'): report[n] = miss
+            doc = IF.localise_links(set_meta(doc, n, title, desc, lang), paths, lang)
+            doc = language_links(doc, n, lang)
+            out = os.path.join(DIST, lang, n); os.makedirs(os.path.dirname(out), exist_ok=True)
+            open(out, 'w', encoding='utf-8').write(doc)
+        left = sorted({x for v in report.values() for x in v})
+        print(f'  {lang}/: {len(twins)} pages; {len(left)} untranslated phrases (includes proper names)')
+        open(os.path.join(HERE, f'.{lang}-missing.txt'), 'w').write('\n'.join(left))
+    for n in twins:
+        fp = os.path.join(DIST, n); doc = open(fp, encoding='utf-8').read()
+        doc = language_links(doc.replace('</head>', IF.alternates(SITE, path_of(n)) + '</head>', 1), n, 'en')
+        open(fp, 'w', encoding='utf-8').write(doc)
 
     # the in-page language switch also covers the articles: their own French/Spanish text goes into the dist dictionaries
     # (the hand-edited public dictionaries win where both have a phrase)
@@ -378,7 +397,7 @@ def main():
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /i/\nSitemap: {SITE}/sitemap.xml\n')
     pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'invest/join', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'demo/receptionist', 'tools', 'sources', 'family', 'teaser', 'privacy', 'terms']
-    pages += ['fr', *[f'fr/{p}' for p in ['services', *[f'services/{p}' for p in PRACTICES], 'invest', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS]]]]
+    pages += [lang + ('/' + path_of(n) if path_of(n) else '') for lang in ('fr', 'es') for n in twins]
     today = date.today().isoformat()
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc><lastmod>{today}</lastmod></url>\n' for p in pages)
     open(os.path.join(DIST, 'sitemap.xml'), 'w').write(

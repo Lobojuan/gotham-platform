@@ -1,5 +1,14 @@
 # QA sweep, 28 September 2026
 
+## SEO verification, 7 October 2026 — Codex
+
+- Full API regression: **33 suites passed, zero failed**, including the new SEO suite (850 assertions), exact signed-host redirects, chat/voice, financial sources, fact monitoring and payment reports. Run with bundled Node 22/Python and disposable `gotham_seo_test` on loopback PostgreSQL.
+- Focused locale browser checks: **16 passed**. French/Spanish work without JavaScript; real language anchors are discoverable; direct Spanish URL overrides saved English; switching EN/FR/ES preserves the query and research anchor; localized menu highlighting and canonical URLs agree.
+- Build: 24 English/French/Spanish page families, 48 localized static pages; Spanish article index, article/breadcrumb/FAQ schema and internal links use `/es`. Canonical/OG URLs, WebPage/service/FAQ/breadcrumb metadata, reciprocity and sitemap membership are checked automatically.
+- Test harness corrections: Python image/spreadsheet dependencies supplied by the bundled runtime; API chatbot mock binds an available port; facts suite uses local source-link fixtures so it cannot time out on unrelated real research pages; E2E cleanup kills only its own processes.
+- `node --check`, Python compilation, shell syntax and `git diff --check` passed. The Docker-based `scripts/dev.sh` could not start because Colima's Docker daemon is stopped; actual Node/browser flows were exercised by the E2E harness with native disposable PostgreSQL.
+- Full E2E: **8,557 checks passed, zero failed** over 86 routes on six screen sizes (525 seconds), plus passing Fable widget, investor portal, 591 presentation checks and 16 locale browser checks. Public-domain smoke checks follow the guarded deploy. Rankings, Google indexing coverage and field Core Web Vitals are not established by these technical checks.
+
 ## Current checkout verification, 28 September 2026
 
 The committed release is based on `origin/main` `41ba281` plus the release commit recorded in Git. After rebasing,

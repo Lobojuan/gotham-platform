@@ -73,7 +73,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | W-7 | Event dates and times show in Accra time for visitors abroad. | manual |
 | W-8 | The home page "Next forum" band follows the next event in the back office. | manual |
 | W-9 | Share links (WhatsApp, LinkedIn, copy) contain the full address. | manual |
-| W-10 | Public landing pages have complete English, French and Spanish copy with an accessible language toggle that preserves the current page/section. | landing toggle and static-copy translations implemented; interactive results and CRM event text plus browser QA remain |
+| W-10 | Public landing pages have English, French and Spanish copy with an accessible language toggle preserving page, query and section. Core pages and insight articles have crawlable locale URLs, localized metadata/schema and reciprocal EN/FR/ES/x-default links. | api/31_seo (850 static checks), ui/seo_locales_ui, e2e/site_e2e (six screens); legacy forms and event records retain browser translation |
 | W-11 | Ask Gotham keeps `/api/ask` history and fallback behavior, follows the selected English/French/Spanish page language, and gives the MoMo destination plus staff verification instructions for payment questions. | api/13, local fallback in `pages/index.html`; browser QA pending |
 | W-12 | Chat replies play with Kokoro Fable in English, French and Spanish after a visitor asks; voice is enabled by default until muted; quick payment answers speak in the chat without a WhatsApp handoff; mute, stop and replay work; voice failures preserve the text answer. Only short-lived, visitor-bound answer tickets can request speech; background jobs avoid the WordPress request timeout while text stays available. | api/28, ui/ask_voice_ui; real Kokoro audio verified in all three languages |
 | W-13 | Investor research links primary sources, distinguishes reporting periods from check times, retains verified economic data during outages and shows USD/EUR/GBP/AED and other market rates with publication dates. | api/29, ui/investor_portal_ui |
@@ -115,3 +115,11 @@ yet provide evidence for all of them; see the current QA findings before using t
   Stop sharing it; a one-off Netlify top-up would allow a redirect.
 - Emails wait in the outbox until a Resend key is added.
 - Layout tests run in Chromium with phone sizes and phone user agents; a final check on a real iPhone (Safari) is still worth doing.
+
+## SEO release, 7 October 2026
+
+| ID | Requirement | Evidence |
+|---|---|---|
+| SEO-1 | All 24 page families have English, French and Spanish static twins, matching canonical/sharing/structured-data URLs, translated titles/descriptions/services/FAQs, reciprocal hreflang and sitemap inclusion. | api/31_seo.py |
+| SEO-2 | Language anchors are crawlable without JS; switching preserves query/section and explicit locale URLs select the correct language; phone/desktop navigation works. | ui/seo_locales_ui.js, e2e/site_e2e.js |
+| SEO-3 | The signed WordPress hostname survives Caddy so www returns a 301 to the apex with the same path/query. Unsigned/unrelated host headers cannot trigger it. Shared proxy changes are scoped, validated, backed up and reload without restarting other sites. | api/12_bridge_redirect.py, api/31_seo.py; scripts/bridge-host.py invoked by guarded deploy-crm.sh; public smoke checks after deploy |

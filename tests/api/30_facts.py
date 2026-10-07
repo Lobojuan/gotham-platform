@@ -82,7 +82,15 @@ json.dump({'facts': [
    'sources': [{'label': 'VAT page', 'url': 'http://127.0.0.1:4296/vat', 'official': True, 'expect': ['16%']}]},
   {'id': 'old', 'topic': 'Prices', 'kind': 'price', 'claim': 'Our price', 'checked': '2025-01-01', 'review_days': 90, 'sources': [], 'owner': 'Us'}]}, open(tf, 'w'))
 os.environ['FACTS_FILE'] = tf
-exec(open(os.path.join(os.path.dirname(__file__), '07_family_desk.py')).read().split("ok=lambda m: print('  ok',m)")[0])
+# Keep this fixture check offline: the real dist/source-links.json now contains
+# dozens of public research links, whose network delays are not a unit test.
+import tempfile, shutil, atexit
+site_fixture = tempfile.TemporaryDirectory(prefix='gotham-facts-site-')
+atexit.register(site_fixture.cleanup)
+json.dump([], open(os.path.join(site_fixture.name, 'source-links.json'), 'w'))
+shutil.copyfile(os.path.join(ROOT, 'apps/site/dist/sources.html'), os.path.join(site_fixture.name, 'sources.html'))
+bootstrap = open(os.path.join(os.path.dirname(__file__), '07_family_desk.py')).read().split("ok=lambda m: print('  ok',m)")[0]
+exec(bootstrap.replace("ROOT+'/apps/site/dist'", repr(site_fixture.name)))
 ok = lambda m: print('  ok', m)
 import subprocess as _sp
 st, d, h = call('/api/facts', cookie=None); assert st == 401

@@ -1609,8 +1609,8 @@ const server = http.createServer(async (req, res) => {
   if ((req.method === 'GET' || req.method === 'HEAD') && OLD[oldKey]) { res.writeHead(301, { location: OLD[oldKey] }); return res.end(); }
   if (req.method === 'GET' || req.method === 'HEAD') {
     /* one address per page for Google: www → gothamconsult.com (the bridge tells us the host), /about/ and /about.html → /about */
-    const fwd = String(req.headers['x-forwarded-host'] || '').toLowerCase();
-    if (viaBridge && fwd.startsWith('www.') && !p.startsWith('/api/')) { res.writeHead(301, { location: PUBLIC_URL + req.url, 'cache-control': 'public, max-age=3600' }); return res.end(); }
+    const fwd = String(req.headers['x-gc-forwarded-host'] || req.headers['x-forwarded-host'] || '').toLowerCase().split(':')[0];
+    if (viaBridge && fwd === 'www.' + CANON_HOST && !p.startsWith('/api/')) { res.writeHead(301, { location: PUBLIC_URL + req.url, 'cache-control': 'public, max-age=3600' }); return res.end(); }
     if (p !== '/' && !/^\/(api|admin|media|assets|img|js|i|cal)(\/|$)/.test(p) && (/\/$/.test(p) || /\.html$/.test(p))) {
       const to = p.replace(/\/+$/, '').replace(/(\/index)?\.html$/, '') || '/';
       if (to !== p) { res.writeHead(301, { location: to + url.search, 'cache-control': 'public, max-age=3600' }); return res.end(); }

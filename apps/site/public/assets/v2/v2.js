@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=22';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=23';
     sc.onload = () => { dict = window.GC_I18N || {}; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -94,18 +94,17 @@
     const old = $('#gc-language-switch select');   // older pages: switch their own translation too
     if (old && old.value !== l) { old.value = l; old.dispatchEvent(new Event('change')); }
   };
-  /* real French pages live at /fr/...: the switch moves between the twins; Spanish stays an in-page translation */
+  /* Explicit locale URLs win; language links preserve the current query and section. */
   const pageLang = document.documentElement.dataset.pageLang || 'en';
   const twin = l => { const t = $(`link[rel="alternate"][hreflang="${l}"]`); return t && new URL(t.href).pathname + location.search + location.hash; };   // same address the visitor is on
   const choose = l => {
     try { localStorage.setItem('gc-language', l); } catch {}
-    if (l === 'fr' && pageLang !== 'fr' && twin('fr')) return location.assign(twin('fr'));
-    if (pageLang === 'fr' && l !== 'fr' && twin('en')) return location.assign(twin('en'));
+    if (l !== pageLang && twin(l)) return location.assign(twin(l));
     setLang(l);
   };
-  $$('[data-lang]').forEach(b => b.addEventListener('click', () => { choose(b.dataset.lang); closeLang(); }));
-  if (pageLang === 'fr') current = 'fr';
-  else if (current === 'fr' && twin('fr')) { location.replace(twin('fr')); return; }   // a French visitor landing on an English page goes to its French twin
+  $$('[data-lang]').forEach(b => b.addEventListener('click', e => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); choose(b.dataset.lang); closeLang(); }));
+  if (pageLang !== 'en') current = pageLang;
+  else if (current !== 'en' && twin(current)) { location.replace(twin(current)); return; }   // carry a saved preference to the corresponding crawlable twin
   markLang(current); if (current !== 'en') setLang(current);
 
   document.addEventListener('click', () => { setMega(false); closeLang(); });
@@ -234,7 +233,7 @@
   }
 
   /* ---- current page in the menu ---- */
-  const here = location.pathname.replace(/\/$/, '');
+  const here = location.pathname.replace(/^\/(fr|es)(?=\/|$)/, '').replace(/\/$/, '');
   const navKey = /^\/(services|mining)/.test(here) ? 'services' : here.startsWith('/invest') ? 'invest'
     : here.startsWith('/forums') ? 'forums' : here.startsWith('/about') ? (location.hash === '#contact' ? 'contact' : 'about') : '';
   $$('[data-nav]').forEach(a => { if (a.dataset.nav === navKey) { a.tagName === 'A' ? a.setAttribute('aria-current', 'page') : a.classList.add('cur'); } });

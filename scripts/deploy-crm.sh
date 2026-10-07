@@ -8,6 +8,9 @@ HOST="${HOST:-nuru@84.12.73.59}"
 REMOTE="${REMOTE:-/srv/gotham}"
 . "$ROOT/scripts/git-guard.sh"; git_guard "$ROOT"
 
+echo "→ preserving the WordPress visitor hostname for the www redirect"
+ssh "$HOST" python3 - < "$ROOT/scripts/bridge-host.py"
+
 echo "→ backing up the current release"
 ssh "$HOST" "rm -rf ~/backups/gotham.prev && mkdir -p ~/backups && cp -a $REMOTE ~/backups/gotham.prev"
 

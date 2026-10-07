@@ -8,3 +8,4 @@ apps/crm/.media/
 __pycache__/
 .backups/
 apps/site/.fr-missing.txt
+apps/site/.es-missing.txt

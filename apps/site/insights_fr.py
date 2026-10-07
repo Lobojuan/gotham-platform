@@ -53,7 +53,7 @@ def view(a, lang):
 
 def article_body(a, lang, others):
     t, v = L[lang], view(a, lang)
-    pre = '/fr' if lang == 'fr' else ''
+    pre = '/' + lang if lang != 'en' else ''
     faq = ''.join(f'<details class="faq"><summary>{H.escape(q["q"])}<svg class="icon"><use href="#i-chev"/></svg></summary><p>{H.escape(q["a"])}</p></details>' for q in v['faq'])
     src = ''.join(f'<li><a href="{H.escape(s["url"])}" target="_blank" rel="noopener nofollow">{H.escape(s["title"])}</a></li>' for s in a['sources'])
     rel = ''.join(f'<a class="ins-rel" href="{pre}/insights/{o["slug"]}">{H.escape(view(o, lang)["h1"])}<span class="arrow">→</span></a>' for o in others)
@@ -90,7 +90,7 @@ def article_body(a, lang, others):
 '''
 
 def index_body(arts, lang):
-    t, pre = L[lang], ('/fr' if lang == 'fr' else '')
+    t, pre = L[lang], ('/' + lang if lang != 'en' else '')
     cards = ''.join(f'''<a class="ins-card" href="{pre}/insights/{a["slug"]}"><span class="ins-meta">{day(a["date"], lang)} · {a["read_minutes"]} {t["read"]}</span>
       <b>{H.escape(view(a, lang)["h1"])}</b><span>{H.escape(view(a, lang)["description"])}</span><span class="arrow">→</span></a>''' for a in arts)
     return f'''<!--#top-->
@@ -109,7 +109,7 @@ def index_body(arts, lang):
 '''
 
 def article_ld(a, lang, site):
-    v, pre = view(a, lang), ('/fr' if lang == 'fr' else '')
+    v, pre = view(a, lang), ('/' + lang if lang != 'en' else '')
     url = f'{site}{pre}/insights/{a["slug"]}'
     g = [{'@type': 'Article', '@id': url + '#article', 'headline': v['title'][:110], 'description': v['description'], 'datePublished': a['date'], 'dateModified': a['date'],
           'inLanguage': lang, 'mainEntityOfPage': url, 'image': site + '/img/og/real-bog.jpg',
@@ -123,7 +123,7 @@ def article_ld(a, lang, site):
 FR_META = {
  'index.html': ('Conseil aux entreprises au Ghana | Gotham Consult, Accra', 'Cabinet de conseil à Accra pour investisseurs et entreprises : immatriculation, GIPA, entrée sur le marché, conformité et forums d’affaires au Ghana.'),
  'services.html': ('Services de conseil au Ghana, prix fixes | Gotham Consult', 'Services de conseil au Ghana à prix fixes en cedis : préparation à l’investissement et GIPA, entrée sur le marché, mines, conformité, IA et éducation.'),
- 'invest.html': ('Investir au Ghana : guide de la loi GIPA 2026 | Gotham Consult', 'Investir au Ghana avec un bureau local : chiffres clés, secteurs porteurs, immatriculation et ce que change la loi GIPA de 2026 pour les investisseurs.'),
+ 'invest.html': ('Portail investisseurs Ghana : marchés et analyses | Gotham Consult', 'Recherche pour investir au Ghana : publications économiques, taux de change, historiques boursiers, perspectives sectorielles et entrée sur le marché.'),
  'mining.html': ('Mines au Ghana : due diligence et permis | Gotham Consult', 'Sélection de concessions guidée par la géologie, due diligence et permis miniers au Ghana, avec des données de terrain vérifiables par les banques.'),
  'forums.html': ('Forums d’affaires et événements à Accra | Gotham Consult', 'Forums d’affaires, tables rondes investisseurs et séminaires à Accra, et le Ghana Business Brief gratuit. Inscription en une minute, paiement mobile.'),
  'about.html': ('À propos de Gotham Consult | Cabinet de conseil à Accra', 'Cabinet de conseil basé à Accra qui relie entreprises, investisseurs et institutions publiques au Ghana. Horaires, WhatsApp et coordonnées.'),
@@ -183,18 +183,18 @@ def translate_html(doc, d):
             out.append(lead + H.escape(t, quote=False) + trail)
     return head + sep + ''.join(out), miss
 
-def localise_links(doc, fr_paths):
+def localise_links(doc, paths, lang='fr'):
     def fix(m):
         url = m.group(2); p, _, rest = url.partition('#'); p, q, query = p.partition('?')
         key = p.rstrip('/') or '/'
-        if key in fr_paths: return f'{m.group(1)}"{"/fr" if key == "/" else "/fr" + key}{("?" + query) if q else ""}{("#" + rest) if rest else ""}"'
+        if key in paths: return f'{m.group(1)}"/{lang}{"" if key == "/" else key}{("?" + query) if q else ""}{("#" + rest) if rest else ""}"'
         return m.group(0)
     return re.sub(r'(href=)"(/[^"]*)"', fix, doc)
 
 def alternates(site, path):
     en = f'{site}/{path}'.rstrip('/') if path else f'{site}/'
-    fr = f'{site}/fr' + (f'/{path}' if path else '')
-    return (f'<link rel="alternate" hreflang="en" href="{en}">\n<link rel="alternate" hreflang="fr" href="{fr}">\n'
+    return (f'<link rel="alternate" hreflang="en" href="{en}">\n' +
+            ''.join(f'<link rel="alternate" hreflang="{lang}" href="{site}/{lang}{"/" + path if path else ""}">\n' for lang in ('fr', 'es')) +
             f'<link rel="alternate" hreflang="x-default" href="{en}">\n')
 
 def text_nodes(doc):

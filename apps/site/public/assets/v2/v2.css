@@ -108,10 +108,10 @@ a:hover > .arrow, .btn:hover .arrow { transform: translateX(3px); }
 .langp { position: absolute; right: var(--pad); top: calc(100% + 8px); background: #fff; color: var(--ink); border-radius: 16px; padding: 6px;
   box-shadow: 0 20px 60px -10px rgba(0,0,0,.35); min-width: 180px; animation: pop .15s ease-out; }
 .langp[hidden] { display: none; }
-.langp button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 0 14px;
+.langp :is(button,a) { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 0 14px;
   border: 0; border-radius: 10px; background: none; cursor: pointer; font-size: 15px; text-align: left; }
-.langp button:hover { background: var(--sunk); }
-.langp button[aria-current="true"]::after { content: "✓"; color: var(--teal); font-weight: 700; }
+.langp :is(button,a):hover { background: var(--sunk); }
+.langp :is(button,a)[aria-current="true"]::after { content: "✓"; color: var(--teal); font-weight: 700; }
 
 /* mobile menu sheet */
 dialog.sheet { margin: 0; padding: 0; border: 0; width: 100%; max-width: none; height: 100%; max-height: none; height: 100dvh;
@@ -123,8 +123,8 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
   padding: 0 max(var(--pad), env(safe-area-inset-right)) 0 max(var(--pad), env(safe-area-inset-left)); border-bottom: 1px solid rgba(255,255,255,.08); }
 .sheet-body { height: calc(100% - 68px - env(safe-area-inset-top)); overflow: hidden; }
 .sheet-langs { display: flex; gap: 8px; margin: 24px 0 18px; }
-.sheet-langs button { flex: 1; min-height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); background: none; color: #fff; cursor: pointer; font-weight: 600; }
-.sheet-langs button[aria-current="true"] { background: #fff; color: var(--ink); }
+.sheet-langs :is(button,a) { flex: 1; min-height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,.2); background: none; color: #fff; cursor: pointer; font-weight: 600; }
+.sheet-langs :is(button,a)[aria-current="true"] { background: #fff; color: var(--ink); }
 .sheet-cta { display: grid; gap: 10px; }
 
 @media (min-width: 1080px) {
@@ -1041,3 +1041,6 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .fc-cta h2 { margin: 0 0 6px; font-size: clamp(22px, 2.6vw, 30px); }
 .sec.fc-sec { padding: 8px 0 36px; }
 .box.fc .fc-kind { color: #A9761F; }
+
+.langp a { text-decoration:none; color:inherit; }
+.sheet-langs a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 14px; text-decoration:none; color:inherit; }

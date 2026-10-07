@@ -47,6 +47,11 @@ try:
     st,h=get('/invest',**K,**{'X-Forwarded-Host':'www.gothamconsult.com'}); assert st==301 and h['location']=='https://gothamconsult.com/invest',(st,h.get('location'))
     st,_=get('/api/health',**K,**{'X-Forwarded-Host':'www.gothamconsult.com'}); assert st==200,st
     ok('www.gothamconsult.com (through the bridge) moves to gothamconsult.com; the API is left alone')
+    st,h=get('/fr/invest?source=seo',**K,**{'X-GC-Forwarded-Host':'www.gothamconsult.com','X-Forwarded-Host':'origin.example'})
+    assert st==301 and h['location']=='https://gothamconsult.com/fr/invest?source=seo'
+    st,_=get('/',**K,**{'X-GC-Forwarded-Host':'www.attacker.example'}); assert st==200
+    st,_=get('/',**{'X-GC-Forwarded-Host':'www.gothamconsult.com','Sec-Fetch-Dest':'iframe'}); assert st==200
+    ok('Caddy-preserved host keeps locale/query; unrelated and unsigned hosts cannot trigger it')
     for a,b in (('/about/','/about'),('/about.html','/about'),('/services/ai/','/services/ai'),('/index.html','/'),('/register.html?e=F1','/register?e=F1')):
         st,h=get(a,**K); assert st==301 and h['location']==b,(a,st,h.get('location'))
     st,h=get('/no-such-page',**K); assert st==404 and 'text/html' in h['content-type'],(st,dict(h))
