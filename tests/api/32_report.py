@@ -1,0 +1,101 @@
+"""Ghana Investment Report: every figure sourced, the weekly watch flags changed sources and newsrooms once,
+nothing is published without a person, company news and partner enquiries reach the back office."""
+import os, sys, json, threading, http.server, subprocess
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+ok = lambda m: print('  ok', m)
+
+# 1. the watch on its own
+code = r'''
+import assert from 'node:assert/strict';
+import {makeReportWatch,loadReport,reportFacts} from './apps/crm/report-watch.js';
+const real=loadReport();assert.ok(real.chapters.length>=5);const rf=reportFacts(real);assert.ok(rf.length>=50);
+assert.ok(rf.every(f=>f.sources[0].url.startsWith('https://')&&f.sources[0].expect.length),'every figure has a source and a phrase to check');
+const R={updated:'2026-10-07',review_days:120,chapters:[{id:'macro',title:'Economy',figures:[
+  {id:'macro-gdp',label:'GDP growth',value:'6.0',unit:'%',period:'Q2 2026',source_label:'GSS',source_url:'https://gss.test/gdp',official:true,quote:'grew 6.0%'}],
+  watch:[{label:'BoG newsroom',url:'https://bog.test/news',why:''}]}]};
+const long=t=>Buffer.from('<html><body><p>'+t+' '+'Official text. '.repeat(30)+'</p></body></html>');
+let pages={'https://gss.test/gdp':long('The economy grew 6.0% in Q2'),'https://bog.test/news':long('Policy rate held at 14%')};
+const get=async u=>({status:200,type:'text/html',buf:pages[u]});
+let clock=Date.parse('2026-10-07T08:00:00Z'),st=null,lg=null,alerts=[];
+const W=makeReportWatch({report:R,get,now:()=>clock,save:async s=>{st=structuredClone(s)},saveLog:async l=>{lg=structuredClone(l)},alert:async(s,l)=>{alerts.push([s,l])}});
+let r=await W.run();assert.equal(r.facts[0].status,'ok');assert.equal(r.updates.length,0,'first look is only a baseline');assert.equal(alerts.length,0);
+r=await W.run();assert.equal(r.updates.length,0,'not again within the week');
+clock+=8*864e5;pages['https://bog.test/news']=long('Policy rate cut to 13.5%');pages['https://gss.test/gdp']=long('The economy grew 5.1% in Q3');r=await W.run();
+assert.equal(r.facts[0].status,'review');assert.match(r.facts[0].problems[0].text,/grew 6.0%/);
+assert.equal(r.pending,1);assert.equal(r.updates[0].kind,'source');assert.match(alerts.at(-1)[0],/1 source to read/);
+console.log('  ok a week later: a figure whose source changed is flagged, a changed newsroom becomes one pending update with an alert');
+clock+=8*864e5;r=await W.run();assert.equal(r.pending,1,'an unchanged newsroom is not reported again');
+let pub=await W.publicReport();assert.equal(pub.updates.length,0,'nothing is published by itself');assert.equal(pub.figures[0].status,'review');
+const it=r.updates[0];assert.equal(await W.decide('nope','publish','admin',{title:'x'}),null);assert.equal(await W.decide(it.id,'approve','admin'),null,'only publish or dismiss');
+await W.decide(it.id,'publish','admin',{title:'Bank of Ghana cuts the policy rate to 13.5%',text:'First cut this year.'});
+await W.submit({kind:'news',chapter:'macro',title:'News from Acme',text:'We opened a plant https://acme.test/x',url:'https://acme.test/x'});
+pub=await W.publicReport();assert.equal(pub.updates.length,1);assert.equal(pub.updates[0].title,'Bank of Ghana cuts the policy rate to 13.5%');
+await W.review('macro-gdp','admin','checked');pub=await W.publicReport();assert.equal(pub.figures[0].status,'ok');
+const again=makeReportWatch({report:R,get,now:()=>clock,load:async()=>st,loadLog:async()=>lg});assert.equal((await again.publicReport()).updates.length,1);
+assert.ok(!JSON.stringify(pub).includes('problems'));
+console.log('  ok a person publishes or dismisses; company news waits; "Still correct" clears a figure; state persists');
+'''
+subprocess.run(['node', '--input-type=module', '-e', code], cwd=ROOT, check=True)
+
+# 2. the page
+sys.path.insert(0, os.path.join(ROOT, 'apps', 'site'))
+import report_page
+assert not report_page.check(), report_page.check()
+html = report_page.render(); rep = report_page.load()
+ids = [f['id'] for c in rep['chapters'] for f in c['figures']]
+assert all(f'data-fig="{i}"' in html for i in ids) and '/api/report/public' in html and '/api/report/enquiry' in html and '/api/ghana-data' in html
+assert html.count('class="sec rp-ch"') == len(rep['chapters']) and 'EUR 750' in html and 'Partner' in html
+ok(f'the report page shows {len(ids)} sourced figures in {len(rep["chapters"])} chapters, live numbers, the change log and the partner form')
+
+# 3. the server
+class H(http.server.BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
+    def do_GET(self):
+        body = ('<html><body><p>The economy grew 6.0% in Q2. ' + 'Official text. ' * 30 + '</p></body></html>').encode()
+        self.send_response(200); self.send_header('content-type', 'text/html'); self.end_headers(); self.wfile.write(body)
+src = http.server.ThreadingHTTPServer(('127.0.0.1', 4297), H); threading.Thread(target=src.serve_forever, daemon=True).start()
+tf = '/tmp/report-test.json'
+json.dump({'updated': '2026-10-07', 'review_days': 120, 'chapters': [{'id': 'macro', 'title': 'Economy', 'figures': [
+    {'id': 'macro-gdp', 'label': 'GDP growth', 'value': '6.0', 'unit': '%', 'period': 'Q2 2026', 'source_label': 'GSS', 'source_url': 'http://127.0.0.1:4297/gdp', 'official': True, 'quote': 'grew 6.0%'},
+    {'id': 'macro-cpi', 'label': 'Inflation', 'value': '5.0', 'unit': '%', 'period': 'Aug 2026', 'source_label': 'GSS', 'source_url': 'http://127.0.0.1:4297/cpi', 'official': True, 'quote': 'inflation 9.9%'}],
+    'watch': [{'label': 'Newsroom', 'url': 'http://127.0.0.1:4297/news', 'why': ''}]}]}, open(tf, 'w'))
+os.environ['REPORT_FILE'] = tf
+exec(open(os.path.join(os.path.dirname(__file__), '07_family_desk.py')).read().split("ok=lambda m: print('  ok',m)")[0])
+ok = lambda m: print('  ok', m)
+import subprocess as _sp
+assert call('/api/report', cookie=None)[0] == 401 and call('/api/report/check', {}, cookie=None)[0] == 401 and call('/api/report/decide', {'action': 'publish', 'title': 'x'})[0] == 401
+_sp.run(['psql', DB, '-qc', 'update users set must_change=false'], check=True)
+st, d, h = call('/api/login', {'email': 'admin', 'password': 'ownerpass123'}); ck = h['set-cookie'].split(';')[0]
+st, r, _ = call('/api/report/check', {'wait': True}, cookie=ck); assert st == 200, (st, r)
+by = {f['id']: f['status'] for f in r['facts']}
+assert by == {'macro-gdp': 'ok', 'macro-cpi': 'review'}, by
+ok('weekly check over the real HTTP path: a figure whose source no longer says it is flagged; admins only')
+st, p, _ = call('/api/report/public'); assert st == 200 and p['updates'] == [] and {f['id']: f['status'] for f in p['figures']} == by
+st, b, _ = call('/api/report/enquiry', {'kind': 'partner', 'package': 'sector', 'chapter': 'mining', 'full_name': 'Ama Mensah', 'company': 'Gold Co', 'email': 'ama@goldco.test', 'consent': True})
+assert st == 200, b
+row = _sp.run(['psql', DB, '-tAc', "select tags||'|'||source from contacts where email='ama@goldco.test'"], capture_output=True, text=True).stdout.strip()
+assert row == 'report-partner|Website: Ghana Investment Report', row
+deal = _sp.run(['psql', DB, '-tAc', "select kind from deals where title like 'Report partner%'"], capture_output=True, text=True).stdout.strip()
+assert deal == 'sponsorship', deal
+mail = _sp.run(['psql', DB, '-tAc', "select count(*) from outbox where to_email='uffe.carlson@gmail.com' and subject like 'Report: Report partner from Ama%'"], capture_output=True, text=True).stdout.strip()
+assert mail == '1', mail
+assert call('/api/report/enquiry', {'kind': 'partner', 'full_name': 'X', 'email': 'bad', 'consent': True})[0] == 400
+assert call('/api/report/enquiry', {'kind': 'news', 'full_name': 'Kofi', 'email': 'kofi@x.test', 'consent': True})[0] == 400, 'news needs a message'
+st, b, _ = call('/api/report/enquiry', {'kind': 'news', 'chapter': 'energy', 'full_name': 'Kofi', 'company': 'Sun Ltd', 'email': 'kofi@sun.test', 'consent': True, 'message': 'We commissioned 50 MW https://sun.test/pr'})
+assert st == 200
+st, r, _ = call('/api/report', cookie=ck); pend = [u for u in r['updates'] if u['status'] == 'pending']
+assert len(pend) == 1 and pend[0]['kind'] == 'news' and pend[0]['url'] == 'https://sun.test/pr', pend
+ok('a partner enquiry becomes a tagged contact, a sponsorship deal and an email to Uffe; company news waits for review')
+assert call('/api/report/public')[1]['updates'] == []
+st, r, _ = call('/api/report/decide', {'id': pend[0]['id'], 'action': 'publish', 'title': 'Sun Ltd commissions 50 MW of solar', 'text': 'Grid-connected, Bono Region.'}, cookie=ck); assert st == 200
+st, r, _ = call('/api/report/decide', {'action': 'publish', 'title': '2027 Budget date set', 'text': 'Presented on 5 November.', 'url': 'https://mofep.gov.gh/'}, cookie=ck); assert st == 200
+st, p, _ = call('/api/report/public'); titles = [u['title'] for u in p['updates']]
+assert set(titles) == {'Sun Ltd commissions 50 MW of solar', '2027 Budget date set'} and 'email' not in json.dumps(p), p
+log = _sp.run(['psql', DB, '-tAc', "select count(*) from jobs_log where job='report_update'"], capture_output=True, text=True).stdout.strip(); assert log == '2'
+ok('an admin publishes the news or adds an update; the public log shows it without any personal data')
+st, r, _ = call('/api/report/review', {'id': 'macro-cpi', 'note': 'GSS page re-read'}, cookie=ck); assert st == 200
+assert {f['id']: f['status'] for f in r['facts']}['macro-cpi'] == 'ok' and call('/api/report/review', {'id': 'nope'}, cookie=ck)[0] == 404
+ok('"Still correct" is recorded')
+st, b, _ = call('/ghana-investment-report', raw=True)
+if st == 200: assert b'Ghana Investment Report' in b; ok('/ghana-investment-report is served')
+print('PASSED')

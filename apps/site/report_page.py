@@ -1,0 +1,344 @@
+"""Ghana Investment Report (apps/crm/report.json) on the website: /ghana-investment-report.
+
+render(): the public report: economy snapshot (kept current from /api/ghana-data), charts drawn as inline SVG,
+          five sector chapters with every figure's source, dates to watch, partner packages and the enquiry form.
+          The weekly watch on the server (apps/crm/report-watch.js) re-opens every source; its status and the
+          published change log are loaded into the page from /api/report/public.
+check():  every figure has a source link, a period and a phrase to look for; the charts agree with the figures.
+"""
+import os, json, html
+from datetime import date
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+FILE = os.path.join(HERE, '..', 'crm', 'report.json')
+esc = lambda s: html.escape(str(s), quote=True)
+MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+IMG = {'macro': ('/img/real-bog.webp', 'The Bank of Ghana building in Accra'), 'energy': ('/img/solar.webp', 'Solar panels in Ghana'),
+       'agri': ('/img/cocoa.webp', 'Cocoa pods and beans'), 'industry': ('/img/real-tema.webp', 'Container cranes at Tema port')}
+HELP = {'macro': ('/services/market-entry', 'Market entry and company set-up'), 'mining': ('/mining', 'Mining: our approach'),
+        'energy': ('/services/energy-mining', 'Energy, mining and infrastructure'), 'agri': ('/services/market-entry', 'Market entry for agro-processors'),
+        'industry': ('/services/investment-readiness', 'GIPA registration and investor readiness')}
+
+
+def load():
+    return json.load(open(FILE, encoding='utf-8'))
+
+
+def nice(d):
+    y, m, dd = map(int, d.split('-'))
+    return f'{dd} {MONTHS[m - 1]} {y}'
+
+
+def check():
+    """[(id, problem)]: the report must stay sourced and internally consistent."""
+    r, out, ids = load(), [], set()
+    for c in r['chapters']:
+        for f in c['figures']:
+            if f['id'] in ids: out.append((f['id'], 'duplicate id'))
+            ids.add(f['id'])
+            if not f['source_url'].startswith('https://'): out.append((f['id'], 'source without https link'))
+            if not f.get('period'): out.append((f['id'], 'no period'))
+            if not f.get('quote'): out.append((f['id'], 'no phrase for the weekly check'))
+        for sec in ('rules', 'opportunities', 'risks'):
+            for x in c[sec]:
+                if not x['source_url'].startswith('http'): out.append((c['id'], f'{sec}: unsourced line'))
+    ex = dict(r['charts']['exports']['rows'])
+    if abs(sum(ex.values()) - 22.44) > 0.02: out.append(('charts', 'export parts do not add up to the total'))
+    return out
+
+
+# ---------- charts (inline SVG: crisp, no library, readable without JavaScript) ----------
+NAVY, GOLD, GOLD2, TEAL, GREY = '#0F1B2D', '#B8862F', '#F0BE5A', '#2FB594', '#C9CED6'
+
+
+def bars(rows, unit='', highlight=None, **_):
+    """HTML bars: text stays readable at any width (an SVG would shrink its labels on a phone)."""
+    mx = max(v for _, v in rows)
+    li = ''.join(f'<li{" class=hl" if k == highlight else ""}><span class="bl">{esc(k)}</span><span class="bt"><i style="width:{100 * v / mx:.1f}%"></i></span><b>{v:g}{esc(unit)}</b></li>'
+                 for k, v in rows)
+    return f'<ul class="rp-bars">{li}</ul>'
+
+
+def stack(rows, w=560):
+    total, x, out = sum(v for _, v in rows), 0.0, []
+    cols = [GOLD, '#7A4E2D', NAVY, GREY]
+    out.append(f'<svg viewBox="0 0 {w} 64" class="rp-svg" role="img" aria-hidden="true" focusable="false">')
+    for (k, v), c in zip(rows, cols):
+        bw = w * v / total
+        out.append(f'<rect x="{x:.1f}" y="4" width="{bw - 2:.1f}" height="40" rx="6" fill="{c}"/>')
+        if bw > 46: out.append(f'<text x="{x + 10:.1f}" y="30" class="rp-in">{round(100 * v / total)}%</text>')
+        x += bw
+    out.append('</svg>')
+    legend = ''.join(f'<li><i style="background:{c}"></i>{esc(k)} <b>USD {v:g}bn</b></li>' for (k, v), c in zip(rows, cols))
+    return ''.join(out) + f'<ul class="rp-leg">{legend}</ul>'
+
+
+def donut(share, label, w=180):
+    import math
+    r, c = 70, 2 * math.pi * 70
+    return (f'<svg viewBox="0 0 {w} {w}" class="rp-donut" role="img" aria-label="{esc(label)}">'
+            f'<circle cx="90" cy="90" r="{r}" fill="none" stroke="#E7E1D3" stroke-width="22"/>'
+            f'<circle cx="90" cy="90" r="{r}" fill="none" stroke="{GOLD}" stroke-width="22" stroke-dasharray="{c * share:.1f} {c:.1f}" transform="rotate(-90 90 90)"/>'
+            f'<text x="90" y="88" text-anchor="middle" class="rp-dn">{round(share * 100)}%</text>'
+            f'<text x="90" y="112" text-anchor="middle" class="rp-dl">of exports</text></svg>')
+
+
+def chart_box(ch, svg, extra=''):
+    return (f'<figure class="box rp-chart"><figcaption><b>{esc(ch["title"])}</b><span>{esc(ch["period"])}</span></figcaption>{svg}'
+            f'<p class="rp-src">{esc(ch.get("note", ""))} Source: <a href="{esc(ch["source_url"])}" target="_blank" rel="noopener">{esc(ch["source_label"])}</a></p>{extra}</figure>')
+
+
+# ---------- page ----------
+def figure_row(f):
+    badge = '<span class="rp-off">Official</span>' if f['official'] else '<span class="rp-press">Reported</span>'
+    v = str(f['value']); main, _, more = v.partition(' (')
+    more = more[:-1] if more.endswith(')') else more
+    return (f'<div class="rp-fig" data-fig="{esc(f["id"])}"><p class="fl">{esc(f["label"])}</p>'
+            f'<p class="fv">{esc(main)} <small>{esc(f["unit"])}</small></p>'
+            + (f'<p class="fx">{esc(more)}</p>' if more else '') +
+            f'<p class="fp">{esc(f["period"])}</p>'
+            f'<p class="fs">{badge} <a href="{esc(f["source_url"])}" target="_blank" rel="noopener">{esc(f["source_label"])}</a></p></div>')
+
+
+def items(xs, cls):
+    return '<ul class="rp-list ' + cls + '">' + ''.join(
+        f'<li>{esc(x["text"])} <a class="rp-s" href="{esc(x["source_url"])}" target="_blank" rel="noopener" aria-label="Source">source</a></li>' for x in xs) + '</ul>'
+
+
+def chapter(i, c, r):
+    hero = ''
+    if c['id'] in IMG:
+        src, alt = IMG[c['id']]
+        hero = f'<div class="rp-ph"><img src="{src}" alt="{esc(alt)}" loading="lazy" decoding="async"></div>'
+    else:  # mining: the picture is the number
+        gold = dict(r['charts']['exports']['rows'])['Gold'] / 22.44
+        hero = f'<div class="rp-ph rp-ph-gold">{donut(gold, "Gold is " + str(round(gold * 100)) + "% of export earnings")}<p>Gold, January–August 2026<br><b>USD 14.86bn</b></p></div>'
+    link, name = HELP[c['id']]
+    players = ''.join(f'<li><b>{esc(p["name"])}</b> <span>{esc(p["what"])}</span> <a class="rp-s" href="{esc(p["source_url"])}" target="_blank" rel="noopener" aria-label="Source">source</a></li>' for p in c['players'])
+    watch = ', '.join(f'<a href="{esc(w["url"])}" target="_blank" rel="noopener">{esc(w["label"])}</a>' for w in c['watch'])
+    return f'''<section class="sec rp-ch" id="{esc(c["id"])}" aria-labelledby="{esc(c["id"])}-h"><div class="wrap">
+<div class="rp-chhead">{hero}<div><p class="eyebrow">Chapter {i}</p><h2 id="{esc(c["id"])}-h">{esc(c["title"])}</h2>
+<p class="rp-headline">{esc(c["headline"])}</p><p class="rp-sum">{esc(c["summary"])}</p>
+<p class="rp-partner-slot" data-chapter="{esc(c["id"])}"></p></div></div>
+<h3 class="rp-h3">Key figures</h3>
+<div class="rp-figs">{"".join(figure_row(f) for f in c["figures"])}</div>
+<div class="rp-three">
+<div class="box rp-col"><h3>Rules that matter</h3>{items(c["rules"], "rules")}</div>
+<div class="box rp-col"><h3>Opportunities</h3>{items(c["opportunities"], "opps")}</div>
+<div class="box rp-col"><h3>Risks to price in</h3>{items(c["risks"], "risks")}</div>
+</div>
+<details class="rp-players"><summary>Who is who in this sector ({len(c["players"])})</summary><ul>{players}</ul></details>
+<p class="rp-watch">Watched every week: {watch}.</p>
+<p class="rp-help"><a class="btn btn-line" href="{link}">{esc(name)} <span class="arrow">→</span></a></p>
+</div></section>'''
+
+
+CSS = '''<style>
+.rp-meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin:18px 0 0;padding:0;list-style:none;font-size:14px;color:rgba(255,255,255,.82)}
+.rp-meta b{color:#fff}
+.rp-kpis{display:grid;gap:12px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:720px){.rp-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.rp-kpi{padding:18px 18px 16px;display:flex;flex-direction:column;gap:4px;min-height:132px}
+.rp-kpi .k{font-size:13px;color:var(--mute);margin:0}
+.rp-kpi .v{font:600 clamp(26px,3.2vw,36px)/1.1 var(--font);color:var(--ink);margin:2px 0 0;letter-spacing:-.01em}
+.rp-kpi .v small{font-size:14px;font-weight:600;color:var(--mute);margin-left:4px}
+.rp-kpi .p{font-size:12.5px;color:var(--mute);margin:auto 0 0}
+.rp-kpi .p a{color:inherit}
+.rp-live{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;background:#E3F1E7;color:#1E6B3A;margin-left:6px}
+.rp-charts{display:grid;gap:14px;margin-top:14px}
+@media(min-width:960px){.rp-charts{grid-template-columns:1.1fr 1fr 1fr}}
+.rp-chart{margin:0;padding:20px 22px;display:flex;flex-direction:column;gap:10px}
+.rp-chart figcaption{display:flex;flex-direction:column;gap:2px}
+.rp-chart figcaption span{font-size:13px;color:var(--mute)}
+.rp-svg{width:100%;height:auto;display:block}
+.rp-tl{font:500 13px var(--font);fill:#334155}.rp-tv{font:700 13px var(--font);fill:#0F1B2D}.rp-in{font:700 14px var(--font);fill:#fff}
+.rp-leg{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;font-size:13.5px}
+.rp-leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:0}
+.rp-bars{list-style:none;margin:0;padding:0;display:grid;gap:8px}\n.rp-bars li{display:grid;grid-template-columns:minmax(90px,34%) 1fr auto;align-items:center;gap:10px;font-size:13.5px}\n.rp-bars .bl{color:#334155}\n.rp-bars .bt{height:14px;background:#EEF0F3;border-radius:999px;overflow:hidden}\n.rp-bars .bt i{display:block;height:100%;border-radius:999px;background:#3B4A63}\n.rp-bars li:first-child .bt i{background:#B8862F}\n.rp-bars li.hl .bt i{background:#0F1B2D}\n.rp-bars li.hl .bl,.rp-bars li.hl b{font-weight:800}\n.rp-bars b{font-size:13.5px;min-width:44px;text-align:right}\n.rp-src{margin:auto 0 0;font-size:12.5px;color:var(--mute)}
+.rp-src a{color:inherit;overflow-wrap:anywhere}
+.rp-toc{position:sticky;top:68px;z-index:5;background:rgba(250,250,248,.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.rp-toc ol{display:flex;gap:6px;overflow-x:auto;margin:0;padding:10px 0;list-style:none;scrollbar-width:none}
+.rp-toc a{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink);text-decoration:none;font-size:14px;font-weight:600;white-space:nowrap}
+.rp-toc a:hover{border-color:var(--gold)}
+.rp-ch{border-top:1px solid var(--line)}
+.rp-chhead{display:grid;gap:22px;align-items:start}
+@media(min-width:900px){.rp-chhead{grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:40px}}
+.rp-ph{border-radius:20px;overflow:hidden;aspect-ratio:4/3;background:var(--sunk)}
+.rp-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.rp-ph-gold{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:linear-gradient(160deg,#0F1B2D,#1d2c47);color:#fff;text-align:center}
+.rp-ph-gold p{margin:0;font-size:14px;color:rgba(255,255,255,.8)}.rp-ph-gold b{font-size:22px;color:#F0BE5A}
+.rp-donut{width:min(200px,60%);height:auto}.rp-dn{font:700 34px var(--font);fill:#fff}.rp-dl{font:500 13px var(--font);fill:rgba(255,255,255,.75)}
+.rp-ch h2{font-size:clamp(26px,3.2vw,38px);margin:4px 0 12px;letter-spacing:-.015em}
+.rp-headline{font:italic 400 clamp(19px,2vw,23px)/1.4 Newsreader,Georgia,serif;color:var(--ink);margin:0 0 14px}
+.rp-sum{color:var(--mute);margin:0;max-width:68ch}
+.rp-h3{font-size:18px;margin:34px 0 12px}
+.rp-figs{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.rp-fig{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.rp-fig p{margin:0}
+.rp-fig .fl{font-size:13.5px;font-weight:600;color:var(--mute);line-height:1.4}
+.rp-fig .fv{font:700 24px/1.2 var(--font);color:var(--ink);margin-top:2px;letter-spacing:-.01em;overflow-wrap:anywhere}
+.rp-fig .fv small{font-size:13px;font-weight:600;color:var(--mute)}
+.rp-fig .fx{font-size:13px;color:var(--ink)}
+.rp-fig .fp{font-size:12.5px;color:var(--mute)}
+.rp-fig .fs{font-size:12px;color:var(--mute);margin-top:auto;padding-top:8px;line-height:1.45}
+.rp-fig .fs a{color:inherit;overflow-wrap:anywhere}
+.rp-fig.review{border-color:#E9B872}.rp-fig.review .fp::after{content:" \\2022 being re-checked";font-weight:700;color:#9A5B00}
+.rp-tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:#fff}
+.rp-table{width:100%;border-collapse:collapse;font-size:14.5px;min-width:640px}
+.rp-table th,.rp-table td{padding:12px 16px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.rp-table thead th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);background:var(--sunk)}
+.rp-table tbody tr:last-child th,.rp-table tbody tr:last-child td{border-bottom:0}
+.rp-table tbody th{font-weight:600;color:var(--ink);width:34%}
+.rp-val{font-weight:700;white-space:nowrap}.rp-val small{font-weight:600;color:var(--mute)}
+.rp-table a{color:var(--ink);overflow-wrap:anywhere}
+.rp-off,.rp-press{display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;vertical-align:1px;white-space:nowrap}
+.rp-off{background:#E3F1E7;color:#1E6B3A}.rp-press{background:#EEF0F3;color:#4B5563}
+tr.review .rp-val::after{content:" \\2022 being re-checked";font-size:11px;font-weight:700;color:#9A5B00}
+.rp-three{display:grid;gap:14px;margin-top:22px}
+@media(min-width:960px){.rp-three{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rp-col{padding:20px 22px}.rp-col h3{margin:0 0 10px;font-size:17px}
+.rp-list{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:10px;font-size:14.5px;line-height:1.55}
+.rp-list.risks li::marker{color:#B45309}.rp-list.opps li::marker{color:#1E6B3A}.rp-list.rules li::marker{color:var(--gold)}
+.rp-s{font-size:12px;color:var(--mute);white-space:nowrap}
+.rp-players{margin-top:18px;border:1px solid var(--line);border-radius:16px;background:#fff;padding:0 20px}
+.rp-players summary{cursor:pointer;min-height:48px;display:flex;align-items:center;font-weight:600}
+.rp-players ul{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:10px;font-size:14.5px}
+@media(min-width:860px){.rp-players ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 28px}}
+.rp-players span{color:var(--mute)}
+.rp-watch{font-size:13px;color:var(--mute);margin:16px 0 0}.rp-watch a{color:inherit}
+.rp-help{margin:18px 0 0}
+.rp-cal{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+@media(min-width:860px){.rp-cal{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rp-cal li{padding:16px 18px;display:flex;flex-direction:column;gap:2px}.rp-cal b{color:var(--gold)}
+.rp-pk{display:grid;gap:14px}
+@media(min-width:900px){.rp-pk{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rp-pk .box{padding:22px;display:flex;flex-direction:column;gap:8px}
+.rp-pk .amt{font:700 28px var(--font);color:var(--ink)}
+.rp-pk p{margin:0;color:var(--mute);font-size:14.5px}
+.rp-pk .hot{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.rp-form{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:24px}
+.rp-kinds legend{width:100%}
+@media(min-width:760px){.rp-form .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}}
+.rp-form label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+.rp-form input,.rp-form select,.rp-form textarea{font:inherit;font-weight:400;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+.rp-form textarea{min-height:110px}
+.rp-kinds{display:flex;flex-wrap:wrap;gap:8px;border:0;margin:0;padding:0;min-width:0}
+.rp-kinds legend{font-size:14px;font-weight:600;margin-bottom:6px}
+.rp-kinds label{flex-direction:row;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:600;cursor:pointer}
+.rp-kinds input{min-height:0;width:18px;height:18px;margin:0}
+.rp-form .chk{flex-direction:row;align-items:flex-start;font-weight:400;font-size:14px;color:var(--mute)}
+.rp-form .chk input{min-height:0;width:20px;height:20px;margin-top:2px;flex:none}
+.rp-form .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.rp-msg{margin:0;font-weight:600}
+.rp-log{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.rp-log li{padding:14px 18px;font-size:14.5px}.rp-log time{font-size:12.5px;color:var(--mute);display:block}
+.rp-how{display:grid;gap:14px}
+@media(min-width:860px){.rp-how{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.rp-how .box{padding:20px 22px}.rp-how h3{margin:0 0 6px;font-size:17px}.rp-how p{margin:0;color:var(--mute);font-size:14.5px}
+@media print{.gh,.gf,.rp-toc,.rp-form,.rp-help,#partner,.gf-made{display:none!important}.rp-ch{break-before:page}}
+</style>'''
+
+
+def render():
+    r = load()
+    figs = sum(len(c['figures']) for c in r['chapters'])
+    kpis = ''.join(
+        f'<div class="box rp-kpi" data-kpi="{esc(k["id"])}"{" data-live=" + chr(34) + esc(":".join(k["live"])) + chr(34) if k.get("live") else ""}>'
+        f'<p class="k">{esc(k["label"])}</p><p class="v"><span>{esc(k["value"])}</span><small>{esc(k["unit"])}</small></p>'
+        f'<p class="p"><span class="per">{esc(k["period"])}</span> · <a href="{esc(k["source_url"])}" target="_blank" rel="noopener">source</a></p></div>'
+        for k in r['snapshot'])
+    ch = r['charts']
+    charts = (chart_box(ch['exports'], stack(ch['exports']['rows'])) +
+              chart_box(ch['growth'], bars(ch['growth']['rows'], '%', 'Whole economy')) +
+              chart_box(ch['fdi'], bars(ch['fdi']['rows'], '', None, label_w=130)))
+    toc = ''.join(f'<li><a href="#{esc(c["id"])}">{i}. {esc(c["title"].split(",")[0])}</a></li>' for i, c in enumerate(r['chapters'], 1))
+    chapters = '\n'.join(chapter(i, c, r) for i, c in enumerate(r['chapters'], 1))
+    cal = ''.join(f'<li class="box"><b>{esc(x["when"])}</b><span>{esc(x["what"])}</span></li>' for x in r['calendar'])
+    pk = ''.join(f'<div class="box{" hot" if p["id"] == "sector" else ""}"><p class="eyebrow" style="margin:0">{esc(p["name"])}</p>'
+                 f'<div class="amt">{esc(p["price"])}</div><p><b>{esc(p["per"])}</b></p><p>{esc(p["what"])}</p></div>' for p in r['partners'])
+    ch_opts = ''.join(f'<option value="{esc(c["id"])}">{esc(c["title"])}</option>' for c in r['chapters'])
+    pk_opts = ''.join(f'<option value="{esc(p["id"])}">{esc(p["name"])} ({esc(p["price"])})</option>' for p in r['partners'])
+    return (CSS + '\n<!--#top-->\n<main id="main">\n'
+        '<section class="phero" aria-labelledby="h1"><img class="bgimg" src="/img/real-airportcity.webp" alt="" fetchpriority="high"><div class="wrap">'
+        '<nav class="crumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/invest">Invest in Ghana</a><span aria-hidden="true">/</span><span>Ghana Investment Report</span></nav>'
+        f'<p class="eyebrow">{esc(r["title"])} · {esc(r["publisher"])}</p>'
+        '<h1 id="h1">Ghana, sector by sector. <span class="serif">Every number sourced.</span></h1>'
+        '<p class="lead">An independent investor guide to Ghana’s economy and its five key sectors: the figures, the rules, the opportunities and the risks, each linked to its official source and checked again every week.</p>'
+        f'<ul class="rp-meta"><li>Updated <b id="rp-updated">{nice(r["updated"])}</b></li><li><b>{figs}</b> sourced figures</li><li><b>{len(r["chapters"])}</b> chapters</li><li>Sources re-checked <b>every week</b></li></ul>'
+        '<div class="hero-cta" style="margin-top:22px"><a class="btn btn-gold" href="#macro">Read the report <span class="arrow">→</span></a> '
+        '<a class="btn btn-line" href="#partner">Feature your company</a></div>'
+        '</div></section>\n'
+        f'<nav class="rp-toc" aria-label="Chapters"><div class="wrap"><ol><li><a href="#snapshot">Snapshot</a></li>{toc}<li><a href="#dates">Dates to watch</a></li><li><a href="#partner">Partners</a></li></ol></div></nav>\n'
+        '<section class="sec" id="snapshot" aria-labelledby="snap-h"><div class="wrap">'
+        '<div class="sec-head split"><div><p class="eyebrow">Economy snapshot</p><h2 id="snap-h">Ghana in eight numbers</h2></div>'
+        '<p class="lead">Growth, prices, rates and reserves. Figures marked <span class="rp-live" style="margin:0">Live</span> refresh automatically from the Bank of Ghana and the Ghana Statistical Service.</p></div>'
+        f'<div class="rp-kpis">{kpis}</div><div class="rp-charts">{charts}</div></div></section>\n'
+        + chapters +
+        '\n<section class="sec" id="dates" aria-labelledby="dates-h"><div class="wrap"><p class="eyebrow">Dates to watch</p><h2 id="dates-h">What could move the numbers next</h2>'
+        f'<ul class="rp-cal">{cal}</ul></div></section>\n'
+        '<section class="sec" aria-labelledby="how-h"><div class="wrap"><p class="eyebrow">How this report stays current</p><h2 id="how-h">Checked every week, confirmed by a person</h2><div class="rp-how">'
+        '<div class="box"><h3>Live economic data</h3><p>Growth, inflation, the policy rate and exports update by themselves when the Bank of Ghana and the Ghana Statistical Service publish new figures.</p></div>'
+        '<div class="box"><h3>Every source re-opened weekly</h3><p>Each week our system opens every source behind every figure and the regulators’ newsrooms. If a source changes or something new is published, our team is told.</p></div>'
+        '<div class="box"><h3>A person approves changes</h3><p>Nothing in the text changes by itself. An analyst reads the new information and updates the report, and every update is listed below with its date.</p></div>'
+        '</div><p class="rp-src" id="rp-checked" style="margin-top:14px"></p>'
+        '<h3 class="rp-h3">Latest updates</h3><ul class="rp-log" id="rp-log"><li class="box">The first edition was published on ' + nice(r['updated']) + '.</li></ul></div></section>\n'
+        '<section class="sec" id="partner" aria-labelledby="pk-h"><div class="wrap">'
+        '<div class="sec-head split"><div><p class="eyebrow">Partners</p><h2 id="pk-h">Put your company in front of investors</h2></div>'
+        '<p class="lead">Partner content is always marked “Partner” and never changes our figures or our analysis. Prices exclude VAT.</p></div>'
+        f'<div class="rp-pk">{pk}</div>'
+        '<form class="box rp-form" id="rp-form" style="margin-top:18px" novalidate>'
+        '<fieldset class="rp-kinds"><legend>I would like to</legend>'
+        '<label><input type="radio" name="kind" value="partner" checked> Feature my company</label>'
+        '<label><input type="radio" name="kind" value="investor"> Talk about investing in Ghana</label>'
+        '<label><input type="radio" name="kind" value="news"> Send news for the report</label></fieldset>'
+        f'<div class="two"><label>Package<select name="package">{pk_opts}<option value="">Not sure yet</option></select></label>'
+        f'<label>Chapter<select name="chapter">{ch_opts}</select></label></div>'
+        '<div class="two"><label>Your name<input name="full_name" autocomplete="name" required maxlength="120"></label>'
+        '<label>Company<input name="company" autocomplete="organization" maxlength="160"></label></div>'
+        '<div class="two"><label>Email<input name="email" type="email" autocomplete="email" inputmode="email" required maxlength="160"></label>'
+        '<label>WhatsApp or phone (optional)<input name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="40"></label></div>'
+        '<label>Message<textarea name="message" maxlength="1500" placeholder="What would you like to feature, discuss or share? For news, please include a link to the official source."></textarea></label>'
+        '<label class="hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>'
+        '<label class="chk"><input type="checkbox" name="consent" required> I agree that Gotham Consult may contact me about this request. My details are handled under Ghana’s Data Protection Act, 2012 (Act 843).</label>'
+        '<div><button class="btn btn-gold" type="submit">Send <span class="arrow">→</span></button></div><p class="rp-msg" id="rp-msg" role="status" aria-live="polite"></p></form>'
+        '</div></section>\n'
+        '<section class="sec" style="padding-top:0"><div class="wrap"><p class="rp-src">This report is general information compiled from public sources, not investment, legal or tax advice. '
+        'Figures marked “Official” come from a government or regulator’s own publication; “Reported” figures are official data or statements as reported by named media. '
+        'See also <a href="/sources">Sources &amp; fact checks</a>.</p></div></section>\n'
+        '</main>\n<!--#bottom-->\n' + SCRIPT)
+
+
+SCRIPT = '''<script>(function(){var M=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function d(s){var x=new Date(s);return x.getUTCDate()+" "+M[x.getUTCMonth()]+" "+x.getUTCFullYear()}
+function per(p){if(!p)return"";var m=/^(\\d{4})-(\\d{2})$/.exec(p);if(m)return M[+m[2]-1]+" "+m[1];m=/^(\\d{4})-Q(\\d)$/i.exec(p);if(m)return"Q"+m[2]+" "+m[1];return p}
+var T=AbortSignal.timeout?AbortSignal.timeout(10000):undefined;
+fetch("/api/ghana-data",{signal:T}).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.sources)return;
+ document.querySelectorAll("[data-live]").forEach(function(el){var a=el.getAttribute("data-live").split(":"),s=j.sources[a[0]],m=s&&s.metrics&&s.metrics[a[1]];
+  if(!m||!isFinite(m.value)||s.status==="snapshot")return;var v=el.querySelector(".v span"),p=el.querySelector(".per");
+  v.textContent=(Math.round(m.value*100)/100).toString();p.textContent=per(m.period);
+  if(!el.querySelector(".rp-live")){var b=document.createElement("span");b.className="rp-live";b.textContent="Live";el.querySelector(".k").appendChild(b)}});}).catch(function(){});
+fetch("/api/report/public",{signal:T}).then(function(r){return r.ok?r.json():null}).then(function(j){if(!j)return;
+ if(j.checked){var c=document.getElementById("rp-checked");c.textContent="Sources last checked automatically on "+d(j.checked)+(j.next?"; next check "+d(j.next)+".":".")}
+ (j.figures||[]).forEach(function(f){if(f.status==="review"){var tr=document.querySelector("[data-fig=\\""+f.id+"\\"]");if(tr)tr.classList.add("review")}});
+ if(j.updates&&j.updates.length){var ul=document.getElementById("rp-log");ul.innerHTML="";j.updates.forEach(function(u){var li=document.createElement("li");li.className="box";
+  var t=document.createElement("time");t.textContent=d(u.at);li.appendChild(t);var b=document.createElement("b");b.textContent=u.title;li.appendChild(b);
+  if(u.text){li.appendChild(document.createTextNode(" "+u.text))}
+  if(u.url){var a=document.createElement("a");a.href=u.url;a.target="_blank";a.rel="noopener";a.textContent=" Source";li.appendChild(a)}ul.appendChild(li)})}
+ (j.partners||[]).forEach(function(p){var s=document.querySelector(".rp-partner-slot[data-chapter=\\""+p.chapter+"\\"]");if(!s)return;var a=document.createElement("a");a.className="rp-press";a.href=p.url;a.target="_blank";a.rel="noopener sponsored";a.textContent="Partner: "+p.name;s.appendChild(a)});
+}).catch(function(){});
+var f=document.getElementById("rp-form"),msg=document.getElementById("rp-msg");
+f.addEventListener("change",function(){var k=f.kind.value;f.package.closest("label").hidden=k!=="partner"});
+f.addEventListener("submit",function(e){e.preventDefault();var b={kind:f.kind.value,package:f.package.value,chapter:f.chapter.value,full_name:f.full_name.value,company:f.company.value,
+ email:f.email.value,phone:f.phone.value,message:f.message.value,website:f.website.value,consent:f.consent.checked};
+ if(!b.full_name||!/^\\S+@\\S+\\.\\S+$/.test(b.email)||!b.consent){msg.textContent="Please add your name, a valid email and tick the box.";return}
+ var btn=f.querySelector("button");btn.disabled=true;msg.textContent="Sending\\u2026";
+ fetch("/api/report/enquiry",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})})
+ .then(function(x){if(x.ok){f.reset();msg.textContent="Thank you. We reply within one working day."}else{msg.textContent="Please check the form and try again."}btn.disabled=false})
+ .catch(function(){msg.textContent="Could not send. Please email info@gothamconsult.com.";btn.disabled=false})});
+})();</script>
+'''
+
+if __name__ == '__main__':
+    p = check()
+    for i, x in p: print(f'  report {i}: {x}')
+    print('report ok' if not p else f'{len(p)} report problem(s)')

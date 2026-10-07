@@ -11,6 +11,7 @@ import chrome_css
 import insights_fr as IF
 import investor_content as INVESTOR
 import facts_page as FACTSP
+import report_page as REPORTP
 from seo_locales import ES_META
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -97,6 +98,9 @@ for _a in ARTS:
 # sources and fact checks: every law, fee, figure and price with its source (apps/crm/facts.json)
 META['sources.html'] = dict(title='Sources and Fact Checks | Gotham Consult', desc='Every law, government fee, rate, figure and price on gothamconsult.com, with its official source and the date a person last checked it.', og='img/og/real-bog.jpg', extra=V2_EXTRA)
 GEN['sources.html'] = FACTSP.render()
+# Ghana Investment Report: sector chapters, sourced figures, weekly-checked (apps/crm/report.json)
+META['ghana-investment-report.html'] = dict(title='Ghana Investment Report 2026: Economy and Key Sectors | Gotham Consult', desc='Independent investor guide to Ghana in 2026: growth, inflation, rates and reserves, plus mining, energy, cocoa and agribusiness, ICT, manufacturing, real estate and logistics. Every figure sourced and re-checked weekly.', og='img/og/real-airportcity.jpg', extra=V2_EXTRA)
+GEN['ghana-investment-report.html'] = REPORTP.render()
 # the partner's page
 META['carlson-capital.html'] = dict(title='Carlson Capital Ltd: Market Entry, AI & Mining | Gotham Consult',
   desc="Carlson Capital Ltd, Gotham Consult's partner for company set-up and market entry for large companies, AI, software, apps and mining. Registered in Ghana.",
@@ -394,9 +398,10 @@ def main():
     # the fact register: source links for the server's weekly check, and any claim that drifted from the site
     open(os.path.join(DIST, 'source-links.json'), 'w', encoding='utf-8').write(json.dumps(FACTSP.links(), ensure_ascii=False))
     for fid, prob in FACTSP.check(): print(f'  WARNING fact {fid}: {prob}')
+    for fid, prob in REPORTP.check(): print(f'  WARNING report {fid}: {prob}')
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /i/\nSitemap: {SITE}/sitemap.xml\n')
-    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'invest/join', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'demo/receptionist', 'tools', 'sources', 'family', 'teaser', 'privacy', 'terms']
+    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'invest/join', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'demo/receptionist', 'tools', 'sources', 'ghana-investment-report', 'family', 'teaser', 'privacy', 'terms']
     pages += [lang + ('/' + path_of(n) if path_of(n) else '') for lang in ('fr', 'es') for n in twins]
     today = date.today().isoformat()
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc><lastmod>{today}</lastmod></url>\n' for p in pages)

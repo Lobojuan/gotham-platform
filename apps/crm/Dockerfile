@@ -55,5 +55,6 @@ COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts
 COPY public ./public
 RUN mkdir -p /data/media
 ENV NODE_ENV=production MEDIA_DIR=/data/media
+COPY report-watch.js report.json ./
 EXPOSE 4100
 CMD ["node","server.js"]

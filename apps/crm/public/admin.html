@@ -2389,7 +2389,7 @@ async function settings(){
  ${isAdmin()?`<div class="card" id="wa-ai"><div class="ch"><h3>WhatsApp: AI replies</h3><label class="cal-mine"><input type="checkbox" id="wa-on"> On</label></div>
   <p class="note" style="margin-top:0">When someone writes to the Gotham WhatsApp, the AI answers from the same knowledge as the website chat, in their language. Complaints, requests for a person, voice notes and pictures go to the team as a task instead. Every message is saved on the client's record.</p>
   <div id="wa-st" class="note"></div><div id="wa-list"></div></div>`:''}
- ${isAdmin()?'<div class="card" id="facts-card"><p class="note">Loading…</p></div>'+'<div class="card" id="safety"><p class="note">Loading…</p></div><div class="card" id="logo-card"><p class="note">Loading…</p></div><div class="card" id="inv-set"><p class="note">Loading…</p></div>':''}
+ ${isAdmin()?'<div class="card" id="facts-card"><p class="note">Loading…</p></div>'+'<div class="card" id="report-card"><p class="note">Loading…</p></div>'+'<div class="card" id="safety"><p class="note">Loading…</p></div><div class="card" id="logo-card"><p class="note">Loading…</p></div><div class="card" id="inv-set"><p class="note">Loading…</p></div>':''}
  <div class="card"><h3>Venue and seats</h3>
   <p class="note">The largest number of seats any single event may be set to. It stops a room that holds 40 being sold as 120.</p>
   <div class="f2"><div><label class="l">Maximum seats per event</label><input class="t" id="s-max" type="number" inputmode="numeric" min="1" value="${esc(SET.max_seats||'')}" placeholder="40"></div><div></div></div>
@@ -2452,7 +2452,7 @@ async function settings(){
  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
   if(!confirm('Remove '+b.dataset.del+' permanently? Their sign-in stops working immediately.'))return;
   await api('/api/users/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});toast('Removed');settings()});
- invoiceSettingsCard();safetyCard();factsCard();tfaCard();logoCard();
+ invoiceSettingsCard();safetyCard();factsCard();reportCard();tfaCard();logoCard();
  if($('#wa-on')){const drawWa=w=>{$('#wa-on').checked=w.on;
    $('#wa-st').innerHTML=!w.connected?'<span class="chip red">WhatsApp Business is not connected yet</span> Replies start once it is connected (Meta setup).':!w.ai?'<span class="chip red">AI is off on the server</span>':`<span class="chip ${w.on?'green':''}">${w.on?'Answering automatically':'Off: messages wait for the team'}</span>`;
    $('#wa-list').innerHTML=w.recent.length?`<h4 class="sec">Latest messages</h4>${w.recent.slice(0,12).map(m=>`<div class="wa-row"><span class="dir ${m.direction}">${m.direction==='in'?'In':'Sent'}</span><div><b>${m.contact_id?`<a href="#rec/${m.contact_id}">${esc(m.company||m.full_name||m.phone)}</a>`:esc(m.phone)}</b> <span class="note">${dt(m.at)}${m.kind==='handover'?' · passed to the team':m.kind==='ai'?' · AI':''}</span><div>${esc(String(m.body||'').slice(0,240))}</div></div></div>`).join('')}`:'<p class="note">No WhatsApp messages yet.</p>'};
@@ -2748,6 +2748,38 @@ async function factsCard(){
   b.disabled=true;try{await api('/api/facts/review',{method:'POST',body:JSON.stringify({id:b.dataset.ok,note})});toast('Marked as checked today');factsCard()}catch{toast('Could not save');b.disabled=false}});
  $('#fc-run').onclick=async e=>{e.target.disabled=true;e.target.textContent='Checking… (about a minute)';
   try{await api('/api/facts/check',{method:'POST',body:JSON.stringify({wait:true})});toast('Sources checked')}catch{toast('Check started; refresh in a minute')}factsCard()};
+}
+/* Ghana Investment Report: the weekly watch (report-watch.js). Pending updates come from changed newsrooms and
+   from companies' news; a person publishes them to the public page or dismisses them. */
+async function reportCard(){
+ const box=$('#report-card');if(!box)return;
+ const r=await api('/api/report').catch(()=>null);if(!r){box.innerHTML='';return}
+ const day=t=>t?new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'not yet';
+ const pend=r.updates.filter(u=>u.status==='pending'),pub=r.updates.filter(u=>u.status==='published').slice(0,8);
+ const todo=r.facts.filter(f=>f.status==='review'||f.status==='changed');
+ const urow=u=>`<li class="li" data-uid="${esc(u.id)}"><div class="grow"><div><span class="chip">${esc(u.kind==='source'?'Source changed':u.kind==='news'?'Company news':'Note')}</span> <b>${esc(u.title)}</b>${u.chapter?' · '+esc(u.chapter):''}</div>
+   ${u.text?`<div class="note">${esc(u.text)}</div>`:''}<div class="note">${u.url?`<a href="${esc(u.url)}" target="_blank" rel="noopener">${esc(u.url)}</a> · `:''}${day(u.at)}${u.by?' · '+esc(u.by):''}</div></div>
+   <button class="btn btn-line" data-pub="${esc(u.id)}">Publish…</button><button class="btn btn-line" data-dis="${esc(u.id)}">Dismiss</button></li>`;
+ const frow=f=>`<li class="li"><div class="grow"><div><span class="chip ${f.status==='review'?'red':''}">${f.status==='review'?'To check':'Source changed'}</span> <b>${esc(f.topic)}</b> · ${esc(f.claim)}</div>
+   ${[...f.problems,...f.notes].map(p=>`<div class="note">• ${esc(p.text)}</div>`).join('')}</div><button class="btn btn-line" data-rok="${esc(f.id)}">Still correct</button></li>`;
+ box.innerHTML=`<div class="ch"><h3>Investment report</h3>${pend.length?`<span class="chip red">${pend.length} to read</span>`:'<span class="chip green">Up to date</span>'}</div>
+  <p class="note" style="margin-top:0">The <a href="/ghana-investment-report" target="_blank" rel="noopener">Ghana Investment Report</a>: ${r.facts.length} sourced figures and ${r.watched} newsrooms and data pages, opened every week. Last run ${day(r.checked)}${r.running?' (running now…)':''}; next ${day(r.next)}. Live economic numbers update by themselves; text only changes when you publish an update here.</p>
+  ${pend.length?`<p class="note"><b>Pending updates</b></p><ul class="list">${pend.map(urow).join('')}</ul>`:''}
+  ${todo.length?`<p class="note"><b>Figures to re-check</b></p><ul class="list">${todo.map(frow).join('')}</ul>`:''}
+  ${pub.length?`<details><summary class="note">Published updates (${pub.length})</summary><ul class="list">${pub.map(u=>`<li class="li"><div class="grow"><b>${esc(u.title)}</b> <span class="note">${day(u.published_at)}</span></div><button class="btn btn-line" data-un="${esc(u.id)}">Remove</button></li>`).join('')}</ul></details>`:''}
+  <div class="acts"><button class="btn btn-dark" id="rp-run">Check all sources now</button><button class="btn btn-line" id="rp-add">Add an update</button></div>`;
+ const decide=async(body,msg)=>{try{await api('/api/report/decide',{method:'POST',body:JSON.stringify(body)});toast(msg);reportCard()}catch{toast('Could not save')}};
+ box.querySelectorAll('[data-pub]').forEach(b=>b.onclick=()=>{const u=r.updates.find(x=>x.id===b.dataset.pub);
+  const title=prompt('Headline shown on the report page:',u.title);if(!title)return;const text=prompt('One or two sentences for investors (what changed and why it matters):',u.text||'');if(text===null)return;
+  decide({id:u.id,action:'publish',title,text,url:u.url},'Published on the report page')});
+ box.querySelectorAll('[data-dis]').forEach(b=>b.onclick=()=>decide({id:b.dataset.dis,action:'dismiss'},'Dismissed'));
+ box.querySelectorAll('[data-un]').forEach(b=>b.onclick=()=>decide({id:b.dataset.un,action:'unpublish'},'Removed from the page'));
+ box.querySelectorAll('[data-rok]').forEach(b=>b.onclick=async()=>{const note=prompt('Optional note (what you checked):','')??null;if(note===null)return;
+  try{await api('/api/report/review',{method:'POST',body:JSON.stringify({id:b.dataset.rok,note})});toast('Marked as checked today');reportCard()}catch{toast('Could not save')}});
+ $('#rp-add').onclick=()=>{const title=prompt('Headline for the update:');if(!title)return;const text=prompt('One or two sentences for investors:','')??'';const url=prompt('Link to the official source (optional):','')??'';
+  decide({action:'publish',title,text,url},'Published on the report page')};
+ $('#rp-run').onclick=async e=>{e.target.disabled=true;e.target.textContent='Checking… (a few minutes)';
+  try{await api('/api/report/check',{method:'POST',body:JSON.stringify({wait:true})});toast('Sources checked')}catch{toast('Check started; refresh in a few minutes')}reportCard()};
 }
 async function safetyCard(){
  const r=await api('/api/safety').catch(()=>null);const box=$('#safety');if(!r||!box)return;

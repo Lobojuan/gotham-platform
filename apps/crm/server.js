@@ -17,6 +17,7 @@ import * as STT from './stt.js';
 import { makeAskVoice } from './ask-voice.js';
 import { makeGhanaData } from './ghana-data.js';
 import { makeFactWatch, loadFacts } from './fact-watch.js';
+import { makeReportWatch, loadReport } from './report-watch.js';
 import { ratesAnswer, websiteKnowledge, welcomeAnswer, paymentAnswer, unavailableAnswer, timeAnswer } from './chat-knowledge.js';
 const ASK_VOICE = makeAskVoice();
 
@@ -53,6 +54,18 @@ const FACTS = makeFactWatch({
     if (SITE_DIR && fs.existsSync(path.join(SITE_DIR, 'source-links.json'))) return JSON.parse(fs.readFileSync(path.join(SITE_DIR, 'source-links.json'), 'utf8'));
     const r = await fetch(SITE_URL + '/source-links.json', { signal: AbortSignal.timeout(15000) }); return r.ok ? r.json() : [];
   },
+  alert: (subject, lines) => alertTeam(subject, lines),
+});
+
+/* Ghana Investment Report (report-watch.js, report.json): every figure's source re-opened weekly, watched
+   newsrooms turn into pending updates, a person publishes them to /ghana-investment-report */
+const REPORT = makeReportWatch({
+  report: loadReport(process.env.REPORT_FILE || new URL('./report.json', import.meta.url)),
+  everyDays: +process.env.REPORT_EVERY_DAYS || 7,   // weekly (Uffe, 7 Oct 2026)
+  load: async () => JSON.parse((await q("select value from settings where key='report_state'")).rows[0]?.value || 'null'),
+  save: async st => q("insert into settings(key,value) values ('report_state',$1) on conflict(key) do update set value=excluded.value", [JSON.stringify(st)]),
+  loadLog: async () => JSON.parse((await q("select value from settings where key='report_log'")).rows[0]?.value || 'null'),
+  saveLog: async l => q("insert into settings(key,value) values ('report_log',$1) on conflict(key) do update set value=excluded.value", [JSON.stringify(l)]),
   alert: (subject, lines) => alertTeam(subject, lines),
 });
 
@@ -1718,6 +1731,91 @@ const server = http.createServer(async (req, res) => {
       if (!r) return json(res, 404, { error: 'unknown_fact' });
       await q('insert into jobs_log(job,detail) values ($1,$2)', ['facts_review', `${b.id} confirmed by ${u.email}${b.note ? ': ' + clean(b.note, 200) : ''}`]);
       return json(res, 200, await FACTS.report());
+    }
+    /* ---- Ghana Investment Report: public status and change log, the weekly watch for admins, enquiries ---- */
+    if (p === '/api/report/public' && req.method === 'GET') {
+      res.setHeader('cache-control', 'public, max-age=600'); return json(res, 200, await REPORT.publicReport(), cors);
+    }
+    if (p === '/api/report' && req.method === 'GET') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      return json(res, 200, await REPORT.report());
+    }
+    if (p === '/api/report/check' && req.method === 'POST') {
+      if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
+      const job = REPORT.run(true);
+      const b = await body(req).catch(() => ({}));
+      if (b && b.wait) await job.catch(() => {}); else job.catch(e => console.error('report', e.message));
+      return json(res, 200, await REPORT.report());
+    }
+    if (p === '/api/report/review' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      const r = await REPORT.review(clean(b.id, 80), u.email, clean(b.note, 500));
+      if (!r) return json(res, 404, { error: 'unknown_figure' });
+      await q('insert into jobs_log(job,detail) values ($1,$2)', ['report_review', `${b.id} confirmed by ${u.email}${b.note ? ': ' + clean(b.note, 200) : ''}`]);
+      return json(res, 200, await REPORT.report());
+    }
+    if (p === '/api/report/decide' && req.method === 'POST') {   // publish or dismiss a pending update; or add and publish one
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const b = await body(req);
+      let id = clean(b.id, 40);
+      if (!id && b.action === 'publish') id = (await REPORT.submit({ kind: 'note', chapter: clean(b.chapter, 40), title: clean(b.title, 200), text: clean(b.text, 1200), url: clean(b.url, 500), by: u.email })).id;
+      const r = await REPORT.decide(id, clean(b.action, 20), u.email, { title: clean(b.title, 200), text: b.text === undefined ? undefined : clean(b.text, 1200), url: b.url === undefined ? undefined : clean(b.url, 500) });
+      if (!r) return json(res, 400, { error: 'not_done' });
+      await q('insert into jobs_log(job,detail) values ($1,$2)', ['report_update', `${r.status}: ${r.title} (${u.email})`]);
+      return json(res, 200, await REPORT.report());
+    }
+    if (p === '/api/report/enquiry' && req.method === 'POST') {
+      if (rateLimited(ip, 5, 600e3, 'report')) return json(res, 429, { error: 'too_many' }, cors);
+      const b = await body(req);
+      if (clean(b.website, 200)) return json(res, 200, { ok: true }, cors);      // honeypot
+      const KINDS = { partner: 'Report partner', investor: 'Investor (report)', news: 'Report news' };
+      const kind = KINDS[b.kind] ? b.kind : '';
+      const full_name = clean(b.full_name, 120), email = clean(b.email, 160).toLowerCase(), company = clean(b.company, 160);
+      const rawPhone = clean(b.phone, 40), digits = rawPhone.replace(/[^0-9+]/g, '');
+      const phone0 = !digits ? '' : digits.startsWith('+') ? digits : digits.startsWith('00') ? '+' + digits.slice(2) : phoneGH(digits);
+      const phone = /^\+\d{8,15}$/.test(phone0) ? phone0 : '';
+      const pack = ['profile', 'sector', 'lead'].includes(b.package) ? b.package : '';
+      const chapter = clean(b.chapter, 40), message = clean(b.message, 1500);
+      const errors = [];
+      if (!kind) errors.push('kind');
+      if (!full_name) errors.push('full_name');
+      if (!/^\S+@\S+\.\S+$/.test(email)) errors.push('email');
+      if (b.consent !== true) errors.push('consent');
+      if (kind === 'news' && !message) errors.push('message');
+      if (errors.length) return json(res, 400, { error: 'missing_fields', fields: errors }, cors);
+      const PACK = { profile: 'Company profile (EUR 750)', sector: 'Sector partner (EUR 2,500)', lead: 'Lead partner (EUR 6,000)' };
+      const extra = { 'Investment report': KINDS[kind], 'Package': PACK[pack] || '', 'Chapter': chapter, 'Message': message };
+      Object.keys(extra).forEach(k => { if (!extra[k]) delete extra[k]; });
+      const tag = 'report-' + kind, notes = `${KINDS[kind]}${pack ? ', ' + PACK[pack] : ''}${chapter ? ', chapter ' + chapter : ''}.` + (message ? ` Says: ${message}` : '');
+      const ex = await q('select id, tags from contacts where lower(email)=lower($1)', [email]);
+      if (ex.rows.length) {
+        await q(`update contacts set full_name=coalesce(nullif($1,''),full_name), phone=coalesce(nullif($2,''),phone),
+            company=coalesce(nullif(company,''),nullif($3,'')), tags=$4, extra=coalesce(extra,'{}'::jsonb) || $5::jsonb,
+            notes=concat_ws(E'\\n', nullif(notes,''), $6::text)
+          where id=$7 and unsubscribed_at is null and status <> 'do_not_contact'`,
+          [full_name, phone, company, mergeTags(ex.rows[0].tags, [tag]), JSON.stringify(extra), notes, ex.rows[0].id]);
+      } else {
+        await q(`insert into contacts(company,full_name,email,phone,sector,tags,source,notes,extra,status)
+                 values ($1,$2,$3,$4,$5,$6,'Website: Ghana Investment Report',$7,$8::jsonb,'new')`,
+          [company || null, full_name, email, phone || null, kind === 'investor' ? 'Investor' : 'Media / partner', tag, notes, JSON.stringify(extra)]);
+      }
+      if (kind === 'news') await REPORT.submit({ kind: 'news', chapter, title: `News from ${company || full_name}`, text: message, url: (message.match(/https?:\/\/\S+/) || [''])[0], by: email });
+      if (kind !== 'news') await inboundDeal({ company: company || null, full_name, email, phone: phone || null, kind: kind === 'investor' ? 'investor' : 'sponsorship',
+        title: `${KINDS[kind]} · ${company || full_name}`, source: 'Website Ghana Investment Report',
+        task: `Reply to ${firstName(full_name)} (${KINDS[kind]}${pack ? ', ' + PACK[pack] : ''})` }).catch(e => console.error('inboundDeal', e.message));
+      await queueMail(email, full_name, 'Thank you for contacting Gotham Consult',
+        wrapMail('Thank you, ' + esc(firstName(full_name)),
+          `<p style="color:#5A6472;font-size:15px;line-height:1.6">We have your message about the Ghana Investment Report and will reply within one working day.</p>`), 'report_ack', null);
+      const rows = [['Type', KINDS[kind]], ['Name', full_name], ['Email', email], ['WhatsApp / phone', phone || '(not given)'], ['Company', company || '(not given)'],
+        ['Package', PACK[pack] || '(none)'], ['Chapter', chapter || '(none)'], ['Message', message || '(none)']];
+      const alertHtml = wrapMail('Ghana Investment Report enquiry', `<table style="font-size:14px;color:#0F1B2D;border-collapse:collapse">${rows.map(([k, v]) =>
+        `<tr><td style="padding:4px 14px 4px 0;color:#5A6472;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>`).join('')}</table>`);
+      const subject = `Report: ${KINDS[kind]} from ${full_name}${company ? ' (' + company + ')' : ''}`;
+      await queueMail('uffe.carlson@gmail.com', 'Uffe Carlson', subject, alertHtml, 'staff_alert', null);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'report_enquiry', `${kind} · ${pack} · ${chapter}`]);
+      webEnquiry(req, ip, 'report').catch(() => {});
+      return json(res, 200, { ok: true }, cors);
     }
     // Public, non-personal economic publications; bounded background refresh with persisted last-good data.
     if (p === '/api/ghana-data' && req.method === 'GET') {
@@ -5258,6 +5356,7 @@ async function runJobs() {
   await runSchedules().catch(e => console.error('schedules', e.message));
   await watchdog().catch(e => console.error('watchdog', e.message));
   if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await FACTS.run().catch(e => console.error('facts', e.message));   // daily, see FACTS_EVERY_DAYS
+  if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await REPORT.run().catch(e => console.error('report', e.message));   // weekly, see REPORT_EVERY_DAYS
 }
 
 /* ---------- website visitors, privacy-friendly ----------
