@@ -1800,6 +1800,7 @@ const server = http.createServer(async (req, res) => {
       const pack = ['profile', 'sector', 'lead'].includes(b.package) ? b.package : '';
       const chapter = clean(b.chapter, 40), message = clean(b.message, 1500);
       const role = ROLES[b.role] ? b.role : '', country = clean(b.country, 80), updates = b.updates === true;
+      const clientType = { investor: 'investor', company: 'corporate', government: 'government', media: 'media', adviser: 'partner' }[role] || (b.kind === 'investor' ? 'investor' : '');
       const errors = [];
       if (!kind) errors.push('kind');
       if (!full_name) errors.push('full_name');
@@ -1817,15 +1818,17 @@ const server = http.createServer(async (req, res) => {
       if (ex.rows.length) {
         await q(`update contacts set full_name=coalesce(nullif($1,''),full_name), phone=coalesce(nullif($2,''),phone),
             company=coalesce(nullif(company,''),nullif($3,'')), tags=$4, extra=coalesce(extra,'{}'::jsonb) || $5::jsonb,
-            notes=concat_ws(E'\\n', nullif(notes,''), $6::text)
+            notes=concat_ws(E'\\n', nullif(notes,''), $6::text), country=coalesce(nullif($8,''),country),
+            client_type=coalesce(nullif(client_type,''),nullif($9,''))
           where id=$7 and unsubscribed_at is null and status <> 'do_not_contact'`,
-          [full_name, phone, company, mergeTags(ex.rows[0].tags, tags), JSON.stringify(extra), notes, ex.rows[0].id]);
+          [full_name, phone, company, mergeTags(ex.rows[0].tags, tags), JSON.stringify(extra), notes, ex.rows[0].id, country, clientType]);
       } else {
-        await q(`insert into contacts(company,full_name,email,phone,sector,tags,source,notes,extra,status)
-                 values ($1,$2,$3,$4,$5,$6,'Website: Ghana Investment Report',$7,$8::jsonb,'new')`,
-          [company || null, full_name, email, phone || null, kind === 'investor' || role === 'investor' ? 'Investor' : kind === 'download' ? 'Report reader' : 'Media / partner', tag, notes, JSON.stringify(extra)]);
+        await q(`insert into contacts(company,full_name,email,phone,sector,tags,source,notes,extra,status,country,client_type)
+                 values ($1,$2,$3,$4,$5,$6,'Website: Ghana Investment Report',$7,$8::jsonb,'new',$9,$10)`,
+          [company || null, full_name, email, phone || null, kind === 'investor' || role === 'investor' ? 'Investor' : kind === 'download' ? 'Report reader' : 'Media / partner', tag, notes, JSON.stringify(extra), country || null, clientType || null]);
       }
-      if (updates) await q(`update contacts set consent_email='yes' where lower(email)=lower($1) and status <> 'do_not_contact'`, [email]);
+      if (updates) await q(`update contacts set consent_email='yes', consent_source='Ghana Investment Report: asked for quarterly updates', consent_at=now()
+          where lower(email)=lower($1) and status <> 'do_not_contact' and unsubscribed_at is null`, [email]);
       if (kind === 'news') await REPORT.submit({ kind: 'news', chapter, title: `News from ${company || full_name}`, text: message, url: (message.match(/https?:\/\/\S+/) || [''])[0], by: email });
       const dealKind = kind === 'investor' || (kind === 'download' && role === 'investor') ? 'investor' : kind === 'download' ? 'other' : 'sponsorship';
       if (kind !== 'news') await inboundDeal({ company: company || null, full_name, email, phone: phone || null, kind: dealKind,

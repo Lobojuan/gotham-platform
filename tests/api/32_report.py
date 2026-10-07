@@ -107,6 +107,8 @@ st, b, _ = call('/api/report/enquiry', {'kind': 'download', 'full_name': 'Kwame 
 assert st == 200 and b['url'].startswith('http://127.0.0.1:4199/api/report/pdf?'), b
 row = _sp.run(['psql', DB, '-tAc', "select tags||'|'||consent_email||'|'||sector||'|'||phone from contacts where email='kwame@fund.test'"], capture_output=True, text=True).stdout.strip()
 assert row == 'report-download,report-updates|yes|Investor|+447700900123', row
+row = _sp.run(['psql', DB, '-tAc', "select country||'|'||client_type||'|'||consent_source||'|'||(consent_at is not null)||'|'||source from contacts where email='kwame@fund.test'"], capture_output=True, text=True).stdout.strip()
+assert row == 'United Kingdom|investor|Ghana Investment Report: asked for quarterly updates|true|Website: Ghana Investment Report', row
 deal = _sp.run(['psql', DB, '-tAc', "select kind from deals where title like 'Report download%'"], capture_output=True, text=True).stdout.strip(); assert deal == 'investor', deal
 body = _sp.run(['psql', DB, '-tAc', "select body from outbox where to_email='kwame@fund.test' and subject='Your Ghana Investment Report 2026'"], capture_output=True, text=True).stdout
 assert b['url'].replace('&', '&amp;') in body and 'uffe@test.gh' in body and 'wa.me/233550000001' in body, body[:400]

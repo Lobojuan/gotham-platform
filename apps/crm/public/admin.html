@@ -952,7 +952,17 @@ function dealForm(pre){
 }
 
 /* ===================== companies & people ===================== */
-let CF={q:'',st:'',tag:'',ty:'',co:''};
+let CF={q:'',st:'',tag:'',ty:'',co:'',src:''};
+/* quick lists on the contacts page; "report-" matches every tag the investment report gives */
+const CF_TAGS=[['','All'],['brief','Brief'],['family-desk','Family Desk'],['forum-lead','Forum leads'],['mining','Mining'],['report-','Report: all'],['report-download','Report readers'],['report-updates','Want report updates']];
+const srcShort=s=>String(s||'').replace(/^Website:\s*/i,'');
+function contactsCsv(L){
+ const cols=[['Company','company'],['Name','full_name'],['Email','email'],['Phone','phone'],['Country',c=>c.country||(c.extra||{}).Country||''],['Role',c=>c.role||(c.extra||{}).Role||''],
+  ['Came from','source'],['Tags','tags'],['Email consent',c=>c.unsubscribed_at?'unsubscribed':CONS[c.consent_email||'unknown']],['Status',c=>CSTATUS[c.status]||c.status],['Added',c=>(c.created_at||'').slice(0,10)]];
+ const cell=v=>{v=String(v==null?'':v);if(/^[=+\-@]/.test(v))v="'"+v;return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+ const csv='\ufeff'+[cols.map(c=>c[0]).join(','),...L.map(c=>cols.map(([,k])=>cell(typeof k==='function'?k(c):c[k])).join(','))].join('\r\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ a.download='contacts'+(CF.tag?'-'+CF.tag.replace(/-$/,''):'')+'-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 async function contactsView(){
  setTitle('Companies & people','Everyone you work with, in one list');
  $('#view').innerHTML='<div class="empty">Loading…</div>';
@@ -961,14 +971,27 @@ async function contactsView(){
   <select class="t" id="cf-st" style="max-width:190px"><option value="">Any status</option>${Object.entries(CSTATUS).map(([k,t])=>`<option value="${k}" ${CF.st===k?'selected':''}>${t}</option>`).join('')}</select>
   <select class="t" id="cf-ty" style="max-width:170px"><option value="">Any type</option>${Object.entries(CTYPE).map(([k,t])=>`<option value="${k}" ${CF.ty===k?'selected':''}>${t}</option>`).join('')}</select>
   <select class="t" id="cf-co" style="max-width:170px"><option value="">Any country</option>${[...new Set(CONTACTS.map(c=>c.country).filter(Boolean))].sort().map(k=>`<option ${CF.co===k?'selected':''}>${esc(k)}</option>`).join('')}</select>
-  <div class="seg" id="cf-tag">${[['','All'],['brief','Brief'],['family-desk','Family Desk'],['forum-lead','Forum leads'],['mining','Mining']].map(([k,l])=>`<button data-t="${k}" class="${CF.tag===k?'on':''}">${l}</button>`).join('')}</div></div>
-  <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Company</th><th>Person</th><th>Type · country</th><th>Phone</th><th>May contact</th><th>Status</th><th>Added</th></tr></thead><tbody id="cf-tb"></tbody></table></div></div><p class="note" id="cf-n"></p>`;
+  <select class="t" id="cf-src" style="max-width:240px" aria-label="Came from"><option value="">Came from: anywhere</option>${[...new Set(CONTACTS.map(c=>c.source).filter(Boolean))].sort().map(k=>`<option value="${esc(k)}" ${CF.src===k?'selected':''}>${esc(srcShort(k))}</option>`).join('')}</select>
+  <div class="seg" id="cf-tag">${CF_TAGS.map(([k,l])=>`<button data-t="${k}" class="${CF.tag===k?'on':''}">${l}</button>`).join('')}</div></div>
+  <div class="filters" style="margin-top:-4px"><button class="btn btn-line" id="cf-csv">Export this list (CSV)</button><button class="btn btn-line" id="cf-mail" style="display:none">Email this group…</button><span class="note" id="cf-cons" style="align-self:center"></span></div>
+  <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Company</th><th>Person</th><th>Type · country</th><th>Came from</th><th>Phone</th><th>May contact</th><th>Status</th><th>Added</th></tr></thead><tbody id="cf-tb"></tbody></table></div></div><p class="note" id="cf-n"></p>`;
+ let LAST=[];
  const draw=()=>{const f=CF.q.toLowerCase(),fd=f.replace(/\D/g,'').replace(/^0+/,'');
-  const L=CONTACTS.filter(c=>(!CF.st||c.status===CF.st)&&(!CF.ty||c.client_type===CF.ty)&&(!CF.co||c.country===CF.co)&&(!CF.tag||(c.tags||'').toLowerCase().split(',').map(x=>x.trim()).some(x=>x===CF.tag||x.startsWith(CF.tag)))&&(!f||[c.company,c.full_name,c.email,c.sector,c.tags,c.city,c.role].join(' ').toLowerCase().includes(f)||(fd.length>3&&(c.phone||'').replace(/\D/g,'').includes(fd))));
-  $('#cf-tb').innerHTML=L.slice(0,300).map(c=>`<tr class="r" data-rec="${c.id}"><td><b>${esc(c.company||c.full_name||'—')}</b>${c.priority?` <span class="chip gold">${esc(c.priority)}</span>`:''}</td><td>${esc(c.company?c.full_name||'':'')}<div class="note">${esc(c.role||'')}</div></td><td class="note">${esc(CTYPE[c.client_type]||'—')}<div>${esc(c.country||'')}</div></td><td class="note">${esc(c.phone||'—')}</td><td style="white-space:nowrap">${consChip(c,'email','Email')} ${consChip(c,'sms','SMS')} ${consChip(c,'whatsapp','WA')}</td><td><span class="chip ${c.status==='won'?'green':c.status==='do_not_contact'||c.status==='lost'?'red':c.status==='new'?'':'blue'}">${esc(CSTATUS[c.status]||c.status)}</span></td><td class="note">${dshort(c.created_at)}</td></tr>`).join('')||'<tr><td colspan="7"><div class="empty">Nothing matches.</div></td></tr>';
+  const L=CONTACTS.filter(c=>(!CF.st||c.status===CF.st)&&(!CF.src||c.source===CF.src)&&(!CF.ty||c.client_type===CF.ty)&&(!CF.co||c.country===CF.co)&&(!CF.tag||(c.tags||'').toLowerCase().split(',').map(x=>x.trim()).some(x=>x===CF.tag||x.startsWith(CF.tag)))&&(!f||[c.company,c.full_name,c.email,c.sector,c.tags,c.city,c.role].join(' ').toLowerCase().includes(f)||(fd.length>3&&(c.phone||'').replace(/\D/g,'').includes(fd))));
+  $('#cf-tb').innerHTML=L.slice(0,300).map(c=>`<tr class="r" data-rec="${c.id}"><td><b>${esc(c.company||c.full_name||'—')}</b>${c.priority?` <span class="chip gold">${esc(c.priority)}</span>`:''}</td><td>${esc(c.company?c.full_name||'':'')}<div class="note">${esc(c.role||'')}</div></td><td class="note">${esc(CTYPE[c.client_type]||'—')}<div>${esc(c.country||'')}</div></td><td class="note">${esc(srcShort(c.source)||'—')}</td><td class="note">${esc(c.phone||'—')}</td><td style="white-space:nowrap">${consChip(c,'email','Email')} ${consChip(c,'sms','SMS')} ${consChip(c,'whatsapp','WA')}</td><td><span class="chip ${c.status==='won'?'green':c.status==='do_not_contact'||c.status==='lost'?'red':c.status==='new'?'':'blue'}">${esc(CSTATUS[c.status]||c.status)}</span></td><td class="note">${dshort(c.created_at)}</td></tr>`).join('')||'<tr><td colspan="8"><div class="empty">Nothing matches.</div></td></tr>';
+  LAST=L;const ok=L.filter(c=>c.email&&!c.unsubscribed_at&&!c.bounced&&c.consent_email==='yes'&&c.status!=='do_not_contact').length;
+  $('#cf-cons').textContent=L.length?`${ok} of ${L.length} said yes to email from us`:'';
+  $('#cf-mail').style.display=CF.tag&&!CF.tag.endsWith('-')?'':'none';
   $('#cf-n').textContent=L.length+' of '+CONTACTS.length+(L.length>300?' · showing the first 300, search to narrow down':'');
   document.querySelectorAll('[data-rec]').forEach(t=>t.onclick=()=>go('rec',t.dataset.rec))};
- $('#cf-q').oninput=()=>{CF.q=$('#cf-q').value;draw()};$('#cf-st').onchange=()=>{CF.st=$('#cf-st').value;draw()};$('#cf-ty').onchange=()=>{CF.ty=$('#cf-ty').value;draw()};$('#cf-co').onchange=()=>{CF.co=$('#cf-co').value;draw()};
+ $('#cf-q').oninput=()=>{CF.q=$('#cf-q').value;draw()};$('#cf-st').onchange=()=>{CF.st=$('#cf-st').value;draw()};$('#cf-ty').onchange=()=>{CF.ty=$('#cf-ty').value;draw()};$('#cf-co').onchange=()=>{CF.co=$('#cf-co').value;draw()};$('#cf-src').onchange=()=>{CF.src=$('#cf-src').value;draw()};
+ $('#cf-csv').onclick=()=>{if(!LAST.length)return toast('Nothing to export');contactsCsv(LAST);toast(LAST.length+' contacts exported')};
+ /* a campaign to everyone with this tag who said yes to email: the campaign's own rules still skip unsubscribed and bounced addresses */
+ $('#cf-mail').onclick=()=>{const l=CF_TAGS.find(x=>x[0]===CF.tag);CAM={template:'designer',daily_limit:40,status:'draft',from_name:'Joy Anthony Preston',channel:'email',
+  name:(l?l[1]:CF.tag)+' · '+new Date().toISOString().slice(0,10),seg_tags:CF.tag,seg_consent:'yes',
+  ...(CF.tag.startsWith('report-')?{subject:'Ghana Investment Report: the latest',blocks:[{type:'heading',text:'Ghana Investment Report: the latest',size:'l'},
+   {type:'text',text:'Hello {{first_name}},\n\nThank you for reading the Ghana Investment Report 2026. Here is what has changed since your copy.\n\n'},
+   {type:'button',label:'Read the updated report',style:'gold',url:'https://gothamconsult.com/ghana-investment-report'}]}:{})};go('out')};
  $('#cf-tag').onclick=e=>{const b=e.target.closest('button');if(!b)return;CF.tag=b.dataset.t;$('#cf-tag').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));draw()};
  draw();
 }
@@ -1954,7 +1977,7 @@ function campaignEditor(){
    <textarea class="t" id="c-wap" rows="3" placeholder="{{first_name}}&#10;SMEs at the Centre, 24 October&#10;https://gothamconsult.com/register?e=F1">${esc(c.wa_params||'')}</textarea></div>
 
   <h4 class="sec">Who gets it</h4>
-  <div class="note" style="margin-bottom:6px">Quick lists: <button type="button" class="btn btn-line" data-aud="brief">Brief subscribers</button> ${(ALL_ITEMS.length?ALL_ITEMS:ITEMS).filter(i=>i.kind==='event').slice(0,4).map(i=>`<button type="button" class="btn btn-line" data-aud="event-${esc(i.code.toLowerCase())}">Registered for ${esc(i.code)}</button>`).join(' ')}</div>
+  <div class="note" style="margin-bottom:6px">Quick lists: <button type="button" class="btn btn-line" data-aud="brief">Brief subscribers</button> <button type="button" class="btn btn-line" data-aud="report-updates" data-yes="1">Report readers who want updates</button> <button type="button" class="btn btn-line" data-aud="report-download">All report readers</button> ${(ALL_ITEMS.length?ALL_ITEMS:ITEMS).filter(i=>i.kind==='event').slice(0,4).map(i=>`<button type="button" class="btn btn-line" data-aud="event-${esc(i.code.toLowerCase())}">Registered for ${esc(i.code)}</button>`).join(' ')}</div>
   <div class="f2"><div><label class="l">Type of client <span class="note">— one or more, comma separated</span></label><input class="t" id="c-ty" list="c-tylist" value="${esc(c.seg_type||'')}" placeholder="corporate, international — blank for all">
     <datalist id="c-tylist">${Object.keys(CTYPE).map(k=>`<option value="${k}">`).join('')}</datalist></div>
    <div><label class="l">Country</label><input class="t" id="c-co" value="${esc(c.seg_country||'')}" placeholder="Ghana, Nigeria, UK — blank for all"></div></div>
@@ -2001,7 +2024,7 @@ function campaignEditor(){
  $('#c-ch').onclick=e=>{const b=e.target.closest('button');if(!b)return;ch=b.dataset.ch;showCh()};showCh();
  const smsCount=()=>{const t=$('#c-sms').value,n=t.length+70;$('#c-smsn').textContent=`— ${t.length} characters, about ${Math.max(1,Math.ceil(n/(/[^\x00-\x7F]/.test(t)?67:153)))} SMS each with the links`};
  $('#c-sms').oninput=smsCount;smsCount();
- document.querySelectorAll('[data-aud]').forEach(b=>b.onclick=()=>{$('#c-tags').value=b.dataset.aud;toast('Audience: '+b.textContent)});
+ document.querySelectorAll('[data-aud]').forEach(b=>b.onclick=()=>{$('#c-tags').value=b.dataset.aud;if(b.dataset.yes)$('#c-cons').checked=true;toast('Audience: '+b.textContent+(b.dataset.yes?' (only those who said yes)':''))});
 
  const grab=()=>{const g=i=>{const e=$(i);return e?e.value:''};
   CAM.name=g('#c-name');CAM.template=g('#c-tpl');CAM.subject=g('#c-subj');CAM.intro=g('#c-intro');
