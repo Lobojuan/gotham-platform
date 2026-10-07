@@ -589,7 +589,7 @@ def render(lang='en', L=None):
     I = {k: t(v) for k, v in {'live': 'Live', 'checked': 'Sources last checked automatically on {d}', 'next': '; next check {d}.', 'partner': 'Partner:',
          'source': 'Source', 'fill': 'Please add your name, a valid email and tick the box.', 'sending': 'Sending…', 'thanks': 'Thank you. We reply within one working day.',
          'check': 'Please check the form and try again.', 'fail': 'Could not send. Please email info@gothamconsult.com.', 'preparing': 'Preparing your copy…',
-         'ready': 'Your PDF is ready.', 'emailed': 'We have also emailed you the link (valid 30 days).', 'dl': 'Download the PDF', 'mailcheck': 'Thank you. Check your email for the link.',
+         'ready': 'Your PDF is ready.', 'downloadNote': 'You can download your copy below. This link is valid for 30 days.', 'dl': 'Download the PDF', 'mailcheck': 'Thank you. Check your email for the link.',
          'many': 'Too many tries. Please wait a few minutes.', 'expired': 'That download link has expired. Fill in the form again for a new one.'}.items()}
     I['months'] = MONTHS[L.lang]; I['lang'] = L.lang
     body = (CSS + '\n<!--#top-->\n<main id="main" data-no-tr>\n'
@@ -675,7 +675,7 @@ fetch("/api/report/public",{signal:T}).then(function(r){return r.ok?r.json():nul
 var g=document.getElementById("rp-dl"),gm=document.getElementById("rp-dl-msg");
 if(/[?&]link=expired/.test(location.search))gm.textContent=I.expired;
 function ready(u){var w=document.createElement("div");w.className="rp-ready";w.setAttribute("tabindex","-1");
- var p=document.createElement("p"),b=document.createElement("b");b.textContent=I.ready;p.appendChild(b);p.appendChild(document.createTextNode(" "+I.emailed));w.appendChild(p);
+ var p=document.createElement("p"),b=document.createElement("b");b.textContent=I.ready;p.appendChild(b);p.appendChild(document.createTextNode(" "+I.downloadNote));w.appendChild(p);
  var a=document.createElement("a");a.className="btn btn-gold";a.href=u;a.textContent=I.dl;a.style.alignSelf="flex-start";w.appendChild(a);
  g.replaceWith(w);w.focus();location.href=u}
 g.addEventListener("submit",function(e){e.preventDefault();var b={kind:"download",lang:lg,full_name:g.full_name.value,email:g.email.value,company:g.company.value,role:g.role.value,
@@ -683,7 +683,7 @@ g.addEventListener("submit",function(e){e.preventDefault();var b={kind:"download
  if(!b.full_name||!/^\\S+@\\S+\\.\\S+$/.test(b.email)||!b.consent){gm.textContent=I.fill;return}
  var btn=g.querySelector("button");btn.disabled=true;gm.textContent=I.preparing;
  fetch("/api/report/enquiry",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})})
- .then(function(x){if(x.ok&&x.j.url){ready(x.j.url)}else if(x.ok){gm.textContent=I.mailcheck}else{gm.textContent=x.j&&x.j.error==="too_many"?I.many:I.check;btn.disabled=false}})
+ .then(function(x){if(x.ok&&x.j.url){ready(x.j.url)}else if(x.ok){gm.textContent=I.check;btn.disabled=false}else{gm.textContent=x.j&&x.j.error==="too_many"?I.many:I.check;btn.disabled=false}})
  .catch(function(){gm.textContent=I.fail;btn.disabled=false})});
 var f=document.getElementById("rp-form"),msg=document.getElementById("rp-msg");
 f.addEventListener("change",function(){var k=f.kind.value;f.package.closest("label").hidden=k!=="partner"});

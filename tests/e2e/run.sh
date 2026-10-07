@@ -25,5 +25,6 @@ if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/ask_vo
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/investor_portal_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/presentation_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/seo_locales_ui.js"; rc=$?; fi
+if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/report_download_ui.js"; rc=$?; fi
 cleanup
 exit $rc
