@@ -19,6 +19,7 @@ import { makeGhanaData } from './ghana-data.js';
 import { makeFactWatch, loadFacts } from './fact-watch.js';
 import { makeReportWatch, loadReport } from './report-watch.js';
 import { ratesAnswer, websiteKnowledge, welcomeAnswer, paymentAnswer, unavailableAnswer, timeAnswer } from './chat-knowledge.js';
+import { publicAskMessages } from './ask-context.js';
 const ASK_VOICE = makeAskVoice();
 
 const PORT = process.env.PORT || 4100;
@@ -1937,7 +1938,7 @@ const server = http.createServer(async (req, res) => {
         .filter(m => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
         .map(m => ({ role: m.role, content: m.content.slice(0, 1200) }));
       askDay.n++;
-      const system = `You are "Ask Gotham", the assistant on the Gotham Consult website (Accra, Ghana).
+      const rules = `You are "Ask Gotham", the assistant on the Gotham Consult website (Accra, Ghana).
 Answer ordinary general-knowledge questions directly using your general knowledge. For Gotham services, payments, fees and Ghana investment figures, use only the verified knowledge below. Be warm, clear and brief: at most about 120 words, plain text, no markdown headings.
 Language: Use the selected website language for both written and spoken answers. ${selectedLanguage ? `The selected website language is ${selectedLanguage}. Answer entirely in that language, even if a quick-question button is written in English. ` : "No website language is selected; reply in the language of the visitor's last message. "}When no website language is selected and the visitor writes in a Ghanaian language (Twi, Fante, Ga, Ewe, Dagbani, Hausa, Pidgin and others),
 answer in that language as well as you can, keeping names, dates, prices and links exactly as given, then add one short
@@ -1954,11 +1955,10 @@ At the very end of your reply you may add ONE tag on its own line, and the page 
 [[lead]] when they want a quote, a proposal, a call, a meeting, help with their own case, or to be contacted;
 [[person]] when they ask for a human, are unhappy or in a hurry, or you cannot answer from the knowledge below.
 General knowledge is welcome: explain common concepts, geography, history, science and everyday questions without sending the visitor elsewhere. Do not decline a question merely because it is outside Gotham. For current news, weather, live quotes or other changing facts not supplied below, say that you cannot verify a live answer; never invent a current value.
-Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year round.
-
-${await askKnowledge()}${websiteKnowledge(question, process.env.SITE_DIR || '/data/site')}`;
+Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year round.`;
       try {
-        const answer = await askModel([{ role: 'system', content: system }, ...history, { role: 'user', content: question }], { temperature: 0.2 });
+        const messages = publicAskMessages({ rules, knowledge: await askKnowledge(), sources: websiteKnowledge(question, process.env.SITE_DIR || '/data/site'), history, question });
+        const answer = await askModel(messages, { temperature: 0.2 });
         if (!answer) return unavailable();
         const { text, actions } = await chatActions(answer);
         const reply = text.slice(0, 2000);

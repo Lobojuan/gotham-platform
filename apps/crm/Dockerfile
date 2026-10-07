@@ -65,6 +65,7 @@ COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund
 COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-piper.py ask-chinese.py ask-arabic.py ask-voices.json ask-welcome.json ask-payment.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json fact-watch.js facts.json schema.sql assistant.md ./
 COPY public ./public
+COPY ask-context.js ./
 RUN mkdir -p /data/media
 ENV NODE_ENV=production MEDIA_DIR=/data/media
 COPY report-watch.js report.json ./

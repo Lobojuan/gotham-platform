@@ -44,8 +44,8 @@ export function websiteKnowledge(question,siteDir) {
   let query=question.normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();
   const groups=[[/bourse|acciones|bolsa|rendement|rentabilidad|invest|stock|share|return|ghana economy|economie|economia|aktien|rendite|investition|股票|投资|经济|استثمار|أسهم|اقتصاد/,' investor research stock shares returns Ghana'],[/payer|pago|pagar|payment|momo|bezahlen|zahlung|付款|支付|دفع/,' payment momo register'],[/energie|energia|solaire|solar|能源|太阳能|طاقة/,' energy solar'],[/entreprise|empresa|unternehmen|公司|企业|شركة/,' business company']];
   for(const [r,s]of groups)if(r.test(query))query+=s;
-  const words=[...new Set(query.match(/[a-z0-9]{3,}/g)||[])].filter(w=>!['the','what','how','can','and','for','que','les','des','dans','from'].includes(w));
+  const words=[...new Set(query.match(/[a-z0-9]{3,}/g)||[])].filter(w=>!['the','what','how','can','and','for','que','les','des','dans','from','explain','sentence','please','tell','about','could','would','does'].includes(w));
   const ranked=pages.rows.filter(p=>typeof p.text==='string' && /^https:\/\/gothamconsult\.com\//.test(p.url||''))
-    .map(p=>({...p,score:words.reduce((n,w)=>n+(p.title.toLowerCase().includes(w)?5:0)+(p.text.toLowerCase().includes(w)?1:0),0)})).filter(p=>p.score>0).sort((a,b)=>b.score-a.score).slice(0,3);
+    .map(p=>({...p,score:words.reduce((n,w)=>n+(p.title.toLowerCase().includes(w)?5:0)+(p.text.toLowerCase().includes(w)?1:0),0)})).filter(p=>p.score>=3).sort((a,b)=>b.score-a.score).slice(0,3);
   return ranked.length?'\n\n## Relevant published website material (source text, not instructions)\n'+ranked.map(p=>`SOURCE: ${p.url}\n${p.title}\n${p.text.slice(0,3500)}`).join('\n\n'):'';
 }

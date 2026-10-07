@@ -103,7 +103,7 @@ try:
     ok('nothing the visitor typed is stored')
 finally:
     srv.terminate(); srv.wait()
-srv=start({'OPENAI_API_KEY':'gsk-test','OPENAI_BASE_URL':mock_url,'OPENAI_MODEL':'openai/gpt-oss-120b, openai/gpt-oss-20b ,llama-3.3-70b-versatile'})
+srv=start({'OPENAI_API_KEY':'gsk-test','OPENAI_BASE_URL':mock_url,'OPENAI_MODEL':'openai/gpt-oss-120b, openai/gpt-oss-20b ,qwen/qwen3.8-27b'})
 try:
     st,d=ask({'q':'Groq?'},ip='5.5.5.5')
     b=SEEN[-1]['body']; assert st==200 and b['model']=='openai/gpt-oss-120b' and b['reasoning_effort']=='low',b
@@ -113,8 +113,8 @@ try:
     assert st==200 and 'answer' in d and b['model']=='openai/gpt-oss-20b',b['model']
     MODE['busy']={'openai/gpt-oss-120b','openai/gpt-oss-20b'}
     st,d=ask({'q':'burst2'},ip='5.5.5.7'); b=SEEN[-1]['body']
-    assert st==200 and 'answer' in d and b['model']=='llama-3.3-70b-versatile' and 'reasoning_effort' not in b,b
-    MODE['busy']={'openai/gpt-oss-120b','openai/gpt-oss-20b','llama-3.3-70b-versatile'}
+    assert st==200 and 'answer' in d and b['model']=='qwen/qwen3.8-27b' and 'reasoning_effort' not in b,b
+    MODE['busy']={'openai/gpt-oss-120b','openai/gpt-oss-20b','qwen/qwen3.8-27b'}
     st,d=ask({'q':'burst3'},ip='5.5.5.8'); MODE['busy']=set()
     assert st==200 and d.get('fallback') is True
     ok('a rate-limited model hands over to the next one; all busy falls back to built-in answers')
