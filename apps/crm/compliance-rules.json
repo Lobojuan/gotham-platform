@@ -1,0 +1,180 @@
+{
+ "about": "Ghana filing and payment deadlines used by the member compliance calendar (members.js). Each rule has its official source and a quote. Researched 7 Oct 2026 (Codex, web), checked by Claude. Reminders are information, not legal advice; GIPA renewal under Act 1173 is not confirmed by an official source yet, so members enter certificate expiry dates themselves.",
+ "checked": "2026-10-07",
+ "rules": [
+  {
+   "id": "paye",
+   "name": "PAYE return and payment",
+   "applies": [
+    "employees"
+   ],
+   "when": {
+    "type": "monthly_day",
+    "day": 15,
+    "weekend": "previous"
+   },
+   "how": "File the monthly PAYE return and pay the tax withheld from salaries on or before the 15th of the month after the deduction.",
+   "source_url": "https://gra.gov.gh/domestic-tax/tax-types/paye/",
+   "quote": "Monthly PAYE returns must be filed by the employer on behalf of the employee on or before the fifteenth day of the month following the month in which the deduction was made.",
+   "penalty": "Late filing: 500 currency points plus 10 currency points for each day the failure continues; tax offences may also be prosecuted under the Revenue Administration Act."
+  },
+  {
+   "id": "ssnit",
+   "name": "SSNIT Tier 1 and Tier 2 contributions",
+   "applies": [
+    "employees"
+   ],
+   "when": {
+    "type": "monthly_day",
+    "day": 14,
+    "weekend": "previous"
+   },
+   "how": "Pay 13.5% of the 18.5% contribution to SSNIT and 5% to your Tier 2 scheme within 14 days of the following month; send the contribution report.",
+   "source_url": "https://www.ssnit.org.gh/become-an-employer/",
+   "quote": "Remit 13.5% of the total contribution to SSNIT within 14 days of the following month. 5% to Tier 2.",
+   "penalty": "Not stated on the cited SSNIT page; late/non-payment may trigger enforcement under the National Pensions Act and NPRA/SSNIT rules."
+  },
+  {
+   "id": "wht",
+   "name": "Withholding tax return and payment",
+   "applies": [
+    "always"
+   ],
+   "when": {
+    "type": "monthly_day",
+    "day": 15,
+    "weekend": "previous"
+   },
+   "how": "If you withheld tax from suppliers or non-residents last month, file the statement and pay it within 15 days after the month ends.",
+   "source_url": "https://gra.gov.gh/portfolio/withholding-tax/",
+   "quote": "A withholding agent shall file and pay to the Commissioner-General within fifteen (15) days after the end of the month a statement in the prescribed form and tax withheld.",
+   "penalty": "Withholding agent that fails to withhold is liable to pay the tax; late filing also attracts general GRA return penalties."
+  },
+  {
+   "id": "vat",
+   "name": "VAT, NHIL and GETFund return and payment",
+   "applies": [
+    "vat"
+   ],
+   "when": {
+    "type": "monthly_last_workday"
+   },
+   "how": "File the VAT and levies return and pay by the last working day of the month after the month it covers.",
+   "source_url": "https://gra.gov.gh/domestic-tax/tax-types/vat/",
+   "quote": "Taxpayers are to file their returns and make payments by the last working day of each month immediately following the month to which the returns relate.",
+   "penalty": "GRA VAT page states penalties apply for late submission and late payment; GRA penalties page states failure to file a tax return attracts 500 currency points plus 10 currency points per day."
+  },
+  {
+   "id": "cit_provisional",
+   "name": "Corporate income tax: quarterly instalment",
+   "applies": [
+    "always"
+   ],
+   "when": {
+    "type": "quarterly_after_year_end",
+    "months": [
+     3,
+     6,
+     9,
+     12
+    ],
+    "day": "last"
+   },
+   "how": "Pay the quarterly instalment of your provisional (self-assessed) income tax by the last day of the quarter of your tax year; file the estimate in the first quarter.",
+   "source_url": "https://gra.gov.gh/domestic-tax/tax-types/corporate-income-tax/",
+   "quote": "Self-Assessment Payment must be done in four quarterly instalments",
+   "penalty": "Failure to submit estimate can result in Commissioner-General’s assessment; late filing/payment may attract Revenue Administration Act penalties and interest."
+  },
+  {
+   "id": "cit_annual",
+   "name": "Corporate income tax: annual return",
+   "applies": [
+    "always"
+   ],
+   "when": {
+    "type": "months_after_year_end",
+    "months": 4
+   },
+   "how": "File the annual income tax return and pay any balance within four months after your financial year ends.",
+   "source_url": "https://gra.gov.gh/domestic-tax/domestic-tax-faq/",
+   "quote": "All Taxpayers must file a return on income not later than four (4) months after the end of the year.",
+   "penalty": "Late filing: 500 currency points plus 10 currency points for each day the failure continues."
+  },
+  {
+   "id": "orc_annual",
+   "name": "Annual return to the Registrar of Companies (with accounts and beneficial owners)",
+   "applies": [
+    "always"
+   ],
+   "when": {
+    "type": "months_after_year_end",
+    "months": 4
+   },
+   "how": "File the annual return with the Office of the Registrar of Companies, with financial statements and beneficial ownership data. For 31 December year ends the Registrar set 30 April (extended to 30 June in 2026).",
+   "source_url": "https://orc.gov.gh/single-blog.php?slug=extension-of-deadline-for-annual-returns",
+   "quote": "the deadline for filing Annual Returns and renewal of business names has been extended from 30th April 2026 to 30th June 2026.",
+   "penalty": "ORC 2026 notice: GH¢1,000 for companies defaulting 1–4 years; GH¢2,000 for default of 5 years or more, plus filing fees. Fees page also lists penalty for non-filing of annual returns."
+  },
+  {
+   "id": "quota_return",
+   "name": "Immigrant quota annual return",
+   "applies": [
+    "foreign_staff"
+   ],
+   "when": {
+    "type": "yearly_date",
+    "month": 1,
+    "day": 15,
+    "weekend": "previous"
+   },
+   "how": "Send the annual return of foreign staff employed on 1 January to the Immigrant Quota Committee, copy to the Director of Immigration, within 14 days after 1 January.",
+   "source_url": "https://www.gis.gov.gh/wp-content/uploads/2024/02/Legal-Handbook-2016.pdf",
+   "quote": "Not later than fourteen days after the first day of January in each year",
+   "penalty": "Immigration Act states a body corporate that fails to comply is liable to pay a penalty; GIS current fees page lists non-submission of returns/company penalty."
+  },
+  {
+   "id": "bop",
+   "name": "Renew your Business Operating Permit (district assembly)",
+   "applies": [
+    "always"
+   ],
+   "when": {
+    "type": "yearly_date",
+    "month": 12,
+    "day": 15,
+    "weekend": "previous"
+   },
+   "how": "Business Operating Permits from the district assembly expire on 31 December in many assemblies; renew for the new year. Fees and dates vary by assembly.",
+   "source_url": "https://fnda.gov.gh/wp-content/uploads/2023/10/Business-Operating-Permit.pdf",
+   "quote": "This license expires on 31st December of each year and must be renewed yearly at a fee.",
+   "penalty": "Operating without a valid permit may result in penalties, closure, or other regulatory action by the Assembly; exact penalty varies by Assembly bye-law/fee-fixing resolution."
+  }
+ ],
+ "permit_suggestions": [
+  {
+   "name": "Work permit",
+   "lead_days": 60,
+   "note": "Apply for renewal at least one month before expiry (GIS)."
+  },
+  {
+   "name": "Residence permit",
+   "lead_days": 60,
+   "note": "Apply within one month before expiry (GIS)."
+  },
+  {
+   "name": "GIPA registration certificate",
+   "lead_days": 60,
+   "note": "Check the renewal period under the GIPA Act 2026 (Act 1173) with GIPA."
+  },
+  {
+   "name": "Data Protection Commission registration",
+   "lead_days": 45,
+   "note": "Renew every two years (Act 843, s.50)."
+  },
+  {
+   "name": "Tax Clearance Certificate",
+   "lead_days": 30,
+   "note": ""
+  }
+ ]
+}

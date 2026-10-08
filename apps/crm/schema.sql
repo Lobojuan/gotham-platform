@@ -544,3 +544,25 @@ insert into chat_channels(kind, slug, name, topic) values
   ('channel','forums','forums','Speakers, venues, sponsors and the day itself'),
   ('channel','investors','investors','Investor desk and the investor list')
 on conflict (slug) do nothing;
+
+-- Members: free accounts, paid plans, compliance calendar (members.js)
+create table if not exists members (
+  id serial primary key, email text not null unique, name text, company text, country text, phone text,
+  lang text default 'en', sectors text[] default '{}', alerts boolean default true, marketing boolean default false,
+  consent_at timestamptz, verified_at timestamptz, last_login timestamptz, nudged_at timestamptz, closed_at timestamptz,
+  contact_id int, sv int default 0, unsub_token text, source text, created_at timestamptz default now());
+create table if not exists member_logins (nonce text primary key, member_id int not null, used_at timestamptz, created_at timestamptz default now());
+create table if not exists member_companies (
+  id serial primary key, member_id int not null references members(id) on delete cascade, name text not null, tin text, reg_no text,
+  incorporated_on date, year_end_month int default 12, vat_registered boolean default false, has_employees boolean default false,
+  foreign_owned boolean default true, foreign_staff boolean default false, permits jsonb default '[]', created_at timestamptz default now());
+create table if not exists member_orders (
+  id serial primary key, member_id int not null references members(id) on delete cascade, product text not null,
+  company_id int references member_companies(id) on delete set null, invoice_id int, status text not null default 'pending',   -- pending | active | ended | open | done | cancelled
+  starts date, ends date, details jsonb default '{}', renewal_of int, renew_invoiced boolean default false,
+  created_at timestamptz default now(), paid_at timestamptz);
+create index if not exists member_orders_invoice on member_orders(invoice_id);
+create table if not exists member_updates (id serial primary key, member_id int not null references members(id) on delete cascade, title text not null, body text, url text, status text, by_user text, at timestamptz default now());
+create table if not exists member_reminders (company_id int not null, key text not null, due date not null, kind text not null, sent_at timestamptz default now(), primary key (company_id, key, due, kind));
+create table if not exists member_digests (member_id int not null, week text not null, sent_at timestamptz default now(), primary key (member_id, week));
+create table if not exists member_posts (id serial primary key, title text not null, sector text, body text, published_at timestamptz, by_user text, created_at timestamptz default now());

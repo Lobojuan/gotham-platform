@@ -34,7 +34,7 @@ urls = [n.text for n in ET.parse(DIST / 'sitemap.xml').findall('.//{*}loc')]
 ok(len(urls) == len(set(urls)), 'Sitemap has no duplicate URLs')
 for lang in ('fr', 'es', 'de', 'ar', 'zh'):
     localized = [u for u in urls if u == SITE + '/' + lang or u.startswith(SITE + '/' + lang + '/')]
-    ok(len(localized) == 25, lang + ': all 25 translated pages in sitemap (24 + the investment report)')
+    ok(len(localized) == 26, lang + ': all 26 translated pages in sitemap (24 + the investment report + membership)')
     for url in localized:
         path = url.removeprefix(SITE); name = path.removeprefix('/' + lang).strip('/')
         doc = read(path)

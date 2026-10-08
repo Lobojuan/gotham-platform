@@ -672,13 +672,13 @@ const ghsShort=n=>{n=Number(n||0);return n>=1e6?'GHS '+(n/1e6).toFixed(n>=1e7?0:
 const dshort=s=>s?new Date(s).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
 const NAV=[
  ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt'],['chat','Team chat','chat','chcnt']]],
- ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1],['web','Website visitors','globe2',null,1]]],
+ ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['members','Members','star',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1],['web','Website visitors','globe2',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
  ['System',[['mail','Email outbox','mail','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
-const TITLES={dash:'Dashboard',chat:'Team chat',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',web:'Website visitors',rec:'Company record',reports:'Reports',
+const TITLES={dash:'Dashboard',members:'Members',mem:'Member',chat:'Team chat',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',web:'Website visitors',rec:'Company record',reports:'Reports',
  regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',
  out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
-const ADMIN_ONLY=new Set(['web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
+const ADMIN_ONLY=new Set(['members','mem','web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
 let V='dash', ARG=null, USERS=[];
 function buildNav(){
  $('#nav').innerHTML=NAV.map(([g,items])=>{const it=items.filter(x=>!x[4]||isAdmin());
@@ -701,7 +701,7 @@ addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
 function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
- const m={dash:dashboard,chat:chatView,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,
+ const m={dash:dashboard,chat:chatView,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,members:membersView,mem:()=>memberView(+ARG),imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
   contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>',
@@ -2685,6 +2685,46 @@ function invShow(inv){
  if($('#is-void'))$('#is-void').onclick=async()=>{const reason=prompt((isQ?'Why is ':'Void only an invoice that never reached the client. Why is ')+inv.number+' being '+(isQ?'withdrawn':'voided')+'? (kept on record)');if(!reason)return;try{await act('void',{reason});toast(inv.number+' voided');refreshInv();invOpen(inv.id)}catch(e){toast(invErr(e))}};
 }
 let WEBD=30;
+/* ---------- Members: free accounts, paid plans, compliance calendar (members.js) ---------- */
+const MPROD={pro_month:'Pro, 1 month',pro_year:'Pro, 12 months',compliance_month:'Compliance, 1 month',compliance_year:'Compliance, 12 months',call:'Expert call',check:'Counterparty check',filing:'We file it for you'};
+const ghs=n=>'GHS '+Math.round(+n||0).toLocaleString('en-GB');
+async function membersView(){
+ setTitle('Members','Free accounts, paid plans and what needs doing');
+ $('#view').innerHTML='<div class="empty">Loading…</div>';
+ const r=await api('/api/members').catch(()=>null);if(!r||V!=='members')return;const k=r.kpi;
+ const kp=(l,v,sub)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+ $('#view').innerHTML=`<div class="kpis">${kp('Members',k.members,`${k.new_7d} new this week, ${k.new_30d} in 30 days`)}${kp('Paying',k.paying,`${k.conversion}% of members`)}${kp('Monthly recurring income',ghs(k.mrr),'active plans, before VAT')}${kp('Paid in 30 days',ghs(k.paid_30d),'incl. VAT')}${kp('To do',k.open_bookings,`${k.unpaid} orders waiting for payment`)}</div>
+ <div class="card"><h3 style="margin-bottom:10px">To do: calls, checks and filings that are paid</h3><div class="wrapx" style="max-height:none"><table><thead><tr><th>Order</th><th>Member</th><th>What they need</th><th>Status</th><th></th></tr></thead><tbody>${r.open.map(o=>`<tr><td><b>${esc(MPROD[o.product]||o.product)}</b><div class="note">${dshort(o.created_at)}${o.number?' · '+esc(o.number):''}</div></td><td>${esc(o.name||o.email)}<div class="note">${esc(o.company||'')} ${esc(o.email)}</div></td><td class="note" style="max-width:420px">${esc((o.details||{}).brief||'')}${(o.details||{}).slots?'<div>Times: '+esc(o.details.slots)+'</div>':''}</td><td><span class="chip ${o.status==='open'?'gold':''}">${o.status==='open'?'Paid, to do':'Waiting for payment'}</span></td><td>${o.status==='open'?`<button class="btn btn-line" data-done="${o.id}">Mark done</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5"><div class="empty">Nothing waiting.</div></td></tr>'}</tbody></table></div></div>
+ <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Member</th><th>Company · country</th><th>Plans</th><th>Sectors</th><th>Language</th><th>Joined</th></tr></thead><tbody>${r.members.map(m=>`<tr class="r" data-mem="${m.id}"><td><b>${esc(m.name||m.email)}</b><div class="note">${esc(m.email)}${m.verified_at?'':' · not confirmed yet'}</div></td><td class="note">${esc(m.company||'—')}<div>${esc(m.country||'')}</div></td><td>${m.plans?`<span class="chip green">${esc(m.plans)}</span>`:'<span class="note">Free</span>'}${m.unpaid?` <span class="chip">${m.unpaid} unpaid</span>`:''}${m.companies?`<div class="note">${m.companies} compan${m.companies>1?'ies':'y'}</div>`:''}</td><td class="note">${esc((m.sectors||[]).join(', '))}</td><td class="note">${esc((m.lang||'en').toUpperCase())}</td><td class="note">${dshort(m.created_at)}</td></tr>`).join('')||'<tr><td colspan="6"><div class="empty">No members yet. Every PDF download page invites readers to make a free account.</div></td></tr>'}</tbody></table></div></div>
+ <div class="card"><h3>Prices (GHS, before VAT)</h3><div class="f2" id="mp">${Object.entries(r.prices).map(([k2,p])=>`<div><label class="l">${esc(MPROD[k2]||k2)}</label><input class="t" data-pk="${k2}" type="number" min="1" value="${p.price}"></div>`).join('')}</div><button class="btn btn-line" id="mp-save" style="margin-top:10px">Save prices</button> <span class="note">Rule: at least cost × 1.7. The membership page updates within minutes.</span></div>
+ <div class="card"><h3>Write a Pro briefing</h3><div class="f2"><div><label class="l">Title</label><input class="t" id="pb-t"></div><div><label class="l">Sector</label><select class="t" id="pb-s"><option value="">All sectors</option><option value="macro">Economy</option><option value="mining">Mining</option><option value="energy">Energy</option><option value="agri">Agribusiness</option><option value="industry">ICT, industry</option></select></div></div><label class="l">Text</label><textarea class="t" id="pb-b" rows="6"></textarea><button class="btn btn-dark" id="pb-go" style="margin-top:10px">Publish to Pro members</button></div>`;
+ document.querySelectorAll('[data-mem]').forEach(t=>t.onclick=()=>go('mem',t.dataset.mem));
+ document.querySelectorAll('[data-done]').forEach(b=>b.onclick=async()=>{await api('/api/members/orders/'+b.dataset.done+'/done',{method:'POST',body:'{}'});toast('Done');membersView()});
+ $('#mp-save').onclick=async()=>{const b={};document.querySelectorAll('[data-pk]').forEach(i=>b[i.dataset.pk]=+i.value);await api('/api/members/prices',{method:'POST',body:JSON.stringify(b)});toast('Prices saved')};
+ $('#pb-go').onclick=async()=>{const t=$('#pb-t').value.trim();if(!t)return toast('Add a title');await api('/api/members/posts',{method:'POST',body:JSON.stringify({title:t,sector:$('#pb-s').value,body:$('#pb-b').value,publish:true})});toast('Published');$('#pb-t').value='';$('#pb-b').value=''};
+}
+async function memberView(id){
+ $('#view').innerHTML='<div class="empty">Loading…</div>';
+ const r=await api('/api/members/'+id).catch(()=>null);if(!r||V!=='mem')return;const m=r.member;
+ setTitle(m.name||m.email,(m.company||'')+(m.country?' · '+m.country:''));
+ pageActions(`<a class="btn btn-line" href="#members">← All members</a>${m.contact_id?`<a class="btn btn-line" href="#rec/${m.contact_id}">Contact record</a>`:''}`);
+ const opts=Object.entries(MPROD).filter(([k2])=>/pro|compliance/.test(k2)).map(([k2,l])=>`<option value="${k2}">${l}</option>`).join('');
+ $('#view').innerHTML=`<div class="rec"><div>
+ <div class="card"><h3>Plans</h3>${r.plans.length?r.plans.map(p=>`<span class="chip green">${esc(MPROD[p.product]||p.product)}${p.company?' · '+esc(p.company):''} to ${esc(p.ends)}</span>`).join(' '):'<p class="note">Free account.</p>'}
+  <h3 style="margin-top:16px">Give a plan (e.g. compliance free for year 1 with a registration)</h3><div class="f2"><div><label class="l">Plan</label><select class="t" id="g-p">${opts}</select></div><div><label class="l">Months</label><input class="t" id="g-m" type="number" min="1" max="36" value="12"></div></div>
+  <div class="f2"><div><label class="l">Company (for compliance)</label><select class="t" id="g-c"><option value="">—</option>${r.companies.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div></div><button class="btn btn-dark" id="g-go" style="margin-top:8px">Give the plan</button></div>
+ <div class="card"><h3>Orders</h3>${r.orders.map(o=>`<div class="note" style="margin-bottom:6px"><b>${esc(MPROD[o.product]||o.product)}</b> · ${esc(o.status)}${o.ends?' · to '+esc(o.ends):''}${o.invoice?` · <a href="${esc(o.pay_url)}" target="_blank" rel="noopener">${esc(o.invoice)}</a> (${esc(o.invoice_status||'')})`:''}</div>`).join('')||'<p class="note">No orders yet.</p>'}</div>
+ <div class="card"><h3>Companies and next deadlines</h3>${r.calendar.map(c=>`<p><b>${esc(c.company.name)}</b> ${c.full?'<span class="chip green">calendar on</span>':'<span class="chip">preview only</span>'}</p><ul class="note">${c.deadlines.map(d=>`<li>${esc(d.due)} · ${esc(d.name)}${d.period?' · '+esc(d.period):''}</li>`).join('')}</ul>`).join('')||'<p class="note">No companies added.</p>'}</div>
+ </div><div>
+ <div class="card"><h3>Send a case update (shows on their account page)</h3><label class="l">Title</label><input class="t" id="u-t" placeholder="Company registered: certificate attached"><label class="l">Message</label><textarea class="t" id="u-b" rows="4"></textarea><label class="l">Link (optional)</label><input class="t" id="u-u" placeholder="https://"><label class="l">Status (optional)</label><input class="t" id="u-s" placeholder="In progress / Done"><label class="note" style="display:flex;gap:8px;margin-top:8px"><input type="checkbox" id="u-n" checked> Also email it</label><button class="btn btn-dark" id="u-go" style="margin-top:8px">Send update</button>
+ ${r.updates.map(u=>`<div class="note" style="margin-top:10px"><b>${esc(u.title)}</b> · ${dshort(u.at)}<div>${esc(u.body||'')}</div></div>`).join('')}</div>
+ <div class="card"><h3>Details</h3><div class="kv"><span>Email</span><div>${esc(m.email)}</div><span>Language</span><div>${esc((m.lang||'en').toUpperCase())}</div><span>Sectors</span><div>${esc((m.sectors||[]).join(', '))}</div><span>Alerts</span><div>${m.alerts?'on':'off'}</div><span>Marketing emails</span><div>${m.marketing?'yes':'no'}</div><span>Joined</span><div>${dshort(m.created_at)}</div><span>Last sign-in</span><div>${m.last_login?dshort(m.last_login):'—'}</div></div></div>
+ </div></div>`;
+ $('#g-go').onclick=async()=>{const b={product:$('#g-p').value,months:+$('#g-m').value,company_id:+$('#g-c').value||null};if(b.product.startsWith('compliance')&&!b.company_id)return toast('Choose the company');
+  try{await api('/api/members/'+id+'/grant',{method:'POST',body:JSON.stringify(b)});toast('Plan given');memberView(id)}catch{toast('Could not give the plan')}};
+ $('#u-go').onclick=async()=>{const b={title:$('#u-t').value.trim(),body:$('#u-b').value,url:$('#u-u').value.trim(),status:$('#u-s').value.trim(),notify:$('#u-n').checked};if(!b.title)return toast('Add a title');
+  await api('/api/members/'+id+'/update',{method:'POST',body:JSON.stringify(b)});toast('Update sent');memberView(id)};
+}
 async function webView(){
  setTitle('Website visitors','Who comes to gothamconsult.com, from where, and which pages bring enquiries');
  $('#view').innerHTML='<div class="empty">Loading…</div>';

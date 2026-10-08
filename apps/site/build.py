@@ -12,6 +12,7 @@ import insights_fr as IF
 import investor_content as INVESTOR
 import facts_page as FACTSP
 import report_page as REPORTP
+import members_page as MEMP
 from seo_locales import ES_META
 from locale_support import prepare_locale, localize_investor_data, NEW_LANGUAGES
 
@@ -102,6 +103,10 @@ GEN['sources.html'] = FACTSP.render()
 # Ghana Investment Report: sector chapters, sourced figures, weekly-checked (apps/crm/report.json)
 META['ghana-investment-report.html'] = dict(title='Ghana Investment Report 2026: Economy and Key Sectors | Gotham Consult', desc='Independent investor guide to Ghana in 2026: growth, inflation, rates and reserves, plus mining, energy, cocoa and agribusiness, ICT, manufacturing, real estate and logistics. Every figure sourced and re-checked weekly.', og='img/og/real-airportcity.jpg', extra=V2_EXTRA)
 GEN['ghana-investment-report.html'] = REPORTP.render()
+META['membership.html'] = dict(title=MEMP.EXTRA[0], desc=MEMP.EXTRA[1], og='img/og/real-airportcity.jpg', extra=V2_EXTRA)
+GEN['membership.html'] = MEMP.render_membership()
+META['account.html'] = dict(title=MEMP.EXTRA[2], desc=MEMP.EXTRA[1], og='img/og/real-airportcity.jpg', extra=V2_EXTRA)
+GEN['account.html'] = MEMP.render_account()
 # the partner's page
 META['carlson-capital.html'] = dict(title='Carlson Capital Ltd: Market Entry, AI & Mining | Gotham Consult',
   desc="Carlson Capital Ltd, Gotham Consult's partner for company set-up and market entry for large companies, AI, software, apps and mining. Registered in Ghana.",
@@ -288,7 +293,7 @@ def main():
 
     # Crawlable six-language twins share dictionaries, article data and reciprocal alternates.
     locale_pages = ['index.html', 'services.html', *[f'services/{p}.html' for p in PRACTICES], 'invest.html', 'mining.html', 'forums.html', 'about.html']
-    twins = locale_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS] + ['ghana-investment-report.html']
+    twins = locale_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS] + ['ghana-investment-report.html', 'membership.html', 'account.html']
     def path_of(n): return '' if n == 'index.html' else n[:-5]
     paths = {('/' + path_of(n)).rstrip('/') or '/' for n in twins}
     def language_links(doc, n, lang):
@@ -330,6 +335,14 @@ def main():
                 m = META[n]
                 doc = HEAD.format(site=SITE, path=path_of(n), ogsize='', **{**{k: v for k, v in m.items() if k != 'crumb'}, 'extra': V2_EXTRA}) + body + '\n</body>\n</html>'
                 title, desc = (IF.L[lang]['idx_title'], IF.L[lang]['idx_desc']) if a is None else (a[lang]['title'], a[lang]['description'])
+            elif n in ('membership.html', 'account.html'):
+                ML = MEMP.Loc(lang); body = MEMP.render_membership(lang, ML) if n == 'membership.html' else MEMP.render_account(lang, ML)
+                for part in ('top', 'bottom'):
+                    body = body.replace(f'<!--#{part}-->', open(os.path.join(HERE, 'pages', '_partials', f'_{part}.html'), encoding='utf-8').read())
+                m = META[n]
+                doc = HEAD.format(site=SITE, path=path_of(n), ogsize='', **{**{k: v for k, v in m.items() if k != 'crumb'}, 'extra': V2_EXTRA}) + body + '\n</body>\n</html>'
+                title, desc = ML.t(m['title']), ML.t(m['desc'])
+                if ML.miss: print(f'  WARNING membership {lang}: {len(ML.miss)} untranslated strings')
             elif n == 'ghana-investment-report.html':
                 # The report is written per language (apps/crm/report-i18n): its own numbers, dates and direction; only the site chrome goes through the dictionary.
                 RL = REPORTP.Loc(lang); body = REPORTP.render(lang, RL)
@@ -419,8 +432,13 @@ def main():
     for fid, prob in REPORTP.check(): print(f'  WARNING report {fid}: {prob}')
     open(os.path.join(DIST, 'robots.txt'), 'w').write(
         f'User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /i/\nSitemap: {SITE}/sitemap.xml\n')
-    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'invest/join', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'demo/receptionist', 'tools', 'sources', 'ghana-investment-report', 'family', 'teaser', 'privacy', 'terms']
-    pages += [lang + ('/' + path_of(n) if path_of(n) else '') for lang in ('fr', 'es', *NEW_LANGUAGES) for n in twins]
+    pages = ['', 'services', *[f'services/{p}' for p in PRACTICES], 'invest', 'invest/join', 'mining', 'forums', 'about', 'insights', *[f'insights/{a["slug"]}' for a in ARTS], 'projects/dawa-solar', 'carlson-capital', 'demo/receptionist', 'tools', 'sources', 'ghana-investment-report', 'membership', 'family', 'teaser', 'privacy', 'terms']
+    pages += [lang + ('/' + path_of(n) if path_of(n) else '') for lang in ('fr', 'es', *NEW_LANGUAGES) for n in twins if n != 'account.html']
+    for lang in ('', 'fr', 'es', *NEW_LANGUAGES):   # the member's own page is not for search engines
+        fp = os.path.join(DIST, lang, 'account.html')
+        if os.path.exists(fp):
+            h = open(fp, encoding='utf-8').read()
+            if 'name="robots"' not in h: open(fp, 'w', encoding='utf-8').write(h.replace('<head>', '<head>\n<meta name="robots" content="noindex, nofollow">', 1))
     today = date.today().isoformat()
     urls = ''.join(f'  <url><loc>{SITE}/{p}</loc><lastmod>{today}</lastmod></url>\n' for p in pages)
     open(os.path.join(DIST, 'sitemap.xml'), 'w').write(

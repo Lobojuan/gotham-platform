@@ -71,5 +71,7 @@ ENV NODE_ENV=production MEDIA_DIR=/data/media
 COPY report-watch.js report.json ./
 COPY report-files ./report-files
 COPY report-i18n ./report-i18n
+COPY members.js member-products.json compliance-rules.json ./
+COPY site-i18n ./site-i18n
 EXPOSE 4100
 CMD ["node","server.js"]

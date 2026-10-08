@@ -18,6 +18,7 @@ import { makeAskVoice } from './ask-voice.js';
 import { makeGhanaData } from './ghana-data.js';
 import { makeFactWatch, loadFacts } from './fact-watch.js';
 import { makeReportWatch, loadReport } from './report-watch.js';
+import { makeMembers, PRODUCTS as MEMBER_PRODUCTS, PERMITS as MEMBER_PERMITS, tr as MEMBER_TR } from './members.js';
 import { ratesAnswer, websiteKnowledge, welcomeAnswer, paymentAnswer, unavailableAnswer, timeAnswer } from './chat-knowledge.js';
 import { publicAskMessages } from './ask-context.js';
 const ASK_VOICE = makeAskVoice();
@@ -1663,7 +1664,7 @@ const server = http.createServer(async (req, res) => {
 
   try {
     const ctok = readToken(cookies(req).gc_session);
-    if (ctok && p.startsWith('/api/')) {
+    if (ctok && !ctok.kind && p.startsWith('/api/')) {   // only real sessions: a two-step ticket ({kind:'totp'}) is signed with the same key
       const r = (await q('select id,email,name,role,must_change,coalesce(active,true) as active,sv from users where id=$1', [ctok.id])).rows[0];
       if (r && r.active && (r.sv || 0) === (ctok.sv || 0)) sess = { id: r.id, email: r.email, name: r.name, role: r.role, must_change: !!r.must_change };
     }
@@ -1856,7 +1857,8 @@ const server = http.createServer(async (req, res) => {
           wrapMail(esc(T('Your Ghana Investment Report, {name}').replace('{name}', firstName(full_name))),
             `<div dir="${rtl ? 'rtl' : 'ltr'}"><p style="color:#5A6472;font-size:15px;line-height:1.6">${esc(T('Thank you for your interest. Your copy of the Ghana Investment Report 2026 is ready.'))}</p>
             <p style="margin:22px 0"><a href="${esc(link)}" style="background:#B8862F;color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px;display:inline-block">${esc(T('Download the PDF'))}</a></p>
-            <p style="color:#5A6472;font-size:13px;line-height:1.6">${esc(T('The link works for 30 days. The web version at {link} is checked against its sources every week.')).replace('{link}', web)}</p>` + contactsHtml + '</div>'), 'report_pdf', null);
+            <p style="color:#5A6472;font-size:13px;line-height:1.6">${esc(T('The link works for 30 days. The web version at {link} is checked against its sources every week.')).replace('{link}', web)}</p>
+            <p style="color:#0F1B2D;font-size:14.5px;line-height:1.6;margin:18px 0 6px"><b>${esc(MEMBER_TR(lang, 'Get Monday alerts when Ghana changes in your sectors.'))}</b> <a href="${BASE}${lang === 'en' ? '' : '/' + lang}/account?email=${encodeURIComponent(email)}#signup" style="color:#9A6A12">${esc(MEMBER_TR(lang, 'Create a free account'))}</a></p>` + contactsHtml + '</div>'), 'report_pdf', null);
       } else {
         await queueMail(email, full_name, T('Thank you for contacting Gotham Consult'),
           wrapMail(esc(T('Thank you, {name}').replace('{name}', firstName(full_name))),
@@ -4201,6 +4203,83 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'referrer-policy': 'no-referrer' });
       return res.end(receiptPage(d, await invSettings()));
     }
+    /* ---- members: free accounts, plans, compliance calendar (members.js) ---- */
+    if (p.startsWith('/api/member/') || p === '/m/login' || p === '/m/stop') {
+      const L = l => (['en', 'fr', 'es', 'de', 'ar', 'zh'].includes(l) ? l : 'en'), acct = l => (l === 'en' ? '' : '/' + l) + '/account';
+      if (p === '/m/login' && req.method === 'GET') {
+        if (rateLimited(ip, 20, 600e3, 'm_login')) { res.writeHead(429); return res.end('Too many tries'); }
+        const r = await MEMBERS.login(url.searchParams.get('t'));
+        if (!r) { res.writeHead(302, { location: '/account?link=expired' }); return res.end(); }
+        res.writeHead(302, { location: acct(r.lang) + (r.next ? '#' + r.next : ''), 'set-cookie': `gc_member=${r.cookie}; HttpOnly; Path=/; Max-Age=2592000; SameSite=Lax; Secure`, 'cache-control': 'no-store' });
+        return res.end();
+      }
+      if (p === '/m/stop' && (req.method === 'GET' || req.method === 'POST')) {   // POST: mail apps' one-click unsubscribe
+        const ok = await MEMBERS.stop(url.searchParams.get('u'));
+        if (req.method === 'POST') return json(res, 200, { ok });
+        res.writeHead(302, { location: '/account?alerts=' + (ok ? 'stopped' : 'unknown') }); return res.end();
+      }
+      if (p === '/api/member/signup' && req.method === 'POST') {
+        if (rateLimited(ip, 6, 600e3, 'm_signup')) return json(res, 429, { error: 'too_many' });
+        const b = await body(req); if (clean(b.website, 200)) return json(res, 200, { ok: true });   // honeypot
+        const r = await MEMBERS.signup(b, ip); return json(res, r.error ? 400 : 200, r);
+      }
+      if (p === '/api/member/link' && req.method === 'POST') {   // a new sign-in link; the answer never tells whether the address is known
+        if (rateLimited(ip, 6, 600e3, 'm_link')) return json(res, 429, { error: 'too_many' });
+        const b = await body(req), m = (await q('select * from members where email=$1 and closed_at is null', [clean(b.email, 160).toLowerCase()])).rows[0];
+        if (m) await MEMBERS.sendLink(m, L(b.lang || m.lang), clean(b.next, 40));
+        return json(res, 200, { ok: true });
+      }
+      if (p === '/api/member/prices' && req.method === 'GET') { const P = await MEMBERS.prices(); res.setHeader('cache-control', 'public, max-age=300'); return json(res, 200, { prices: Object.fromEntries(Object.entries(P).map(([k, x]) => [k, x.price])), permits: MEMBER_PERMITS }); }
+      const mem = await MEMBERS.fromCookie(req.headers.cookie);
+      if (!mem && p === '/api/member/me' && req.method === 'GET') return json(res, 200, { member: null });   // signed out is a normal state, not an error
+      if (!mem) return json(res, 401, { error: 'no_session' });
+      if (p === '/api/member/me' && req.method === 'GET') return json(res, 200, await MEMBERS.me(mem));
+      if (p === '/api/member/logout' && req.method === 'POST') { await q('update members set sv=coalesce(sv,0)+1 where id=$1', [mem.id]); return json(res, 200, { ok: true }, { 'set-cookie': 'gc_member=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax' }); }
+      if (p === '/api/member/prefs' && req.method === 'POST') { await MEMBERS.prefs(mem, await body(req)); return json(res, 200, await MEMBERS.me((await q('select * from members where id=$1', [mem.id])).rows[0])); }
+      if (p === '/api/member/company' && req.method === 'POST') { const r = await MEMBERS.saveCompany(mem, await body(req)); return json(res, r.error ? 400 : 200, r.error ? r : await MEMBERS.me(mem)); }
+      if (p === '/api/member/buy' && req.method === 'POST') {
+        if (rateLimited(ip, 10, 600e3, 'm_buy')) return json(res, 429, { error: 'too_many' });
+        const r = await MEMBERS.buy(mem, await body(req)); return json(res, r.error ? 400 : 200, r);
+      }
+      if (p === '/api/member/datapack.xlsx' && req.method === 'GET') {
+        if (!(await MEMBERS.active(mem.id)).some(x => x.product.startsWith('pro'))) return json(res, 403, { error: 'pro_only' });
+        const buf = await reportDataPack();
+        res.writeHead(200, { 'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'content-disposition': 'attachment; filename="Ghana-Investment-Data-Pack-Gotham-Consult.xlsx"', 'cache-control': 'private, no-store' });
+        return res.end(buf);
+      }
+      return json(res, 404, { error: 'not_found' });
+    }
+    if (p === '/api/members' && req.method === 'GET') { if (!need('admin')) return json(res, 401, { error: 'not_allowed' }); return json(res, 200, await MEMBERS.dashboard()); }
+    const mAdm = p.match(/^\/api\/members\/(\d+)(?:\/(grant|update))?$/);
+    if (mAdm) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (!mAdm[2] && req.method === 'GET') { const r = await MEMBERS.memberDetail(+mAdm[1]); return r ? json(res, 200, r) : json(res, 404, { error: 'not_found' }); }
+      const b = await body(req);
+      if (mAdm[2] === 'grant' && req.method === 'POST') {
+        const r = await MEMBERS.grant(+mAdm[1], clean(b.product, 40), Math.max(1, Math.min(36, +b.months || 0)) || null, +b.company_id || null, u.email);
+        if (!r) return json(res, 400, { error: 'not_done' });
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'member_grant', `${mAdm[1]} ${b.product} ${b.months || ''}`]);
+        return json(res, 200, await MEMBERS.memberDetail(+mAdm[1]));
+      }
+      if (mAdm[2] === 'update' && req.method === 'POST') { const r = await MEMBERS.addUpdate(+mAdm[1], b, u.email); return r ? json(res, 200, await MEMBERS.memberDetail(+mAdm[1])) : json(res, 404, { error: 'not_found' }); }
+      return json(res, 405, { error: 'method' });
+    }
+    const mOrd = p.match(/^\/api\/members\/orders\/(\d+)\/done$/);
+    if (mOrd && req.method === 'POST') { const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const r = await MEMBERS.closeOrder(+mOrd[1], u.email); return r ? json(res, 200, { ok: true }) : json(res, 400, { error: 'not_open' }); }
+    if (p === '/api/members/posts' && req.method === 'POST') { const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req); if (!clean(b.title, 200)) return json(res, 400, { error: 'title' }); return json(res, 200, await MEMBERS.post(b, u.email)); }
+    if (p === '/api/members/run-jobs' && req.method === 'POST') {   // staff: send today's reminders, renewals and (optionally) the weekly digest now
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req);
+      const d = await MEMBERS.daily(), w = await MEMBERS.weekly(b.weekly === true);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'member_jobs', JSON.stringify({ ...d, digests: w })]);
+      return json(res, 200, { ...d, digests: w });
+    }
+    if (p === '/api/members/prices' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req), out = {};
+      for (const k of Object.keys(MEMBER_PRODUCTS)) if (+b[k] > 0) out[k] = Math.round(+b[k] * 100) / 100;
+      await q("insert into settings(key,value) values ('member_prices',$1) on conflict (key) do update set value=excluded.value", [JSON.stringify(out)]);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'member_prices', JSON.stringify(out)]);
+      return json(res, 200, { prices: await MEMBERS.prices() });
+    }
     const mPub = p.match(/^\/i\/([A-Za-z0-9_-]{20,40})(?:\/(pay|accept))?$/);
     if (mPub) {
       const inv = (await q('select * from invoices where token=$1 and number is not null', [mPub[1]])).rows[0];
@@ -4876,6 +4955,7 @@ async function invoicePaid(id) {
     : +p + cr >= +inv.total - 0.005 && +inv.total > 0 ? 'paid' : +p > 0 ? 'part_paid' : (inv.sent_at ? 'sent' : 'draft');
   if (status !== inv.status) {
     await q(`update invoices set status=$2, paid_at=case when $2='paid' then coalesce(paid_at, now()) else null end, updated_at=now() where id=$1`, [id, status]);
+    if (status === 'paid') await MEMBERS.invoicePaid(id).catch(e => console.error('member order', e.message));   // the daily sweep retries anything left behind
     if (status === 'paid' && inv.deal_id) await q("insert into notes(deal_id, contact_id, kind, body, author) values ($1,$2,'note',$3,'invoices')", [inv.deal_id, inv.contact_id, `Invoice ${inv.number} paid in full (${inv.currency} ${(+inv.total).toFixed(2)}).`]);
   }
   return (await q('select * from invoices where id=$1', [id])).rows[0];
@@ -5413,6 +5493,7 @@ async function runJobs() {
   await watchdog().catch(e => console.error('watchdog', e.message));
   if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await FACTS.run().catch(e => console.error('facts', e.message));   // daily, see FACTS_EVERY_DAYS
   if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await REPORT.run().catch(e => console.error('report', e.message));   // weekly, see REPORT_EVERY_DAYS
+  await memberJobs().catch(e => console.error('members', e.message));
 }
 
 /* ---------- website visitors, privacy-friendly ----------
@@ -5552,6 +5633,43 @@ async function runImport(file) {
 const VOICE = TTS.makeTTS();
 /* her ears: the caller's recording turned into text here (stt.js), for browsers whose own speech service does not work */
 const EARS = STT.makeSTT();
+/* Members (members.js): each purchase is a cedi invoice, issued at once so it can be paid on its /i/ page. */
+async function memberInvoice({ member, description, amount, note, send = false }) {
+  const st = await invSettings(), mode = st.vat_registered ? 'standard' : 'none';
+  const inv = { kind: 'invoice', currency: 'GHS', fx_rate: null, tax_mode: mode, lines: [{ description: clean(description, 400), qty: 1, unit: r2(amount), discount: 0 }] };
+  const t = invoiceTotals(inv, st.rates);
+  const bill = { name: member.name || member.email, company: member.company || '', address: '', country: member.country || '', email: member.email, tax_id: '', residency: 'resident' };
+  const row = (await q(`insert into invoices(kind, contact_id, bill_to, currency, tax_mode, rates, lines, subtotal, discount, taxable, vat, nhil, getfund, total, total_ghs, tax_ghs, notes, created_by, token)
+      values ('invoice',$1,$2,'GHS',$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$12,$13,$14,'member-portal',$15) returning *`,
+    [member.contact_id || null, JSON.stringify(bill), mode, JSON.stringify(st.rates), JSON.stringify(inv.lines), t.subtotal, t.discount, t.taxable, t.vat, t.nhil, t.getfund, t.total, t.tax_ghs,
+     clean(note, 300), crypto.randomBytes(18).toString('base64url')])).rows[0];
+  const r = await issueInvoice(row, st, 'member-portal'); if (r.error) return { error: r.error };
+  if (send) await mailInvoice(r.inv, member.email, 'send', st, 'member-portal').catch(e => console.error('member invoice mail', e.message));
+  return r.inv;
+}
+const MEMBERS = makeMembers({ q, sign, base: PUBLIC_URL, queueMail, wrapMail, esc, report: REPORT, alertTeam, invoices: { create: memberInvoice }, inboundDeal, mergeTags, flushMail });
+async function memberJobs() {   // once a day: reminders, renewals, follow-ups; Mondays: the alert digest
+  const today = new Date().toISOString().slice(0, 10), last = (await q("select value from settings where key='members_daily'")).rows[0]?.value;
+  if (last === today) return;
+  await q("insert into settings(key,value) values ('members_daily',$1) on conflict (key) do update set value=excluded.value", [today]);
+  const d = await MEMBERS.daily(), w = await MEMBERS.weekly();
+  await q('insert into jobs_log(job,detail) values ($1,$2)', ['members', `${d.reminders} reminders, ${d.renewals} renewal invoices, ${d.expired} plans ended, ${d.nudges} follow-up tasks, ${w} digests`]);
+}
+/* The Pro data pack: every figure of the report with its source, the forecasts and the 10-year history, as Excel. */
+async function reportDataPack() {
+  const R = loadReport(process.env.REPORT_FILE || new URL('./report.json', import.meta.url)), wb = new ExcelJS.Workbook(); wb.creator = 'Gotham Consult';
+  const head = (ws, cols) => { ws.columns = cols; ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }; ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1B2D' } }; ws.views = [{ state: 'frozen', ySplit: 1 }]; };
+  const f = wb.addWorksheet('Figures'); head(f, [{ header: 'Chapter', key: 'c', width: 30 }, { header: 'Figure', key: 'l', width: 48 }, { header: 'Value', key: 'v', width: 16 }, { header: 'Unit', key: 'u', width: 18 },
+    { header: 'Period', key: 'p', width: 26 }, { header: 'Note', key: 'n', width: 50 }, { header: 'Official', key: 'o', width: 9 }, { header: 'Source', key: 's', width: 60 }, { header: 'Link', key: 'url', width: 50 }]);
+  for (const c of R.chapters) for (const x of c.figures) f.addRow({ c: c.title, l: x.label, v: /^[\d,.]+$/.test(x.value) ? +String(x.value).replace(/,/g, '') : x.value, u: x.unit, p: x.period, n: x.note || '', o: x.official ? 'yes' : 'no', s: x.source_label, url: { text: x.source_url, hyperlink: x.source_url } });
+  const o = wb.addWorksheet('Forecasts 2026-2028'); head(o, [{ header: 'Indicator', key: 'i', width: 38 }, { header: 'Unit', key: 'u', width: 10 }, ...['2026', '2027', '2028'].flatMap(y => [{ header: y + ' base', key: y + 'b', width: 11 }, { header: y + ' upside', key: y + 'u', width: 11 }, { header: y + ' downside', key: y + 'd', width: 12 }])]);
+  for (const i of R.outlook.indicators) o.addRow({ i: i.label, u: i.unit, ...Object.fromEntries(['2026', '2027', '2028'].flatMap(y => [[y + 'b', i.f[y][0]], [y + 'u', i.f[y][1]], [y + 'd', i.f[y][2]]])) });
+  const h = wb.addWorksheet('History 2016-2025'); const yrs = Object.keys(Object.values(R.history)[0].points);
+  head(h, [{ header: 'Series', key: 's', width: 40 }, { header: 'Unit', key: 'u', width: 12 }, ...yrs.map(y => ({ header: y, key: y, width: 9 })), { header: 'Source', key: 'src', width: 50 }]);
+  for (const s of Object.values(R.history)) h.addRow({ s: s.label, u: s.unit, ...s.points, src: s.source_label });
+  const n = wb.addWorksheet('About'); n.addRow(['Ghana Investment Report 2026 – data pack']); n.addRow([`${R.edition?.label || ''}, data as of ${R.updated}`]); n.addRow(['Gotham Consult, Accra · gothamconsult.com · general information, not investment advice']);
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
 const CHAT = CHT.makeChat({ q, json, body, bodyBig, clean, askModel, phoneGH, aiOn: () => !!OPENAI_KEY, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto,
   setting: async k => (await q('select value from settings where key=$1', [k])).rows[0]?.value || '' });
 

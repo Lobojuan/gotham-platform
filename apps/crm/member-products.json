@@ -1,0 +1,47 @@
+{
+ "about": "Member products and prices in cedis, before VAT and levies (members.js, the membership page). The back office can override prices (setting member_prices). Prices follow the rule: cost x 1.7 at least; confirm with real hours.",
+ "products": {
+  "pro_month": {
+   "name": "Pro membership, 1 month",
+   "price": 450,
+   "months": 1,
+   "plan": "pro"
+  },
+  "pro_year": {
+   "name": "Pro membership, 12 months",
+   "price": 4500,
+   "months": 12,
+   "plan": "pro"
+  },
+  "compliance_month": {
+   "name": "Compliance calendar, 1 month (per company)",
+   "price": 1200,
+   "months": 1,
+   "plan": "compliance",
+   "company": true
+  },
+  "compliance_year": {
+   "name": "Compliance calendar, 12 months (per company)",
+   "price": 12000,
+   "months": 12,
+   "plan": "compliance",
+   "company": true
+  },
+  "call": {
+   "name": "Expert call, 30 minutes",
+   "price": 1500,
+   "booking": "call"
+  },
+  "check": {
+   "name": "Counterparty check (company records, owners, court cases)",
+   "price": 3500,
+   "booking": "check"
+  },
+  "filing": {
+   "name": "We file it for you: one return or payment",
+   "price": 900,
+   "booking": "filing",
+   "company": true
+  }
+ }
+}
