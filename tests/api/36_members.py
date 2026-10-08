@@ -20,6 +20,13 @@ console.log('  ok deadlines: monthly, weekend moves, quarterly, yearly, permits,
 '''
 subprocess.run(['node', '--input-type=module', '-e', code], cwd=ROOT, check=True)
 
+# 1b. the back-office page script must parse (a duplicate declaration once stopped the whole back office loading)
+_html = open(os.path.join(ROOT, 'apps/crm/public/admin.html')).read()
+_js = '\n;\n'.join(re.findall(r'<script(?![^>]*src)[^>]*>(.*?)</script>', _html, re.S))
+open('/tmp/_admin_check.js', 'w').write(_js)
+subprocess.run(['node', '--check', '/tmp/_admin_check.js'], check=True)
+print('  ok back-office script parses')
+
 # 2. the server
 exec(open(os.path.join(os.path.dirname(__file__), '07_family_desk.py')).read().split("ok=lambda m: print('  ok',m)")[0])
 ok = lambda m: print('  ok', m)

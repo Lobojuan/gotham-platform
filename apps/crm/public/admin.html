@@ -2687,7 +2687,6 @@ function invShow(inv){
 let WEBD=30;
 /* ---------- Members: free accounts, paid plans, compliance calendar (members.js) ---------- */
 const MPROD={pro_month:'Pro, 1 month',pro_year:'Pro, 12 months',compliance_month:'Compliance, 1 month',compliance_year:'Compliance, 12 months',call:'Expert call',check:'Counterparty check',filing:'We file it for you'};
-const ghs=n=>'GHS '+Math.round(+n||0).toLocaleString('en-GB');
 async function membersView(){
  setTitle('Members','Free accounts, paid plans and what needs doing');
  $('#view').innerHTML='<div class="empty">Loading…</div>';
