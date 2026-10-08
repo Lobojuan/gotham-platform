@@ -37,7 +37,7 @@ st,ob,_=call('/api/outbox',cookie=ck)
 ack=[x for x in ob['rows'] if x['kind']=='investor_ack' and x['to_email']=='lars@fund.example.dk']
 assert ack and 'investor list' in ack[0]['subject'] and 'commits you to nothing' in ack[0]['body']; ok('thank-you email queued')
 al={x['to_email'] for x in ob['rows'] if x['kind']=='staff_alert' and 'Lars Holm' in x['subject']}
-assert al=={'info@gothamconsult.com','uffe.carlson@gmail.com'}, al; ok('alert queued to Gotham (info@) with a copy to Uffe')
+assert al=={'info@gothamconsult.com','uffe.carlson@gothamconsult.com'}, al; ok('alert queued to Gotham (info@) with a copy to Uffe')
 
 st,d,_=call('/api/investor-interest',{**good,'email':'bad','consent':False,'sectors':[],'ticket':'a billion','investor_type':'Pirate','phone':'12'})
 assert st==400 and {'email','consent','sectors','ticket','investor_type','phone'}<=set(d['fields']),(st,d); ok('bad submission refused with the exact fields')

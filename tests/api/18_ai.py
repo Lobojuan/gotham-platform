@@ -74,6 +74,32 @@ ok('"Leave your details" makes a contact, a deal and a task for tomorrow; no mar
 # ---------- back-office helper ----------
 st, r = call('/api/ai', {'task': 'email', 'brief': 'Invite mining MDs to the October forum'}, cookie=ck)
 assert st == 200 and r['subject'] == 'MOCK subject for {{first_name}}' and r['body'].startswith('Hello {{first_name}}'), r
+psql("update contacts set full_name='PII_SENTINEL', email='pii-sentinel@example.test', phone='+233240000000', client_type='investor', company='Nordic Sun', sector='Renewable energy', country='Denmark' where id=%d" % c['id'])
+st, r = call('/api/ai', {'task': 'investor_letter', 'contact_id': c['id'], 'brief': 'Their public report mentions West Africa expansion.', 'source_url': 'https://example.org/report'}, cookie=ck)
+assert st == 200 and r['subject'] == 'Ghana market entry conversation' and 'MOCK investor letter draft' in r['body'] and 'PII' not in r['body'], r
+assert call('/api/ai', {'task': 'investor_letter', 'contact_id': 99999, 'brief': 'Research'}, cookie=ck)[0] == 404
+assert call('/api/ai', {'task': 'investor_letter', 'contact_id': c['id']}, cookie=ck)[1]['error'] == 'brief_required'
+assert call('/api/ai', {'task': 'investor_letter', 'contact_id': c['id'], 'brief': 'Research'})[0] == 401
+st, saved = call('/api/notes', {'contact_id': c['id'], 'kind': 'note', 'body': 'AI investor letter draft — not sent\nSubject: Ghana market entry conversation\n\n' + r['body']}, cookie=ck)
+assert st == 200 and 'not sent' in saved.get('body', ''), saved
+assert psql("select count(*) from outbox where to_email='pii-sentinel@example.test'") == '0'
+ok('investor letter drafts use business context only, require staff context, stay private until saved as a note, and never send')
+st, reviewed = call('/api/ai', {'task': 'proofread_campaign', 'subject': 'Market entry for {{company}}', 'intro': 'Hello {{first_name}},\n\nWe invite you to discuss Ghana.', 'cta_label': 'Talk to us'}, cookie=ck)
+assert st == 200 and reviewed['subject'] == 'Checked subject' and 'Checked English' in reviewed['body'] and reviewed['notes'], reviewed
+st, tr = call('/api/ai', {'task': 'translate_campaign', 'subject': reviewed['subject'], 'intro': reviewed['body'], 'cta_label': reviewed['cta_label']}, cookie=ck)
+assert st == 200 and set(tr['translations']) == {'fr','es','de','ar','zh'} and '{{first_name}}' in tr['translations']['fr']['body'], tr
+assert call('/api/ai', {'task': 'translate_campaign', 'subject': 'Hi', 'intro': 'Write to ama@example.test'}, cookie=ck)[1]['error'] == 'personal_data_not_allowed'
+st, cc = call('/api/contacts', {'company':'Frankfurt Fund','email':'localized@example.test','language':'fr-FR','client_type':'investor','country':'Germany','sector':'Mining','tags':'translate-test','consent_email':'yes','consent_source':'Asked to receive investor updates at the forum'}, cookie=ck)
+assert st == 200, cc
+st, camp = call('/api/campaigns', {'name':'Localized investor note','subject':reviewed['subject'],'intro':reviewed['body'],'cta_label':reviewed['cta_label'],'template':'plain','channel':'email','seg_tags':'translate-test','seg_consent':'yes','daily_limit':10,'translations':tr['translations']}, cookie=ck)
+assert st == 200, camp
+st, pv = call('/api/campaigns/%d/preview' % camp['id'], cookie=ck)
+assert st == 200 and pv['translated'] and pv['sample_language'] == 'fr' and pv['subject'] == 'Invitation au Ghana' and 'Bonjour' in pv['html'] and 'dites-le ici' in pv['html'], pv
+st, sent = call('/api/campaigns/%d/start' % camp['id'], {}, cookie=ck)
+assert st == 200 and sent['queued'] == 1, sent
+assert psql("select subject from outbox where to_email='localized@example.test' order by id desc limit 1") == 'Invitation au Ghana'
+assert 'Texte de la campagne.' in psql("select body from outbox where to_email='localized@example.test' order by id desc limit 1")
+ok('AI checks English, translates all five supported recipient languages, and French emails use the saved language with a localized opt-out')
 st, r = call('/api/ai', {'task': 'sms', 'brief': 'Remind guests'}, cookie=ck); assert st == 200 and r['text'] == 'Hello {{first_name}}, MOCK short text.', r
 st, r = call('/api/ai', {'task': 'designer', 'brief': 'Newsletter'}, cookie=ck)
 assert st == 200 and [b['type'] for b in r['blocks']] == ['heading', 'text', 'image', 'button'] and r['subject'] == 'MOCK newsletter', r

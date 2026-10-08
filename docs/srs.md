@@ -92,6 +92,8 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | P-4 | Contact records combine deals, registrations, campaign activity, notes and tasks in a searchable timeline. | api/11 |
 | P-5 | Reports reconcile deal pipeline, won/lost reasons, event registrations, payments and task completion against source records. | api/11, manual reconciliation |
 | P-6 | Search and reports are restricted to signed-in staff and hide contact details from roles without contact access. | api/11, api/09 |
+| P-7 | Admins can generate an individual investor-letter draft from a contact record using business context only; personal identifiers stay out of the AI prompt, and a draft is saved only as an internal note after review. No send action is part of drafting. | api/18 |
+| P-8 | Email campaigns can be checked in English, translated into French, Spain Spanish, German, Arabic and Simplified Chinese, edited, and routed by each contact's preferred language. Translation requires a fresh English review; unsupported or missing languages receive English. Email consent and opt-out checks still apply. | api/18, api/03 |
 
 ## 7. Operational readiness requirements (not yet certified)
 

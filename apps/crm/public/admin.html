@@ -1136,6 +1136,11 @@ async function record(id){
   <div class="card"><div class="ch"><h3>Tasks <span class="chip">${openT.length} open</span></h3><button class="btn btn-line" id="rc-task">Add task</button></div>
    ${openT.length?`<ul class="list">${openT.map(t=>taskRow({...t,company:null,contact_name:null})).join('')}</ul>`:'<p class="note">Nothing open.</p>'}</div>
  </div><div>
+  <div class="card"><div class="ch"><h3>Investor letter draft</h3><button type="button" class="ai-btn" id="rc-il-g">Write a draft</button></div>
+   <p class="note">Draft an individual approach using business details and your own sourced context. AI receives no contact name, email or phone. Review every claim and contact permission before use; nothing is sent.</p>
+   <label class="l" for="rc-il-why">Why may this prospect be relevant?</label><textarea class="t" id="rc-il-why" rows="3" placeholder="e.g. Their published annual report describes expansion into West Africa."></textarea>
+   <label class="l" for="rc-il-src">Public source URL (optional)</label><input class="t" id="rc-il-src" type="url" maxlength="500" placeholder="https://…">
+   <div id="rc-il-out" hidden></div></div>
   <div class="card"><div class="ch"><h3>✦ AI summary</h3><button type="button" class="ai-btn" id="rc-ai">Sum up this client</button></div>
    <div id="rc-aio"><p class="note" style="margin:0">Reads this client's notes, deals, tasks and registrations and suggests the next step. The history is sent to the AI service to do this.</p></div></div>
   <div class="card" id="rc-inv"><div class="ch"><h3>Quotations & invoices</h3><div class="pact"><button class="btn btn-line" id="rc-quo">Quotation</button><button class="btn btn-line" id="rc-invn">Invoice</button></div></div><div class="inv-rl"><p class="note">Loading…</p></div></div>
@@ -1145,6 +1150,12 @@ async function record(id){
   <h4 class="sec">History</h4><ul class="tl">${r.timeline.map(e=>`<li class="${e.type}"><i>${TL_ICON[e.type]||'•'}</i><div class="when">${dt(e.at)}${e.by&&e.by!=='website'?' · '+esc(userName(e.by)):''}${NOTE_NAME[e.type]?' · '+NOTE_NAME[e.type]:''}</div><div class="txt">${esc(e.text)}</div></li>`).join('')}</ul></div>
  </div></div>`;
  $('#rc-edit').onclick=()=>contactForm(c);
+ $('#rc-il-g').onclick=async()=>{const why=$('#rc-il-why').value.trim(),source=$('#rc-il-src').value.trim();if(!why&&!source)return toast('Add a reason or source for the approach first');
+  const btn=$('#rc-il-g'),old=btn.textContent;btn.disabled=true;btn.textContent='Writing…';
+  const draft=await aiCall({task:'investor_letter',contact_id:c.id,brief:why,source_url:source},btn);btn.disabled=false;btn.textContent=old;if(!draft||draft.error)return;
+  $('#rc-il-out').hidden=false;$('#rc-il-out').innerHTML=`<label class="l" for="rc-il-sub">Subject</label><input class="t" id="rc-il-sub" maxlength="200" value="${esc(draft.subject)}"><label class="l" for="rc-il-body">Letter</label><textarea class="t" id="rc-il-body" rows="10" maxlength="6000">${esc(draft.body)}</textarea><div class="cbar"><span class="note">Internal draft only; saving adds it to this contact’s history.</span><button type="button" class="btn btn-dark" id="rc-il-save">Save draft as note</button></div>`;
+  $('#rc-il-save').onclick=async()=>{const subject=$('#rc-il-sub').value.trim(),body=$('#rc-il-body').value.trim();if(!body)return toast('Write the letter first');await api('/api/notes',{method:'POST',body:JSON.stringify({contact_id:id,kind:'note',body:`AI investor letter draft — not sent\nSubject: ${subject}\n\n${body}`})});toast('Draft saved to contact history; not sent');record(id)};
+ };
  $('#rc-ai').onclick=async()=>{const r=await aiCall({task:'client',contact_id:c.id},$('#rc-ai'));if(!r||r.error)return;
   $('#rc-aio').innerHTML=`<div class="ai-out">${esc(r.summary)}${r.next?`<b>Next step</b>${esc(r.next)}`:''}</div>${r.next?'<button type="button" class="btn btn-line" id="rc-ait" style="margin-top:10px">Make it a task</button>':''}`;
   if($('#rc-ait'))$('#rc-ait').onclick=()=>taskForm({contact_id:c.id,company:name,title:r.next})};
@@ -1615,7 +1626,7 @@ async function outreach(){
 }
 
 /* ===================== AI helper: a one-line brief in, text out; nothing saved until you press Save ===================== */
-const AIERR={ai_off:'The AI is not switched on on the server.',daily_cap:'Today\'s AI allowance is used up. Try again tomorrow.',brief_required:'Say in a line what it is about.',ai_failed:'The AI did not answer properly. Try again, or reword it.'};
+const AIERR={ai_off:'The AI is not switched on on the server.',daily_cap:'Today\'s AI allowance is used up. Try again tomorrow.',brief_required:'Say in a line what it is about.',personal_data_not_allowed:'Remove email addresses and phone numbers from the copy before asking AI to review or translate it.',ai_failed:'The AI did not answer properly. Try again, or reword it.'};
 async function aiCall(body,btn){const was=btn&&btn.innerHTML;if(btn){btn.disabled=true;btn.innerHTML='<span class="ai-spin"></span>Thinking…'}
  try{return await api('/api/ai',{method:'POST',body:JSON.stringify(body)})}catch(e){toast(AIERR[e.error]||'The AI did not answer. Try again.');return null}
  finally{if(btn){btn.disabled=false;btn.innerHTML=was}}}
@@ -1990,7 +2001,7 @@ function contactForm(r){
   <h4 class="sec">Person</h4>
   <div class="f2"><div>${f('k-name','Name',n.full_name,'Elliot Twum')}</div><div>${f('k-role','Job title',n.role,'Managing Director')}</div></div>
   <div class="f2"><div>${f('k-em','Email',n.email,'name@company.com','email')}</div><div>${f('k-ph','Phone',n.phone,'024 000 0000 or +44 …')}</div></div>
-  <div class="f2"><div>${f('k-wa','WhatsApp, if a different number',n.whatsapp,'')}</div><div>${f('k-lang','Language',n.language||'en','en, fr, de, da…')}</div></div>
+  <div class="f2"><div>${f('k-wa','WhatsApp, if a different number',n.whatsapp,'')}</div><div><label class="l">Preferred email language</label><select class="t" id="k-lang">${[['en','English'],['fr','French · France'],['es','Spanish · Spain'],['de','German'],['ar','Arabic'],['zh','Chinese · Simplified']].map(([v,l])=>`<option value="${v}" ${(n.language||'en').toLowerCase().startsWith(v)?'selected':''}>${l}</option>`).join('')}</select></div></div>
   <h4 class="sec">Client</h4>
   <div class="f2"><div><label class="l">Type of client</label><select class="t" id="k-type"><option value="">Not set</option>${Object.entries(CTYPE).map(([k,t])=>`<option value="${k}" ${k===n.client_type?'selected':''}>${t}</option>`).join('')}</select></div>
    <div>${f('k-country','Country',n.country||'Ghana','Ghana')}</div></div>
@@ -2058,7 +2069,9 @@ function campaignEditor(){
    <div><label class="l">Design</label><select class="t" id="c-tpl">${Object.entries(TEMPLATES).map(([k,t])=>`<option value="${k}" ${k===c.template?'selected':''}>${t}</option>`).join('')}</select></div></div>
   <div class="note" id="c-tplnote"></div>
   <label class="l">Subject line</label><input class="t" id="c-subj" value="${esc(c.subject||'')}" placeholder="An invitation, {{first_name}} — 24 October, Tang Palace">
-  <div id="c-aibar" style="margin-top:10px"><button type="button" class="ai-btn" id="c-ai">✦ Write it with AI</button></div>
+  <div id="c-aibar" style="margin-top:10px"><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="ai-btn" id="c-ai">✦ Write it with AI</button><button type="button" class="ai-btn" id="c-proof">Check English with AI</button><button type="button" class="ai-btn" id="c-translate">Translate to contact languages</button></div>
+   <p class="note">Check the English first, then translate. AI checks wording; verify facts and sources yourself. Translations are editable and saved with the campaign. At send time, each email uses the contact’s saved language (English, French, Spanish, German, Arabic or Chinese). Other languages fall back to English. AI receives campaign copy only, not recipient details. Use the Plain email design for localized messages.</p>
+   <div id="c-proof-out"></div><div id="c-tr-out"></div></div>
   <div id="c-designer"></div>
   <div id="c-classic">
   <label class="l">Body <span class="note">— blank line between paragraphs</span></label>
@@ -2097,6 +2110,7 @@ function campaignEditor(){
     <div class="note">Slow is safe. A burst of cold email from a young domain gets it blocked — and then your registration confirmations stop arriving too.</div></div></div>
 
   <h4 class="sec">Check before you send</h4>
+  <div data-only="email" style="max-width:260px;margin:8px 0"><label class="l">Preview as</label><select class="t" id="c-preview-lang"><option value="">Contact’s saved language</option><option value="en">English</option><option value="fr">French · France</option><option value="es">Spanish · Spain</option><option value="de">German</option><option value="ar">Arabic</option><option value="zh">Chinese · Simplified</option></select></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
    <button class="btn btn-line" id="c-prev">Preview it</button>
    <button class="btn btn-line" id="c-test">Send a test to me</button>
@@ -2111,7 +2125,20 @@ function campaignEditor(){
  $('#c-ai').onclick=()=>aiBrief($('#c-aibar'),'e.g. Invite mining MDs to the 24 October forum at Tang Palace, free for SMEs, by invitation',
   {body:{task:'email',get template(){return $('#c-tpl').value}},done:r=>{
    if(($('#c-intro').value.trim()||$('#c-subj').value.trim())&&!confirm('Replace the subject and text you have now?'))return;
-   $('#c-subj').value=r.subject||$('#c-subj').value;$('#c-intro').value=r.body;toast('Drafted. Read it through before saving.')}});
+   $('#c-subj').value=r.subject||$('#c-subj').value;$('#c-intro').value=r.body;CAM.translations={};CAM.reviewedSource='';showTranslations();toast('Drafted. Check the English before translating.')}});
+ const LANGS={fr:'French · France',es:'Spanish · Spain',de:'German',ar:'Arabic',zh:'Chinese · Simplified'};
+ function showTranslations(){const box=$('#c-tr-out');if(!box)return;const tr=CAM.translations||{};
+  box.innerHTML=Object.keys(tr).length?`<h4 class="sec">Translated versions · edit before saving</h4>${Object.entries(LANGS).filter(([k])=>tr[k]).map(([k,label])=>`<details open class="card" style="padding:12px;margin:8px 0"><summary><b>${label}</b></summary><label class="l">Subject</label><input class="t" data-tr-sub="${k}" maxlength="200" value="${esc(tr[k].subject||'')}"><label class="l">Email</label><textarea class="t" data-tr-body="${k}" rows="6" maxlength="6000">${esc(tr[k].body||'')}</textarea><label class="l">Button text</label><input class="t" data-tr-cta="${k}" maxlength="60" value="${esc(tr[k].cta_label||'')}"></details>`).join('')}`:'';
+  box.querySelectorAll('[data-tr-sub],[data-tr-body],[data-tr-cta]').forEach(el=>el.addEventListener('input',()=>{const k=el.dataset.trSub||el.dataset.trBody||el.dataset.trCta;tr[k]=tr[k]||{};if(el.dataset.trSub)tr[k].subject=el.value;if(el.dataset.trBody)tr[k].body=el.value;if(el.dataset.trCta)tr[k].cta_label=el.value;CAM.translations=tr}));
+ }
+ showTranslations();
+ $('#c-proof').onclick=async()=>{const res=await aiCall({task:'proofread_campaign',subject:$('#c-subj').value,intro:$('#c-intro').value,cta_label:$('#c-cta').value},$('#c-proof'));if(!res||res.error)return;
+  $('#c-proof-out').innerHTML=`<div class="card" style="margin-top:10px"><b>AI English review</b>${res.notes?.length?`<ul>${res.notes.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:''}<label class="l">Suggested subject</label><input class="t" id="c-proof-sub" value="${esc(res.subject)}"><label class="l">Suggested email</label><textarea class="t" id="c-proof-body" rows="7">${esc(res.body)}</textarea><label class="l">Suggested button text</label><input class="t" id="c-proof-cta" value="${esc(res.cta_label)}"><button type="button" class="btn btn-dark" id="c-proof-use" style="margin-top:10px">Use reviewed English</button></div>`;
+  $('#c-proof-use').onclick=()=>{$('#c-subj').value=$('#c-proof-sub').value;$('#c-intro').value=$('#c-proof-body').value;$('#c-cta').value=$('#c-proof-cta').value;CAM.translations={};CAM.reviewedSource=englishSource();showTranslations();$('#c-proof-out').innerHTML='';toast('Reviewed English applied. Translate it when ready.')}};
+ const englishSource=()=>JSON.stringify({subject:$('#c-subj').value,intro:$('#c-intro').value,cta_label:$('#c-cta').value});
+ $('#c-translate').onclick=async()=>{if($('#c-tpl').value!=='plain')return toast('Choose Plain email to localize the whole message');if(CAM.reviewedSource!==englishSource())return toast('Check and apply the English review before translating');
+  const res=await aiCall({task:'translate_campaign',subject:$('#c-subj').value,intro:$('#c-intro').value,cta_label:$('#c-cta').value},$('#c-translate'));if(!res||res.error)return;CAM.translations=res.translations||{};showTranslations();toast('Translations ready. Review each version and save the campaign.')};
+ ['#c-subj','#c-intro','#c-cta'].forEach(sel=>$(sel).addEventListener('input',()=>{CAM.reviewedSource='';if(Object.keys(CAM.translations||{}).length){CAM.translations={};showTranslations();toast('English changed; review it again before translating.')}}));
  $('#c-ai2').onclick=()=>aiBrief($('#c-ai2').parentElement,'e.g. Remind forum guests: Saturday 14:00, Tang Palace, bring your ticket',
   {body:{get task(){return ch==='sms'?'sms':'whatsapp'}},done:r=>{$('#c-sms').value=r.text;$('#c-sms').dispatchEvent(new Event('input'));toast('Drafted. Check it before saving.')}});
  const note=()=>{const t=$('#c-tpl').value;
@@ -2150,9 +2177,10 @@ function campaignEditor(){
  $('#c-save').onclick=save;
  $('#c-back').onclick=()=>{CAM=null;outreach()};
  $('#c-prev').onclick=async()=>{const id=CAM.id||await save();if(!id)return;
-  const d=await api('/api/campaigns/'+id+'/preview');
+  const pvlang=$('#c-preview-lang')?.value;const d=await api('/api/campaigns/'+id+'/preview'+(pvlang?'?language='+encodeURIComponent(pvlang):''));
   const how=d.provider?'sends automatically':'waits for you to send by hand (no '+(d.channel==='email'?'mail account':d.channel==='sms'?'SMS provider':'WhatsApp Business')+' connected yet)';
-  $('#c-prevbox').innerHTML=`<div class="note" style="margin:16px 0 8px">Goes to <b>${d.audience}</b> ${d.audience===1?'person':'people'} by ${esc(d.channel)} and ${how}. Shown as ${esc(d.sample_to||'a sample contact')} would see it.
+  const langName={en:'English',fr:'French',es:'Spanish',de:'German',ar:'Arabic',zh:'Chinese'}[d.sample_language]||'English';
+  $('#c-prevbox').innerHTML=`<div class="note" style="margin:16px 0 8px">Goes to <b>${d.audience}</b> ${d.audience===1?'person':'people'} by ${esc(d.channel)} and ${how}. Shown as ${esc(d.sample_to||'a sample contact')} would see it in ${langName}${d.translated?' (translation)':' (English)'}.
    ${d.channel==='email'?`<div>Subject: <b>${esc(d.subject)}</b></div>`:`<div>About ${d.segments} SMS each.</div>`}</div>
    ${d.html?'<iframe id="c-if" style="width:100%;height:620px;border:1px solid var(--line);border-radius:12px;background:#fff"></iframe>'
      :`<div class="card" style="max-width:420px;white-space:pre-wrap;background:#E7F7EE;border-radius:16px">${esc(d.text)}</div>`}`;

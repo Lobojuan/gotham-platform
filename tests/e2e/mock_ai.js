@@ -26,7 +26,22 @@ http.createServer((req, res) => {
       else if (/no details/i.test(q)) out = R('MOCK a person will call', { type: 'handover', reason: 'x', name: '[caller name]', phone: '' });
       else if (/person|human|nurse/i.test(q)) out = R('MOCK a nurse will call you', { type: 'handover', reason: 'Wants a nurse', name: 'Ama Test', phone: '0241234567' });
       else out = 'Sure.\n' + R('MOCK receptionist: ' + q.slice(0, 60) + (/(French|Spanish)/.exec(sys.match(/Reply in (\w+)/)?.[0] || '') ? ' [' + sys.match(/Reply in (\w+)/)[1] + ']' : ''));
-    } else if (/Answer only with JSON/.test(q)) {
+    } else if (/investor approach letter/.test(q)) {
+      out = JSON.stringify({ subject: 'Ghana market entry conversation', body: /PII_SENTINEL|pii-sentinel@example\.test|0240000000/.test(q) ? 'MOCK leaked PII' : 'Dear {{first_name}},\n\nMOCK investor letter draft grounded in the supplied business context.' });
+      out = 'Here you go:\n' + out;
+    } else if (/Review this English campaign email/.test(q)) {
+      out = JSON.stringify({ subject: 'Checked subject', body: 'Dear {{first_name}},\n\nChecked English campaign copy.', cta_label: 'Request a call', notes: ['Confirm the event date before sending.'] });
+      out = 'Here you go:\n' + out;
+    } else if (/Translate this reviewed English campaign email/.test(q)) {
+      out = JSON.stringify({
+        fr: { subject: 'Invitation au Ghana', body: 'Bonjour {{first_name}},\n\nTexte de la campagne.', cta_label: 'Demander un entretien' },
+        es: { subject: 'Invitación a Ghana', body: 'Hola {{first_name}},\n\nTexto de la campaña.', cta_label: 'Solicitar una reunión' },
+        de: { subject: 'Einladung nach Ghana', body: 'Guten Tag {{first_name}},\n\nKampagnentext.', cta_label: 'Gespräch anfragen' },
+        ar: { subject: 'دعوة إلى غانا', body: 'مرحبًا {{first_name}}،\n\nنص الحملة.', cta_label: 'طلب اجتماع' },
+        zh: { subject: '加纳邀请', body: '您好，{{first_name}}：\n\n活动邮件内容。', cta_label: '申请会谈' }
+      });
+      out = 'Here you go:\n' + out;
+    } else if (/Answer only with JSON|Answer only JSON/.test(q)) {
       out = JSON.stringify(/"blocks"/.test(q) ? { subject: 'MOCK newsletter', blocks: [{ type: 'heading', text: 'MOCK heading', size: 'l' }, { type: 'text', text: 'Hello {{first_name}}, MOCK text.' },
             { type: 'image' }, { type: 'button', label: 'Read more', url: 'https://gothamconsult.com/forums', style: 'gold' }, { type: 'event', code: 'NOPE' }, { type: 'script' }] }
         : /"summary"/.test(q) ? { summary: 'MOCK summary: a mining company met at the forum.', next: 'Call them on Friday about the headline package' }

@@ -10,9 +10,10 @@ const { chromium, webkit, devices } = require(process.env.PLAYWRIGHT || 'playwri
 const LIVE = process.env.LIVE === '1', WEBKIT = process.env.WEBKIT === '1';
 const isAnswer = t => LIVE ? t.length > 40 && !/answer you personally/.test(t) : /MOCK-AI/.test(t);
 let BROWSERS = {};
-// the live site keeps a connection or two open (fonts, bridge), so wait for load plus a moment instead of network idle
-const NAV = LIVE ? { waitUntil: 'load', timeout: 60000 } : { waitUntil: 'networkidle' };
-const settle = p => LIVE ? p.waitForTimeout(1500) : Promise.resolve();
+// Pages may keep analytics, chat or polling connections open. The suite checks failed
+// requests separately, so wait for document load instead of requiring global network idle.
+const NAV = { waitUntil: 'load', timeout: 60000 };
+const settle = p => p.waitForTimeout(LIVE ? 1500 : 250);
 const engineFor = dev => (WEBKIT && /iphone|ipad/i.test(dev) ? BROWSERS.webkit : BROWSERS.chromium);
 const B = process.env.BASE || 'http://127.0.0.1:4199';
 const EXE = process.env.CHROMIUM || undefined;

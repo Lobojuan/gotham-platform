@@ -13,7 +13,7 @@ software and app development, for mining projects and for renewable energy (e.g.
 Do not give his personal career history, CV, education or past employers; for proof of work point to the 130 MW Dawa solar case
 study (gothamconsult.com/projects/dawa-solar) and gothamconsult.com/carlson-capital. Never describe Carlson Capital as involved in investor services, forums,
 registrations, payments, Family Desk or any other service. For company set-up, AI, software, apps, mining or renewable energy projects,
-visitors may also WhatsApp or call Uffe Carlson, Carlson Capital Ltd, on +233 55 239 5548 or email uffe.carlson@gmail.com;
+visitors may also WhatsApp or call Uffe Carlson, Carlson Capital Ltd, on +233 55 239 5548 or email uffe.carlson@gothamconsult.com;
 for everything else give only the
 Gotham Consult number.
 

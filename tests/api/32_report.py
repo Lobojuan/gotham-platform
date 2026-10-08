@@ -82,7 +82,7 @@ row = _sp.run(['psql', DB, '-tAc', "select tags||'|'||source from contacts where
 assert row == 'report-partner|Website: Ghana Investment Report', row
 deal = _sp.run(['psql', DB, '-tAc', "select kind from deals where title like 'Report partner%'"], capture_output=True, text=True).stdout.strip()
 assert deal == 'sponsorship', deal
-mail = _sp.run(['psql', DB, '-tAc', "select count(*) from outbox where to_email='uffe.carlson@gmail.com' and subject like 'Report: Report partner from Ama%'"], capture_output=True, text=True).stdout.strip()
+mail = _sp.run(['psql', DB, '-tAc', "select count(*) from outbox where to_email='uffe.carlson@gothamconsult.com' and subject like 'Report: Report partner from Ama%'"], capture_output=True, text=True).stdout.strip()
 assert mail == '1', mail
 assert call('/api/report/enquiry', {'kind': 'partner', 'full_name': 'X', 'email': 'bad', 'consent': True})[0] == 400
 assert call('/api/report/enquiry', {'kind': 'news', 'full_name': 'Kofi', 'email': 'kofi@x.test', 'consent': True})[0] == 400, 'news needs a message'
@@ -113,7 +113,7 @@ assert row == 'United Kingdom|investor|Ghana Investment Report: asked for quarte
 deal = _sp.run(['psql', DB, '-tAc', "select kind from deals where title like 'Report download%'"], capture_output=True, text=True).stdout.strip(); assert deal == 'investor', deal
 body = _sp.run(['psql', DB, '-tAc', "select body from outbox where to_email='kwame@fund.test' and subject='Your Ghana Investment Report 2026'"], capture_output=True, text=True).stdout
 assert b['url'].replace('&', '&amp;') in body and 'uffe@test.gh' in body and 'wa.me/233550000001' in body, body[:400]
-alert = _sp.run(['psql', DB, '-tAc', "select body from outbox where to_email='uffe.carlson@gmail.com' and subject like 'Report: Report download from Kwame%'"], capture_output=True, text=True).stdout
+alert = _sp.run(['psql', DB, '-tAc', "select body from outbox where to_email='uffe.carlson@gothamconsult.com' and subject like 'Report: Report download from Kwame%'"], capture_output=True, text=True).stdout
 assert 'United Kingdom' in alert and 'Investor or fund' in alert and 'opted in' in alert, alert[:300]
 ok('a download request becomes a tagged contact (opted in to updates), an investor lead, an email with the link and the authors, and an alert to Uffe')
 import http.client

@@ -376,6 +376,7 @@ create unique index if not exists users_cal_token_uq on users (cal_token) where 
 
 -- email designer: a campaign can be a list of blocks with pictures; designs can be saved and reused
 alter table campaigns add column if not exists blocks jsonb not null default '[]'::jsonb;
+alter table campaigns add column if not exists translations jsonb not null default '{}'::jsonb;
 alter table campaigns drop constraint if exists campaigns_template_check;
 alter table campaigns add constraint campaigns_template_check check (template in ('invitation','sponsor','brief','plain','designer'));
 alter table media drop constraint if exists media_kind_check;
