@@ -172,7 +172,7 @@ assert ch['email']['via'] == 'smtp' and ch['sms']['ready'] and ch['whatsapp']['r
 st, _, _ = call('/api/outbox/flush', {}, cookie=ck)
 assert MAILS and any('lars@nordic.example' in ' '.join(m['rcpt']) for m in MAILS), MAILS
 m0 = [m for m in MAILS if 'lars@nordic.example' in ' '.join(m['rcpt'])][0]['data']
-assert 'List-Unsubscribe:' in m0 and 'From: Gotham Consult <info@gothamconsult.com>' in m0, m0[:600]
+assert 'List-Unsubscribe:' in m0 and 'uffe.carlson@gothamconsult.com' in m0, m0[:600]
 assert psql("select status from campaign_sends where campaign_id=%d" % em_id) == 'sent'
 ok('email goes out through the mailbox by SMTP, with a List-Unsubscribe header, and the campaign shows it as sent')
 
