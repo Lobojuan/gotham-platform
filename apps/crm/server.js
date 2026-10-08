@@ -431,9 +431,9 @@ async function init() {
     ['F3', 'event', 'Diaspora & Nordic Investor Roundtable', 'Ghana briefing, sector outlook and Q&A', 'Online', '2026-11-21T16:00:00Z', '2026-11-21T17:30:00Z', 'GHS', 0, null, 200, false, 3],
     ['M1', 'membership', 'Member', '20% off forums, monthly clinic, priority grant alerts', null, null, null, 'GHS', 250, '/ month', null, true, 10],
     ['M2', 'membership', 'Business Pro', 'Bookkeeping, E-VAT filing, compliance calendar', null, null, null, 'GHS', 1500, '/ month', null, true, 11],
-    ['M3', 'membership', 'Investor Desk', 'Local representation, site visits, monthly report', null, null, null, 'GHS', 15000, '/ month', null, true, 12],
-    ['B1', 'briefing', 'Ghana investor briefing', '60-minute call, credited to follow-on work', null, null, null, 'GHS', 2900, null, null, true, 20],
-    ['B2', 'briefing', 'Mining regime briefing', 'Royalties, reform status, licences and risks', null, null, null, 'GHS', 8500, null, null, true, 21],
+    ['M3', 'membership', 'Investor Desk', 'Local representation, site visits, monthly report', null, null, null, 'GHS', 30000, '/ month', null, true, 12],
+    ['B1', 'briefing', 'Ghana investor briefing', '60-minute call, credited to follow-on work', null, null, null, 'GHS', 6500, null, null, true, 20],
+    ['B2', 'briefing', 'Mining regime briefing', 'Royalties, reform status, licences and risks', null, null, null, 'GHS', 15000, null, null, true, 21],
   ];
   // Bank of Ghana: prices may only be shown and charged in cedis. Earlier builds seeded three
   // investor products in USD; move them to GHS (about GHS 11.40 per USD, Sept 2026, rounded).
@@ -441,6 +441,10 @@ async function init() {
     await q(`update items set currency='GHS', price=$3 where code=$1 and currency='USD' and price=$2`, [code, usd, ghs]);
   // Price list of 6 Oct 2026 (70% markup on cost): move memberships still at the old default price.
   for (const [code, was, now] of [['M1', 150, 250], ['M2', 1200, 1500], ['M3', 11500, 15000]])
+    await q(`update items set price=$3 where code=$1 and currency='GHS' and price=$2`, [code, was, now]);
+  // Investor prices of 8 Oct 2026: international investors pay closer to international rates (still 50-70% below
+  // Big 4 / expert networks); Ghana businesses keep local prices. Only rows still at the old default move.
+  for (const [code, was, now] of [['M3', 15000, 30000], ['B1', 2900, 6500], ['B2', 8500, 15000]])
     await q(`update items set price=$3 where code=$1 and currency='GHS' and price=$2`, [code, was, now]);
   for (const s of seed) {
     await q(`insert into items(code,kind,title,subtitle,venue,starts_at,ends_at,currency,price,per,capacity,published,sort)

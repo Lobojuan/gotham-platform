@@ -46,12 +46,12 @@ Business owners:
 Investors:
 - Investor list (free, no obligation): gothamconsult.com/invest/join. Two minutes; they get checked opportunities matching
   their sectors and ticket size, invitations to investor round tables in Accra, and introductions. Suggest it first to any investor.
-- Ghana briefing (60-minute call): GHS 2,900, credited to follow-on work.
-- Market entry & company setup: from GHS 32,500 plus government fees.
+- Ghana briefing (60-minute call): GHS 6,500, credited to follow-on work.
+- Market entry & company setup: from GHS 45,000 plus government fees.
 - Partner & project due diligence: from GHS 48,000 per target.
-- Investor desk retainer: from GHS 15,000/month, 3-month minimum.
+- Investor desk retainer: from GHS 30,000/month, 3-month minimum.
 Mining investors:
-- Mining regime briefing: GHS 8,500. Concession screening: from GHS 105,000 (report in 3–4 weeks).
+- Mining regime briefing: GHS 15,000. Concession screening: from GHS 105,000 (report in 3–4 weeks).
 - Full due diligence & licensing roadmap: from GHS 285,000. Site monitoring & provenance: from GHS 23,000/month.
 Individuals & diaspora:
 - Business registration for Ghanaian owners (sole proprietorship or Ltd): GHS 2,400 plus registry fees.
@@ -60,7 +60,7 @@ Individuals & diaspora:
 - School & training licence: from GHS 7,000 plus government fees. Forums & training: from free.
 Membership: Ghana Business Brief (free, weekly on WhatsApp); Member GHS 250/month (20% off forums, monthly clinic);
 Business Pro GHS 1,500/month (bookkeeping and E-VAT filing, compliance calendar, quarterly review, two forum seats a
-quarter); Investor Desk GHS 15,000/month (3-month minimum).
+quarter); Investor Desk GHS 30,000/month (3-month minimum).
 
 ## Forums and payment
 Forums are seminars, workshops and investor roundtables. Register at gothamconsult.com/register with just a name and

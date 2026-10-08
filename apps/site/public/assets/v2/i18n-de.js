@@ -3324,5 +3324,11 @@ window.GC_I18N.de = {
   "Your account | Gotham Consult": "Ihr Konto | Gotham Consult",
   "In partnership with Carlson Capital": "In Partnerschaft mit Carlson Capital",
   "with Carlson Capital": "mit Carlson Capital",
-  "Gotham Consult home, in partnership with Carlson Capital": "Gotham Consult Startseite, in Partnerschaft mit Carlson Capital"
+  "Gotham Consult home, in partnership with Carlson Capital": "Gotham Consult Startseite, in Partnerschaft mit Carlson Capital",
+  "For international investors": "Für internationale Investoren",
+  "For Ghana businesses": "Für Unternehmen in Ghana",
+  "From GHS 30,000 / month": "Ab GHS 30,000 / Monat",
+  "From GHS 45,000": "Ab GHS 45,000",
+  "GHS 6,500": "GHS 6,500",
+  "GHS 30,000": "GHS 30,000"
 };

@@ -259,11 +259,11 @@ let ITEMS=[
  {id:'F1',g:'Forums',t:'SMEs at the Centre: Inclusive Partnerships under the GIPA Act 2026',s:'Saturday 24 October 2026 · Tang Palace Hotel, Accra',p:0,c:'GHS',q:1,feat:1,day:'24',mon:'Oct'},
  {id:'F2',g:'Forums',t:'AI in Your Business: Hands-on Workshop for SME Owners',s:'Saturday 7 November 2026 · East Legon, Accra',p:450,c:'GHS',q:1},
  {id:'F3',g:'Forums',t:'Diaspora & Nordic Investor Roundtable',s:'Saturday 21 November 2026 · Online',p:0,c:'GHS',q:1},
- {id:'M1',g:'Membership',t:'Member',s:'20% off forums, monthly business clinic, priority grant alerts',p:250,c:'GHS',per:'/ month'},
- {id:'M2',g:'Membership',t:'Business Pro',s:'Bookkeeping, E-VAT filing, compliance calendar, forum seats',p:1500,c:'GHS',per:'/ month'},
- {id:'M3',g:'Membership',t:'Investor Desk',s:'Local representation, site visits, monthly written report, 3-month minimum',p:15000,c:'GHS',per:'/ month'},
- {id:'B1',g:'Investor briefings',t:'Ghana investor briefing',s:'60-minute call on your sector, credited to follow-on work',p:2900,c:'GHS'},
- {id:'B2',g:'Investor briefings',t:'Mining regime briefing',s:'Royalties, reform status, licences and risks for your mineral',p:8500,c:'GHS'}];
+ {id:'M1',g:'For Ghana businesses',t:'Member',s:'20% off forums, monthly business clinic, priority grant alerts',p:250,c:'GHS',per:'/ month'},
+ {id:'M2',g:'For Ghana businesses',t:'Business Pro',s:'Bookkeeping, E-VAT filing, compliance calendar, forum seats',p:1500,c:'GHS',per:'/ month'},
+ {id:'M3',g:'For international investors',t:'Investor Desk',s:'Local representation, site visits, monthly written report, 3-month minimum',p:30000,c:'GHS',per:'/ month'},
+ {id:'B1',g:'For international investors',t:'Ghana investor briefing',s:'60-minute call on your sector, credited to follow-on work',p:6500,c:'GHS'},
+ {id:'B2',g:'For international investors',t:'Mining regime briefing',s:'Royalties, reform status, licences and risks for your mineral',p:15000,c:'GHS'}];
 const PAYS=[
  {id:'online',t:'Pay online',s:'Card (Visa, Mastercard) or mobile money, secure checkout',on:()=>!!PAYL},
  {id:'momo',t:'Mobile money (Ghana)',s:'MTN MoMo, Telecel Cash or AirtelTigo Money',on:()=>true},
@@ -429,9 +429,9 @@ $('#nav').innerHTML=NAV.map(([t,h])=>`<a href="${SITE_URL}${h}">${t}</a>`).join(
 /* live items and payment settings from the CRM */
 fetch(API+'/api/items',{mode:'cors'}).then(r=>r.json()).then(d=>{
   if(!d.items||!d.items.length)return;
-  const G={event:'Forums',membership:'Membership',briefing:'Investor briefings',service:'Services'};
+  const G={event:'Forums',membership:'For Ghana businesses',briefing:'For international investors',service:'Services'},GC={M3:'For international investors'};
   const wd=s=>s?new Date(s).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
-  const live=d.items.map(i=>({id:i.code,g:G[i.kind]||'Other',t:i.title,
+  const live=d.items.map(i=>({id:i.code,g:GC[i.code]||G[i.kind]||'Other',t:i.title,
     s:[i.starts_at?wd(i.starts_at):'',i.venue||'',i.subtitle||''].filter(Boolean).join(' · '),
     p:Number(i.price),c:i.currency,per:i.per||'',q:i.kind==='event'?1:0,left:i.seats_left,appr:!!i.approval,phase:i.phase||'open',aud:i.audiences||'',
     img:i.cover_image||null,docs:i.documents||[],desc:i.description||'',sum:i.summary||'',agenda:i.agenda||[],speakers:i.speakers||[],

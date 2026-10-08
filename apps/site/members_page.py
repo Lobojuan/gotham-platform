@@ -83,10 +83,10 @@ def plans(L, pre):
     return ('<div class="mb-plans">'
         + card('', 'Start here', 'Free account', f'{esc(ghs(L, 0))}', '', ['Sector alerts every Monday, in your language', 'The Ghana Investment Report and its PDF in six languages',
                'A preview of your company’s next filing deadlines', 'Event invitations and recordings'], '#signup', 'Create a free account')
-        + card(' hot', 'For investors', 'Pro membership', per('pro_month', 'per month'), t('or {price} per year').format(price=f'<span data-price="pro_year">{esc(ghs(L, P["pro_year"]["price"]))}</span>'),
+        + card(' hot', 'For international investors', 'Pro membership', per('pro_month', 'per month'), t('or {price} per year').format(price=f'<span data-price="pro_year">{esc(ghs(L, P["pro_year"]["price"]))}</span>'),
                ['Everything in the free account', 'A monthly briefing per sector from our team', 'The Excel data pack: every figure with its source, our forecasts and 10 years of history', 'One question to our team every month'],
                '?buy=pro_year#signup', 'Become a Pro member')
-        + card(' hot', 'For companies', 'Compliance calendar', per('compliance_month', 'per company, per month'), t('or {price} per year').format(price=f'<span data-price="compliance_year">{esc(ghs(L, P["compliance_year"]["price"]))}</span>'),
+        + card(' hot', 'For Ghana businesses', 'Compliance calendar', per('compliance_month', 'per company, per month'), t('or {price} per year').format(price=f'<span data-price="compliance_year">{esc(ghs(L, P["compliance_year"]["price"]))}</span>'),
                ['Every filing and payment date for your company: PAYE, SSNIT, VAT, income tax, the Registrar and permits', 'Reminders 7 days and 1 day before each deadline',
                 '“We file it for you” in one click', 'Your own page with case updates, documents and invoices'], '?buy=compliance_year#signup', 'Protect my company')
         + '</div>')
@@ -99,13 +99,13 @@ def nb(x):
 
 def services(L, pre):
     t = L.t; P = PRODUCTS
-    def s(k, title, text, frm=False):
+    def s(k, who, title, text, frm=False):
         price = f'{esc(t("from") + " ") if frm else ""}<span data-price="{k}">{esc(ghs(L, P[k]["price"]))}</span>'
-        return f'<div class="box mb-svc"><h3>{esc(t(title))}</h3><div class="amt">{price}</div><p>{esc(t(text))}</p><p><a href="{pre}/account?buy={k}#signup">{esc(t("Book now"))} <span class="arrow">→</span></a></p></div>'
+        return f'<div class="box mb-svc"><span class="mb-tag">{esc(t(who))}</span><h3>{esc(t(title))}</h3><div class="amt">{price}</div><p>{esc(t(text))}</p><p><a href="{pre}/account?buy={k}#signup">{esc(t("Book now"))} <span class="arrow">→</span></a></p></div>'
     return ('<div class="mb-svcs">'
-        + s('call', 'Expert call, 30 minutes', 'Talk to Uffe Carlson or Joy Preston about entering Ghana, a sector, a deal or a problem. You choose the times; we confirm within one working day.')
-        + s('check', 'Counterparty check', 'Before you sign: who owns the company, is it registered and filing, and is it in court. From the official registers, in a short written report.', True)
-        + s('filing', 'We file it for you', 'One return or payment prepared and filed for your company: PAYE, SSNIT, VAT or the annual return, by qualified professionals we work with.')
+        + s('call', 'For international investors', 'Expert call, 30 minutes', 'Talk to Uffe Carlson or Joy Preston about entering Ghana, a sector, a deal or a problem. You choose the times; we confirm within one working day.')
+        + s('check', 'For international investors', 'Counterparty check', 'Before you sign: who owns the company, is it registered and filing, and is it in court. From the official registers, in a short written report.', True)
+        + s('filing', 'For Ghana businesses', 'We file it for you', 'One return or payment prepared and filed for your company: PAYE, SSNIT, VAT or the annual return, by qualified professionals we work with.')
         + '</div>')
 
 

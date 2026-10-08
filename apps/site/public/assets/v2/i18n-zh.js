@@ -3325,5 +3325,11 @@ window.GC_I18N.zh = {
   "Your account | Gotham Consult": "您的账户 | Gotham Consult",
   "In partnership with Carlson Capital": "与 Carlson Capital 合作",
   "with Carlson Capital": "携手 Carlson Capital",
-  "Gotham Consult home, in partnership with Carlson Capital": "哥谭咨询主页，与 Carlson Capital 合作"
+  "Gotham Consult home, in partnership with Carlson Capital": "哥谭咨询主页，与 Carlson Capital 合作",
+  "For international investors": "面向国际投资者",
+  "For Ghana businesses": "面向加纳企业",
+  "From GHS 30,000 / month": "从 GHS 30,000 / 月",
+  "From GHS 45,000": "从 GHS 45,000",
+  "GHS 6,500": "GHS 6,500",
+  "GHS 30,000": "GHS 30,000"
 };

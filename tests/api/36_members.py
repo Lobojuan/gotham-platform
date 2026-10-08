@@ -78,7 +78,7 @@ ok('compliance plan: cedi invoice with VAT and levies (12,000 + 20%), a lead dea
 # a booking becomes a task once paid
 st, b, _ = call('/api/member/buy', {'product': 'call', 'details': 'Entering cocoa processing', 'slots': 'Tue 10-12'}, cookie=ck); assert st == 200
 inv2 = psql(f"select invoice_id from member_orders where id={b['order']}")
-call(f"/api/invoices/{inv2}/payment", {'amount': 1800, 'method': 'card'}, cookie=adm); time.sleep(0.5)
+call(f"/api/invoices/{inv2}/payment", {'amount': 4200, 'method': 'card'}, cookie=adm); time.sleep(0.5)
 assert psql(f"select status from member_orders where id={b['order']}") == 'open' and psql("select count(*) from tasks where title like 'Expert call, 30 minutes for Ama%Entering cocoa%'") == '1'
 st, dash, _ = call('/api/members', cookie=adm); assert dash['kpi']['members'] == 1 and dash['kpi']['paying'] == 1 and dash['kpi']['mrr'] == 1000 and dash['kpi']['open_bookings'] == 1, dash['kpi']
 assert call(f"/api/members/orders/{b['order']}/done", {}, cookie=adm)[0] == 200 and psql(f"select status from member_orders where id={b['order']}") == 'done'
@@ -101,7 +101,7 @@ assert psql("select count(*) from member_orders where renewal_of is not null and
 st, r, _ = call('/api/members/run-jobs', {'weekly': True}, cookie=adm); assert r['digests'] == 0 and r['renewals'] == 0, 'not twice'
 tok = re.search(r'/m/stop\?u=([0-9a-f]+)', dg).group(1); st, h, _ = raw('/m/stop?u=' + tok, method='POST', body={}); assert st == 200 and psql("select alerts from members where email='ama@co.test'") == 'f'
 ok('weekly digest in the member’s language with the approved report update and a one-click stop; renewal invoice 7 days before the end, once')
-st, p, _ = call('/api/member/prices'); assert p['prices']['pro_year'] == 4500 and p['permits']
+st, p, _ = call('/api/member/prices'); assert p['prices']['pro_year'] == 12000 and p['permits']
 call('/api/members/prices', {'pro_year': 5200}, cookie=adm); assert call('/api/member/prices')[1]['prices']['pro_year'] == 5200
 ok('prices are public for the membership page and the back office can change them')
 # an order whose payment landed but whose plan never started is picked up by the daily sweep

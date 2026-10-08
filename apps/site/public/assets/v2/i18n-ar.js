@@ -3324,5 +3324,11 @@ window.GC_I18N.ar = {
   "Your account | Gotham Consult": "حسابكم | Gotham Consult",
   "In partnership with Carlson Capital": "بالشراكة مع Carlson Capital",
   "with Carlson Capital": "مع Carlson Capital",
-  "Gotham Consult home, in partnership with Carlson Capital": "الصفحة الرئيسية لشركة Gotham Consult، بالشراكة مع Carlson Capital"
+  "Gotham Consult home, in partnership with Carlson Capital": "الصفحة الرئيسية لشركة Gotham Consult، بالشراكة مع Carlson Capital",
+  "For international investors": "للمستثمرين الدوليين",
+  "For Ghana businesses": "للشركات في غانا",
+  "From GHS 30,000 / month": "من جنيه غاني 30,000 / شهر",
+  "From GHS 45,000": "من جنيه غاني 45,000",
+  "GHS 6,500": "GHS 6,500",
+  "GHS 30,000": "GHS 30,000"
 };
