@@ -1,0 +1,33 @@
+/* ---------- Touch layer: on phones and tablets every control is finger-sized ----------
+   Apple and Google both ask for at least 44–48px touch targets; inputs at 16px stop iPhone zooming in on focus. */
+@media (max-width: 760px), (pointer: coarse) {
+  /* lists of links: footer, breadcrumbs, section jumps, contents and sources */
+  .gf ul { gap: 0; }
+  .gf a, .gf-top a.brand, .crumb a, .crumbs a, .jump a { min-height: 44px; }
+  .crumbs a { display: inline-flex; align-items: center; }
+  .rp-s, .ins-src li > a, ol > li > a:only-child, ul > li > a:only-child { display: inline-block; padding-block: 13px; }
+  .opts span { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; }
+  /* links that stand on their own line and act as buttons */
+  p.fs a, p.src a, p.rp-src a, .rp-kpis .p a, .mb-svcs .box p a, .mb-note a, .steps .step a, .prac a.more, .prac a.go, a.more, a.go
+    { display: inline-flex; align-items: center; min-height: 46px; }   /* 46: cards scale in from 98% */
+  :root .steps .step a, :root a.more, :root a.go { min-height: 46px !important; }   /* some carry an inline 44px */
+  /* buttons, chips, carousel controls */
+  .btn { min-height: 48px; }
+  button, [role=tab], .car-rail button, .gc-next, .car-ask { min-height: 44px; }
+  .gc-next { min-width: 44px; }
+  .rc-grid .rc-card .rc-try button, .gf .gf-made a { min-height: 44px; }
+  .fc-src li a { display: inline-block; padding-block: 12px; }
+  summary { padding-block: 12px; }
+  /* form fields: 16px text so iPhone does not zoom, 48px tall */
+  input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea { font-size: 16px !important; min-height: 48px; }
+  /* tick boxes: bigger box, and the whole row is the target */
+  input[type=checkbox], input[type=radio] { width: 22px; height: 22px; flex: none; margin: 0; }
+  label:has(> input[type=checkbox]), label:has(> input[type=radio]) { min-height: 44px; cursor: pointer; }
+  label.chk, label.consent { display: flex; align-items: center; gap: 12px; }
+  /* small print stays readable */
+  :root .eyebrow, :root .hero-in .eyebrow.long, .tag, .card .tag, :root .mb-tag, th, .pill, .per, .ins-meta, .grp,
+  :root .src, :root .rp-src, .rp-fn, .chart-note, .chart-values { font-size: 13px; }
+  :root .fine, :root .book .fine, small { font-size: 14px; }
+  /* badges: never below 12px (the bottom-bar labels stay 11px so German and French fit under the icons) */
+  :root .rp-live, :root .rp-tn, :root .rp-press, :root .rp-off, :root .fc-off, :root .gc-k, :root .globe-hud span { font-size: 12px; }
+}

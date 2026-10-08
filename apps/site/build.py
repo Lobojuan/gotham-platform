@@ -415,6 +415,16 @@ def main():
     # the logo on every photo, share image and video (dist copies only; public/img keeps the clean originals)
     import brand_media; brand_media.run(DIST)
 
+    # finger-sized controls on phones and tablets: one small stylesheet, loaded last on every page (including the stand-alone ones)
+    import hashlib
+    tv = hashlib.md5(open(os.path.join(DIST, 'assets', 'v2', 'touch.css'), 'rb').read()).hexdigest()[:8]   # new version on every change, so phones never keep an old copy
+    touch = f'<link rel="stylesheet" href="/assets/v2/touch.css?v={tv}">'
+    for dirpath, _, files in os.walk(DIST):
+        for fn in files:
+            if not fn.endswith('.html'): continue
+            fp = os.path.join(dirpath, fn); h = open(fp, encoding='utf-8').read()
+            if '</head>' in h and 'touch.css' not in h: open(fp, 'w', encoding='utf-8').write(h.replace('</head>', touch + '\n</head>', 1))
+
     # static files (css, js, images) from ASSET_URL when set: the page itself comes through the WordPress bridge, which is slow per request
     asset = os.environ.get('ASSET_URL', '').rstrip('/')
     if asset:

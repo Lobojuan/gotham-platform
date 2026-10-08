@@ -505,6 +505,23 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 .chat-mn button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 10px;cursor:pointer;font:inherit;font-size:13.5px}
 .chf{font-size:13.5px;margin-bottom:6px}
 @media (max-width:860px){.chat{grid-template-columns:1fr;height:auto}.chl{max-height:240px}.chm{height:70vh}.chc .cbar .note{display:none}}
+
+/* touch layer: on phones and tablets every control is finger-sized (44px+) and fields are 16px so iPhone does not zoom while typing */
+@media (max-width:760px),(pointer:coarse){
+nav.nav a,.side .me button{min-height:44px}
+.btn{min-height:44px}
+.iconbtn,.hamb{min-width:44px;min-height:44px}
+.seg button,.presets button,.cal-f button,.cal-fc,.chl a.chi,.pwf .eye,.chl .lnk{min-height:44px}
+.pwf .eye,.chl .lnk{min-width:44px}
+.note a,.card>a{display:inline-flex;align-items:center;min-height:44px}
+summary{padding-block:12px}
+.t,input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=range]):not([type=color]),select,textarea{font-size:16px!important}
+.t:not(textarea),select{min-height:44px}
+input[type=checkbox],input[type=radio]{width:22px;height:22px;flex:none}
+label:has(>input[type=checkbox]),label:has(>input[type=radio]){min-height:44px;cursor:pointer}
+label.cal-mine{display:inline-flex;align-items:center;gap:10px}
+.tag,.bl{font-size:12.5px}
+}
 </style></head><body>
 <div class="kente"></div>
 

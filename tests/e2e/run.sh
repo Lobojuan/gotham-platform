@@ -26,5 +26,6 @@ if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/invest
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/presentation_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/seo_locales_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/report_download_ui.js"; rc=$?; fi
+if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT ADMIN_PASSWORD=e2e-owner-pass node "$ROOT/tests/ui/touch_targets_ui.js"; rc=$?; fi
 cleanup
 exit $rc
