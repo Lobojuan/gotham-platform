@@ -3,14 +3,16 @@
    real screen size, so: width media queries are re-decided for that width, vw/vh are re-based on the screen (style
    sheets and inline styles), matchMedia/innerWidth answer the same way, and the page is zoomed so the phone layout
    fills the screen at normal reading size. Originals are kept, so turning the phone re-decides everything, and the
-   page goes back to normal when the shrink no longer applies. Runs inline in <head>, before any other script. */
+   page goes back to normal when the shrink no longer applies. Safety: if any of our style sheets cannot be read
+   (cross-origin without CORS), or the result is still wider than the screen, it backs off and changes nothing.
+   Runs inline in <head>, before any other script. */
 (function () {
   try {
     var de = document.documentElement, w = window;
     if (!w.matchMedia || !matchMedia('(pointer: coarse)').matches) return;
     var a = Math.min(screen.width, screen.height), b = Math.max(screen.width, screen.height);
     if (!a || a > 600) return;                                     // phones only: never tablets, laptops or desktops
-    var on = false, W = 0, H = 0;
+    var on = false, W = 0, H = 0, blocked = false, gaveUp = false;
     if ((de.clientWidth || w.innerWidth) <= b * 1.1) return;      // laid out at the real screen width: a normal phone, nothing to do
     var state = function () {
       var lw = de.clientWidth || w.innerWidth, lh = de.clientHeight || w.innerHeight;
@@ -35,7 +37,12 @@
         if (r.cssRules) collect(r.cssRules);
       }
     };
-    var sheets = function () { for (var s = 0; s < document.styleSheets.length; s++) { try { collect(document.styleSheets[s].cssRules); } catch (e) {} } };
+    var sheets = function () {
+      for (var s = 0; s < document.styleSheets.length; s++) {
+        var sh = document.styleSheets[s];
+        try { collect(sh.cssRules); } catch (e) { if (!/fonts\.googleapis\.com/.test(sh.href || '')) blocked = true; }   // unreadable sheet: its widths can't be re-decided
+      }
+    };
     var inline = function (root) {                                 // inline style="" attributes under root
       if (root.nodeType === 1 && root.hasAttribute('style')) note(root);
       var els = root.querySelectorAll ? root.querySelectorAll('[style]') : [];
@@ -58,6 +65,7 @@
     };
     var update = function () {
       var s = state(); sheets(); inline(de);
+      if (blocked || gaveUp) s.on = false;
       if (s.on === on && (!on || (s.W === W && s.H === H))) return;
       on = s.on; W = s.W; H = s.H;
       if (on) { de.classList.add('phone-mode'); de.style.zoom = s.z; } else { de.classList.remove('phone-mode'); de.style.zoom = ''; }
@@ -68,8 +76,11 @@
     var iw = Object.getOwnPropertyDescriptor(w, 'innerWidth');
     if (iw && iw.get && iw.configurable) Object.defineProperty(w, 'innerWidth', { configurable: true, enumerable: true, get: function () { return on ? W : iw.get.call(w); } });
     update();
-    var later = function () { sheets(); inline(de); paint(); };
-    document.addEventListener('DOMContentLoaded', later); w.addEventListener('load', later);
+    var check = function () {                                      // never leave the page wider than the screen
+      if (on && de.scrollWidth > de.clientWidth + 2) { gaveUp = true; update(); }
+    };
+    var later = function () { sheets(); inline(de); if (blocked && on) update(); else paint(); };
+    document.addEventListener('DOMContentLoaded', later); w.addEventListener('load', function () { later(); setTimeout(check, 300); });
     var t; var re = function () { clearTimeout(t); t = setTimeout(update, 120); };
     w.addEventListener('resize', re); w.addEventListener('orientationchange', re);
     if (w.MutationObserver) new MutationObserver(function (ms) {

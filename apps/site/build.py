@@ -426,7 +426,10 @@ def main():
         for fn in files:
             if not fn.endswith('.html'): continue
             fp = os.path.join(dirpath, fn); h = open(fp, encoding='utf-8').read()
-            if '</head>' in h and 'touch.css' not in h: open(fp, 'w', encoding='utf-8').write(h.replace('</head>', touch + '\n' + pm + '\n</head>', 1))
+            if '</head>' in h and 'touch.css' not in h: h = h.replace('</head>', touch + '\n' + pm + '\n</head>', 1)
+            # our style sheets may come from ASSET_URL (another host): CORS mode lets phone-mode read them (the host sends Access-Control-Allow-Origin: *)
+            h = re.sub(r'<link rel="stylesheet" href="/assets/', '<link rel="stylesheet" crossorigin="anonymous" href="/assets/', h)
+            open(fp, 'w', encoding='utf-8').write(h)
 
     # static files (css, js, images) from ASSET_URL when set: the page itself comes through the WordPress bridge, which is slow per request
     asset = os.environ.get('ASSET_URL', '').rstrip('/')

@@ -4,6 +4,10 @@ const {chromium,devices}=require(process.env.PLAYWRIGHT||'playwright');
 const fs=require('fs'),path=require('path'),ROOT=path.join(__dirname,'..','..');
 {const src=fs.readFileSync(path.join(ROOT,'apps/site/public/assets/v2/phone-mode.js'),'utf8').replace(/^\/\*[\s\S]*?\*\/\s*/,'').trim();
  if(!fs.readFileSync(path.join(ROOT,'apps/crm/public/admin.html'),'utf8').includes('<script>'+src+'</script>'))throw Error('back-office phone-mode copy differs from apps/site/public/assets/v2/phone-mode.js');}
+// live pages load our CSS from another host (ASSET_URL): phone-mode can only read it in CORS mode
+for(const f of ['index.html','membership.html','ghana-investment-report.html','register.html','ar/index.html']){const h=fs.readFileSync(path.join(ROOT,'apps/site/dist',f),'utf8');
+ const bad=(h.match(/<link rel="stylesheet"[^>]*>/g)||[]).filter(l=>!/googleapis/.test(l)&&!/crossorigin="anonymous"/.test(l));
+ if(bad.length)throw Error(`${f}: style sheets without crossorigin: ${bad.join(' ')}`);}
 // a phone with the browser's "Desktop site" switched on: 980px layout on a 360px touch screen
 const DESKTOP_SITE={viewport:{width:980,height:2015},screen:{width:360,height:740},hasTouch:true,isMobile:false,deviceScaleFactor:1,userAgent:'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36'};
 const B=process.env.BASE||'http://127.0.0.1:4199';
