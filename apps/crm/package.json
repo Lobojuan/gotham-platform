@@ -6,6 +6,8 @@
  "dependencies": {
   "exceljs": "^4.4.0",
   "exif-reader": "^2.0.3",
+  "imapflow": "^2.3.0",
+  "mailparser": "^3.9.37",
   "nodemailer": "^7.0.13",
   "pdf-lib": "^1.17.1",
   "pg": "^8.13.1",

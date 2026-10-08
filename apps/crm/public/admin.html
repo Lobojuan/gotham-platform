@@ -782,11 +782,11 @@ const NAV=[
  ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt'],['chat','Team chat','chat','chcnt']]],
  ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['members','Members','star',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1],['web','Website visitors','globe2',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
- ['System',[['mail','Email outbox','mail','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
+ ['System',[['inbox','Email inbox','mail','incnt',1],['mail','Email outbox','send','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
 const TITLES={dash:'Dashboard',members:'Members',mem:'Member',chat:'Team chat',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',web:'Website visitors',rec:'Company record',reports:'Reports',
- regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',mail:'Email outbox',
+ regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',inbox:'Email inbox',mail:'Email outbox',
  out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
-const ADMIN_ONLY=new Set(['members','mem','web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','mail','data']);
+const ADMIN_ONLY=new Set(['members','mem','web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','inbox','mail','data']);
 let V='dash', ARG=null, USERS=[];
 function buildNav(){
  $('#nav').innerHTML=NAV.map(([g,items])=>{const it=items.filter(x=>!x[4]||isAdmin());
@@ -810,7 +810,7 @@ function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
  const m={dash:dashboard,chat:chatView,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,members:membersView,mem:()=>memberView(+ARG),imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,
-  regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,mail,data,settings};
+  regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,inbox,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
   contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>',
   inv:`<button class="btn btn-line" data-new="acct">For the accountant</button><button class="btn btn-line" data-new="quote">New quotation</button><button class="btn btn-dark" data-new="invoice">New invoice</button>`};
@@ -2462,6 +2462,31 @@ function door(){
     if(!busy){busy=true;try{const c=await det.detect(v);if(c[0]&&c[0].rawValue!==last){last=c[0].rawValue;await go(last);setTimeout(()=>last='',2500)}}catch{}busy=false}
     requestAnimationFrame(tick)};tick();$('#camnote').textContent='Scanning…';
   }catch{$('#camnote').textContent='Camera not allowed.'}};
+}
+
+/* incoming Gotham mailbox */
+async function inbox(){
+ let d;
+ try{d=await api('/api/inbox')}catch(e){$('#view').innerHTML=`<div class="card"><h3>Inbox unavailable</h3><p class="note">${esc(e.message||'Could not load the mailbox.')}</p></div>`;return}
+ const R=d.rows||[], sync=d.sync;
+ $('#incnt').textContent=d.unread||'';
+ $('#view').innerHTML=`<div class="card"><div class="filters"><button class="btn btn-dark" id="in-sync" ${d.ready?'':'disabled'}>Sync mailbox now</button>
+  <span class="note">${d.unread||0} unread · Latest 100 messages${sync?.last_sync?` · Last sync ${dt(sync.last_sync)}`:''}${sync?.status==='error'?' · Last sync failed':''}</span></div>
+  ${!d.ready?'<p class="note">Mailbox access is not configured on the server yet.</p>':''}
+  <div class="wrapx"><table><thead><tr><th>Received</th><th>From / To</th><th>Subject</th><th>Status</th></tr></thead><tbody>
+  ${R.map(r=>`<tr><td class="note">${dt(r.received_at)}</td><td>${r.is_outgoing?'<span class="tag t-paid">You</span>':esc(r.from_name||'')}<div class="note">${esc(r.is_outgoing?r.to_email:r.from_email)}</div></td>
+   <td><button class="lnk" type="button" data-inbox="${r.id}">${esc(r.subject)}</button></td><td>${r.is_outgoing?'<span class="tag t-free">sent</span>':r.is_read?'<span class="tag">read</span>':'<span class="tag t-due">unread</span>'}</td></tr>`).join('')||'<tr><td colspan="4" class="note">No messages have been synced yet. Sync the mailbox to load recent mail.</td></tr>'}
+  </tbody></table></div></div>`;
+ $('#in-sync').onclick=async()=>{const b=$('#in-sync');b.disabled=true;b.textContent='Syncing…';try{const s=await api('/api/inbox/sync',{method:'POST'});toast(`Inbox synced · ${s.imported||0} messages`);inbox()}catch(e){toast(e.message==='mailbox_sync_failed'?'Mailbox sync failed. Check the server mail configuration.':'Could not sync the mailbox.');b.disabled=false;b.textContent='Sync mailbox now'}};
+ document.querySelectorAll('[data-inbox]').forEach(b=>b.onclick=async()=>{
+  try{const m=await api('/api/inbox/'+b.dataset.inbox);$('#dr').classList.add('on','wide');
+   $('#drb').innerHTML=`<h2>${esc(m.subject)}</h2><p class="note">${m.is_outgoing?'To':'From'} ${esc(m.is_outgoing?m.to_email:(m.from_name?m.from_name+' · ':'')+m.from_email)} · ${dt(m.received_at)}</p>
+    <pre style="white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:15px;line-height:1.65;background:var(--wash);padding:16px;border-radius:14px;max-height:48vh;overflow:auto">${esc(m.body_text||'(This message has no readable plain-text body.)')}</pre>
+    ${m.is_outgoing?'':`<form id="in-reply"><label class="l" for="in-reply-text">Reply</label><textarea class="t" id="in-reply-text" rows="6" maxlength="10000" required placeholder="Write your reply…"></textarea><button class="btn btn-dark" type="submit" style="margin-top:10px">Send reply</button><p class="note">This sends from the Gotham mailbox and stays in this inbox thread.</p></form>`}`;
+   if(!m.is_outgoing)$('#in-reply').onsubmit=async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;button.textContent='Sending…';try{await api(`/api/inbox/${m.id}/reply`,{method:'POST',body:JSON.stringify({text:$('#in-reply-text').value})});toast('Reply sent');closeDr();inbox()}catch(err){toast(err.message==='smtp_not_configured'?'Sending mailbox is not configured.':'Reply could not be sent.');button.disabled=false;button.textContent='Send reply'}};
+   inbox();
+  }catch(e){toast('Could not open this message.')}
+ });
 }
 
 /* email outbox */

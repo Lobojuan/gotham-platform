@@ -19,6 +19,11 @@ services:
       SMTP_PORT: ${SMTP_PORT:-465}
       SMTP_USER: ${SMTP_USER:-info@gothamconsult.com}
       SMTP_PASS: ${SMTP_PASS:-}
+      IMAP_HOST: ${IMAP_HOST:-gothamconsult.com}
+      IMAP_PORT: ${IMAP_PORT:-993}
+      IMAP_USER: ${IMAP_USER:-}
+      IMAP_PASS: ${IMAP_PASS:-}
+      IMAP_MAILBOX: ${IMAP_MAILBOX:-INBOX}
       MAIL_HOURLY_LIMIT: ${MAIL_HOURLY_LIMIT:-}
       MAIL_DAILY_LIMIT: ${MAIL_DAILY_LIMIT:-}
       ARKESEL_API_KEY: ${ARKESEL_API_KEY:-}

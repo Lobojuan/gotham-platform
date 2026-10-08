@@ -115,7 +115,7 @@ yet provide evidence for all of them; see the current QA findings before using t
 - The old copy at `gotham-consult-gh.netlify.app` cannot be updated (Netlify credits exhausted). It still posts to the
   live system and is accepted (R-6), but its own form asks for company and email and has the old consent box.
   Stop sharing it; a one-off Netlify top-up would allow a redirect.
-- Emails wait in the outbox until a Resend key is added.
+- When neither Resend nor SMTP is configured, emails wait in the outbox. The admin-only CRM inbox uses the configured cPanel IMAP mailbox when credentials are available.
 - Layout tests run in Chromium with phone sizes and phone user agents; a final check on a real iPhone (Safari) is still worth doing.
 
 ## SEO release, 7 October 2026
@@ -125,6 +125,14 @@ yet provide evidence for all of them; see the current QA findings before using t
 | SEO-1 | All 24 page families have English, French, Spanish, German, Arabic and Simplified Chinese static twins, matching canonical/sharing/structured-data URLs, translated titles/descriptions/services/FAQs, reciprocal hreflang and sitemap inclusion. | api/31_seo.py |
 | SEO-2 | Language anchors are crawlable without JS; switching preserves query/section and explicit locale URLs select the correct language; phone/desktop navigation works. | ui/seo_locales_ui.js, e2e/site_e2e.js |
 | SEO-3 | The signed WordPress hostname survives Caddy so www returns a 301 to the apex with the same path/query. Unsigned/unrelated host headers cannot trigger it. Shared proxy changes are scoped, validated, backed up and reload without restarting other sites. | api/12_bridge_redirect.py, api/31_seo.py; scripts/bridge-host.py invoked by guarded deploy-crm.sh; public smoke checks after deploy |
+
+## Email inbox
+
+| ID | Requirement | Evidence |
+|---|---|---|
+| MAIL-1 | Admins can sync the latest 50 incoming messages from the configured mailbox over TLS, see the latest 100 in the CRM, and retain at most 500 mirrored messages. Sync is manual or runs every 15 minutes in production. | api/38_email_inbox.py |
+| MAIL-2 | The inbox stores plain text only, does not import attachments or HTML, and never returns message content or mailbox status to guests/staff. SMTP/IMAP credentials remain server-side. | api/38_email_inbox.py; admin-only route checks |
+| MAIL-3 | An admin can send a plain-text reply through the Gotham SMTP mailbox; valid thread headers are preserved and the sent copy appears in the CRM inbox. No email is sent by syncing or opening a message. | api/38_email_inbox.py |
 
 | CHAT-17 | Public provider prompts retain full instructions/current question and select whole knowledge/source sections within a 22,000-byte UTF-8 bound. Irrelevant website matches and long old history cannot overwhelm the free text provider. Provider outages preserve localized unavailable answers. | api/35_ask_context.py, api/13_ask_gotham.py |
 

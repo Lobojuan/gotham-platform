@@ -8,6 +8,8 @@ import QR from 'qrcode';
 import sharp from 'sharp';
 import ExcelJS from 'exceljs';
 import nodemailer from 'nodemailer';
+import { ImapFlow } from 'imapflow';
+import { simpleParser } from 'mailparser';
 import * as MT from './media-tools.js';
 import * as EVP from './events-pages.js';
 import * as RCP from './receptionist.js';
@@ -236,6 +238,67 @@ function smtp() {
     ...(process.env.SMTP_INSECURE_TEST === '1' ? { ignoreTLS: true } : {}),
     auth: { user: process.env.SMTP_USER || 'uffe.carlson@gothamconsult.com', pass: process.env.SMTP_PASS } });
   return smtpClient;
+}
+const inboxReady = () => !!((process.env.IMAP_HOST || process.env.SMTP_HOST) && (process.env.IMAP_USER || process.env.SMTP_USER) && (process.env.IMAP_PASS || process.env.SMTP_PASS));
+const inboxAddress = () => process.env.IMAP_USER || process.env.SMTP_USER || 'uffe.carlson@gothamconsult.com';
+let inboxSyncBusy = false, inboxLastSyncAttempt = 0;
+async function syncInbox(force = false) {
+  if (!inboxReady()) return { ok: false, error: 'mailbox_not_configured' };
+  if (inboxSyncBusy) return { ok: true, busy: true, imported: 0 };
+  if (!force && Date.now() - inboxLastSyncAttempt < 5 * 60 * 1000) return { ok: true, throttled: true, imported: 0 };
+  inboxSyncBusy = true; inboxLastSyncAttempt = Date.now();
+  let client;
+  try {
+    client = new ImapFlow({
+      host: process.env.IMAP_HOST || process.env.SMTP_HOST,
+      port: +(process.env.IMAP_PORT || 993), secure: !(process.env.NODE_ENV === 'test' && process.env.IMAP_INSECURE_TEST === '1'),
+      auth: { user: inboxAddress(), pass: process.env.IMAP_PASS || process.env.SMTP_PASS },
+      logger: false, disableCompression: true,
+      greetingTimeout: 10000, socketTimeout: 20000,
+    });
+    await client.connect();
+    const lock = await client.getMailboxLock(process.env.IMAP_MAILBOX || 'INBOX', { readOnly: true });
+    let imported = 0, skipped = 0;
+    try {
+      const box = client.mailbox;
+      if (box?.exists) {
+        // Import the latest 50 on each sync. Message-ID deduplication makes repeat syncs safe;
+        // oversized messages are skipped and no attachment or HTML is stored.
+        const firstUid = Math.max(1, Number(box.uidNext || 1) - 50);
+        for await (const msg of client.fetch(`${firstUid}:*`, { source: true, size: true, flags: true, internalDate: true }, { uid: true })) {
+          if (!msg.source || msg.size > 512 * 1024) { skipped++; continue; }
+          const parsed = await simpleParser(msg.source, { skipTextToHtml: true, maxHtmlLengthToParse: 512 * 1024 });
+          const sender = parsed.from?.value?.[0] || {};
+          const recipients = (parsed.to?.value || []).map(x => x.address).filter(Boolean).join(', ').slice(0, 1000);
+          const messageId = String(parsed.messageId || `imap:${box.uidValidity}:${msg.uid}`).slice(0, 998);
+          const subject = String(parsed.subject || '(no subject)').replace(/[\r\n\0]/g, ' ').slice(0, 500);
+          const bodyText = String(parsed.text || '').replace(/\0/g, '').slice(0, 100000);
+          const refs = Array.isArray(parsed.references) ? parsed.references.join(' ') : String(parsed.references || '');
+          await q(`insert into inbox_messages(message_id,imap_uid,uid_validity,from_email,from_name,to_email,subject,body_text,received_at,is_read,in_reply_to,references_header)
+            values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+            on conflict(message_id) do update set synced_at=now(), subject=excluded.subject,
+              body_text=case when inbox_messages.is_outgoing then inbox_messages.body_text else excluded.body_text end`,
+            [messageId, msg.uid, String(box.uidValidity), String(sender.address || '').slice(0, 320), String(sender.name || '').slice(0, 300), recipients,
+             subject, bodyText, parsed.date || msg.internalDate || new Date(), Boolean(msg.flags?.has?.('\\Seen')), parsed.inReplyTo || null, refs.slice(0, 4000)]);
+          imported++;
+        }
+      }
+    } finally { lock.release(); }
+    await q(`delete from inbox_messages where id in
+      (select id from inbox_messages order by received_at desc,id desc offset 500)`);
+    await q(`insert into settings(key,value) values('inbox_sync_state',$1)
+      on conflict(key) do update set value=excluded.value`, [JSON.stringify({ last_sync: new Date().toISOString(), imported, skipped, status: 'ok' })]);
+    return { ok: true, imported, skipped };
+  } catch (e) {
+    // Keep credentials and server diagnostics out of the API response and regular logs.
+    await q(`insert into settings(key,value) values('inbox_sync_state',$1)
+      on conflict(key) do update set value=excluded.value`, [JSON.stringify({ last_sync: new Date().toISOString(), status: 'error' })]).catch(() => {});
+    console.error('inbox sync failed');
+    return { ok: false, error: 'mailbox_sync_failed' };
+  } finally {
+    try { await client?.logout(); } catch {}
+    inboxSyncBusy = false;
+  }
 }
 const htmlToText = h => String(h || '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/(p|div|h\d|tr|li)>/gi, '\n')
   .replace(/<a [^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, '$2 ($1)').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
@@ -2977,6 +3040,51 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         where item_code='BRIEF' order by created_at desc limit 5000`);
       return json(res, 200, { rows });
     }
+    if (p === '/api/inbox' && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q(`select id,from_email,from_name,to_email,subject,received_at,is_read,is_outgoing
+        from inbox_messages order by received_at desc,id desc limit 100`);
+      const unread = (await q('select count(*)::int as n from inbox_messages where not is_read and not is_outgoing')).rows[0].n;
+      const state = JSON.parse((await q("select value from settings where key='inbox_sync_state'")).rows[0]?.value || 'null');
+      return json(res, 200, { rows, unread, ready: inboxReady(), sync: state ? { last_sync: state.last_sync, status: state.status, imported: state.imported, skipped: state.skipped } : null });
+    }
+    if (p === '/api/inbox/sync' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (!inboxReady()) return json(res, 503, { error: 'mailbox_not_configured' });
+      const result = await syncInbox(true);
+      return json(res, result.ok ? 200 : 502, result);
+    }
+    const inboxReply = p.match(/^\/api\/inbox\/(\d+)\/reply$/);
+    if (inboxReply && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (!process.env.SMTP_HOST || !process.env.SMTP_PASS) return json(res, 503, { error: 'smtp_not_configured' });
+      const b = await body(req), text = String(b.text || '').trim();
+      if (!text || text.length > 10000) return json(res, 400, { error: 'reply_length' });
+      const row = (await q('select * from inbox_messages where id=$1 and not is_outgoing', [+inboxReply[1]])).rows[0];
+      if (!row) return json(res, 404, { error: 'not_found' });
+      if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(row.from_email || '')) return json(res, 400, { error: 'invalid_recipient' });
+      const cleanSubject = String(row.subject || '').replace(/[\r\n\0]/g, ' ').slice(0, 450);
+      const subject = /^re:/i.test(cleanSubject) ? cleanSubject : `Re: ${cleanSubject}`;
+      const refs = String(row.references_header || '').split(/\s+/).filter(x => /^<[^<>\r\n]{1,500}>$/.test(x)).slice(-20);
+      const replyTo = /^<[^<>\r\n]{1,500}>$/.test(String(row.message_id || '')) ? row.message_id : null;
+      if (replyTo && (!refs.length || refs.at(-1) !== replyTo)) refs.push(replyTo);
+      const info = await smtp().sendMail({ from: FROM, to: row.from_email, subject, text,
+        ...(replyTo ? { inReplyTo: replyTo, references: refs } : {}) });
+      const outgoingId = String(info.messageId || `reply:${row.id}:${Date.now()}`).slice(0, 998);
+      await q(`insert into inbox_messages(message_id,from_email,to_email,subject,body_text,received_at,is_read,is_outgoing,in_reply_to,references_header)
+        values($1,$2,$3,$4,$5,now(),true,true,$6,$7) on conflict(message_id) do nothing`,
+        [outgoingId, inboxAddress(), row.from_email, subject, text, replyTo, refs.join(' ').slice(0, 4000)]);
+      await q('update inbox_messages set is_read=true where id=$1', [row.id]);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'email_reply', `Inbox message ${row.id}`]);
+      return json(res, 200, { ok: true, message_id: outgoingId });
+    }
+    const inboxId = p.match(/^\/api\/inbox\/(\d+)$/);
+    if (inboxId && req.method === 'GET') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const { rows } = await q('update inbox_messages set is_read=true where id=$1 returning id,from_email,from_name,to_email,subject,body_text,received_at,is_read,is_outgoing,in_reply_to,references_header', [+inboxId[1]]);
+      if (!rows.length) return json(res, 404, { error: 'not_found' });
+      return json(res, 200, rows[0]);
+    }
     if (p === '/api/outbox' && req.method === 'GET') {
       if (!auth()) return json(res, 401, { error: 'no_session' });
       const { rows } = await q('select id,to_email,to_name,subject,kind,status,error,created_at,sent_at,body from outbox order by id desc limit 200');
@@ -5512,6 +5620,7 @@ async function startCampaign(cam, actor) {
 
 async function runJobs() {
   if (process.env.NODE_ENV === 'production') { GHANA.refresh().catch(()=>{});liveRates().catch(()=>{}); }
+  if (process.env.NODE_ENV === 'production' && inboxReady()) syncInbox().catch(()=>{}); // mirror the latest mailbox messages every 15 minutes
   try {
     // 0. video uploads abandoned half-way (a closed laptop): drop the pieces after six hours
     for (const [id, up] of UPLOADS) if (Date.now() - up.t > 6 * 3600e3) { UPLOADS.delete(id); try { fs.unlinkSync(up.file); } catch {} }

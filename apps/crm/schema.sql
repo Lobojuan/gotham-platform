@@ -567,3 +567,24 @@ create table if not exists member_updates (id serial primary key, member_id int 
 create table if not exists member_reminders (company_id int not null, key text not null, due date not null, kind text not null, sent_at timestamptz default now(), primary key (company_id, key, due, kind));
 create table if not exists member_digests (member_id int not null, week text not null, sent_at timestamptz default now(), primary key (member_id, week));
 create table if not exists member_posts (id serial primary key, title text not null, sector text, body text, published_at timestamptz, by_user text, created_at timestamptz default now());
+
+-- Admin-only incoming mailbox mirror. Bodies are stored as plain text; attachments and HTML are not retained.
+create table if not exists inbox_messages (
+  id bigserial primary key,
+  message_id text not null unique,
+  imap_uid bigint,
+  uid_validity text,
+  from_email text not null default '',
+  from_name text,
+  to_email text,
+  subject text not null default '(no subject)',
+  body_text text not null default '',
+  received_at timestamptz not null default now(),
+  is_read boolean not null default false,
+  is_outgoing boolean not null default false,
+  in_reply_to text,
+  references_header text,
+  synced_at timestamptz not null default now()
+);
+create index if not exists inbox_messages_received_idx on inbox_messages(received_at desc, id desc);
+create index if not exists inbox_messages_unread_idx on inbox_messages(is_read, received_at desc) where not is_read;

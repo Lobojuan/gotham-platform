@@ -109,7 +109,9 @@ The CRM reads its settings from the environment. On the server these live in
 | `PUBLIC_URL` | The CRM's own address, used in emails, tickets and QR codes |
 | `SITE_URL` | The public website, used in QR targets and posters |
 | `MAIL_FROM` | The From address on outgoing mail |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Gotham's authenticated outgoing mailbox. The password is only stored on the server. |
 | `RESEND_API_KEY` | When set, queued mail is sent automatically. When empty, it waits in the outbox to be sent by hand. |
+| `IMAP_HOST` / `IMAP_PORT` / `IMAP_USER` / `IMAP_PASS` | Incoming mailbox settings. Host defaults to the verified `gothamconsult.com`; username/password fall back to SMTP settings; TLS uses port 993. |
 | `MEDIA_DIR` | Where uploaded images and PDFs are stored (a Docker volume in production) |
 
 ---
@@ -138,9 +140,16 @@ from `/media/<file>` with a one-year immutable cache.
 the destination directly, so scans are counted per placement. `/poster/<slug>`
 renders a print-ready A4 or A5 poster.
 
+**Email.** The back office has an admin-only Email inbox and Email outbox. The inbox
+syncs the newest 50 messages over TLS every 15 minutes and on demand, displays the
+latest 100, and retains up to 500 messages in the CRM. Replies go through the Gotham
+SMTP mailbox with reply threading. It stores plain text only; HTML and attachments
+are not retained. Sent replies also appear in the inbox view. Mailbox credentials
+stay in the server environment.
+
 **Jobs.** `runJobs()` runs every 15 minutes: releases expired holds, sends
-day-before reminders, nudges unpaid registrations after 12 hours, and flushes
-the mail outbox.
+day-before reminders, nudges unpaid registrations after 12 hours, syncs the latest
+mailbox messages, and flushes the mail outbox.
 
 **Roles.** `owner` can do everything including managing the team; `admin` can
 run registrations, payments, events and settings; `staff` can view and do door
