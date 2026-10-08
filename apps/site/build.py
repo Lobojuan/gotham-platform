@@ -38,7 +38,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=30">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=31">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 # Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
@@ -419,11 +419,14 @@ def main():
     import hashlib
     tv = hashlib.md5(open(os.path.join(DIST, 'assets', 'v2', 'touch.css'), 'rb').read()).hexdigest()[:8]   # new version on every change, so phones never keep an old copy
     touch = f'<link rel="stylesheet" href="/assets/v2/touch.css?v={tv}">'
+    # a phone showing the "Desktop site" version still gets the phone layout (inline: runs after the head CSS, before any other script)
+    pm = open(os.path.join(HERE, 'public', 'assets', 'v2', 'phone-mode.js'), encoding='utf-8').read()
+    pm = '<script>' + re.sub(r'^/\*.*?\*/\s*', '', pm, flags=re.S).strip() + '</script>'
     for dirpath, _, files in os.walk(DIST):
         for fn in files:
             if not fn.endswith('.html'): continue
             fp = os.path.join(dirpath, fn); h = open(fp, encoding='utf-8').read()
-            if '</head>' in h and 'touch.css' not in h: open(fp, 'w', encoding='utf-8').write(h.replace('</head>', touch + '\n</head>', 1))
+            if '</head>' in h and 'touch.css' not in h: open(fp, 'w', encoding='utf-8').write(h.replace('</head>', touch + '\n' + pm + '\n</head>', 1))
 
     # static files (css, js, images) from ASSET_URL when set: the page itself comes through the WordPress bridge, which is slow per request
     asset = os.environ.get('ASSET_URL', '').rstrip('/')
