@@ -3321,5 +3321,8 @@ window.GC_I18N.de = {
   "Independent investor guide to Ghana in 2026: growth, inflation, rates and reserves, plus mining, energy, cocoa and agribusiness, ICT, manufacturing, real estate and logistics. Every figure sourced and re-checked weekly.": "Unabhängiger Investorenleitfaden für Ghana 2026: Wachstum, Inflation, Zinsen und Reserven sowie Bergbau, Energie, Kakao und Agrarwirtschaft, IKT, Fertigung, Immobilien und Logistik. Jede Zahl mit Quelle und wöchentlicher Prüfung.",
   "Gotham Consult membership: sector alerts, compliance calendar, expert calls | Gotham Consult": "Mitgliedschaft bei Gotham Consult: Branchenmeldungen, Fristenkalender, Expertengespräche | Gotham Consult",
   "A free account for Ghana sector alerts, and paid services when you need them: the compliance calendar for your company, expert calls, counterparty checks and filings. Prices in cedis.": "Ein kostenloses Konto für Branchenmeldungen aus Ghana und kostenpflichtige Leistungen bei Bedarf: der Fristenkalender für Ihr Unternehmen, Expertengespräche, Geschäftspartnerprüfungen und Einreichungen. Preise in Cedi.",
-  "Your account | Gotham Consult": "Ihr Konto | Gotham Consult"
+  "Your account | Gotham Consult": "Ihr Konto | Gotham Consult",
+  "In partnership with Carlson Capital": "In Partnerschaft mit Carlson Capital",
+  "with Carlson Capital": "mit Carlson Capital",
+  "Gotham Consult home, in partnership with Carlson Capital": "Gotham Consult Startseite, in Partnerschaft mit Carlson Capital"
 };

@@ -67,6 +67,9 @@ a:hover > .arrow, .btn:hover .arrow { transform: translateX(3px); }
 .brand small em { font-style: normal; font-weight: 500; color: rgba(255,255,255,.72); }
 .brand small .sc-l, .brand small .sc-s { font-weight: 500; color: rgba(255,255,255,.72); margin-right: 4px; }
 .brand small .sc-s { display: none; }
+.brand small.brand-sub { color: var(--gold-2); font-weight: 600; letter-spacing: .01em; }
+.brand-sub .bs-s { display: none; }
+@media (min-width: 1080px) { .brand-sub .bs-l { display: none; } .brand-sub .bs-s { display: inline; } }   /* full menu showing: the short line keeps the logo no wider than before */
 @media (max-width: 1499px) { .brand small .sc-l { display: none; } .brand small .sc-s { display: inline; } }
 .nav a, .nav button, .gh-act .login { white-space: nowrap; }
 .nav { display: none; }
@@ -145,7 +148,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .hero::after { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .5; pointer-events: none;
   background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
   background-size: 56px 56px; -webkit-mask-image: radial-gradient(70% 60% at 50% 40%, #000, transparent); mask-image: radial-gradient(70% 60% at 50% 40%, #000, transparent); }
-.hero-in { display: grid; gap: 8px; padding-top: clamp(36px, 7vw, 90px); padding-bottom: 28px; align-items: center; }
+.hero-in { display: grid; gap: 8px; padding-top: clamp(20px, 3vw, 44px); padding-bottom: 28px; align-items: center; }
 .hero h1 { font-size: clamp(44px, 8.4vw, 92px); line-height: .98; letter-spacing: -.035em; }
 .hero h1 .serif { color: var(--gold-2); }
 .hero .eyebrow { color: var(--gold-2); }
@@ -281,7 +284,8 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 /* footer */
 .gf { background: var(--night); color: rgba(255,255,255,.72); padding: 64px 0 calc(28px + env(safe-area-inset-bottom)); font-size: 15px; }
 .gf-top { display: grid; gap: 32px; }
-@media (min-width: 900px) { .gf-top { grid-template-columns: 1.3fr repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 640px) and (max-width: 1079px) { .gf-top { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1080px) { .gf-top { grid-template-columns: 1.3fr repeat(4, minmax(0, 1fr)); } }   /* five columns only when the phone numbers fit */
 .gf h4 { color: #fff; font-size: 14px; margin: 0 0 12px; letter-spacing: .02em; }
 .gf ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .gf a { text-decoration: none; display: inline-flex; min-height: 32px; align-items: center; }
@@ -1059,3 +1063,18 @@ html[dir="rtl"] input[type="tel"],html[dir="rtl"] input[type="email"],html[dir="
 html[dir="rtl"] .m{unicode-bidi:plaintext;text-align:start}
 /* Keep payment numbers readable as a single LTR group inside native RTL answers. */
 #chat .m bdi { white-space: nowrap; unicode-bidi: isolate; }
+
+/* header: Gotham + partner line; the name never wraps and the menu tightens on narrower laptops (kept last so it wins over the base header rules) */
+@media (min-width: 1080px) {   /* the name never wraps; on narrower laptops the menu tightens instead */
+  .brand { flex: none; } .brand b { white-space: nowrap; }
+}
+@media (min-width: 1080px) and (max-width: 1279px) {
+  .nav a, .nav button.nb { padding: 0 9px; font-size: 14px; }
+  .gh-act .login { padding: 0 8px; font-size: 14px; }
+  .gh-in { gap: 8px; }
+}
+@media (min-width: 1080px) and (max-width: 1199px) {
+  .nav a, .nav button.nb { padding: 0 7px; }
+  .gh-act .btn { padding: 0 12px; }
+  .gh-in { gap: 4px; }
+}

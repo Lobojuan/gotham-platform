@@ -269,8 +269,9 @@ async function journeys(browser) {
     const ctx = await engineFor(dev).newContext({ ...opt, extraHTTPHeaders: { 'x-real-ip': ip() } });
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(String(e)));
     await p.goto(B + '/', NAV); await settle(p);
-    // the header carries Gotham only (one logo, one name); the partner is named once, on the home page and in the footer credit
-    check(`${dev}: brand name visible, no partner line repeated in the header`, await p.isVisible('header.gh .brand b') && !(await p.locator('header.gh .brand small').count()) && !/Carlson/.test(await p.locator('header.gh').innerText()));
+    // the header carries Gotham with one small partner line under the name (owner's choice, Oct 2026); the home page no longer repeats it as a pill
+    check(`${dev}: brand name visible with one partner line under it, not repeated on the page`, await p.isVisible('header.gh .brand b') && (await p.locator('header.gh .brand small.brand-sub').count()) === 1
+      && (await p.locator('header.gh').innerText()).split('Carlson').length === 2 && !(await p.locator('main .partner').count()));
     await p.tap('.dock [data-open-pane="services"]'); await p.waitForTimeout(400);
     check(`${dev}: dock Services opens the services list`, await p.evaluate(() => document.getElementById('sheet').open && document.querySelector('.panes').dataset.level === '1'));
     await p.tap('#pane-services a.svc:has-text("Market entry")'); await p.waitForURL(/\/services\/market-entry$/);

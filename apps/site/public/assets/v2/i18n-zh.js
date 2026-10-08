@@ -3322,5 +3322,8 @@ window.GC_I18N.zh = {
   "Independent investor guide to Ghana in 2026: growth, inflation, rates and reserves, plus mining, energy, cocoa and agribusiness, ICT, manufacturing, real estate and logistics. Every figure sourced and re-checked weekly.": "2026 年加纳独立投资者指南：经济增长、通胀、利率和储备，以及采矿、能源、可可与农业、信息通信技术、制造业、房地产和物流。每项数据均注明来源，并每周复查。",
   "Gotham Consult membership: sector alerts, compliance calendar, expert calls | Gotham Consult": "Gotham Consult会员：行业快讯、合规日历、专家咨询 | Gotham Consult",
   "A free account for Ghana sector alerts, and paid services when you need them: the compliance calendar for your company, expert calls, counterparty checks and filings. Prices in cedis.": "免费账户提供加纳行业快讯；需要时可选择付费服务：公司合规日历、专家咨询、交易对手核查及代为申报。价格以塞地计。",
-  "Your account | Gotham Consult": "您的账户 | Gotham Consult"
+  "Your account | Gotham Consult": "您的账户 | Gotham Consult",
+  "In partnership with Carlson Capital": "与 Carlson Capital 合作",
+  "with Carlson Capital": "携手 Carlson Capital",
+  "Gotham Consult home, in partnership with Carlson Capital": "哥谭咨询主页，与 Carlson Capital 合作"
 };
