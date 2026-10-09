@@ -1185,8 +1185,8 @@ const PATHS={
   pains:['Register my business','Is this land or partner real?','Build from abroad','Care for my parents in Ghana','Start or licence a school','Learn the rules first'],
   pk:[
    {t:'Business registration for Ghanaian owners',d:'Sole proprietorship or Ltd for Ghanaian owners, with the Registrar, TIN and first steps.',pr:'GHS 2,400',ps:'plus registry fees'},
-   {t:'Company registration for foreign owners',d:'Fully remote: an Ltd company with the Registrar, 48-hour express filing, TIN and certificates by email. The law also requires a Ghana-resident director, a company secretary and a Ghana office: yours, or ours on request.',pr:'USD 1,450',ps:'all-in: government fees, express filing and VAT'},
-   {l:'Diaspora favourite',hot:1,t:'Invest-safely check',d:'We verify the seller, partner or project with our partner lawyers before you send money.',pr:'From GHS 6,000',ps:'per check'},
+   {t:'Company registration for foreign owners',d:'Fully remote: an Ltd company with the Registrar, 48-hour express filing, TIN and certificates by email. The law also requires a Ghana-resident director, a company secretary and a Ghana office: yours, or ours on request.',pr:'GHS 17,500',ps:'all-in: government fees, express filing and VAT'},
+   {l:'Diaspora favourite',hot:1,t:'Counterparty check',d:'Before you send money or sign: we check the seller, company or land in the official registers with our partner lawyers and tell you who owns it and whether it is in court.',pr:'GHS 7,500',ps:'written report in 5 working days'},
    {t:'Project monitoring',d:'Site visits with photo and video reports while your house or business is built.',pr:'GHS 2,200 / visit',ps:'or monthly plan'},
    {t:'Forums & training',d:'Seminars, workshops and investor roundtables, online and in person.',pr:'From free',ps:'tickets paid with MoMo'},
    {t:'Family & senior care plan',d:'Monthly visits to your parents, help with NHIS, pension and document renewals, and a written report with photos.',pr:'From GHS 2,400 / month',ps:'Greater Accra; other regions on request'},
@@ -1242,7 +1242,7 @@ $('#hcq').onsubmit=e=>{e.preventDefault();const k=['ty','st','se','sa','tin','bo
  if(k.some(n=>!a[n])){$('#hcr').hidden=false;$('#hcr').innerHTML='<p>Please answer every question to get your checklist.</p>';return}
  const L=[],add=(state,t,d,help)=>L.push({state,t,d,help});
  const goods=!['Services & consulting','Tech & creative','Health & education','Church, NGO or association'].includes(a.se);
- if(a.ty==='Not registered yet')add('do','Register your business with the Registrar of Companies (ORC)','Registry fees (ORC, 2026 schedule): a business name (sole proprietorship) GHS 130; a company GHS 585 plus 1% stamp duty on its stated capital. You need it for bank loans, contracts and most programmes.','We register it for you: GHS 2,400 plus registry fees (Ghanaian owners; foreign owners USD 1,450 all-in)');
+ if(a.ty==='Not registered yet')add('do','Register your business with the Registrar of Companies (ORC)','Registry fees (ORC, 2026 schedule): a business name (sole proprietorship) GHS 130; a company GHS 585 plus 1% stamp duty on its stated capital. You need it for bank loans, contracts and most programmes.','We register it for you: GHS 2,400 plus registry fees (Ghanaian owners; foreign owners GHS 17,500 all-in)');
  else if(a.ty==='NGO, church or association')add('chk','Check your registration and annual filings','Associations and NGOs must stay registered and file every year to receive donor money.','We prepare filings and donor-ready documents');
  else add('ok','Registered with the ORC','Keep your annual returns up to date.','');
  add(a.tin==='Yes'?'ok':'do','Tax Identification Number (TIN)',a.tin==='Yes'?'Good. File your returns on time to avoid penalties.':'Every business owner needs a TIN (your Ghana Card number) linked to the business with GRA.','We link it and set up your tax calendar');

@@ -48,14 +48,14 @@ Investors:
   their sectors and ticket size, invitations to investor round tables in Accra, and introductions. Suggest it first to any investor.
 - Ghana briefing (60-minute call): GHS 6,500, credited to follow-on work.
 - Market entry & company setup: from GHS 45,000 plus government fees.
-- Partner & project due diligence: from GHS 48,000 per target.
+- Counterparty check: GHS 7,500. Enhanced counterparty check: GHS 20,000. Partner & project due diligence: from GHS 48,000 per target.
 - Investor desk retainer: from GHS 30,000/month, 3-month minimum.
 Mining investors:
 - Mining regime briefing: GHS 15,000. Concession screening: from GHS 105,000 (report in 3–4 weeks).
 - Full due diligence & licensing roadmap: from GHS 285,000. Site monitoring & provenance: from GHS 23,000/month.
 Individuals & diaspora:
 - Business registration for Ghanaian owners (sole proprietorship or Ltd): GHS 2,400 plus registry fees.
-- Company registration for foreign owners (remote, Ltd): USD 1,450 all-in (government fees, 48-hour express filing, TIN and VAT included). The Registrar will only register a company that names a Ghana-resident director, a qualified company secretary and a registered office in Ghana (Companies Act 2019, Act 992): the client provides their own, or Gotham provides them for a yearly fee the team quotes. Never quote GHS 2,400 to a foreign owner. Invest-safely check: from GHS 6,000 per check.
+- Company registration for foreign owners (remote, Ltd): GHS 17,500 all-in (government fees, 48-hour express filing, TIN and VAT included). The Registrar will only register a company that names a Ghana-resident director, a qualified company secretary and a registered office in Ghana (Companies Act 2019, Act 992): the client provides their own, or Gotham provides them for a yearly fee the team quotes. Never quote GHS 2,400 to a foreign owner. Counterparty check (one name for investors and diaspora; it replaced the old "Invest-safely check"): GHS 7,500, owners, registration, filings, court cases and land title from the official registers with our partner lawyers, written report in 5 working days. Enhanced counterparty check: GHS 20,000, adds a site or office visit, three reference interviews and a written risk rating, 10 working days, travel outside Greater Accra at cost. Full partner & project due diligence from GHS 48,000.
 - Project monitoring: GHS 2,200 per visit. Family & senior care plan: from GHS 2,400/month (Greater Accra).
 - School & training licence: from GHS 7,000 plus government fees. Forums & training: from free.
 Membership: Ghana Business Brief (free, weekly on WhatsApp); Member GHS 250/month (20% off forums, monthly clinic);

@@ -37,6 +37,11 @@
    "price": 7500,
    "booking": "check"
   },
+  "check_plus": {
+   "name": "Enhanced counterparty check (site visit, interviews, risk rating)",
+   "price": 20000,
+   "booking": "check"
+  },
   "filing": {
    "name": "We file it for you: one return or payment",
    "price": 900,
