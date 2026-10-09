@@ -6,6 +6,13 @@ const { chromium, devices } = require(process.env.PLAYWRIGHT);
     await p.goto('http://127.0.0.1:4199/v2', { waitUntil: 'networkidle' });
     await p.locator('#services').scrollIntoViewIfNeeded(); await p.waitForTimeout(500);
     const t0 = await p.textContent('[data-car-title]');
+    await p.click('[data-car-toggle]');
+    if (await p.locator('[data-car-toggle]').getAttribute('aria-pressed') !== 'true') throw Error(`${n}: carousel pause state not announced`);
+    const pausedTitle = await p.textContent('[data-car-title]');
+    await p.waitForTimeout(5200);
+    if (await p.textContent('[data-car-title]') !== pausedTitle) throw Error(`${n}: carousel kept rotating after pause`);
+    await p.click('[data-car-toggle]');
+    if (await p.locator('[data-car-toggle]').getAttribute('aria-pressed') !== 'false') throw Error(`${n}: carousel resume state not announced`);
     await p.click('[data-car-next]'); await p.waitForTimeout(800); const t1 = await p.textContent('[data-car-title]');
     // swipe left on the stage (touch-like drag)
     const box = await p.locator('.car-stage').boundingBox();
@@ -19,11 +26,18 @@ const { chromium, devices } = require(process.env.PLAYWRIGHT);
     if (n === 'iphone') { await p.click('.dock [data-open-pane="root"]'); await p.waitForTimeout(300); await p.click('#sheet [data-lang="fr"]'); await p.click('#sheet [data-close]'); }
     else { await p.click('.langb'); await p.click('#langp [data-lang="fr"]'); }
     await p.waitForTimeout(1200);
-    const fr = await p.evaluate(() => ({ h1: document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim(), lang: document.documentElement.lang, dock: document.querySelector('.dock span')?.textContent, car: document.querySelector('[data-car-title]').textContent, ph: document.getElementById('chatI').placeholder }));
+    const fr = await p.evaluate(() => ({ h1: document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim(), lang: document.documentElement.lang, dock: document.querySelector('.dock span')?.textContent, car: document.querySelector('[data-car-title]').textContent, carPause: document.querySelector('[data-car-toggle]').textContent, ph: document.getElementById('chatI').placeholder }));
+    if (!fr.carPause.includes('rotation automatique')) throw Error(`${n}: carousel pause label not localized in French`);
+    await p.click('[data-car-toggle]'); await p.waitForTimeout(150);
+    if (!(await p.textContent('[data-car-toggle]')).includes('Reprendre')) throw Error(`${n}: carousel resume label not localized in French`);
+    await p.click('[data-car-toggle]');
     await p.goto('http://127.0.0.1:4199/v2/invest', { waitUntil: 'networkidle' }); await p.waitForTimeout(1200);
     const fr2 = await p.evaluate(() => document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim());
     await p.screenshot({ path: `/tmp/qa/fr-${n}.png` });
     if (n === 'desktop') { await p.click('.langb'); await p.click('#langp [data-lang="en"]'); await p.waitForTimeout(400); }
+    await p.goto('http://127.0.0.1:4199/zh/', { waitUntil: 'networkidle' }); await p.waitForTimeout(300);
+    const zhDay = await p.locator('#b-day option').first().textContent();
+    if (!/年.*月.*日/.test(zhDay)) throw Error(`${n}: booking dates should use Chinese date order and labels`);
     const back = await p.evaluate(() => document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim());
     console.log(n, JSON.stringify({ t0, t1, t2, vis, ovf, fr, fr2, back, errs }));
     await c.close();

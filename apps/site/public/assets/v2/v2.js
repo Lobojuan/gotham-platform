@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {}; const dictionaries = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=24';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=25';
     sc.onload = () => { dictionaries[l] = window.GC_I18N || {}; dict = dictionaries[l]; res(); }; sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
@@ -147,7 +147,7 @@
   if (car) {
     const stage = $('.car-stage', car), ring = $('.car-ring', car), cards = $$('.car-card', car), N = cards.length, step = 360 / N;
     const chips = $$('.car-rail [data-go]', car), rail = $('.car-rail', car), askBtn = $('[data-car-ask]', car);
-    let idx = 0, rot = 0, timer = null, drag = null, moved = false;
+    let idx = 0, rot = 0, timer = null, drag = null, moved = false, userPaused = false;
     // Safari does not start lazy images inside a 3D ring: load them once the carousel comes near the screen
     const wake = () => cards.forEach(c => { const im = $('img', c); if (im && im.loading === 'lazy') im.loading = 'eager'; });
     if ('IntersectionObserver' in window) { const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { wake(); io.disconnect(); } }, { rootMargin: '600px 0px' }); io.observe(stage); } else wake();
@@ -180,7 +180,14 @@
     const render = () => kick();
     const settle = (ms = 220) => { clearTimeout(idle); idle = setTimeout(() => { rot = Math.round(rot / step) * step; idx = nearest(rot); kick(); }, ms); };
     const go = n => { const base = Math.round(rot / step) * step, from = nearest(base); const diff = ((n - from) % N + N + N / 2) % N - N / 2; idx = ((n % N) + N) % N; rot = base - diff * step; render(); };
-    const auto = on => { clearInterval(timer); if (on && !reduce) timer = setInterval(() => go(idx + 1), 5000); };
+    const auto = on => { clearInterval(timer); if (on && !reduce && !userPaused) timer = setInterval(() => go(idx + 1), 5000); };
+    const autoToggle = $('[data-car-toggle]', car);
+    if (autoToggle) autoToggle.addEventListener('click', () => {
+      userPaused = !userPaused;
+      autoToggle.textContent = userPaused ? 'Resume auto-rotation' : 'Pause auto-rotation';
+      autoToggle.setAttribute('aria-pressed', String(userPaused));
+      auto(!userPaused);
+    });
     $('[data-car-prev]', car).addEventListener('click', () => { go(idx - 1); auto(false); });
     $('[data-car-next]', car).addEventListener('click', () => { go(idx + 1); auto(false); });
     car.addEventListener('keydown', e => { if (e.key === 'ArrowRight') { go(idx + 1); auto(false); } if (e.key === 'ArrowLeft') { go(idx - 1); auto(false); } });
@@ -422,7 +429,8 @@
     for (d.setUTCDate(d.getUTCDate() + 1); n < 7; d.setUTCDate(d.getUTCDate() + 1)) {
       if ([0, 6].includes(d.getUTCDay())) continue; n++;
       const o = document.createElement('option'); o.value = d.toISOString().slice(0, 10);
-      o.textContent = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).replace(/^(\w+) /, '$1, ');
+      const dateLocale = ({ fr: 'fr-FR', es: 'es-ES', de: 'de-DE', ar: 'ar-u-nu-latn', zh: 'zh-CN' })[current] || 'en-GB';
+      o.textContent = d.toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
       dsel.append(o);
     }
     const label = () => `${dsel.selectedOptions[0].dataset.enText || dsel.selectedOptions[0].value} at ${$('#b-time').value} (Accra time, GMT)`;

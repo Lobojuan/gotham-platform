@@ -70,6 +70,59 @@ for lang in ('de','ar','zh'):
   paragraph=dictionary['Under the BoG notice, foreign currency invoices are permitted only for expatriates and non-residents, and domestic contracts are listed among transactions that may not be priced in foreign currency. Price and invoice resident customers in cedis unless you hold a specific BoG licence.']
   assert 'ما لم' in paragraph and 'السيدي' in paragraph
  print('  ok native dictionary and unchanged legal qualifier:',lang)
+# Regression guard for the visitor-facing partner tagline and official brand spelling.
+taglines={
+ 'fr': ('Nous ne sommes pas un cabinet que l’on consulte une seule fois.','Nous sommes un partenaire auquel vous pouvez faire appel dans la durée.','Confiez-nous la mission','Mettre la rotation automatique en pause','Reprendre la rotation automatique'),
+ 'es': ('No somos una consultora a la que se acude una sola vez.','Somos un socio al que puede volver cuando lo necesite.','Encárguenos la misión','Pausar la rotación automática','Reanudar la rotación automática'),
+ 'de': ('Wir sind keine Beratung für eine einmalige Anfrage.','Wir sind ein Partner, auf den Sie langfristig zählen können.','Beauftragen Sie uns','Automatische Drehung pausieren','Automatische Drehung fortsetzen'),
+ 'ar': ('لسنا جهة استشارية تلجأ إليها لمرة واحدة فحسب.','نحن شريك يمكنك الاعتماد عليه والرجوع إليه كلما احتجت.','دعنا نتولى إنجازها','إيقاف التدوير التلقائي مؤقتًا','استئناف التدوير التلقائي'),
+ 'zh': ('我们不只是提供一次咨询服务。','更是您可以持续依靠的合作伙伴。','委托我们办理','暂停自动旋转','继续自动旋转'),
+}
+for lang,expected in taglines.items():
+ path=ROOT/'apps/site/public/assets/v2'/f'i18n-{lang}.js'; source=path.read_text()
+ dictionary=json.loads(source[source.index('= {')+2:source.rindex('}')+1])
+ assert dictionary['Gotham Consult']=='Gotham Consult', f'{lang}: preserve official brand spelling'
+ assert dictionary['Not a consultancy you phone once.']==expected[0], f'{lang}: natural tagline opening'
+ assert dictionary['A place you keep coming back to.']==expected[1], f'{lang}: natural tagline close'
+ assert dictionary['Have it done']==expected[2], f'{lang}: clear action label'
+ assert dictionary['Pause auto-rotation']==expected[3], f'{lang}: pause control translation'
+ assert dictionary['Resume auto-rotation']==expected[4], f'{lang}: resume control translation'
+ if lang=='zh':
+  assert not any('哥谭' in value or '迦纳' in value for value in dictionary.values()), 'zh: avoid city-name transliteration and traditional regional spelling in Simplified Chinese'
+  law=next(value for key,value in dictionary.items() if key.startswith('A Minerals and Mining Bill, 2026'))
+  assert '截至2026年10月1日，该法案尚未生效。' in law, 'zh: natural, unambiguous date and legal status'
+  for key, expected in {
+   'Ecofin Agency: Ghana trades capital controls for beneficial-ownership scrutiny (9 August 2026)': '（2026年8月9日）',
+   'From 1 September 2026 the first GHS 588 of monthly pay is tax-free and the top rate is 35% above GHS 50,000 a month; non-residents pay a flat 25%.': '自2026年9月1日起',
+   'Generally yes. Since 1 January 2026, suppliers of services must register for VAT regardless of turnover unless the Commissioner-General permits otherwise.': '自2026年1月1日起',
+   "Gotham Consult's price list (excluding VAT), approved 6 October 2026: e.g. market entry from GHS 32,500, Investor Desk GHS 15,000 a month, Family Desk from GHS 2,400 a month.": '于2026年10月6日获批',
+  }.items(): assert expected in dictionary[key], f'zh: localized date is day-month-year for {key[:45]}'
+ print('  ok professional homepage copy and exact brand spelling:',lang)
+carousel_copy={
+ 'fr': ('Choisissez une activité','La lettre Ghana Business Brief : les changements réglementaires, les financements disponibles et les rendez-vous à suivre. Gratuite, chaque semaine.'),
+ 'es': ('Elija un área de servicio','Ghana Business Brief: novedades normativas, financiación disponible y encuentros clave. Gratis, cada semana.'),
+ 'de': ('Fachbereich auswählen','Der Ghana Business Brief: aktuelle Regeländerungen, verfügbare Fördermittel und wichtige Veranstaltungen. Kostenlos, jede Woche.'),
+ 'ar': ('اختر مجالًا','نشرة Ghana Business Brief الأسبوعية: أبرز التغييرات في القواعد، وفرص التمويل المتاحة، والفعاليات المهمة. مجانًا كل أسبوع.'),
+ 'zh': ('选择服务领域','《加纳商业简报》：每周梳理政策变化、可用资金和重要行业活动。免费发布。'),
+}
+for lang,expected in carousel_copy.items():
+ source=(ROOT/'apps/site/public/assets/v2'/f'i18n-{lang}.js').read_text()
+ dictionary=json.loads(source[source.index('= {')+2:source.rindex('}')+1])
+ assert dictionary['Choose a practice']==expected[0], f'{lang}: carousel selector is localized'
+ brief='The Ghana Business Brief: what changed, what money is open, which rooms matter. Free, weekly.'
+ assert dictionary[brief]==expected[1], f'{lang}: homepage weekly brief is localized'
+ print('  ok homepage selector and weekly brief copy:',lang)
+# Key investor terms and carousel guidance must not fall back to literal English.
+finance_terms={
+ 'fr':('Plans d’affaires et modèles financiers à trois états (résultat, bilan et trésorerie)','Sur ordinateur : survolez une carte, puis cliquez sur celle de devant. Sur téléphone : faites glisser ou choisissez un domaine ci-dessus, puis touchez la carte de devant.'),
+ 'es':('Planes de negocio y modelos financieros de tres estados (resultados, balance y flujo de caja)','En ordenador: pase el cursor por una tarjeta y haga clic en la que quede delante. En móvil: deslice o elija un área arriba y toque la tarjeta delantera.'),
+ 'de':('Geschäftspläne und integrierte Finanzmodelle mit Gewinn- und Verlustrechnung, Bilanz und Cashflow','Am Computer: Zeigen Sie auf eine Karte und klicken Sie auf die vordere Karte. Auf dem Smartphone: Wischen Sie oder wählen Sie oben einen Bereich und tippen Sie auf die vordere Karte.'),
+ 'ar':('خطط الأعمال ونماذج مالية متكاملة تشمل قائمة الدخل والميزانية العمومية والتدفقات النقدية','على الكمبيوتر: مرّر المؤشر فوق بطاقة، ثم انقر البطاقة الأمامية. على الهاتف: اسحب أو اختر مجالًا أعلاه، ثم اضغط البطاقة الأمامية.'),
+ 'zh':('商业计划与三表财务模型（利润表、资产负债表和现金流量表）','电脑端：将鼠标移到卡片上，点击转到前方的卡片即可查看。手机端：左右滑动或点击上方服务领域，再点击前方卡片。'),
+}
+assert dictionary['Business plans & 3-statement models']==finance_terms[lang][0], f'{lang}: financial model term is precise'
+assert dictionary['Point at a card and it turns to you. Click the one in front to open it.']==finance_terms[lang][1], f'{lang}: desktop and touch carousel guidance is clear'
+
 # Arabic and Chinese page bodies use --font (not only --sans); shared chrome must
 # load the corresponding web fonts and inherit the locale stack in its footer.
 site_css=(ROOT/'apps/site/public/assets/v2/v2.css').read_text()

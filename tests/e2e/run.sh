@@ -21,6 +21,7 @@ rm -rf /tmp/e2e-media; mkdir -p /tmp/e2e-media
   exec node server.js >/tmp/e2e-server.log 2>&1 ) & SRV=$!
 for i in $(seq 60); do curl -s -o /dev/null -w '%{http_code}' 127.0.0.1:$PORT/api/health | grep -q 200 && break; sleep .4; done
 BASE=http://127.0.0.1:$PORT node "$ROOT/tests/e2e/site_e2e.js"; rc=$?
+if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/v2_carousel_language.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/ask_voice_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/investor_portal_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/presentation_ui.js"; rc=$?; fi
