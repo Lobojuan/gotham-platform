@@ -105,6 +105,7 @@ a.btn{color:inherit}a.btn-dark,a.btn-green,a.btn-wa{color:#fff}
 .ev .btn{white-space:nowrap}
 .pwf{position:relative}.pwf input.t{padding-right:64px}
 .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:0;background:var(--sunk);border-radius:8px;padding:5px 9px;font-size:13px;font-weight:600;cursor:pointer;color:var(--mute)}
+.eye svg{width:19px;height:19px;display:block}
 .pwgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px;max-width:900px}
 #pwfirst{min-height:100vh;place-items:center;padding:24px}
 #pwfirst .lcard label.l{margin-top:14px}
@@ -619,13 +620,14 @@ label.cal-mine{display:inline-flex;align-items:center;gap:10px}
 <section id="login"><form class="lcard" id="lform">
   <div style="display:flex;gap:12px;align-items:center"><div class="mark"><img src="/admin/brand/mark-white-256.png" alt=""></div><div><b>Gotham CRM</b><div class="note">Gotham Consult back office</div></div></div>
   <label for="e">Email or username</label><input class="t" id="e" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" required>
-  <label for="pw">Password</label><input class="t" id="pw" type="password" autocomplete="current-password" required>
+  <label class="l" for="pw">Password</label><div class="pwf"><input class="t" id="pw" type="password" autocomplete="current-password" required><button type="button" class="eye" data-eye="pw" aria-label="Show password" aria-pressed="false" title="Show password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
   <div id="codewrap" hidden><label for="lcode">6-digit code from your authenticator app</label><input class="t" id="lcode" inputmode="numeric" autocomplete="one-time-code" maxlength="11" placeholder="123 456">
    <p class="note" style="margin:4px 0 0">Lost your phone? Type one of your recovery codes instead.</p></div>
   <p class="err" id="lerr"></p>
   <button class="btn btn-dark" id="lbtn" style="width:100%;justify-content:center;margin-top:6px">Sign in</button>
   <div id="gwrap" hidden><div class="or"><span>or</span></div>
    <a class="btn btn-line gbtn" id="gbtn" href="/auth/google"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</a></div>
+  <p class="note" id="gstatus" style="margin:10px 0 0;text-align:center" hidden>Google sign-in has not been configured on this site yet.</p>
   <p class="note" style="margin:14px 0 0;text-align:center">Forgotten your password? Ask an owner to reset it under Settings → Team.</p>
 </form></section>
 
@@ -701,7 +703,7 @@ label.cal-mine{display:inline-flex;align-items:center;gap:10px}
   off:'Google sign-in is not switched on yet.',busy:'Too many tries. Wait a few minutes.'};
  const g=new URLSearchParams(location.search).get('google');
  addEventListener('DOMContentLoaded',()=>{
-  fetch('/api/auth/options').then(r=>r.json()).then(o=>{if(o.google){const w=document.getElementById('gwrap');if(w)w.hidden=false}}).catch(()=>{});
+  fetch('/api/auth/options').then(r=>r.json()).then(o=>{const w=document.getElementById('gwrap'),s=document.getElementById('gstatus');if(o.google){if(w)w.hidden=false}else if(s)s.hidden=false}).catch(()=>{const s=document.getElementById('gstatus');if(s){s.textContent='Google sign-in status is unavailable right now.';s.hidden=false}});
   if(g&&GERR[g]){const e=document.getElementById('lerr');if(e)e.textContent=GERR[g];history.replaceState(null,'',location.pathname+location.hash)}});
 })();
 
@@ -738,7 +740,8 @@ async function start(){
 }
 /* password fields with a show/hide toggle, shared by the first-sign-in screen and Settings */
 const pwField=(id,label,ac)=>`<label class="l" for="${id}">${label}</label><div class="pwf"><input class="t" id="${id}" type="password" autocomplete="${ac}" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-eye="${id}" aria-label="Show password">Show</button></div>`;
-function wireEyes(root){root.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{const i=document.getElementById(b.dataset.eye);const s=i.type==='password';i.type=s?'text':'password';b.textContent=s?'Hide':'Show';b.setAttribute('aria-label',s?'Hide password':'Show password')})}
+function wireEyes(root){root.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{const i=document.getElementById(b.dataset.eye);const s=i.type==='password';i.type=s?'text':'password';b.setAttribute('aria-label',s?'Hide password':'Show password');b.setAttribute('aria-pressed',String(s));b.title=s?'Hide password':'Show password';b.innerHTML=s?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a16.4 16.4 0 0 1-3.1 4.1M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'})}
+wireEyes($('#login'));
 const PW_MSG={wrong_current:'Your current password is not right.',too_short:'Use at least 10 characters.',too_long:'That is too long (200 characters at most).',same_as_old:'Choose a password you have not used here before.',too_weak:'That password is too easy to guess.',too_many:'Too many tries. Wait 5 minutes.',mismatch:'The two new passwords do not match.'};
 async function changePassword(cur,np,np2,out){
  out.textContent='';out.className='err';

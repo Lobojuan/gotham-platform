@@ -111,6 +111,7 @@ The CRM reads its settings from the environment. On the server these live in
 | `MAIL_FROM` | The From address on outgoing mail |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | Gotham's authenticated outgoing mailbox. The password is only stored on the server. |
 | `RESEND_API_KEY` | When set, queued mail is sent automatically. When empty, it waits in the outbox to be sent by hand. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Optional Google sign-in for existing active team accounts. Configure a Google OAuth web client with redirect URI `https://gothamconsult.com/auth/google/callback`; Google email must match the team's account email. Store the secret only in the server environment. |
 | `IMAP_HOST` / `IMAP_PORT` / `IMAP_USER` / `IMAP_PASS` | Incoming mailbox settings. Host defaults to the verified `gothamconsult.com`; username/password fall back to SMTP settings; TLS uses port 993. |
 | `MEDIA_DIR` | Where uploaded images and PDFs are stored (a Docker volume in production) |
 

@@ -37,3 +37,10 @@
 - Verification: all 38 API suites passed, including mocked IMAP `UID FETCH` and SMTP threaded-reply coverage; local CRM UI showed the inbox list, unread badge, message detail and reply composer. `node --check` and `git diff --check` passed.
 - Release: committed as `8bfd4bf` (rebased on the latest `origin/main`), pushed to `origin/main`, and deployed with `scripts/deploy-crm.sh`. The production health check returned `{"ok":true,"database":"ok"}`. The live mailbox sync itself still needs an admin-session check; no production message was opened or sent during this release verification.
 - Next: sign in to the CRM and use **System → Email inbox → Sync** to verify the cPanel mailbox. Once Claude's parallel work is finished and the final system screens are stable, prepare Joy's translated back-office/how-to PDF.
+
+### 2026-10-09 — CRM sign-in recovery and Google status
+
+- Uffe identified the sole CRM owner account as `uffe.carlson@gmail.com`. Read-only server verification confirmed it is active, has the owner role, and does not have TOTP enabled. No password was changed during this check.
+- The existing Google OpenID Connect implementation is covered by `tests/api/19_invoices_google.py`, but the live public sign-in options endpoint currently returns `google:false`; the production OAuth client credentials are not configured. The required callback is `https://gothamconsult.com/auth/google/callback`. The client secret must be entered through a hidden server prompt, never chat or Git.
+- Updated the CRM sign-in page with an accessible eye toggle and a clear status message when Google sign-in is not configured. Requirement A-11 added to the SRS. These UI/documentation changes are not yet committed or deployed.
+- Next: verify the eye toggle in the local CRM, then commit/push and deploy the UI update. Enable Google only after a Google OAuth web client is created and its client ID/secret are installed securely. Provide account recovery without exposing a password in chat.

@@ -49,6 +49,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | A-8 | An owner cannot remove or demote themselves by accident. | api/09 |
 | A-9 | Staff see no contact details; the team list never exposes password data. | api/01, api/09 |
 | A-10 | Sign-in is rate-limited per visitor; a signed-out or expired session returns to the sign-in screen with a message. | api/06 |
+| A-11 | The sign-in page has an accessible show/hide password control and reports when Google sign-in has not been configured; Google OAuth only admits an active team account with a matching verified Google email. | api/19, manual login UI |
 
 ## 4. Back office content
 
