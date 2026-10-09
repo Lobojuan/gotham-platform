@@ -75,10 +75,15 @@ for lang in ('de','ar','zh'):
 site_css=(ROOT/'apps/site/public/assets/v2/v2.css').read_text()
 chrome_css=(ROOT/'apps/site/chrome_css.py').read_text()
 build=(ROOT/'apps/site/build.py').read_text()
+globe=(ROOT/'apps/site/public/assets/v2/globe.js').read_text()
 assert 'html[lang="ar"]{--font:"Noto Sans Arabic"' in site_css
 assert 'html[lang="zh"]{--font:"Noto Sans SC"' in site_css
 assert '"Noto Sans Arabic"' in chrome_css and '"Noto Sans SC"' in chrome_css
 assert 'footer.v2c.gf { font: inherit;' in chrome_css
 assert 'family=Noto+Sans+Arabic' in build and 'family=Noto+Sans+SC' in build and 'family=Noto+Serif+SC' in build
+assert "document.documentElement.lang" in globe and "localStorage.getItem('gc-language')" in globe
+assert '"Noto Sans Arabic"' in globe and '"Noto Sans SC"' in globe
+assert 'globe.js?v=8' in (ROOT/'apps/site/pages/index.html').read_text()
 print('  ok Arabic/Chinese native-script fonts cover page bodies and shared chrome')
+print('  ok globe card and canvas labels follow page locale with native-script fonts')
 print('PASSED')

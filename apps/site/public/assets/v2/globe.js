@@ -38,7 +38,14 @@
     'Dakar', 'Cairo', 'Nairobi', 'Johannesburg'];   // the rest sit too close to a neighbour to label all the time
 
   /* ---- words (the site's translator cannot see inside a canvas, so the card carries its own) ---- */
-  const lang = () => { try { return localStorage.getItem('gc-language') || 'en'; } catch { return 'en'; } };
+  // The route/page language is authoritative. A stale browser preference must not
+  // make this canvas/card switch to (for example) Chinese on an Arabic URL.
+  const lang = () => {
+    const page = (document.documentElement.lang || '').slice(0, 2).toLowerCase();
+    if (['en', 'fr', 'es', 'de', 'ar', 'zh'].includes(page)) return page;
+    try { const saved = localStorage.getItem('gc-language') || 'en'; return ['en', 'fr', 'es', 'de', 'ar', 'zh'].includes(saved) ? saved : 'en'; }
+    catch { return 'en'; }
+  };
   const T = {
     en: { km: 'km from Accra', local: 'Local time', same: 'same time as Accra', ahead: n => `${n} h ahead of Accra`, behind: n => `${n} h behind Accra`,
       route: 'Partner route', live: 'Live', f1t: 'Accra · 5.6°N, 0.2°W', f1: 'The capital closest to 0° 0°, where the Equator meets the Prime Meridian.',
@@ -256,8 +263,12 @@
     return clocks[tz] ||= new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz });
   }
   function label(text, x, y, strong) {
-    ctx.direction = lang()==='ar'?'rtl':'ltr'; ctx.textAlign='left';
-    ctx.font = `${strong ? 700 : 500} ${strong ? 12 : 11}px "Hanken Grotesk",system-ui,sans-serif`;
+    const locale = lang();
+    ctx.direction = locale === 'ar' ? 'rtl' : 'ltr'; ctx.textAlign = 'left';
+    const font = locale === 'ar' ? '"Noto Sans Arabic","Geeza Pro",Arial,sans-serif'
+      : locale === 'zh' ? '"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif'
+      : '"Hanken Grotesk",system-ui,sans-serif';
+    ctx.font = `${strong ? 700 : 500} ${strong ? 12 : 11}px ${font}`;
     const tw = ctx.measureText(text).width; if (x + tw > W - 4) x = x - tw - 16;   // near the right edge: write it on the left of the dot
     ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(5,10,20,.75)'; ctx.strokeText(text, x, y);
     ctx.fillStyle = strong ? '#fff' : 'rgba(225,235,248,.9)'; ctx.fillText(text, x, y);

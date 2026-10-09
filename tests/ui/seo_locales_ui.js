@@ -32,6 +32,14 @@ const ok=(c,m)=>{if(!c)throw Error(m);checks++;console.log('  ok',m);};
    ok((await p.locator('link[rel=canonical]').getAttribute('href')).endsWith((lang==='en'?'':'/'+lang)+'/invest'),'Localized canonical after language switch: '+lang);
   }
   await ctx.close();
+  const stale=await browser.newContext({viewport:{width:1440,height:900}});
+  await stale.addInitScript(()=>localStorage.setItem('gc-language','zh'));
+  const arabic=await stale.newPage();await arabic.goto(base+'/ar');
+  await arabic.waitForSelector('.globe-card .gc-t');
+  ok(await arabic.locator('html').getAttribute('lang')==='ar','Arabic URL remains authoritative over saved Chinese preference');
+  ok(/مسار الشراكة/.test(await arabic.locator('.globe-card').innerText()),'Globe card follows Arabic page language despite saved Chinese preference');
+  ok(/لندن|دبي|أكرا/.test(await arabic.locator('.globe-card .gc-t').innerText()),'Globe city name follows Arabic page language');
+  await stale.close();
   for(const [lang,route,city] of [['de',/Partnerverbindung/,/London/],['ar',/مسار الشراكة/,/لندن/],['zh',/合作伙伴连线/,/伦敦/]]){
    const phone=await browser.newContext({viewport:{width:390,height:844}}), page=await phone.newPage();
    await page.goto(base+'/'+lang);
