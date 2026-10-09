@@ -298,10 +298,13 @@ def main():
     paths = {('/' + path_of(n)).rstrip('/') or '/' for n in twins}
     def language_links(doc, n, lang):
         # Real anchors work without JavaScript and keep each page's twin discoverable.
+        # Keep language names in their native forms so visitors can identify a switch
+        # even when they cannot read the currently selected language.
+        native_names = {'en': 'English', 'fr': 'Français', 'es': 'Español', 'de': 'Deutsch', 'ar': 'العربية', 'zh': '简体中文'}
         def link(m):
             code = m.group(1)
             url = '/' + path_of(n) if code == 'en' else '/' + code + ('/' + path_of(n) if path_of(n) else '')
-            return f'<a data-lang="{code}" data-no-tr href="{url}" aria-current="{str(code == lang).lower()}" lang="{code}" dir="auto">{m.group(2)}</a>'
+            return f'<a data-lang="{code}" data-no-tr href="{url}" aria-current="{str(code == lang).lower()}" lang="{code}" dir="auto">{native_names[code]}</a>'
         doc = re.sub(r'<button type="button" data-lang="(en|fr|es|de|ar|zh)"[^>]*>(.*?)</button>', link, doc)
         return re.sub(r'(<span data-lang-code>).*?(</span>)', lambda m: m[1] + lang.upper() + m[2], doc)
     def set_meta(doc, n, title, desc, lang):

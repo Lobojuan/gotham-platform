@@ -39,7 +39,7 @@ const B = process.env.BASE || 'http://127.0.0.1:4187';
    assert.equal(errors.length,0,errors.join('\n'));checks++;
    if(width===1440){
     await page.locator('#start').click();await page.locator('#full').click();
-    assert(await page.evaluate(()=>!!document.fullscreenElement));checks++;
+    await page.waitForFunction(()=>!!document.fullscreenElement,{timeout:3000});checks++;
     await page.locator('#next').press('End');assert.equal(await page.locator('#count').textContent(),'5 / 5');checks++;
     await page.locator('#next').press('Home');assert.equal(await page.locator('#count').textContent(),'1 / 5');checks++;
    }

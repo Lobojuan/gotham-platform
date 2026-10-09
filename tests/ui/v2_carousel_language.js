@@ -23,7 +23,7 @@ const { chromium, devices } = require(process.env.PLAYWRIGHT);
     const ovf = await p.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     // language
     await p.evaluate(() => scrollTo(0, 0));
-    if (n === 'iphone') { await p.click('.dock [data-open-pane="root"]'); await p.waitForTimeout(300); await p.click('#sheet [data-lang="fr"]'); await p.click('#sheet [data-close]'); }
+    if (n === 'iphone') { await p.click('.dock [data-open-pane="root"]'); await p.waitForTimeout(300); await p.click('#sheet [data-lang="fr"]'); if (!p.url().includes('/fr')) throw Error('iphone: French language link did not navigate'); }
     else { await p.click('.langb'); await p.click('#langp [data-lang="fr"]'); }
     await p.waitForTimeout(1200);
     const fr = await p.evaluate(() => ({ h1: document.querySelector('h1').textContent.replace(/\s+/g, ' ').trim(), lang: document.documentElement.lang, dock: document.querySelector('.dock span')?.textContent, car: document.querySelector('[data-car-title]').textContent, carPause: document.querySelector('[data-car-toggle]').textContent, ph: document.getElementById('chatI').placeholder }));

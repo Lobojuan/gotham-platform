@@ -681,7 +681,7 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .car-foot .car-hint { margin: 0; }
 .car-ask { display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(110,232,200,.35);
   background: rgba(47,181,148,.12); color: #fff; font: inherit; font-size: 14px; cursor: pointer; }
-.car-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.24);
+.car-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,.24);
   background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
 .car-toggle:hover, .car-toggle[aria-pressed="true"] { border-color: rgba(240,190,90,.6); background: rgba(240,190,90,.12); color: #fff; }
 .car-toggle:focus-visible, .car-ask:focus-visible, .car-b:focus-visible, .car-rail button:focus-visible { outline: 3px solid var(--gold-2); outline-offset: 3px; }
