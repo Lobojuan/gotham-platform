@@ -1051,9 +1051,9 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .sheet-langs a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:8px 14px; text-decoration:none; color:inherit; }
 
 /* Native script typography and Arabic direction. Charts/numbers retain their numeric order. */
-html[lang="ar"]{--sans:"Noto Sans Arabic","Geeza Pro",Arial,sans-serif;--serif:var(--sans)}
+html[lang="ar"]{--font:"Noto Sans Arabic","Geeza Pro",Arial,sans-serif;--serif:var(--font)}
 html[lang="ar"] h1,html[lang="ar"] h2,html[lang="ar"] h3{letter-spacing:0;line-height:1.45}
-html[lang="zh"]{--sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",Arial,sans-serif;--serif:"Songti SC","Noto Serif SC",serif}
+html[lang="zh"]{--font:"Noto Sans SC","PingFang SC","Microsoft YaHei",Arial,sans-serif;--serif:"Noto Serif SC","Songti SC",serif}
 html[lang="zh"] h1,html[lang="zh"] h2,html[lang="zh"] h3{letter-spacing:0;line-height:1.4}
 html[dir="rtl"] .arrow{display:inline-block;transform:rotate(180deg)}
 html[dir="rtl"] .panes{direction:ltr}html[dir="rtl"] .p0,html[dir="rtl"] .p1{direction:rtl}

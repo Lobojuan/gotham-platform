@@ -1,5 +1,12 @@
 # Gotham Consult — October 2026 handoff
 
+### 2026-10-09 — Arabic and Chinese typography
+
+- Fixed missing-glyph rendering on the Arabic and Chinese site pages. Their body styles now set the `--font` token actually used by the design, and the shared chrome uses Noto Arabic/SC fonts with suitable local fallbacks. Added the Noto web fonts to both page families, corrected the shared footer to inherit the active locale font, and bumped the CSS cache versions.
+- Kept the same shared top brand mark and Carlson Capital partnership line across translated pages; Arabic remains RTL.
+- Added W-18 to `docs/srs.md` and regression assertions to `tests/api/34_new_languages.py` for the native-script font stacks and shared chrome.
+- Verification and release status to be recorded after the merged-origin site build and full E2E suite. Live issue was reproduced at `/ar` and `/zh`; local preview rendered both scripts correctly after the fix.
+
 ## 2026-10-08 · Codex
 
 ### CRM investor outreach and localized email drafts

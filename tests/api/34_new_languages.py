@@ -70,4 +70,15 @@ for lang in ('de','ar','zh'):
   paragraph=dictionary['Under the BoG notice, foreign currency invoices are permitted only for expatriates and non-residents, and domestic contracts are listed among transactions that may not be priced in foreign currency. Price and invoice resident customers in cedis unless you hold a specific BoG licence.']
   assert 'ما لم' in paragraph and 'السيدي' in paragraph
  print('  ok native dictionary and unchanged legal qualifier:',lang)
+# Arabic and Chinese page bodies use --font (not only --sans); shared chrome must
+# load the corresponding web fonts and inherit the locale stack in its footer.
+site_css=(ROOT/'apps/site/public/assets/v2/v2.css').read_text()
+chrome_css=(ROOT/'apps/site/chrome_css.py').read_text()
+build=(ROOT/'apps/site/build.py').read_text()
+assert 'html[lang="ar"]{--font:"Noto Sans Arabic"' in site_css
+assert 'html[lang="zh"]{--font:"Noto Sans SC"' in site_css
+assert '"Noto Sans Arabic"' in chrome_css and '"Noto Sans SC"' in chrome_css
+assert 'footer.v2c.gf { font: inherit;' in chrome_css
+assert 'family=Noto+Sans+Arabic' in build and 'family=Noto+Sans+SC' in build and 'family=Noto+Serif+SC' in build
+print('  ok Arabic/Chinese native-script fonts cover page bodies and shared chrome')
 print('PASSED')
