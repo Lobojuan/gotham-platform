@@ -419,6 +419,9 @@ def main():
     import hashlib
     tv = hashlib.md5(open(os.path.join(DIST, 'assets', 'v2', 'touch.css'), 'rb').read()).hexdigest()[:8]   # new version on every change, so phones never keep an old copy
     touch = f'<link rel="stylesheet" href="/assets/v2/touch.css?v={tv}">'
+    # prices stay in cedis (Bank of Ghana); visitors can ask for an approximate value in their own currency (no prices on a page: it does nothing)
+    fv = hashlib.md5(open(os.path.join(DIST, 'assets', 'v2', 'fx-view.js'), 'rb').read()).hexdigest()[:8]
+    touch += f'\n<script src="/assets/v2/fx-view.js?v={fv}" defer></script>'
     # a phone showing the "Desktop site" version still gets the phone layout (inline: runs after the head CSS, before any other script)
     pm = open(os.path.join(HERE, 'public', 'assets', 'v2', 'phone-mode.js'), encoding='utf-8').read()
     pm = '<script>' + re.sub(r'^/\*.*?\*/\s*', '', pm, flags=re.S).strip() + '</script>'
