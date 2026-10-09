@@ -5,7 +5,8 @@
 - Fixed missing-glyph rendering on the Arabic and Chinese site pages. Their body styles now set the `--font` token actually used by the design, and the shared chrome uses Noto Arabic/SC fonts with suitable local fallbacks. Added the Noto web fonts to both page families, corrected the shared footer to inherit the active locale font, and bumped the CSS cache versions.
 - Kept the same shared top brand mark and Carlson Capital partnership line across translated pages; Arabic remains RTL.
 - Added W-18 to `docs/srs.md` and regression assertions to `tests/api/34_new_languages.py` for the native-script font stacks and shared chrome.
-- Verification and release status to be recorded after the merged-origin site build and full E2E suite. Live issue was reproduced at `/ar` and `/zh`; local preview rendered both scripts correctly after the fix.
+- Verification: rebuilt from `origin/main` commit `f19cbd5`; Arabic/Chinese font regression assertions passed; full `tests/e2e/run.sh` passed, including 17,521 responsive page checks, six-language chat/voice and locale flows, 1,167 presentation checks, 60 locale browser checks, 30 report-download checks and 512 phone touch-target checks. Live `/ar` and `/zh` were opened after deployment and their native-script text rendered in browser accessibility output.
+- Release: commit `889d468` was pushed to `origin/main` and published with `scripts/deploy-site.sh`. Deployment health checks returned home 200, register 301 and admin 200; IndexNow accepted 170 URLs. The live CRM sign-in still says Google sign-in is not enabled; server OAuth credentials are a separate outstanding setup item.
 
 ## 2026-10-08 · Codex
 
