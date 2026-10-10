@@ -404,7 +404,7 @@ Core facts are checked daily; report sources currently weekly. The two automatic
 
 ## Audit fixes and release verification — 10 October 2026, Codex
 
-- Forum events: expired items are archived from public listings and booking, remain available to administrators, and existing stale links receive a clear ended state. No expired event is promoted as current on the landing page.
+- Forum events: expired items are marked past automatically, removed from upcoming landing-page cards and registration, and retained in the back office. They may remain visible in the separate Forums past-event archive; existing stale links receive a clear ended state.
 - Market data: removed stale hard-coded landing-page financial figures and show official source/period/freshness state. Historical observations retain their actual reporting periods; missing current data is not presented as current.
 - GIPA Act 1173: corrected the trading-enterprise capital and workforce rule, expatriate-quota application/bands and work-permit distinction across the website, reports, FAQ, chatbot context and fact register. Law copy identifies its statutory-text transcription and recommends checking the Gazette for reliance. Removed dated, unsupported work-permit prices/penalties.
 - Language coverage: completed the legal-section additions for German, formal Arabic and Simplified Chinese, including page generation and runtime switching; added route and browser assertions.
