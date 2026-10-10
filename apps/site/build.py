@@ -14,7 +14,7 @@ import facts_page as FACTSP
 import report_page as REPORTP
 import members_page as MEMP
 from seo_locales import ES_META
-from locale_support import prepare_locale, localize_investor_data, NEW_LANGUAGES
+from locale_support import prepare_locale, localize_investor_data, gipa_dictionary, NEW_LANGUAGES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
@@ -328,7 +328,9 @@ def main():
     base_investor_html = INVESTOR.render()
     for code in NEW_LANGUAGES: prepare_locale(code, META, ARTS)
     for lang, metadata in (('fr', IF.FR_META), ('es', ES_META), *((code, {n:(IF.load_dict(code)[META[n]['title']],IF.load_dict(code)[META[n]['desc']]) for n in locale_pages}) for code in NEW_LANGUAGES)):
-        d = IF.load_dict(lang); report = {}
+        d = IF.load_dict(lang)
+        if lang in NEW_LANGUAGES: d.update(gipa_dictionary(lang))
+        report = {}
         for n in twins:
             if n.startswith('insights'):
                 a = next((x for x in ARTS if f'insights/{x["slug"]}.html' == n), None)

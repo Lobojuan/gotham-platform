@@ -1,6 +1,13 @@
 """Verified source parsing, last-good persistence, direct currency replies and honest scenarios."""
 import os, subprocess, json, urllib.request, time
+from pathlib import Path
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'../..'))
+landing=Path(ROOT,'apps/site/pages/index.html').read_text()
+market=Path(ROOT,'apps/site/public/assets/v2/ghana-market.js').read_text()
+assert 'data-ghana-status' in landing and 'loading official data' in landing
+assert '6.0%' not in landing and '5.0%' not in landing and '$31.25bn' not in landing
+assert all(s in market for s in ['Official source check','Retained official figures','No current figures are displayed',"zh:checked?", "ar:checked?"])
+print('  ok landing figures wait for dated data and report unavailable/stale sources')
 code=r'''
 import assert from 'node:assert/strict';import fs from 'node:fs';
 import {parseGSS,parseGSE,latestBoGPdf,makeGhanaData} from './apps/crm/ghana-data.js';

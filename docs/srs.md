@@ -24,6 +24,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | R-8 | Invitation-only events create a *pending* application; open free events confirm at once; seats never exceed the venue limit. | api/02, api/10 |
 | R-9 | "Yes" / "Maybe" to follow-up puts the person on the Outreach list; "No" and do-not-contact are respected. | api/08 |
 | R-10 | Registration is also possible by WhatsApp or email from the same screen, with only the lines the person filled in. | manual |
+| R-11 | After an event ends, it is marked past automatically and retained in the back office; it is removed from the homepage and registration choices, and stale registration links are refused. Historical event pages may remain in the public events archive. | api/08; site build; browser E2E |
 
 ## 2. Prices and money
 
@@ -72,7 +73,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | W-5 | The back office works on a phone: Menu button, tables shown as cards, drawers full width. | ui/layout_sweep, ui/admin_accounts_phone |
 | W-6 | Video is served with byte ranges (iPhones need them to play it). | manual curl, see QA report |
 | W-7 | Event dates and times show in Accra time for visitors abroad. | manual |
-| W-8 | The home page "Next forum" band follows the next event in the back office. | manual |
+| W-8 | The home page "Next forum" band follows the next event in the back office and stays hidden when there is no upcoming event. | manual, browser E2E |
 | W-9 | Share links (WhatsApp, LinkedIn, copy) contain the full address. | manual |
 | W-10 | Public landing pages have English, French, Spanish, German, Arabic and Simplified Chinese copy with an accessible language toggle preserving page, query and section. Core pages and insight articles have crawlable locale URLs, localized metadata/schema and reciprocal EN/FR/ES/DE/AR/ZH/x-default links. | api/31_seo, api/34_new_languages, ui/seo_locales_ui, e2e/site_e2e (six screens); legacy forms and event records retain browser translation |
 | W-11 | Ask Gotham keeps `/api/ask` history and fallback behavior, follows the selected English/French/Spanish/German/Arabic/Mandarin page language, and gives the MoMo destination plus staff verification instructions for payment questions. | api/13, local fallback in `pages/index.html`; browser QA pending |
@@ -84,6 +85,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | W-17 | Every law, fee, rate, figure and price on the site is in a fact register with its sources and last human check; the build test fails if the site and register disagree; sources are re-checked daily (missing wording, vanished pages, live-figure mismatch, overdue reviews, broken article links) with one alert per new problem; admins confirm facts; /sources shows each fact publicly. | api/30_facts (unit, register/site agreement, server, alerts, confirm, public status) |
 | W-18 | Arabic and Simplified Chinese pages render native-script text in the body, shared header/footer and dynamic globe card/canvas labels using suitable fonts; dynamic globe content follows the active page language rather than stale saved preference. The shared logo and Carlson Capital partnership line remain consistent across translated pages. | api/34_new_languages; e2e/site_e2e; visual Arabic/Chinese browser check |
 | W-19 | The 3D practice picker supports direct selection, arrows, keyboard, pointer/touch, trackpad and a localized pause/resume control for automatic rotation across all six locales. | api/34_new_languages; ui/v2_carousel_language.js (pause, resume, swipe and locale label); e2e/run.sh |
+| W-20 | Landing-page economic figures are filled from the dated official-data API, preserve each reporting period, and show when the last source check is stale or unavailable. Initial HTML must not present an older snapshot as a current figure. | api/29_ghana_data; ui/investor_portal_ui.js; e2e/run.sh |
 
 ## 6. CRM pipeline and service operations
 

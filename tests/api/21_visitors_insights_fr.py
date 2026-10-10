@@ -71,6 +71,15 @@ for slug in json.load(open(ROOT + '/apps/site/content/insights/index.json')):
     assert f'<link rel="canonical" href="https://gothamconsult.com/fr/insights/{slug}">' in f
 ok('Insights: an index and four guides with summary, FAQ, sources, Article + FAQ structured data; each has a French twin')
 
+# Act 1173 corrections must survive static generation in the other native-language routes.
+for lang, phrase in [('de', 'Abschnitt 31 verlangt, dass mindestens 75 % der Beschäftigten'),
+                     ('ar', 'تشترط المادة 31 أن يكون 75٪ على الأقل'),
+                     ('zh', '第31条要求，外资贸易企业的员工中至少75%')]:
+    st, localized = call(f'/{lang}/insights/gipa-act-2026-what-changed', text=True)
+    assert st == 200 and phrase in localized, (lang, st, phrase)
+    assert '75% of all employees in that enterprise' not in localized, lang
+ok('Act 1173 workforce rule is translated accurately in German, Arabic and Chinese static pages')
+
 # ---------- French site ----------
 st, f = call('/fr', text=True)
 assert st == 200 and '<html lang="fr" data-page-lang="fr" dir="ltr">' in f and '<title>Conseil aux entreprises au Ghana | Gotham Consult, Accra</title>' in f, f[:400]

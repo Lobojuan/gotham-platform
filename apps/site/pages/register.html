@@ -256,9 +256,6 @@ const UTM={utm_source:QS.get('utm_source')||'',utm_campaign:QS.get('utm_campaign
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=(n,c)=>Number(n)===0?'Free':c+' '+Number(n).toLocaleString('en-GB');
 let ITEMS=[
- {id:'F1',g:'Forums',t:'SMEs at the Centre: Inclusive Partnerships under the GIPA Act 2026',s:'Saturday 24 October 2026 · Tang Palace Hotel, Accra',p:0,c:'GHS',q:1,feat:1,day:'24',mon:'Oct'},
- {id:'F2',g:'Forums',t:'AI in Your Business: Hands-on Workshop for SME Owners',s:'Saturday 7 November 2026 · East Legon, Accra',p:450,c:'GHS',q:1},
- {id:'F3',g:'Forums',t:'Diaspora & Nordic Investor Roundtable',s:'Saturday 21 November 2026 · Online',p:0,c:'GHS',q:1},
  {id:'M1',g:'For Ghana businesses',t:'Member',s:'20% off forums, monthly business clinic, priority grant alerts',p:250,c:'GHS',per:'/ month'},
  {id:'M2',g:'For Ghana businesses',t:'Business Pro',s:'Bookkeeping, E-VAT filing, compliance calendar, forum seats',p:1500,c:'GHS',per:'/ month'},
  {id:'M3',g:'For international investors',t:'Investor Desk',s:'Local representation, site visits, monthly written report, 3-month minimum',p:30000,c:'GHS',per:'/ month'},
@@ -431,7 +428,7 @@ fetch(API+'/api/items',{mode:'cors'}).then(r=>r.json()).then(d=>{
   if(!d.items||!d.items.length)return;
   const G={event:'Forums',membership:'For Ghana businesses',briefing:'For international investors',service:'Services'},GC={M3:'For international investors'};
   const wd=s=>s?new Date(s).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'';
-  const live=d.items.map(i=>({id:i.code,g:GC[i.code]||G[i.kind]||'Other',t:i.title,
+  const live=d.items.filter(i=>i.kind!=='event'||(i.phase!=='past'&&i.starts_at&&new Date(i.ends_at||i.starts_at)>new Date())).map(i=>({id:i.code,g:GC[i.code]||G[i.kind]||'Other',t:i.title,
     s:[i.starts_at?wd(i.starts_at):'',i.venue||'',i.subtitle||''].filter(Boolean).join(' · '),
     p:Number(i.price),c:i.currency,per:i.per||'',q:i.kind==='event'?1:0,left:i.seats_left,appr:!!i.approval,phase:i.phase||'open',aud:i.audiences||'',
     img:i.cover_image||null,docs:i.documents||[],desc:i.description||'',sum:i.summary||'',agenda:i.agenda||[],speakers:i.speakers||[],
@@ -441,10 +438,16 @@ fetch(API+'/api/items',{mode:'cors'}).then(r=>r.json()).then(d=>{
   if(d.settings){ if(d.settings.momo_number) MOMO=d.settings.momo_number; if(d.settings.pay_link) PAYL=d.settings.pay_link; }
   buildItems(); if(next)buildFeat(next);
   const asked=((new URLSearchParams(location.search).get('e'))||(location.hash||'').slice(1)).toUpperCase();
+  const askedItem=d.items.find(i=>i.code===asked);
+  if(askedItem&&askedItem.kind==='event'&&(askedItem.phase==='past'||!askedItem.starts_at||new Date(askedItem.ends_at||askedItem.starts_at)<=new Date())){
+    const notice={en:'This forum has ended. Choose another upcoming forum or service below.',fr:'Ce forum est terminé. Choisissez un prochain forum ou un service ci-dessous.',es:'Este foro ya terminó. Elija un próximo foro o servicio.',de:'Dieses Forum ist beendet. Wählen Sie unten ein kommendes Forum oder einen Service.',ar:'انتهى هذا المنتدى. اختر منتدى قادمًا أو خدمة أدناه.',zh:'本次论坛已结束。请在下方选择即将举行的论坛或服务。'};
+    const message=notice[(document.documentElement.lang||'en').slice(0,2)]||notice.en;
+    $('#err').textContent=message; $('#err2').textContent=message;
+  }
   pick(ITEMS.some(i=>i.id===asked)?asked:(ITEMS.some(i=>i.id===sel.id)?sel.id:ITEMS[0].id),false);
 }).catch(()=>{});
 
 /* preselect from link: ...#F1, #M2, #B2 */
 const want=((new URLSearchParams(location.search).get('e'))||(location.hash||'').slice(1)).toUpperCase();
-pick(ITEMS.some(i=>i.id===want)?want:'F1');
+pick(ITEMS.some(i=>i.id===want)?want:ITEMS[0].id);
 </script>

@@ -76,13 +76,15 @@ Use only the numbers written here. If a number is not here, do not guess: say ou
 Company registration for foreigners (Office of the Registrar of Companies, ORC, under the Companies Act 2019, Act 992):
 - A company limited by shares needs at least two directors, one of them ordinarily resident in Ghana, and a qualified company secretary.
 - ORC fees from its 2026 schedule: GHS 585 to register a company, plus 1% stamp (capital) duty on stated capital; annual return GHS 175; an external company (branch of a foreign company) USD 1,400. Other government fees (GIPA, permits, licences) vary; our team confirms them.
-- After incorporation: register with the Ghana Investment Promotion Authority (GIPA) before operating and renew every year; get a TIN and VAT registration with the Ghana Revenue Authority (GRA); register as an employer with SSNIT; open a bank account; get any sector licence and work permits.
+- After incorporation: if foreign ownership is permitted, register the enterprise with GIPA before operations; a registered foreign-owned enterprise renews annually. A wholly Ghanaian-owned enterprise may register voluntarily and renews annually if registered. Then get a TIN and any required VAT registration with the GRA; register as an employer with SSNIT; open a bank account; and get applicable sector licences and work permits.
 - Full guide: gothamconsult.com/insights/register-company-ghana-foreigner
 
-GIPA Act 2026 (Act 1173), assented to on 15 July 2026, replaced the GIPC Act 2013 (Act 865); the GIPC is now the Ghana Investment Promotion Authority (GIPA):
-- No general minimum capital for foreign-owned non-trading companies or joint ventures any more. Foreign trading companies need USD 500,000 in cash equity (was USD 1 million) and at least 75% Ghanaian skilled staff.
-- GIPA registration is due within five days of a complete application and must be renewed every year.
-- Six activities stay reserved for Ghanaians; expatriate quotas run from 2 to 12 people depending on capital; technology transfer agreements must be registered or they cannot be enforced.
+Ghana's Investment Promotion Authority Act, 2026 (Act 1173), replaced the GIPC Act, 2013 (Act 865):
+- Section 31 sets a USD 500,000 cash-equity minimum for a non-citizen's trading enterprise and requires at least 75% of that enterprise's employees to be skilled Ghanaians. The 75% denominator is all employees.
+- Section 34 requires an enterprise with foreign ownership, where permitted, to register after incorporation and before operations. GIPA must register within five days after a completed form only if the documents, any applicable minimum foreign capital and fee satisfy the Act. A registered enterprise under section 34 renews annually. Section 35 makes registration optional for wholly Ghanaian-owned enterprises; if registered, they also renew annually. Do not tell every company it must register with GIPA.
+- Section 32 lists six reserved activities. Section 49 sets expatriate-quota bands for enterprises with at least USD 50,000 directly invested capital: USD 50,000–500,000: 2; >USD 500,000–1m: 4; >USD 1m–3m: 6; >USD 3m–6m: 8; >USD 6m–10m: 10; >USD 10m: 12. This is not an automatic quota: a registered enterprise applies in writing, and the Authority decides on advice of the Immigration Service. Quota approval is distinct from a work permit; work-permit applications go through the Authority to the Immigration Service under section 50.
+- Technology-transfer agreements must be registered under section 52. Do not promise tax incentives based only on Act 1173; sections 37–38 are subject to the Exemptions Act and applicable approvals.
+- Explain these as general information and advise case-specific confirmation with GIPA, the Ghana Immigration Service or Ghana counsel. Use the current Act text and the reviewed date, not older GIPC pages.
 - Guide: gothamconsult.com/insights/gipa-act-2026-what-changed
 
 Tax (VAT Act 2025, Act 1151, since 1 January 2026):

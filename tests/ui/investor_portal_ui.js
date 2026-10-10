@@ -12,6 +12,12 @@ const ok=(c,m)=>{if(!c)throw new Error(m);console.log('  ok',m);};
   await p.route('**/api/ghana-data',r=>r.fulfill({json:seed}));
   await p.route('**/api/rates',r=>r.fulfill({json:{rates:{USD:11.6173,EUR:13.0695,GBP:15.3724},more:{AED:3.1633,CHF:14.0236,CAD:8.1535,CNY:1.7313,XOF:.0199},updated:'2026-10-05T00:02:31Z'}}));
   await p.goto(base+(lang==='fr'?'/fr/invest':'/invest')+extension);await p.waitForSelector('#company-chart');await p.waitForFunction(()=>document.querySelector('.currency-grid')?.textContent.includes('AED'));
+  const statusText={en:['source check','Retained official figures'],fr:['Sources officielles vérifiées','Données officielles conservées'],es:['Fuentes oficiales comprobadas','Se conservan los datos oficiales']}[lang];
+  await p.waitForFunction(parts=>parts.some(x=>document.querySelector('[data-ghana-status]')?.textContent.includes(x)),statusText);
+  ok(!!(await p.textContent('[data-ghana-status]')),'official data freshness shown on the investment page');
+  const legalText=(await p.textContent('#gipa')).replace(/\s+/g,' ');
+  const legalPhrase={en:'for a foreign-owned trading enterprise',fr:'pour une entreprise commerciale détenue par des étrangers',es:'para una empresa comercial de propiedad extranjera'}[lang];
+  ok(legalText.includes(legalPhrase),'Act 1173 workforce rule localized accurately: '+lang);
   const text=await p.textContent('#investor-research');ok(text.includes(seed.sources.gse.metrics.index.period),'publication date visible');
   ok(text.includes(({en:'Five-year price change',fr:'Variation du cours sur cinq ans',es:'Variación del precio en cinco años'})[lang]),'case studies translated: '+lang);
   ok((await p.textContent('#research-check-status')).includes(({en:'Research sources checked daily',fr:'Sources de recherche vérifiées chaque jour',es:'Fuentes de investigación comprobadas diariamente'})[lang]),'daily source checks visible in '+lang);
@@ -24,6 +30,14 @@ const ok=(c,m)=>{if(!c)throw new Error(m);console.log('  ok',m);};
   await p.locator('#investment-scenario button').click();ok((await p.textContent('#scenario-result')).includes('-'),'currency depreciation can produce a foreign-currency loss');
   ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'no horizontal page overflow: '+width);
   ok(errors.length===0,'no JavaScript errors');await ctx.close();
+ }
+ for(const [lang,phrases,legalPhrase,registrationPhrase] of [['de',['Amtliche Quellen geprüft','Gespeicherte amtliche Daten'],'Für ein ausländisches Handelsunternehmen verlangt Abschnitt 31','Nach Abschnitt 34 muss die GIPA ein ausländisch gehaltenes Unternehmen binnen fünf Tagen'],['ar',['تم التحقق من المصادر الرسمية','بيانات رسمية محفوظة'],'بالنسبة إلى المنشأة التجارية المملوكة لأجانب، تشترط المادة 31','بموجب المادة 34، على GIPA تسجيل المنشأة المملوكة لأجانب خلال خمسة أيام'],['zh',['官方来源核查日期','保留已发布的官方数据'],'根据第31条，外资贸易企业的全部员工中','根据第34条，若文件、适用的资本要求和费用符合规定']]){
+  const ctx=await browser.newContext({viewport:{width:390,height:844}});await ctx.addInitScript(l=>localStorage.setItem('gc-language',l),lang);
+  const p=await ctx.newPage();await p.route('**/api/ghana-data',r=>r.fulfill({json:seed}));
+  await p.goto(base+`/${lang}/invest`+extension);await p.waitForFunction(parts=>parts.some(x=>document.querySelector('[data-ghana-status]')?.textContent.includes(x)),phrases);
+  ok(!!(await p.textContent('[data-ghana-status]')),'official data freshness shown in '+lang);
+  const translatedLegal=(await p.textContent('#gipa')).replace(/\s+/g,' ');ok(translatedLegal.includes(legalPhrase),'Act 1173 workforce rule localized accurately: '+lang);
+  const translatedFAQ=(await p.locator('.faqs').textContent()).replace(/\s+/g,' ');ok(translatedFAQ.includes(registrationPhrase),'Act 1173 registration answer localized accurately: '+lang);await ctx.close();
  }
  const ctx=await browser.newContext({viewport:{width:360,height:800}});const p=await ctx.newPage();
  await p.route('**/api/ghana-data',r=>r.abort());await p.route('**/api/rates',r=>r.abort());await p.goto(base+'/invest'+extension);await p.waitForSelector('#company-chart');

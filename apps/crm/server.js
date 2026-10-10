@@ -1555,6 +1555,20 @@ const ITEM_COLS = `i.code,i.kind,i.title,i.subtitle,i.venue,i.starts_at,i.ends_a
       select sum(r.seats) from registrations r where r.item_code=i.code and r.status<>'cancelled'),0),0) end as seats_left`;
 const itemsPublic = () => q(`select ${ITEM_COLS} from items i where i.published order by i.sort, i.starts_at`);
 
+/* Completed forums remain stored for the back office and event archive, but close automatically. */
+async function archiveExpiredEvents() {
+  const { rows } = await q(`update items set phase='past'
+    where kind='event' and phase<>'past'
+      and coalesce(ends_at, starts_at) is not null
+      and coalesce(ends_at, starts_at) <= now()
+    returning code,title`);
+  for (const event of rows) {
+    await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+      ['system', 'event_auto_archive', `${event.code} — ${event.title}`]);
+  }
+  return rows.length;
+}
+
 /* ---- "Ask Gotham": the website chat, answered by an OpenAI model ----
    Off until OPENAI_API_KEY is set on the server; the page then falls back to its built-in answers.
    Knowledge = assistant.md (edit in plain English) + the published forums from the database.
@@ -1990,6 +2004,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { base: fx.base, rates: fx.rates, more: fx.more || {}, updated: fx.updated, source: fx.source }, cors);
     }
     if (p === '/api/items' && req.method === 'GET') {
+      await archiveExpiredEvents();
       const { rows } = await itemsPublic();
       const full = await withMedia(rows);
       const s = await q("select key,value from settings where key = any($1)", [['max_seats', 'momo_number', 'momo_name', 'whatsapp', 'pay_link']]);   // public: never bank details or tax numbers
@@ -2443,6 +2458,13 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       // Serialize reservations for an event so simultaneous requests cannot take the same last seats.
       it = (await client.query('select * from items where code=$1 and published for update', [clean(b.item_code, 12)])).rows[0];
       if (!it) { await client.query('rollback'); return json(res, 400, { error: 'unknown_item' }, cors); }
+      if (it.kind === 'event' && it.phase !== 'past' && (it.ends_at || it.starts_at) && new Date(it.ends_at || it.starts_at) <= new Date()) {
+        await client.query("update items set phase='past' where code=$1", [it.code]);
+        await client.query('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
+          ['system', 'event_auto_archive', `${it.code} — ${it.title}`]);
+        await client.query('commit');
+        return json(res, 409, { error: 'closed' }, cors);
+      }
       if (it.phase === 'past') { await client.query('rollback'); return json(res, 409, { error: 'closed' }, cors); }
       const categoryIn = clean(b.category, 60);
       // An unrecognised or missing "attending as" no longer blocks anyone; staff see it blank and ask.
@@ -3635,6 +3657,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
 
     if (p === '/api/items/all' && req.method === 'GET') {
       if (!auth()) return json(res, 401, { error: 'no_session' });
+      await archiveExpiredEvents();
       const { rows } = await q(`select ${ITEM_COLS},
         (select count(*) from registrations r where r.item_code=i.code and r.status<>'cancelled') as registrations
         from items i order by i.sort, i.starts_at nulls last`);
@@ -5626,6 +5649,8 @@ async function runJobs() {
   if (process.env.NODE_ENV === 'production') { GHANA.refresh().catch(()=>{});liveRates().catch(()=>{}); }
   if (process.env.NODE_ENV === 'production' && inboxReady()) syncInbox().catch(()=>{}); // mirror the latest mailbox messages every 15 minutes
   try {
+    const archivedEvents = await archiveExpiredEvents();
+    if (archivedEvents) await q('insert into jobs_log(job,detail) values ($1,$2)', ['event_auto_archive', `${archivedEvents} completed forum(s) moved to past`]);
     // 0. video uploads abandoned half-way (a closed laptop): drop the pieces after six hours
     for (const [id, up] of UPLOADS) if (Date.now() - up.t > 6 * 3600e3) { UPLOADS.delete(id); try { fs.unlinkSync(up.file); } catch {} }
     // 1. release seats whose hold expired

@@ -53,6 +53,17 @@ assert st==200,(st,d)
 base={'item_code':'F1','seats':1,'company':'Adwoa Farms','full_name':'Adwoa Boateng','email':'adwoa@farms.example',
  'phone':'0244123456','country':'Ghana','sector':'Agriculture','consent':True,'payment_method':'free'}
 
+# A stale event link must close and archive the event instead of creating a registration.
+st, old, _ = call('/api/items', {'code':'OLD1','kind':'event','title':'Expired forum','starts_at':'2026-05-23T14:00:00Z',
+  'ends_at':'2026-05-23T16:00:00Z','price':0,'currency':'GHS','published':True,'phase':'open'}, cookie=ck)
+assert st == 200, old
+st, closed, _ = call('/api/register', {**base,'item_code':'OLD1','full_name':'Expired Test','email':'expired@farms.example'})
+assert st == 409 and closed.get('error') == 'closed', (st, closed)
+st, archived, _ = call('/api/items/all', cookie=ck)
+old_row = next(i for i in archived['rows'] if i['code'] == 'OLD1')
+assert old_row['phase'] == 'past', old_row
+ok('expired forum links are closed and the event remains archived in the back office')
+
 # new form, says yes
 st,d,_=call('/api/register',{**base,'company_about':'Poultry farm supplying eggs in Accra','company_size':'6–20',
   'challenge':'Getting a bank loan for a second pen','heard_via':'WhatsApp','follow_up':'yes'})

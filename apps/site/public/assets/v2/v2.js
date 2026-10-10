@@ -28,8 +28,18 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {}; const dictionaries = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=25';
-    sc.onload = () => { dictionaries[l] = window.GC_I18N || {}; dict = dictionaries[l]; res(); }; sc.onerror = () => res(); document.head.append(sc);
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=26';
+    sc.onload = () => {
+      const extra = document.createElement('script'); extra.src = ASSET + '/assets/v2/gipa-i18n.js?v=1';
+      extra.onload = () => {
+        const base = window.GC_I18N || {};
+        dictionaries[l] = { ...base, [l]: { ...(base[l] || {}), ...(window.GC_GIPA_I18N?.[l] || {}) } };
+        dict = dictionaries[l]; res();
+      };
+      extra.onerror = () => { dictionaries[l] = window.GC_I18N || {}; dict = dictionaries[l]; res(); };
+      document.head.append(extra);
+    };
+    sc.onerror = () => res(); document.head.append(sc);
   });
   const ORIG = new WeakMap(), ATTR = ['placeholder', 'aria-label', 'alt', 'title'];
   /* text the back office fills in (dates, seats left, "a · b · c" lines) is translated by pattern or piece by piece */
@@ -441,10 +451,12 @@
   }
 
   /* ---- next forum, live from the back office ---- */
+  const upcomingForum = $('[data-upcoming-forum]');
   items().then(d => {
     const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now())
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
     const nx = ev[0]; if (!nx) return;
+    if (upcomingForum) upcomingForum.hidden = false;
     const when = new Date(nx.starts_at);
     const day = when.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Accra' });
     const time = when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Accra' });
