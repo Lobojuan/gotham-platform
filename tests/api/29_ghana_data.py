@@ -3,11 +3,15 @@ import os, subprocess, json, urllib.request, time
 from pathlib import Path
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'../..'))
 landing=Path(ROOT,'apps/site/pages/index.html').read_text()
+invest=Path(ROOT,'apps/site/pages/invest.html').read_text()
 market=Path(ROOT,'apps/site/public/assets/v2/ghana-market.js').read_text()
 assert 'data-ghana-status' in landing and 'loading official data' in landing
 assert '6.0%' not in landing and '5.0%' not in landing and '$31.25bn' not in landing
-assert all(s in market for s in ['Official source check','Retained official figures','No current figures are displayed',"zh:checked?", "ar:checked?"])
-print('  ok landing figures wait for dated data and report unavailable/stale sources')
+assert 'data-ghana-sector-period' in invest and 'loading official data' in invest
+assert all(value not in invest for value in ['6.0%</b>','5.0%</b>','$13.80bn</b>','$11.07bn</b>','2026-06</span>'])
+assert 'Q2 2026' not in landing and "zone:'Accra time'" in market and 't.zone' in market and 'Reporting periods are shown with each figure.' in market
+assert all(s in market for s in ['Official sources last checked','Retained official figures','No current figures are displayed',"zh:checked?", "ar:checked?"])
+print('  ok landing and investor figures wait for official data; reporting and check timestamps stay source-derived')
 code=r'''
 import assert from 'node:assert/strict';import fs from 'node:fs';
 import {parseGSS,parseGSE,latestBoGPdf,makeGhanaData,REFRESH_MS} from './apps/crm/ghana-data.js';
