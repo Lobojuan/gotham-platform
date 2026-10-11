@@ -61,11 +61,11 @@ const FACTS = makeFactWatch({
   alert: (subject, lines) => alertTeam(subject, lines),
 });
 
-/* Ghana Investment Report (report-watch.js, report.json): every figure's source re-opened weekly, watched
-   newsrooms turn into pending updates, a person publishes them to /ghana-investment-report */
+/* Ghana Investment Report (report-watch.js, report.json): sources re-opened every six hours; changed
+   newsrooms turn into pending updates, and a person approves anything shown publicly. */
 const REPORT = makeReportWatch({
   report: loadReport(process.env.REPORT_FILE || new URL('./report.json', import.meta.url)),
-  everyDays: +process.env.REPORT_EVERY_DAYS || 7,   // weekly (Uffe, 7 Oct 2026)
+  everyDays: +(process.env.REPORT_EVERY_HOURS || 6) / 24,
   load: async () => JSON.parse((await q("select value from settings where key='report_state'")).rows[0]?.value || 'null'),
   save: async st => q("insert into settings(key,value) values ('report_state',$1) on conflict(key) do update set value=excluded.value", [JSON.stringify(st)]),
   loadLog: async () => JSON.parse((await q("select value from settings where key='report_log'")).rows[0]?.value || 'null'),
@@ -5705,7 +5705,8 @@ async function runJobs() {
   await runSchedules().catch(e => console.error('schedules', e.message));
   await watchdog().catch(e => console.error('watchdog', e.message));
   if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await FACTS.run().catch(e => console.error('facts', e.message));   // daily, see FACTS_EVERY_DAYS
-  if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await REPORT.run().catch(e => console.error('report', e.message));   // weekly, see REPORT_EVERY_DAYS
+  if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) await REPORT.run().catch(e => console.error('report', e.message));   // every six hours by default; changed items wait for approval
+  if (process.env.NODE_ENV === 'production' || process.env.FACTS_IN_JOBS) GHANA.refresh().catch(e => console.error('Ghana data refresh', e.message));
   await memberJobs().catch(e => console.error('members', e.message));
 }
 

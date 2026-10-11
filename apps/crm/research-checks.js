@@ -1,4 +1,4 @@
-/* Daily verification of cited research. Changed documents require editorial review:
+/* Six-hour verification of cited research. Changed documents require editorial review:
    never replace a historical price or forecast with guessed numbers. */
 import fs from 'node:fs';
 import crypto from 'node:crypto';
@@ -21,8 +21,8 @@ export function researchSeed(registry=RESEARCH_SOURCES) {
   return {checked:null,items};
 }
 export async function checkResearch(previous,{get,now=Date.now(),registry=RESEARCH_SOURCES}={}) {
-  const date=new Date(now).toISOString(),sameDay=previous?.checked?.slice(0,10)===date.slice(0,10);
-  if(sameDay && Object.keys(registry).every(k=>previous.items?.[k]))return previous;
+  const date=new Date(now).toISOString(),withinRefreshWindow=previous?.checked && now-Date.parse(previous.checked)<6*3600e3;
+  if(withinRefreshWindow && Object.keys(registry).every(k=>previous.items?.[k]))return previous;
   const items={};
   for(const [key,r]of Object.entries(registry)) {
     const old=previous?.items?.[key] || researchSeed({[key]:r}).items[key];

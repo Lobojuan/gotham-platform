@@ -8,6 +8,7 @@ import {spawn} from 'node:child_process';
 import {checkResearch,researchSeed} from './research-checks.js';
 const here=path.dirname(fileURLToPath(import.meta.url));
 export const SOURCES={gss:'https://www.statsghana.gov.gh/',bog:'https://www.bog.gov.gh/monetary-policy/summary-of-economic-and-financial-data/',gse:'https://gse.com.gh/'};
+export const REFRESH_MS=6*3600e3;
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 function objectAt(text,start) {
   let depth=0,quote=false,escape=false;
@@ -70,7 +71,7 @@ export function makeGhanaData({load=async()=>null,save=async()=>{},get=download,
   const publicData=()=>({...state,research:state.research || researchSeed(),sources:Object.fromEntries(Object.entries(state.sources).map(([k,v])=>[k,{...v,stale:!v.checked || now()-Date.parse(v.checked)>48*3600e3,
     status:v.error?'retained':v.checked?'verified':'snapshot'}]))});
   async function refresh(force=false) {
-    await read();if(busy)return busy;if(!force && now()<next)return publicData();next=now()+3600e3;
+    await read();if(busy)return busy;if(!force && now()<next)return publicData();next=now()+REFRESH_MS;
     busy=(async()=>{
       for(const name of ['gss','bog','gse']){
         try{

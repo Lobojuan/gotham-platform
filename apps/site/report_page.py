@@ -114,7 +114,7 @@ def check():
             ids.add(f['id'])
             if not f['source_url'].startswith('https://'): out.append((f['id'], 'source without https link'))
             if not f.get('period'): out.append((f['id'], 'no period'))
-            if not f.get('quote'): out.append((f['id'], 'no phrase for the weekly check'))
+            if not f.get('quote'): out.append((f['id'], 'no phrase for the six-hour source check'))
         for sec in ('rules', 'opportunities', 'risks'):
             for x in c[sec]:
                 if not x['source_url'].startswith('http'): out.append((c['id'], f'{sec}: unsourced line'))
@@ -141,11 +141,11 @@ def check():
 
 # text used outside the page: the emails the server sends, the page title and description, the PDF cover, header and contents
 EXTRA = ['Ghana Investment Report 2026: Economy and Key Sectors | Gotham Consult',
- 'Independent investor guide to Ghana in 2026: growth, inflation, rates and reserves, plus mining, energy, cocoa and agribusiness, ICT, manufacturing, real estate and logistics. Every figure sourced and re-checked weekly.',
+ 'Independent investor guide to Ghana in 2026: growth, inflation, rates and reserves, plus mining, energy, cocoa and agribusiness, ICT, manufacturing, real estate and logistics. Every figure sourced and checked at least every six hours.',
  'Your Ghana Investment Report 2026', 'Your Ghana Investment Report, {name}', 'Thank you for your interest. Your copy of the Ghana Investment Report 2026 is ready.',
- 'The link works for 30 days. The web version at {link} is checked against its sources every week.', 'Questions about Ghana, or about investing here? Write or call us directly:',
+ 'The link works for 30 days. The web version at {link} is checked against its sources every six hours.', 'Questions about Ghana, or about investing here? Write or call us directly:',
  'Thank you for contacting Gotham Consult', 'Thank you, {name}', 'We have your message about the Ghana Investment Report and will reply within one working day.',
- 'Investor country guide', 'The economy and its five key sectors: the figures, the rules, the opportunities and the risks, with an outlook to 2028. Every number linked to its official source and re-checked every week.',
+ 'Investor country guide', 'The economy and its five key sectors: the figures, the rules, the opportunities and the risks, with an outlook to 2028. Every number linked to its official source and checked at least every six hours.',
  'sourced figures', 'sector chapters', 'scenarios to 2028', 'data as of', 'Prepared by', 'Independent research · not investment advice', 'Contents', 'Accra · Ghana',
  'Economy and investment climate', 'Gold, mining and critical minerals', 'Oil, gas and power', 'Cocoa and agribusiness', 'ICT, industry and real estate',
  'Prepared by Uffe Carlson and Joy Preston', 'Ghana Investment Report 2026', 'Partner, Gotham Consult', 'Managing Partner, Gotham Consult', 'page']
@@ -252,7 +252,7 @@ def chapter(i, c, r, L):
 <div class="box rp-col"><h3>{esc(L.t("Risks to price in"))}</h3>{items(c["risks"], "risks", L)}</div>
 </div>
 <details class="rp-players"><summary>{esc(L.t("Who is who in this sector ({n})").format(n=len(c["players"])))}</summary><ul>{players}</ul></details>
-<p class="rp-watch">{esc(L.t("Watched every week:"))} {watch}.</p>
+<p class="rp-watch">{esc(L.t("Source monitoring, every six hours:"))} {watch}.</p>
 <p class="rp-help"><a class="btn btn-line" href="{pre}{link}">{esc(L.t(name))} <span class="arrow">→</span></a></p>
 </div></section>'''
 
@@ -597,10 +597,10 @@ def render(lang='en', L=None):
         f'<nav class="crumb" aria-label="{esc(t("Breadcrumb"))}"><a href="{pre or "/"}">{esc(t("Home"))}</a><span aria-hidden="true">/</span><a href="{pre}/invest">{esc(t("Invest in Ghana"))}</a><span aria-hidden="true">/</span><span>{esc(t("Ghana Investment Report"))}</span></nav>'
         f'<p class="eyebrow">{esc(t(r["title"]))} · {esc(r["publisher"])}</p>'
         f'<h1 id="h1">{esc(t("Ghana, sector by sector."))} <span class="serif">{esc(t("Every number sourced."))}</span></h1>'
-        f'<p class="lead">{esc(t("An independent investor guide to Ghana’s economy and its five key sectors: the figures, the rules, the opportunities and the risks, each linked to its official source and checked again every week."))}</p>'
+        f'<p class="lead">{esc(t("An independent investor guide to Ghana’s economy and its five key sectors: the figures, the rules, the opportunities and the risks, each linked to its official source and checked at least every six hours."))}</p>'
         + byline +
         f'<ul class="rp-meta"><li>{esc(t("Updated"))} <b id="rp-updated">{esc(L.date(r["updated"]))}</b></li><li>{t("{n} sourced figures").format(n="<b>" + str(figs) + "</b>")}</li>'
-        f'<li>{t("{n} chapters").format(n="<b>" + str(len(r["chapters"])) + "</b>")}</li><li>{t("Sources re-checked {w}").format(w="<b>" + esc(t("every week")) + "</b>")}</li></ul>'
+        f'<li>{t("{n} chapters").format(n="<b>" + str(len(r["chapters"])) + "</b>")}</li><li>{t("Sources checked {w}").format(w="<b>" + esc(t("every six hours")) + "</b>")}</li></ul>'
         f'<div class="hero-cta" style="margin-top:22px"><a class="btn btn-gold" href="#download">{esc(t("Download the PDF"))} <span class="arrow">→</span></a> '
         f'<a class="btn btn-line" href="#summary">{esc(t("Read online"))}</a> <a class="btn btn-line" href="#partner">{esc(t("Feature your company"))}</a></div>'
         '</div></section>\n'
@@ -614,9 +614,9 @@ def render(lang='en', L=None):
         + download(r, figs, L) + out_html + chapters +
         f'\n<section class="sec" id="dates" aria-labelledby="dates-h"><div class="wrap"><p class="eyebrow">{esc(t("Dates to watch"))}</p><h2 id="dates-h">{esc(t("What could move the numbers next"))}</h2>'
         f'<ul class="rp-cal">{cal}</ul></div></section>\n'
-        f'<section class="sec" aria-labelledby="how-h"><div class="wrap"><p class="eyebrow">{esc(t("How this report stays current"))}</p><h2 id="how-h">{esc(t("Checked every week, confirmed by a person"))}</h2><div class="rp-how">'
+        f'<section class="sec" aria-labelledby="how-h"><div class="wrap"><p class="eyebrow">{esc(t("How this report stays current"))}</p><h2 id="how-h">{esc(t("Sources checked every six hours; changes reviewed by a person"))}</h2><div class="rp-how">'
         f'<div class="box"><h3>{esc(t("Live economic data"))}</h3><p>{esc(t("Growth, inflation, the policy rate and exports update by themselves when the Bank of Ghana and the Ghana Statistical Service publish new figures."))}</p></div>'
-        f'<div class="box"><h3>{esc(t("Every source re-opened weekly"))}</h3><p>{esc(t("Each week our system opens every source behind every figure and the regulators’ newsrooms. If a source changes or something new is published, our team is told."))}</p></div>'
+        f'<div class="box"><h3>{esc(t("Every source re-opened every six hours"))}</h3><p>{esc(t("Every six hours our system checks each source behind the figures and regulators’ newsrooms. Changes are staged for a person to review; no news is published automatically."))}</p></div>'
         f'<div class="box"><h3>{esc(t("A person approves changes"))}</h3><p>{esc(t("Nothing in the text changes by itself. An analyst reads the new information and updates the report, and every update is listed below with its date."))}</p></div>'
         '</div><p class="rp-src" id="rp-checked" style="margin-top:14px"></p>'
         f'<h3 class="rp-h3">{esc(t("Latest updates"))}</h3><ul class="rp-log" id="rp-log"><li class="box">{esc(t("The first edition was published on {d}.").format(d=L.date(r["updated"])))}</li></ul></div></section>\n'

@@ -686,6 +686,16 @@
 "Some outlets reported 21.4%; the Ghana News Agency and Ghana Business News report 22.4%.": "部分媒体报道为21.4%；加纳通讯社（GNA）和Ghana Business News报道为22.4%。",
 "GHS 9,800": "9,800塞地",
 "GHS 32,700": "32,700塞地",
-"GHS 78,500": "78,500塞地"
+"GHS 78,500": "78,500塞地",
+"Source monitoring, every six hours:": "每六小时监测一次来源：",
+"An independent investor guide to Ghana’s economy and its five key sectors: the figures, the rules, the opportunities and the risks, each linked to its official source and checked at least every six hours.": "这是一份关于加纳经济及五大重点行业的独立投资指南，涵盖数据、法规、机遇与风险；每项信息均链接至官方来源，并至少每六小时核查一次。",
+"Sources checked {w}": "来源核查频率：{w}",
+"every six hours": "每六小时",
+"Sources checked every six hours; changes reviewed by a person": "每六小时核查来源；变更由人工审阅",
+"Every source re-opened every six hours": "每六小时重新核查每个来源",
+"Every six hours our system checks each source behind the figures and regulators’ newsrooms. Changes are staged for a person to review; no news is published automatically.": "系统每六小时核查数据所依据的来源及监管机构的新闻页面。发现变更后会提交人工审阅；不会自动发布新闻。",
+"Independent investor guide to Ghana in 2026: growth, inflation, rates and reserves, plus mining, energy, cocoa and agribusiness, ICT, manufacturing, real estate and logistics. Every figure sourced and checked at least every six hours.": "2026年加纳独立投资指南：经济增长、通胀、利率和储备，以及采矿、能源、可可与农业综合经营、信息通信技术、制造业、房地产和物流。每项数据均注明来源，并至少每六小时核查一次。",
+"The link works for 30 days. The web version at {link} is checked against its sources every six hours.": "链接有效期为30天。{link}上的网页版本每六小时与其来源核对一次。",
+"The economy and its five key sectors: the figures, the rules, the opportunities and the risks, with an outlook to 2028. Every number linked to its official source and checked at least every six hours.": "加纳经济及其五大重点行业：数据、法规、机遇与风险，并展望至2028年。每项数据均链接至官方来源，并至少每六小时核查一次。"
 }
 }

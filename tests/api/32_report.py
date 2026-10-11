@@ -1,4 +1,4 @@
-"""Ghana Investment Report: every figure sourced, the weekly watch flags changed sources and newsrooms once,
+"""Ghana Investment Report: every figure sourced, the six-hour watch flags changed sources and newsrooms once,
 nothing is published without a person, company news and partner enquiries reach the back office."""
 import os, sys, json, threading, http.server, subprocess
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -16,15 +16,18 @@ const R={updated:'2026-10-07',review_days:120,chapters:[{id:'macro',title:'Econo
 const long=t=>Buffer.from('<html><body><p>'+t+' '+'Official text. '.repeat(30)+'</p></body></html>');
 let pages={'https://gss.test/gdp':long('The economy grew 6.0% in Q2'),'https://bog.test/news':long('Policy rate held at 14%')};
 const get=async u=>({status:200,type:'text/html',buf:pages[u]});
-let clock=Date.parse('2026-10-07T08:00:00Z'),st=null,lg=null,alerts=[];
-const W=makeReportWatch({report:R,get,now:()=>clock,save:async s=>{st=structuredClone(s)},saveLog:async l=>{lg=structuredClone(l)},alert:async(s,l)=>{alerts.push([s,l])}});
+let clock=Date.parse('2026-10-07T08:00:00Z'),st=null,lg=null,alerts=[],requests=0;
+const countedGet=async u=>{requests++;return get(u)};
+const W=makeReportWatch({report:R,get:countedGet,now:()=>clock,everyDays:6/24,save:async s=>{st=structuredClone(s)},saveLog:async l=>{lg=structuredClone(l)},alert:async(s,l)=>{alerts.push([s,l])}});
 let r=await W.run();assert.equal(r.facts[0].status,'ok');assert.equal(r.updates.length,0,'first look is only a baseline');assert.equal(alerts.length,0);
-r=await W.run();assert.equal(r.updates.length,0,'not again within the week');
-clock+=8*864e5;pages['https://bog.test/news']=long('Policy rate cut to 13.5%');pages['https://gss.test/gdp']=long('The economy grew 5.1% in Q3');r=await W.run();
+assert.equal(Date.parse(r.next)-Date.parse(r.checked),6*3600e3,'next report/source check is scheduled in six hours');
+r=await W.run();assert.equal(r.updates.length,0,'not again within six hours');assert.equal(requests,2);
+clock+=5*3600e3;r=await W.run();assert.equal(requests,2,'source checks stay throttled inside the six-hour interval');
+clock+=2*3600e3;pages['https://bog.test/news']=long('Policy rate cut to 13.5%');pages['https://gss.test/gdp']=long('The economy grew 5.1% in Q3');r=await W.run();
 assert.equal(r.facts[0].status,'review');assert.match(r.facts[0].problems[0].text,/grew 6.0%/);
 assert.equal(r.pending,1);assert.equal(r.updates[0].kind,'source');assert.match(alerts.at(-1)[0],/1 source to read/);
-console.log('  ok a week later: a figure whose source changed is flagged, a changed newsroom becomes one pending update with an alert');
-clock+=8*864e5;r=await W.run();assert.equal(r.pending,1,'an unchanged newsroom is not reported again');
+console.log('  ok after six hours: a changed figure is flagged and a changed newsroom becomes one pending update with an alert');
+clock+=7*3600e3;r=await W.run();assert.equal(r.pending,1,'an unchanged newsroom is not reported again');
 let pub=await W.publicReport();assert.equal(pub.updates.length,0,'nothing is published by itself');assert.equal(pub.figures[0].status,'review');
 const it=r.updates[0];assert.equal(await W.decide('nope','publish','admin',{title:'x'}),null);assert.equal(await W.decide(it.id,'approve','admin'),null,'only publish or dismiss');
 await W.decide(it.id,'publish','admin',{title:'Bank of Ghana cuts the policy rate to 13.5%',text:'First cut this year.'});

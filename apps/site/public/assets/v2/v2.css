@@ -310,6 +310,21 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .chat-voice button { min-height: 40px; padding: 0 10px; border: 1px solid var(--line); border-radius: 20px; background: #fff; font: inherit; font-size: 12px; cursor: pointer; }
 .chat-voice span { flex: 1; min-width: 130px; }
 .research-block { margin-top: 34px; }
+.market-updates { margin: 28px 0 38px; padding: clamp(18px,3vw,28px); border: 1px solid var(--line); border-radius: 22px; background: linear-gradient(135deg,#f7f5ef,#fff); }
+.market-updates-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; }
+.market-updates-head h3 { margin:5px 0 8px; font-size:clamp(21px,3vw,28px); line-height:1.15; }
+.market-updates-head p:not(.eyebrow) { margin:0; max-width:760px; color:var(--mute); font-size:14px; }
+.market-update-count { flex:0 0 auto; min-width:38px; height:38px; display:grid; place-items:center; border-radius:50%; background:var(--navy); color:#fff; font-size:13px; font-weight:750; }
+.market-update-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr)); gap:12px; margin-top:18px; }
+.market-update { padding:17px; border:1px solid var(--line); border-radius:14px; background:#fff; }
+.market-update time { color:#91651f; font-size:12px; font-weight:700; }
+.market-update h4 { margin:8px 0; font-size:17px; line-height:1.28; }
+.market-update p { margin:0; color:#4f5968; font-size:14px; line-height:1.55; }
+.market-update .market-update-meta { margin-top:12px; color:var(--mute); font-size:12px; }
+.market-update a { color:#815810; font-weight:700; }
+.market-update-empty { margin:18px 0 0; padding:16px; border-radius:12px; background:#fff; color:var(--mute); font-size:14px; }
+html[lang="ar"] .market-updates { direction:rtl; }
+html[lang="ar"] .market-update-count { margin-inline-start:0; }
 .case-gain { font-size: clamp(24px, 4vw, 36px); font-weight: 800; color: var(--navy); margin: 12px 0; }
 .market-metrics { margin: 16px 0; }
 .market-metrics > div { padding: 12px 0; border-bottom: 1px solid var(--line); }

@@ -1,6 +1,6 @@
-/* Ghana Investment Report: the weekly watch.
+/* Ghana Investment Report: the six-hour source watch.
    report.json holds every figure with its source and a phrase that must still appear there, plus the
-   newsrooms and data pages to watch for each chapter. Once a week (REPORT_EVERY_DAYS) the server opens
+   newsrooms and data pages to watch for each chapter. Every six hours (REPORT_EVERY_HOURS) the server opens
    all of them (fact-watch.js does the opening and comparing):
    - a figure whose source no longer says what we rely on, disappears or is overdue is flagged "review";
    - a watched newsroom or data page that changed becomes a pending update for a person to read;
@@ -30,7 +30,7 @@ export function reportFacts(r) {
 }
 
 export function makeReportWatch({ report = loadReport(), load = async () => null, save = async () => {}, loadLog = async () => null, saveLog = async () => {},
-  get, now = Date.now, alert = async () => {}, everyDays = 7 } = {}) {
+  get, now = Date.now, alert = async () => {}, everyDays = 6 / 24 } = {}) {
   const facts = reportFacts(report);
   const watched = report.chapters.flatMap(c => c.watch.map(w => ({ url: w.url, label: w.label, page: c.id })));
   const W = makeFactWatch({ facts, load, save, now, alert, everyDays, links: async () => watched, ...(get ? { get } : {}) });
@@ -52,7 +52,7 @@ export function makeReportWatch({ report = loadReport(), load = async () => null
       const u = st.urls[w.url];
       if (!u?.changed_at || log.seen[w.url] === u.changed_at) continue;
       log.seen[w.url] = u.changed_at;
-      fresh.push(add({ kind: 'source', chapter: w.page, title: `${w.label} has new content`, url: w.url, text: '', by: 'weekly watch' }));
+      fresh.push(add({ kind: 'source', chapter: w.page, title: `${w.label} has new content`, url: w.url, text: '', by: 'six-hour source check' }));
     }
     for (const w of watched) if (st.urls[w.url]?.hash && !(w.url in log.seen)) log.seen[w.url] = st.urls[w.url].changed_at || null;  // first look: baseline only
     log.checked = r.checked; await saveLog(log).catch(() => {});
