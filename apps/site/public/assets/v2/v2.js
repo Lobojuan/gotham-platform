@@ -426,8 +426,16 @@
   /* ---- contact form: WhatsApp or email, nothing stored ---- */
   const cf = LEG ? null : $('#contactF');
   if (cf) {
-    const text = () => `Hello Gotham Consult,\nName: ${$('#c-name').value}${$('#c-co').value ? '\nCompany: ' + $('#c-co').value : ''}\nTopic: ${$('#c-topic').value}\n\n${$('#c-msg').value}`;
-    cf.addEventListener('submit', e => { e.preventDefault(); if (!$('#c-name').reportValidity()) return; open('https://wa.me/233550416627?text=' + encodeURIComponent(text()), '_blank', 'noopener'); });
+    const text = () => `Hello Gotham Consult,\nName: ${$('#c-name').value}${$('#c-co').value ? '\nCompany: ' + $('#c-co').value : ''}\nTopic: ${$('#c-topic').selectedOptions[0]?.textContent || $('#c-topic').value}\n\n${$('#c-msg').value}`;
+    cf.addEventListener('submit', e => {
+      e.preventDefault(); if (!$('#c-name').reportValidity()) return;
+      const topic = $('#c-topic').value;
+      const details = $('#c-msg').value;
+      const technical = ['tech-ai', 'tech-digital', 'tech-creative'].includes(topic)
+        || /\b(ai|it|website|web[- ]?site|web ?build|software|app development|financial software|finance platform)\b/i.test(details);
+      const recipient = technical ? '233552395548' : '233550416627';
+      open('https://wa.me/' + recipient + '?text=' + encodeURIComponent(text()), '_blank', 'noopener');
+    });
     $('#c-mail')?.addEventListener('click', () => { if (!$('#c-name').reportValidity()) return; location.href = `mailto:info@gothamconsult.com?subject=${encodeURIComponent('Enquiry: ' + $('#c-topic').value)}&body=${encodeURIComponent(text())}`; });
   }
 

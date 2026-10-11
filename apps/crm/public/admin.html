@@ -1304,7 +1304,7 @@ document.addEventListener('click',e=>{const d=e.target.dataset||{};
 let EV=null;                         /* the event being edited, or null for the list */
 const EMPTY={code:'',kind:'event',title:'',subtitle:'',summary:'',description:'',venue:'',starts_at:null,ends_at:null,
  currency:'GHS',price:0,per:'',capacity:null,published:true,sort:0,approval:false,phase:'open',audiences:'',
- cover:null,cover_image:null,gallery:[],images:[],docs:[],documents:[],agenda:[],speakers:[]};
+ cover:null,cover_image:null,gallery:[],images:[],docs:[],documents:[],agenda:[],speakers:[],flyer:{}};
 
 async function events(){
  if(EV) return evEditor();
@@ -1362,6 +1362,8 @@ const UPERR={file_too_large:'That file is too large.',video_tools_missing:'Video
 
 function evEditor(){
  const i=EV, local=d=>{if(!d)return '';const t=new Date(d);return new Date(t.getTime()-t.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+ const flyer=i.flyer||{};
+ const flyerImages=[...(i.cover_image?[{id:'cover',name:'Event cover',url:i.cover_image.sizes.card.webp}]:[]),...(i.images||[]).filter(m=>m.kind==='image'&&m.sizes?.card).map(m=>({id:m.id,name:m.name||m.original_name||'Event photo',url:m.sizes.card.webp}))];
  const docRow=(d,n)=>`<div class="row2"><input class="t" data-doclabel="${n}" value="${esc(d.label||d.name||'')}" placeholder="Label shown on the site, e.g. Sponsorship pack">
    <a class="btn btn-line" href="${d.url||'#'}" target="_blank">Open</a><button class="btn btn-line" data-docdel="${n}">Remove</button></div>`;
  const agRow=(a,n)=>`<div class="row3"><input class="t" data-agtime="${n}" value="${esc(a.time||'')}" placeholder="09:30">
@@ -1404,6 +1406,19 @@ function evEditor(){
     ${i.cover_image&&i.cover_image.taken_at?`<div class="note">Taken ${esc(dateLabel(i.cover_image))}</div>`:''}
     ${i.cover?'<button class="btn btn-line" id="i-cover-x" style="margin-top:8px">Remove cover</button>':''}
     ${sizeNote(i.cover_image)}</div></div>
+
+  <h4 class="sec">Event flyer studio</h4>
+  <p class="note">Create an editable event flyer in the Gotham brand. Use the event cover or an uploaded gallery photo, choose a format and language, review the copy, then save and preview. AI suggestions use only this event’s saved details; you approve every word.</p>
+  <div class="f2"><div><label class="l">Flyer language</label><select class="t" id="flyer-language">${[['en','English'],['fr','Français'],['es','Español'],['de','Deutsch'],['ar','العربية'],['zh','简体中文']].map(([k,v])=>`<option value="${k}" ${(flyer.language||'en')===k?'selected':''}>${v}</option>`).join('')}</select></div>
+   <div><label class="l">Layout</label><select class="t" id="flyer-format"><option value="social" ${(flyer.format||'social')==='social'?'selected':''}>Social · portrait 4:5</option><option value="a4" ${flyer.format==='a4'?'selected':''}>Print · A4</option></select></div></div>
+  <div class="f2"><div><label class="l">Colour theme</label><select class="t" id="flyer-template"><option value="navy" ${(flyer.template||'navy')==='navy'?'selected':''}>Navy &amp; gold</option><option value="cream" ${flyer.template==='cream'?'selected':''}>Cream &amp; navy</option><option value="gold" ${flyer.template==='gold'?'selected':''}>Gold &amp; navy</option></select></div>
+   <div><label class="l">Photo</label><select class="t" id="flyer-image"><option value="" ${!flyer.image?'selected':''}>No photo</option>${flyerImages.map(m=>`<option value="${esc(m.id)}" ${flyer.image===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select></div></div>
+  <label class="l">Eyebrow</label><input class="t" id="flyer-eyebrow" maxlength="60" value="${esc(flyer.eyebrow||'You are invited')}" placeholder="You are invited">
+  <label class="l">Flyer headline</label><input class="t" id="flyer-headline" maxlength="70" value="${esc(flyer.headline||i.title||'')}">
+  <label class="l">Flyer copy</label><textarea class="t" id="flyer-body" rows="3" maxlength="180" placeholder="A clear reason to attend">${esc(flyer.body||i.subtitle||i.summary||'')}</textarea>
+  <label class="l">Call to action</label><input class="t" id="flyer-cta" maxlength="45" value="${esc(flyer.cta||'Scan to register')}" placeholder="Scan to register">
+  <div class="row2" style="margin-top:10px"><button class="btn btn-line" id="flyer-ai" ${i.__new||i.kind!=='event'?'disabled':''}>Suggest copy with AI</button><button class="btn btn-dark" id="flyer-preview" ${i.__new||i.kind!=='event'?'disabled':''}>Save flyer &amp; preview</button><span class="note">Preview opens in a new tab. Print or save as PDF there.</span></div>
+  ${i.__new?'<p class="note">Save the event first to enable AI copy and its tracked registration QR code.</p>':''}
 
   <h4 class="sec">Photos and videos <span class="note">— the gallery on the event page</span></h4>
   <p class="note">Pick several at once. Each one gets our logo in the corner and loses any location data. The date it was taken is read from the file;
@@ -1471,6 +1486,7 @@ function evEditor(){
   EV.currency=g('#i-cur');EV.price=g('#i-price');EV.per=g('#i-per');
   EV.capacity=g('#i-cap')||null;EV.published=g('#i-pub')==='true';EV.sort=g('#i-sort')||0;
   EV.approval=g('#i-appr')==='true';EV.phase=g('#i-phase');EV.audiences=g('#i-aud');EV.recap=g('#i-recap');
+  EV.flyer={eyebrow:g('#flyer-eyebrow'),headline:g('#flyer-headline'),body:g('#flyer-body'),cta:g('#flyer-cta'),template:g('#flyer-template')||'navy',format:g('#flyer-format')||'social',image:g('#flyer-image'),language:g('#flyer-language')||'en',qr_slug:EV.flyer?.qr_slug||''};
   document.querySelectorAll('[data-doclabel]').forEach(el=>{const n=+el.dataset.doclabel;
    if(EV.documents[n]){EV.documents[n].label=el.value;EV.docs[n]={id:EV.documents[n].id,label:el.value}}});
   EV.agenda=[...document.querySelectorAll('[data-agtime]')].map((el,n)=>({time:el.value,what:(document.querySelector('[data-agwhat="'+n+'"]')||{}).value||''})).filter(a=>a.time||a.what);
@@ -1478,17 +1494,37 @@ function evEditor(){
  };
  const save=async()=>{
   collect();
-  if(!EV.code||!EV.title)return toast('A code and a title are needed');
+  if(!EV.code||!EV.title){toast('A code and a title are needed');return false}
   try{
    const r=await api('/api/items',{method:'POST',body:JSON.stringify({...EV,alt:undefined})});
    toast('Saved');EV.__new=false;EV.code=r.code;
    await load(); ALL_ITEMS=(await api('/api/items/all')).rows;
-   EV=JSON.parse(JSON.stringify(ALL_ITEMS.find(x=>x.code===r.code)||EV));redraw();
+   EV=JSON.parse(JSON.stringify(ALL_ITEMS.find(x=>x.code===r.code)||EV));redraw();return true;
   }catch(e){toast(e.error==='over_venue_limit'?('Seats cannot go above the venue limit of '+e.max+'. Change it in Settings if the room is bigger.')
-   :e.error==='code_and_title_required'?'A code and a title are needed':'Could not save')}
+   :e.error==='code_and_title_required'?'A code and a title are needed':'Could not save');return false}
  };
  $('#ev-save').onclick=save; $('#ev-save2').onclick=save;
  $('#ev-back').onclick=()=>{EV=null;events()};if($('#ev-chat'))$('#ev-chat').onclick=()=>chatThread('item',i.code);
+ if($('#flyer-ai'))$('#flyer-ai').onclick=async()=>{
+  collect();if(!(await save()))return;try{toast('Drafting flyer copy…');const r=await api('/api/items/'+encodeURIComponent(EV.code)+'/flyer-copy',{method:'POST',body:JSON.stringify({language:EV.flyer.language,style:'clear, welcoming and professional'})});
+   Object.assign(EV.flyer,r.copy);$('#flyer-eyebrow').value=r.copy.eyebrow;$('#flyer-headline').value=r.copy.headline;$('#flyer-body').value=r.copy.body;$('#flyer-cta').value=r.copy.cta;toast('AI draft ready — review and edit before saving');
+  }catch(e){toast(e.error==='ai_off'?'AI copy is not configured on this server yet. You can still write and design the flyer.':'AI copy could not be generated. Please edit the flyer manually.')}};
+ if($('#flyer-preview'))$('#flyer-preview').onclick=async()=>{
+  const pop=window.open('','_blank');if(!pop){toast('Allow pop-ups to preview the flyer.');return}
+  pop.document.write('<p style="font:16px Arial;padding:24px">Preparing flyer…</p>');
+  collect();if(!(await save())){pop.close();return}if(!EV||!EV.code||!EV.flyer){pop.close();return}
+  try{
+   if(!EV.flyer.qr_slug){const qrcode=await api('/api/qr',{method:'POST',body:JSON.stringify({kind:'register',item_code:EV.code,slug:'event-'+EV.code,label:'Event flyer · '+EV.title,utm_source:'event-flyer'})});EV.flyer.qr_slug=qrcode.slug;await save()}
+   const f=EV.flyer,selected=flyerImages.find(m=>m.id===f.image),image=selected?selected.url:'';
+   const date=EV.starts_at?new Intl.DateTimeFormat(f.language==='en'?'en-GB':f.language,{dateStyle:'long',timeZone:'Africa/Accra'}).format(new Date(EV.starts_at)):'';
+   const rtl=f.language==='ar',theme=f.template||'navy',qrurl=location.origin+'/api/qr?data='+encodeURIComponent(location.origin+'/s/'+f.qr_slug)+'&fmt=svg&size=900';
+   const e=esc, title=e(f.headline||EV.title), body=e(f.body||EV.summary||EV.subtitle||''), eyebrow=e(f.eyebrow||''), cta=e(f.cta||'Scan to register');
+   const facts=[date,EV.venue].filter(Boolean).map(e);
+   pop.document.open();pop.document.write(`<!doctype html><html lang="${e(f.language)}" dir="${rtl?'rtl':'ltr'}"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · Gotham Consult</title><style>
+    @page{size:${f.format==='a4'?'A4 portrait':'1080px 1350px'};margin:0}*{box-sizing:border-box}body{margin:0;background:#e9ebee;color:#101b2d;font:16px/1.45 Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.hint{max-width:900px;margin:12px auto;text-align:center;color:#4b5563}.flyer{--ink:#101b2d;--gold:#d1a84f;--paper:#faf9f5;position:relative;isolation:isolate;overflow:hidden;width:min(100vw,1080px);aspect-ratio:${f.format==='a4'?'210 / 297':'4 / 5'};margin:16px auto;background:var(--paper);display:flex;flex-direction:column;padding:6%;box-shadow:0 16px 50px #101b2d22}.flyer.cream{--ink:#101b2d;--gold:#a9761f;--paper:#faf9f5}.flyer.gold{--ink:#101b2d;--gold:#825d19;--paper:#e7c87f}.flyer.navy{background:#101b2d;color:#fff;--paper:#101b2d;--gold:#e2bb63}.photo{position:absolute;inset:0 0 auto;height:55%;z-index:-1;overflow:hidden}.photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#07101a22 0%,#101b2d55 45%,#101b2d 100%)}.photo img{width:100%;height:100%;object-fit:cover}.navy .photo{height:100%}.navy .photo:after{background:linear-gradient(180deg,#07101a88,#101b2dcc 70%,#101b2d)}.head{display:flex;align-items:center;gap:12px;font-weight:700;letter-spacing:.06em}.head img{width:40px;height:40px;object-fit:contain;background:#fff;border-radius:8px;padding:3px}.hero{margin-top:auto}.eyebrow{color:var(--gold);font-weight:bold;text-transform:uppercase;letter-spacing:.16em}.hero h1{font-size:clamp(38px,7.4vw,92px);line-height:.98;letter-spacing:-.045em;margin:10px 0;max-width:900px}.hero p{font-size:clamp(18px,2.6vw,30px);max-width:800px;margin:18px 0}.facts{display:flex;gap:24px;flex-wrap:wrap;color:var(--gold);font-weight:bold}.bottom{margin-top:30px;padding-top:22px;border-top:1px solid #ffffff55;display:flex;align-items:center;justify-content:space-between;gap:18px}.bottom strong{font-size:clamp(17px,2.2vw,26px)}.bottom img{width:150px;height:150px;background:#fff;padding:8px;border-radius:8px}.foot{margin-top:14px;opacity:.8;font-size:14px}.cream .head,.gold .head{color:var(--ink)}.cream .photo,.gold .photo{height:48%}.cream .hero,.gold .hero{margin-top:auto;color:#101b2d}.cream .bottom,.gold .bottom{border-color:#101b2d33;color:#101b2d}@media print{body{background:#fff}.hint{display:none}.flyer{width:100vw;height:100vh;margin:0;box-shadow:none}}@media(max-width:600px){.flyer{width:100%;min-height:100vh;aspect-ratio:auto}.bottom img{width:100px;height:100px}}
+    </style><div class="hint">Review the event details, then choose Print → Save as PDF. QR goes to this event’s registration page. <button onclick="print()">Print / Save PDF</button></div><main class="flyer ${theme}">${image?`<div class="photo"><img src="${e(image)}" alt=""></div>`:''}<div class="head"><img src="/admin/brand/mark-tile.png" alt="">GOTHAM CONSULT · ACCRA, GHANA</div><section class="hero"><div class="eyebrow">${eyebrow}</div><h1>${title}</h1><p>${body}</p><div class="facts">${facts.map(x=>`<span>${x}</span>`).join('')}</div></section><section class="bottom"><strong>${cta}</strong><img src="${qrurl}" alt="Event registration QR code"></section><div class="foot">gothamconsult.com · ${e(f.language.toUpperCase())}</div></main></html>`);pop.document.close();
+  }catch(e){pop.close();toast(e.error==='not_allowed'?'Sign in again before making a flyer QR.':'Could not prepare the flyer. Check the event and try again.')}
+ };
 
  $('#i-cover-f').onchange=async e=>{const f=e.target.files[0];if(!f)return;collect();toast('Resizing…');
   try{const m=await upload(f,'image',{alt:$('#i-alt').value,brand:!$('#i-cover-own').checked});EV.cover=m.id;EV.cover_image=m;toast('Cover set');redraw()}

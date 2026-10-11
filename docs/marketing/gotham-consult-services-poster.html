@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gotham Consult · Services poster</title>
+<style>
+@page { size: A4 portrait; margin: 0 }
+* { box-sizing: border-box }
+body { margin: 0; background: #e8e9e8; color: #101b2d; font-family: Arial, Helvetica, sans-serif }
+.poster { width: 1080px; height: 1350px; margin: 20px auto; padding: 72px 78px 58px; display: flex; flex-direction: column; overflow: hidden; position: relative; background: #f9f9f6 }
+.poster:before { content: ""; position: absolute; inset: 0 0 auto; height: 14px; background: linear-gradient(90deg,#bf8d38 0 28%,#101b2d 28% 52%,#1e6a4b 52% 77%,#d9b361 77%) }
+.hero-art { position:absolute; z-index:0; inset:14px 0 auto; width:100%; height:480px; object-fit:cover; object-position:center 53% }
+.hero-shade { position:absolute; z-index:0; inset:14px 0 auto; height:480px; background:linear-gradient(90deg,rgba(9,17,29,.82),rgba(9,17,29,.48) 62%,rgba(9,17,29,.1)),linear-gradient(0deg,#101b2d 0%,transparent 42%) }
+.top,.eyebrow,h1,.intro,.rule { position:relative; z-index:1 }
+.top { display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #ffffff55; padding-bottom:28px; color:#fff }
+.brand { display:flex; gap:16px; align-items:center; font-size:25px; letter-spacing:.02em; font-weight:700 }
+.brand img { width:46px; height:46px; object-fit:contain }
+.location { color:#e8ebef; font-size:18px; letter-spacing:.12em; text-transform:uppercase }
+.eyebrow { margin:50px 0 14px; color:#9a6c1c; font-size:17px; font-weight:700; letter-spacing:.2em; text-transform:uppercase }
+h1 { max-width:850px; margin:0; font-size:76px; line-height:.99; letter-spacing:-.055em; font-weight:700; color:#fff }
+h1 em { color:#a9761f; font-family: Georgia,serif; font-weight:400 }
+.intro { margin:24px 0 34px; max-width:820px; color:#e7eaf0; font-size:25px; line-height:1.4 }
+.rule { width:100%; height:1px; background:#dfe2e4; margin:0 0 28px }
+.offers { display:grid; grid-template-columns:repeat(3,1fr); gap:15px }
+.offer { background:white; border:1px solid #e0e2e5; border-radius:18px; min-height:224px; padding:24px 22px }
+.n { display:grid; place-items:center; width:38px; height:38px; margin-bottom:22px; border-radius:50%; color:#fff; background:#101b2d; font-size:17px; font-weight:700 }
+.offer:nth-child(2) .n { background:#a9761f }.offer:nth-child(3) .n { background:#1e6a4b }
+.offer h2 { margin:0 0 12px; font-size:22px; line-height:1.12; letter-spacing:-.025em }
+.offer p { margin:0; color:#657080; font-size:17px; line-height:1.4 }
+.promise { margin:31px 0 0; border-left:4px solid #d9b361; padding:0 0 0 17px; color:#374152; font-size:19px; line-height:1.4 }
+.bottom { margin-top:auto; display:grid; grid-template-columns:1fr 190px; gap:34px; align-items:center; padding-top:30px; border-top:1px solid #dfe2e4 }
+.action { font-size:27px; line-height:1.14; font-weight:700; letter-spacing:-.025em }
+.action small { display:block; margin-top:10px; color:#697281; font-size:17px; font-weight:400; letter-spacing:0 }
+.qr { display:block; width:174px; height:174px; border:8px solid white; box-shadow:0 0 0 1px #dfe2e4; border-radius:12px }
+.contacts { margin-top:24px; display:flex; justify-content:space-between; gap:24px; color:#4c5664; font-size:16px; line-height:1.5 }
+.contacts b { color:#101b2d }
+.site { margin-top:22px; text-align:center; color:#9a6c1c; font-size:20px; font-weight:700; letter-spacing:.03em }
+.screen-hint { max-width:1080px; margin:0 auto 16px; color:#394455; text-align:center; font-size:14px }
+.audience { margin:12px 0 0; color:#697281; font-size:16px; line-height:1.4; letter-spacing:.02em }
+.export .screen-hint { display:none }
+@media print { body { background:white } .poster { width:210mm; height:297mm; margin:0; padding:16mm 16mm 13mm; } .hero-art,.hero-shade{height:100mm;top:0}.screen-hint { display:none } .top { padding-bottom:5mm } .brand { font-size:19pt } .brand img { width:12mm;height:12mm } .location { font-size:9pt } .eyebrow { margin:12mm 0 3mm;font-size:10pt } h1 { font-size:45pt } .intro { margin:5mm 0 7mm;font-size:15pt } .rule { margin-bottom:6mm } .offers { gap:3mm } .offer { min-height:57mm;padding:5mm 4mm;border-radius:4mm } .n { width:9mm;height:9mm;font-size:10pt;margin-bottom:5mm } .offer h2 { font-size:13pt;margin-bottom:3mm } .offer p { font-size:10pt } .promise { margin-top:7mm;font-size:12pt } .bottom { grid-template-columns:1fr 42mm;gap:7mm;padding-top:7mm } .action { font-size:16pt } .action small { font-size:10pt } .qr { width:39mm;height:39mm;border-width:2mm } .contacts { margin-top:5mm;font-size:9pt;gap:5mm } .site { margin-top:4mm;font-size:11pt } }
+@media (max-width:700px) { .poster { width:100%;height:auto;min-height:100vh;margin:0;padding:38px 24px } .top { padding-bottom:18px } .brand { font-size:18px;gap:9px }.brand img {width:34px;height:34px}.location {font-size:11px}.eyebrow{margin-top:36px;font-size:12px}h1{font-size:clamp(44px,11vw,72px)}.intro{font-size:19px}.offers{grid-template-columns:1fr}.offer{min-height:0;padding:20px}.n{margin-bottom:14px}.offer h2{font-size:20px}.offer p{font-size:16px}.bottom{grid-template-columns:1fr 120px;gap:16px}.action{font-size:21px}.action small{font-size:14px}.qr{width:116px;height:116px}.contacts{font-size:13px;flex-direction:column;gap:8px}.site{font-size:16px} }
+</style>
+<div class="screen-hint">Digital post preview · For print, choose Print → Save as PDF (A4).</div>
+<main class="poster">
+  <img class="hero-art" src="gotham-consult-services-background.png" alt="Accra skyline and harbour at dusk">
+  <div class="hero-shade" aria-hidden="true"></div>
+  <div class="top"><div class="brand"><img src="../../apps/site/public/img/brand/mark-tile.png" alt="">GOTHAM CONSULT</div><div class="location">Accra · Ghana</div></div>
+  <p class="eyebrow">Business, technology &amp; partnerships</p>
+  <h1>Make your next move in <em>Ghana.</em></h1>
+  <p class="intro">Local knowledge, practical delivery and the right connections for businesses building in Ghana and across Africa.</p>
+  <div class="rule"></div>
+  <section class="offers" aria-label="How Gotham can help">
+    <article class="offer"><div class="n">01</div><h2>Market entry &amp; projects</h2><p>Company set-up, investment readiness, project development and local partnerships.</p></article>
+    <article class="offer"><div class="n">02</div><h2>Digital, AI &amp; hosting</h2><p>Websites, SEO, social media, AI, software and managed cloud hosting.</p></article>
+    <article class="offer"><div class="n">03</div><h2>Events, media &amp; training</h2><p>Curated events, live streaming, event coverage and practical technology training.</p></article>
+  </section>
+  <p class="promise">Start with a question. Tell us what you are building, planning or trying to solve.</p>
+  <p class="audience">For founders · business owners · investors · institutions · partners</p>
+  <section class="bottom" aria-label="Scan to contact Gotham Consult">
+    <div class="action">Scan to ask how we can help, or register online.<small>Choose your topic on the site. Your enquiry opens as a WhatsApp message for you to review and send.</small></div>
+    <img class="qr" src="gotham-consult-contact-qr.png" alt="QR code linking to Gotham Consult contact form">
+  </section>
+  <div class="contacts"><span><b>Forums &amp; general enquiries · Joy</b><br>WhatsApp +233 55 041 6627</span><span><b>AI, IT, websites &amp; financial software · Uffe</b><br>WhatsApp +233 55 239 5548</span></div>
+  <div class="site">gothamconsult.com · English · Français · Español · Deutsch · العربية · 简体中文</div>
+</main>
+<script>if(new URLSearchParams(location.search).has('export'))document.body.classList.add('export');</script>

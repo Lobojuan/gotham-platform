@@ -57,6 +57,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | ID | Requirement | Test |
 |---|---|---|
 | C-1 | Events: cover image auto-cropped to every size the site needs; PDFs checked and served; in-use media cannot be deleted. | api/01 |
+| C-2a | Event administrators can save editable flyer copy, locale, theme, photo choice, print/social format and a tracked registration QR with the event; AI copy suggestions are admin-only, grounded in saved event details, and manual editing remains available. | api/01; admin UI smoke |
 | C-2 | Sponsors: tiers, logos kept transparent, expired sponsors hidden. | api/02 |
 | C-3 | Contacts: Excel/CSV import with column mapping, re-import updates instead of duplicating, manual add/edit. | api/04, api/05 |
 | C-4 | Campaigns: suppression of opted-out/bounced/do-not-contact, daily pace, click and opt-out links. | api/03 |

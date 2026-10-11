@@ -1550,7 +1550,7 @@ async function syncRegistrations() {
 
 /* ---------- queries ---------- */
 const ITEM_COLS = `i.code,i.kind,i.title,i.subtitle,i.venue,i.starts_at,i.ends_at,i.currency,i.price,i.per,i.capacity,
-    i.approval,i.phase,i.audiences,i.slug,i.summary,i.description,i.recap,i.cover,i.gallery,i.docs,i.agenda,i.speakers,i.updates,
+    i.approval,i.phase,i.audiences,i.slug,i.summary,i.description,i.recap,i.cover,i.gallery,i.docs,i.agenda,i.speakers,i.updates,i.flyer,
     case when i.capacity is null then null else greatest(i.capacity - coalesce((
       select sum(r.seats) from registrations r where r.item_code=i.code and r.status<>'cancelled'),0),0) end as seats_left`;
 const itemsPublic = () => q(`select ${ITEM_COLS} from items i where i.published order by i.sort, i.starts_at`);
@@ -3664,6 +3664,30 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       return json(res, 200, { rows: await withMedia(rows) });
     }
 
+    const mFlyerCopy = p.match(/^\/api\/items\/([A-Za-z0-9_-]{1,12})\/flyer-copy$/);
+    if (mFlyerCopy && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      if (!OPENAI_KEY) return json(res, 503, { error: 'ai_off' });
+      const code = mFlyerCopy[1].toUpperCase(), b = await body(req);
+      const event = (await q('select code,kind,title,subtitle,summary,venue,starts_at,price,currency from items where code=$1', [code])).rows[0];
+      if (!event || event.kind !== 'event') return json(res, 404, { error: 'event_not_found' });
+      const language = ({en:'English',fr:'French',es:'Spanish',de:'German',ar:'Modern Standard Arabic',zh:'Simplified Chinese'})[clean(b.language, 2).toLowerCase()] || 'English';
+      const messages = [
+        { role: 'system', content: `Write concise event-flyer copy in ${language}. Return only a JSON object with keys eyebrow, headline, body, cta. Use only the supplied facts. Do not invent speakers, outcomes, partnerships, prices, venue details, deadlines or legal claims. Keep headline under 70 characters, body under 180 characters, CTA under 45 characters. If a fact is missing, omit it; do not guess. Avoid exaggerated investment promises.` },
+        { role: 'user', content: JSON.stringify({ title:event.title, subtitle:event.subtitle, summary:event.summary, venue:event.venue, starts_at:event.starts_at, price:event.price, currency:event.currency, requested_style:clean(b.style,120) }) }
+      ];
+      try {
+        const raw = await askModel(messages, { temperature: 0.35, json: true, raw: true, max: 220 });
+        const suggestion = JSON.parse(raw);
+        const out = { eyebrow:clean(suggestion.eyebrow,60), headline:clean(suggestion.headline,70), body:clean(suggestion.body,180), cta:clean(suggestion.cta,45) };
+        if (!out.headline || !out.body || !out.cta) throw new Error('incomplete_copy');
+        return json(res, 200, { copy:out });
+      } catch (e) {
+        console.error('flyer copy:', String(e.message || e).slice(0,180));
+        return json(res, 502, { error:'copy_unavailable' });
+      }
+    }
+
     const mItemDel = p.match(/^\/api\/items\/([A-Za-z0-9_-]+)$/);
     if (mItemDel && req.method === 'DELETE') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -3823,15 +3847,21 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const slugify = t => clean(t, 60).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const slug = slugify(b.slug || b.title) || code.toLowerCase();
       const list = v => Array.isArray(v) ? v : [];
+      const flyer = b.flyer && typeof b.flyer === 'object' ? {
+        eyebrow:clean(b.flyer.eyebrow,60), headline:clean(b.flyer.headline,70), body:clean(b.flyer.body,180), cta:clean(b.flyer.cta,45),
+        template:['navy','cream','gold'].includes(b.flyer.template) ? b.flyer.template : 'navy',
+        format:['social','a4'].includes(b.flyer.format) ? b.flyer.format : 'social',
+        image:clean(b.flyer.image,32), qr_slug:clean(b.flyer.qr_slug,40), language:clean(b.flyer.language,2).toLowerCase() || 'en'
+      } : {};
       await q(`insert into items(code,kind,title,subtitle,venue,starts_at,ends_at,currency,price,per,capacity,published,sort,approval,phase,audiences,
-                 slug,summary,description,cover,gallery,docs,agenda,speakers,recap)
-        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
+                 slug,summary,description,cover,gallery,docs,agenda,speakers,recap,flyer)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
         on conflict (code) do update set kind=excluded.kind,title=excluded.title,subtitle=excluded.subtitle,venue=excluded.venue,
           starts_at=excluded.starts_at,ends_at=excluded.ends_at,currency=excluded.currency,price=excluded.price,per=excluded.per,
           capacity=excluded.capacity,published=excluded.published,sort=excluded.sort,approval=excluded.approval,
           phase=excluded.phase,audiences=excluded.audiences,slug=excluded.slug,summary=excluded.summary,
           description=excluded.description,cover=excluded.cover,gallery=excluded.gallery,docs=excluded.docs,
-          agenda=excluded.agenda,speakers=excluded.speakers,recap=excluded.recap`,
+          agenda=excluded.agenda,speakers=excluded.speakers,recap=excluded.recap,flyer=excluded.flyer`,
         [code, clean(b.kind, 12) || 'event', clean(b.title, 200), clean(b.subtitle, 200), clean(b.venue, 120),
           b.starts_at || null, b.ends_at || null, 'GHS', Number(b.price) || 0, clean(b.per, 20) || null,
           b.capacity ? +b.capacity : null, b.published !== false, +b.sort || 0,
@@ -3840,7 +3870,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           JSON.stringify(list(b.gallery).slice(0, 80)),
           JSON.stringify(list(b.docs).slice(0, 8).map(d => ({ id: clean(d.id, 32), label: clean(d.label, 120) }))),
           JSON.stringify(list(b.agenda).slice(0, 30).map(a => ({ time: clean(a.time, 20), what: clean(a.what, 200) }))),
-          JSON.stringify(list(b.speakers).slice(0, 20).map(x => ({ name: clean(x.name, 100), role: clean(x.role, 140), media: clean(x.media, 32) || null }))), clean(b.recap, 8000) || null]);
+          JSON.stringify(list(b.speakers).slice(0, 20).map(x => ({ name: clean(x.name, 100), role: clean(x.role, 140), media: clean(x.media, 32) || null }))), clean(b.recap, 8000) || null, JSON.stringify(flyer)]);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'item_save', code + ' — ' + clean(b.title, 120)]);
       return json(res, 200, { ok: true, code, slug });
     }

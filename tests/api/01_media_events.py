@@ -91,10 +91,26 @@ ev={'code':'F5','kind':'event','title':'SMEs at the Centre','subtitle':'A workin
  'audiences':'SME / business owner,Investor','cover':cover,'gallery':[cover],
  'docs':[{'id':doc['id'],'label':'Sponsorship pack'}],
  'agenda':[{'time':'09:30','what':'Registration'},{'time':'10:00','what':'Opening'}],
- 'speakers':[{'name':'Joy Anthony Preston','role':'Gotham Consult'}]}
+ 'speakers':[{'name':'Joy Anthony Preston','role':'Gotham Consult'}],
+ 'flyer':{'eyebrow':'You are invited','headline':'SMEs at the Centre','body':'A working forum for Ghanaian enterprise.','cta':'Scan to register',
+          'template':'navy','format':'social','language':'en','image':'cover','qr_slug':'event-f5'} }
 st,d,_ = call('/api/items', ev, cookie=ck)
 assert st==200, (st,d)
 print('event saved OK slug =', d['slug'])
+
+# Flyer settings persist with the event and remain editable in the back office.
+st,d,_ = call('/api/items')
+assert st==200, (st,d)  # public list is intentionally available without a session
+it=[x for x in d['items'] if x['code']=='F5'][0]
+assert it['flyer']['headline']=='SMEs at the Centre' and it['flyer']['template']=='navy' and it['flyer']['qr_slug']=='event-f5', it.get('flyer')
+print('flyer settings persisted and returned OK')
+
+# AI flyer suggestions stay behind the admin gate and explain when the server key is absent.
+st,d,_ = call('/api/items/F5/flyer-copy', {'language':'en'}, cookie=None)
+assert st==401, (st,d)
+st,d,_ = call('/api/items/F5/flyer-copy', {'language':'en'}, cookie=ck)
+assert st==503 and d.get('error')=='ai_off', (st,d)
+print('AI flyer copy is admin-only and degrades clearly without a configured key')
 
 st,pub,_ = call('/api/items')
 it=[x for x in pub['items'] if x['code']=='F5'][0]
