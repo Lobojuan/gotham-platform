@@ -167,6 +167,7 @@ check-in with contact details hidden.
   one handler, so order matters: put specific paths above their patterns.
 - `admin.html` is one file with no build step. It is a small hand-rolled SPA.
 - Passwords are hashed with scrypt and cannot be read back, only reset.
+- The sign-in page offers email password recovery only when SMTP or Resend is configured. Recovery links expire after 30 minutes, are single-use, and do not bypass two-step verification. A person can use Google without first signing in with a password, but Google OAuth must be configured and the verified Google email must match their active team account.
 - The site pages are written as page *bodies*, not complete documents, so they
   can double as artifacts. `build.py` adds the `<head>`. Do not add a doctype
   to the files in `pages/`.

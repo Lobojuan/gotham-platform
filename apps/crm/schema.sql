@@ -57,6 +57,15 @@ create table if not exists users (
   must_change boolean default true,
   created_at timestamptz default now(), last_login timestamptz
 );
+create table if not exists user_password_resets (
+  id bigserial primary key,
+  user_id int not null references users(id) on delete cascade,
+  token_hash char(64) not null unique,
+  expires_at timestamptz not null,
+  used_at timestamptz,
+  created_at timestamptz not null default now()
+);
+create index if not exists user_password_resets_user_idx on user_password_resets(user_id, created_at desc);
 create table if not exists settings (key text primary key, value text);
 create table if not exists activity (
   id serial primary key, reg_id int references registrations(id) on delete cascade,

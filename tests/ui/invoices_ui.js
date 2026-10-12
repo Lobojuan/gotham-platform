@@ -6,7 +6,7 @@ const assert=(c,m)=>{if(!c)throw new Error('FAIL '+m);console.log('  ok',m)};
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM});
 for (const [n,opt] of [['desk',{viewport:{width:1440,height:900}}],['phone',devices['iPhone 14']]]){
  const p=await b.newPage({...opt,extraHTTPHeaders:{'x-real-ip':'10.94.'+Math.floor(Math.random()*250)+'.7'}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
- await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lform button'); await p.waitForSelector('#app',{state:'visible'});
+ await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app',{state:'visible'});
  // settings: company & invoicing
  await p.goto(B+'/admin#settings'); await p.waitForSelector('#is-sv');
  await p.fill('#is-tin','C0099887766'); await p.selectOption('#is-vr','yes'); await p.fill('#is-vn','C0099887766'); await p.fill('#bk-bn','TEST BANK GHANA LIMITED'); await p.fill('#bk-sw','TSTBGHAC'); await p.fill('#bk-br','Osu'); await p.fill('#bk-bc','200116'); await p.fill('#bk-an','GOTHAM CONSULT'); await p.fill('#bk-ag','0202090000999');

@@ -285,7 +285,7 @@ assert 'C0012345678' not in leak and 'GCB Bank' not in leak and '0202090000999' 
 ok('bank details and TIN never appear in the public items feed')
 
 # ---------- Sign in with Google ----------
-st, o = call('/api/auth/options'); assert o == {'google': True}, o
+st, o = call('/api/auth/options'); assert o['google'] is True and 'password_reset_email' in o, o
 s_, loc, _, cks, _ = raw_req('GET', '/auth/google')
 u = urlparse(loc); qs = parse_qs(u.query)
 assert s_ == 302 and u.netloc == 'accounts.google.com' and qs['client_id'] == ['cid.apps.googleusercontent.com'] and qs['code_challenge_method'] == ['S256'], loc

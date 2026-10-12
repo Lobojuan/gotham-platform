@@ -11,7 +11,7 @@ const totp = (s, t = Date.now()) => { const b = Buffer.alloc(8); b.writeBigUInt6
   for (const [n, opt] of [['desk', { viewport: { width: 1440, height: 900 } }], ['phone', devices['iPhone 14']]]) {
     const ctx = await b.newContext({ ...opt, extraHTTPHeaders: { 'x-real-ip': '10.97.' + Math.floor(Math.random() * 250) + '.7' } });
     const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message)); p.on('dialog', d => d.accept(d.type() === 'prompt' ? 'Sent by mistake' : undefined));
-    await p.goto(B + '/admin'); await p.fill('#e', 'admin'); await p.fill('#pw', 'Admin2025-qa!'); await p.click('#lform button'); await p.waitForSelector('#app', { state: 'visible' });
+    await p.goto(B + '/admin'); await p.fill('#e', 'admin'); await p.fill('#pw', 'Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app', { state: 'visible' });
     // safety card
     await p.goto(B + '/admin#settings'); await p.waitForSelector('#safety .ch h3');
     assert((await p.textContent('#safety')).includes('Nightly backup'), n + ' safety-net card shows backup, off-site copy, email and certificate');

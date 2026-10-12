@@ -4,7 +4,7 @@ const B='http://127.0.0.1:4199';
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM});
 for (const [n,opt] of [['desk',{viewport:{width:1440,height:900}}],['phone',devices['iPhone 14']]]){
  const p=await b.newPage({...opt,extraHTTPHeaders:{'x-real-ip':'10.93.'+Math.floor(Math.random()*250)+'.7'}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
- await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lform button'); await p.waitForSelector('#app',{state:'visible'});
+ await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app',{state:'visible'});
  await p.goto(B+'/admin#cal'); await p.waitForSelector('#calw'); await p.click('#cal-mode [data-m=month]'); await p.waitForTimeout(700);
  const chip=p.locator('.cal-d .cal-e.t-registration').first();
  if(n==='desk'){ await chip.click(); } else { await p.locator('.cal-d:has(.cal-dots i.t-registration)').first().tap(); }

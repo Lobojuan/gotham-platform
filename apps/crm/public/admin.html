@@ -15,6 +15,8 @@ input.t,select.t,textarea.t{width:100%;border:1px solid var(--line);border-radiu
 input.t:focus,select.t:focus,textarea.t:focus{border-color:var(--ink);box-shadow:0 0 0 3px rgba(15,27,45,.07)}
 /* login */
 #login{min-height:100vh;display:grid;place-items:center;padding:24px}
+#pwreset{min-height:100vh;place-items:center;padding:24px}
+.linkbtn{border:0;background:none;color:var(--ink);padding:6px 10px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;min-height:40px}
 .lcard{background:#fff;border:1px solid var(--line);border-radius:20px;padding:32px;width:min(400px,100%);box-shadow:0 18px 50px rgba(15,27,45,.08)}
 .mark{width:40px;height:40px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
 .mark img{width:56%;height:auto;display:block}
@@ -629,8 +631,10 @@ label.cal-mine{display:inline-flex;align-items:center;gap:10px}
   <div id="gwrap"><div class="or"><span>or</span></div>
    <a class="btn btn-line gbtn" id="gbtn" aria-disabled="true" tabindex="-1"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</a></div>
   <p class="note" id="gstatus" style="margin:10px 0 0;text-align:center">Google sign-in is not enabled yet.</p>
-  <p class="note" style="margin:14px 0 0;text-align:center">Forgotten your password? Ask an owner to reset it under Settings → Team.</p>
+  <p class="note" style="margin:14px 0 0;text-align:center"><button class="linkbtn" id="forgotBtn" type="button">Forgot password?</button></p>
 </form></section>
+
+<section id="pwreset" style="display:none"></section>
 
 <section id="pwfirst" style="display:none"></section>
 
@@ -699,7 +703,7 @@ label.cal-mine{display:inline-flex;align-items:center;gap:10px}
 
 <script>
 /* Sign in with Google: shown only when the server has it switched on; explains a refused sign-in */
-(()=>{const GERR={not_in_team:'That Google account is not in the team list. Ask an owner to add your email under Settings → Team, then try again.',
+(()=>{const GERR={not_in_team:'That Google account is not in the CRM Users list. Ask an owner to add your email under Users, then try again.',
   expired:'The Google sign-in took too long or was opened twice. Please try again.',cancelled:'Google sign-in was cancelled.',failed:'Google sign-in did not work. Please try again, or use your password.',
   off:'Google sign-in is not switched on yet.',busy:'Too many tries. Wait a few minutes.'};
  const g=new URLSearchParams(location.search).get('google');
@@ -743,6 +747,41 @@ async function start(){
 const pwField=(id,label,ac)=>`<label class="l" for="${id}">${label}</label><div class="pwf"><input class="t" id="${id}" type="password" autocomplete="${ac}" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-eye="${id}" aria-label="Show password">Show</button></div>`;
 function wireEyes(root){root.querySelectorAll('[data-eye]').forEach(b=>b.onclick=()=>{const i=document.getElementById(b.dataset.eye);const s=i.type==='password';i.type=s?'text':'password';b.setAttribute('aria-label',s?'Hide password':'Show password');b.setAttribute('aria-pressed',String(s));b.title=s?'Hide password':'Show password';b.innerHTML=s?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8"/><path d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a16.4 16.4 0 0 1-3.1 4.1M6.2 6.2C3.5 8 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4-.8"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>'})}
 wireEyes($('#login'));
+let RESET_EMAIL_ENABLED=false;
+function showResetRequest(){
+ $('#login').style.display='none';const s=$('#pwreset');s.style.display='grid';
+ s.innerHTML=`<form class="lcard" id="reset-request-form" novalidate>
+  <div><b>Reset your password</b><p class="note" style="margin:5px 0 0">Enter the email address on your CRM account. If it belongs to an active account, we’ll send a one-time link.</p></div>
+  <label for="reset-email">Account email</label><input class="t" id="reset-email" type="email" autocomplete="email" required>
+  <p class="note" id="reset-status" role="status" aria-live="polite">${RESET_EMAIL_ENABLED?'':'Email recovery is not configured on this server. Please contact a CRM owner to reset your access.'}</p>
+  <p class="err" id="reset-error"></p>
+  <button class="btn btn-dark" id="reset-send" style="width:100%;justify-content:center" ${RESET_EMAIL_ENABLED?'':'disabled'}>Send reset link</button>
+  <button type="button" class="btn btn-line" id="reset-back" style="width:100%;justify-content:center;margin-top:8px">Back to sign in</button></form>`;
+ $('#reset-request-form').onsubmit=async e=>{e.preventDefault();$('#reset-error').textContent='';if(!RESET_EMAIL_ENABLED){$('#reset-error').textContent='Email recovery is not configured. Please contact a CRM owner.';return}
+  const address=$('#reset-email').value.trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address)){$('#reset-error').textContent='Enter the email address on your CRM account.';return}
+  $('#reset-send').disabled=true;
+  try{await api('/api/password/reset/request',{method:'POST',body:JSON.stringify({email:address})});$('#reset-status').textContent='If that email belongs to an active account, reset instructions will arrive shortly. Check your inbox and spam folder.'}
+  catch(err){$('#reset-error').textContent=err.message==='too_many'?'Too many requests. Wait 15 minutes and try again.':'Could not request a reset right now.'}
+  finally{$('#reset-send').disabled=false}};
+ $('#reset-back').onclick=()=>{s.style.display='none';$('#login').style.display='grid'};
+ $('#reset-email').focus();
+}
+function showResetCompletion(token){
+ $('#login').style.display='none';const s=$('#pwreset');s.style.display='grid';
+ s.innerHTML=`<form class="lcard" id="reset-complete-form" novalidate><div><b>Choose a new password</b><p class="note" style="margin:5px 0 0">Use at least 10 characters. This link can only be used once.</p></div>
+  ${pwField('reset-pw','New password','new-password')}${pwField('reset-pw2','Confirm new password','new-password')}<p class="err" id="reset-error"></p>
+  <button class="btn btn-dark" id="reset-save" style="width:100%;justify-content:center">Save new password</button></form>`;
+ wireEyes(s);
+ $('#reset-complete-form').onsubmit=async e=>{e.preventDefault();const out=$('#reset-error'),pw=$('#reset-pw').value;if(pw!==$('#reset-pw2').value){out.textContent='The two passwords do not match.';return}
+  $('#reset-save').disabled=true;out.textContent='';
+  try{await api('/api/password/reset/complete',{method:'POST',body:JSON.stringify({token,password:pw})});history.replaceState(null,'',location.pathname+location.hash);s.innerHTML='<div class="lcard"><b>Password reset complete</b><p class="note">Your other sign-ins have been revoked. Sign in with your new password. Two-step verification still applies if enabled.</p><button class="btn btn-dark" id="reset-done">Back to sign in</button></div>';$('#reset-done').onclick=()=>location.reload()}
+  catch(err){out.textContent=({bad_reset:'This reset link is invalid, expired, or already used.',too_short:'Use at least 10 characters.',too_long:'Use no more than 200 characters.',too_weak:'Choose a less predictable password.',same_as_old:'Choose a password you have not used here before.',too_many:'Too many attempts. Wait 15 minutes and try again.'})[err.message]||'Could not reset the password.';$('#reset-save').disabled=false}
+ };
+ $('#reset-pw').focus();
+}
+$('#forgotBtn').onclick=showResetRequest;
+const resetToken=new URLSearchParams(location.search).get('reset');if(resetToken){history.replaceState(null,'',location.pathname+location.hash);showResetCompletion(resetToken)}
+fetch('/api/auth/options').then(r=>r.json()).then(o=>{RESET_EMAIL_ENABLED=!!o.password_reset_email;const send=$('#reset-send'),status=$('#reset-status');if(send){send.disabled=!RESET_EMAIL_ENABLED;if(status&&!RESET_EMAIL_ENABLED)status.textContent='Email recovery is not configured on this server. Please contact a CRM owner to reset your access.'}}).catch(()=>{});
 const PW_MSG={wrong_current:'Your current password is not right.',too_short:'Use at least 10 characters.',too_long:'That is too long (200 characters at most).',same_as_old:'Choose a password you have not used here before.',too_weak:'That password is too easy to guess.',too_many:'Too many tries. Wait 5 minutes.',mismatch:'The two new passwords do not match.'};
 async function changePassword(cur,np,np2,out){
  out.textContent='';out.className='err';
@@ -786,11 +825,11 @@ const NAV=[
  ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt'],['chat','Team chat','chat','chcnt']]],
  ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['members','Members','star',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1],['web','Website visitors','globe2',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
- ['System',[['inbox','Email inbox','mail','incnt',1],['mail','Email outbox','send','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
+ ['System',[['users','Users','users',null,1],['inbox','Email inbox','mail','incnt',1],['mail','Email outbox','send','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
 const TITLES={dash:'Dashboard',members:'Members',mem:'Member',chat:'Team chat',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',web:'Website visitors',rec:'Company record',reports:'Reports',
- regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',inbox:'Email inbox',mail:'Email outbox',
+ regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',inbox:'Email inbox',mail:'Email outbox',users:'Users',
  out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
-const ADMIN_ONLY=new Set(['members','mem','web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','inbox','mail','data']);
+const ADMIN_ONLY=new Set(['members','mem','web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','inbox','mail','data','users']);
 let V='dash', ARG=null, USERS=[];
 function buildNav(){
  $('#nav').innerHTML=NAV.map(([g,items])=>{const it=items.filter(x=>!x[4]||isAdmin());
@@ -813,11 +852,11 @@ addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
 function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
- const m={dash:dashboard,chat:chatView,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,members:membersView,mem:()=>memberView(+ARG),imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,
+ const m={dash:dashboard,chat:chatView,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,members:membersView,mem:()=>memberView(+ARG),imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,users:usersView,
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,inbox,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
   contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>',
-  inv:`<button class="btn btn-line" data-new="acct">For the accountant</button><button class="btn btn-line" data-new="quote">New quotation</button><button class="btn btn-dark" data-new="invoice">New invoice</button>`};
+  inv:`<button class="btn btn-line" data-new="acct">For the accountant</button><button class="btn btn-line" data-new="quote">New quotation</button><button class="btn btn-dark" data-new="invoice">New invoice</button>`,users:ME.role==='owner'?'<button class="btn btn-dark" id="users-add-top">Add user</button>':''};
  pageActions(acts[V]||'');
  const f=m[V];if(!f)return;const r=f();if(typeof r==='string')$('#view').innerHTML=r;
 }
@@ -2599,10 +2638,32 @@ async function links(){
    toast('Created '+base+r.slug); links()}catch(e){toast('Check the short name and destination')}};
 }
 
+/* user management */
+async function usersView(){
+ const owner=ME.role==='owner';
+ const {rows=[]}=await api('/api/users').catch(()=>({rows:[]}));
+ $('#view').innerHTML=`<div class="card"><div class="ch"><div><h3>Users</h3><p class="note">Manage who can sign in to the Gotham back office.</p></div></div>
+  ${owner?'<p class="note">You can create accounts, set roles, reset passwords and manage access. A new user receives a one-time password and chooses their own at first sign-in.</p>':'<p class="note">You can view the team. Only the owner can add users or change account access.</p>'}
+  <div id="u-form"></div><div id="u-out"></div>
+  <div class="team">${rows.map(u=>{const me=u.email===ME.email;return `<div class="tm">
+   <div class="tm-a"><span class="av">${esc((u.name||u.email).trim()[0]||'?').toUpperCase()}</span><div><b>${esc(u.name||u.email)}</b>${me?' <span class="tag t-free">you</span>':''}
+    <div class="note">${esc(u.email)} · last sign-in ${u.last_login?dt(u.last_login):'never'}</div>
+    <div style="margin-top:4px">${u.active===false?'<span class="tag t-canc">access off</span>':'<span class="tag t-paid">active</span>'} ${u.must_change?'<span class="tag t-due">must choose password</span>':''} ${u.totp_on?'<span class="tag t-paid">two-step on</span>':''}</div></div></div>
+   <div class="tm-b">${owner&&!me?`<select class="t" data-role="${esc(u.email)}" aria-label="Role for ${esc(u.email)}">${['owner','admin','staff'].map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${ROLE_NAME[r]}</option>`).join('')}</select>
+    <div class="acts" style="margin:8px 0 0"><button class="btn btn-line" data-reset="${esc(u.email)}">Reset password</button>${u.totp_on?`<button class="btn btn-line" data-r2fa="${esc(u.email)}">Reset two-step</button>`:''}<button class="btn btn-line" data-toggle="${esc(u.email)}" data-on="${u.active===false?'1':'0'}">${u.active===false?'Turn access on':'Turn access off'}</button><button class="btn btn-line danger" data-del="${esc(u.email)}">Remove</button></div>`:`<span class="note">${ROLE_NAME[u.role]}</span>`}</div></div>`}).join('')}</div>
+  <p class="note" style="margin-top:14px"><b>Owner</b> can manage accounts and all settings. <b>Admin</b> manages registrations, payments, events, outreach and settings. <b>Staff</b> has limited access.</p></div>`;
+ const showPw=(r,what)=>{$('#u-out').innerHTML=`<div class="pwcard"><b>${what} for ${esc(r.name||r.email)}</b><div class="note">Sign-in name <code>${esc(r.email)}</code> · one-time password</div><div class="pwshow"><code id="u-pw">${esc(r.password)}</code><button class="btn btn-line" id="u-copy">Copy</button></div><div class="note">Share privately. They must choose their own password at first sign-in.</div></div>`;$('#u-copy').onclick=async()=>{try{await navigator.clipboard.writeText(r.password);toast('Copied')}catch{toast('Select it and copy')}};$('#u-out').scrollIntoView({block:'nearest'})};
+ const showForm=()=>{$('#u-out').innerHTML='';$('#u-form').innerHTML=`<div class="subcard"><div class="f2"><div><label class="l" for="u-name">Name</label><input class="t" id="u-name" autocomplete="off"></div><div><label class="l" for="u-email">Email or username</label><input class="t" id="u-email" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="name@gothamconsult.com"></div></div><label class="l" for="u-role">Role</label><select class="t" id="u-role" style="max-width:320px"><option value="staff">Staff · limited access</option><option value="admin">Admin · operations and settings</option><option value="owner">Owner · full access</option></select><p class="err" id="u-err"></p><div class="acts"><button class="btn btn-dark" id="u-add">Create user</button><button class="btn btn-line" id="u-cancel">Cancel</button></div></div>`;$('#u-name').focus();$('#u-cancel').onclick=()=>$('#u-form').innerHTML='';$('#u-add').onclick=async()=>{const b=$('#u-add');b.disabled=true;try{const r=await api('/api/users',{method:'POST',body:JSON.stringify({name:$('#u-name').value,email:$('#u-email').value,role:$('#u-role').value})});await usersView();showPw(r,'User created');toast('User added')}catch(e){$('#u-err').textContent={exists:'That email or username is already in use.',bad_login_name:'Use an email address or a username with letters, numbers and dots.',name_required:'Add their name.'}[e.message]||'Could not add this user.';b.disabled=false}}};
+ if(owner)$('#users-add-top').onclick=showForm;
+ document.querySelectorAll('[data-role]').forEach(sel=>sel.onchange=async()=>{try{await api('/api/users/'+encodeURIComponent(sel.dataset.role),{method:'PATCH',body:JSON.stringify({role:sel.value})});toast('Role updated')}catch{toast('Could not change the role')}usersView()});
+ document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{if(!confirm('Give '+b.dataset.reset+' a new one-time password? Their current password stops working now.'))return;try{const r=await api('/api/users/'+encodeURIComponent(b.dataset.reset)+'/reset',{method:'POST'});showPw({...r,name:b.dataset.reset},'Password reset')}catch{toast('Could not reset password')}});
+ document.querySelectorAll('[data-r2fa]').forEach(b=>b.onclick=async()=>{if(!confirm('Turn off two-step sign-in for '+b.dataset.r2fa+'?'))return;try{await api('/api/users/'+encodeURIComponent(b.dataset.r2fa),{method:'PATCH',body:JSON.stringify({reset_2fa:true})});toast('Two-step sign-in reset');usersView()}catch{toast('Could not reset two-step sign-in')}});
+ document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{try{await api('/api/users/'+encodeURIComponent(b.dataset.toggle),{method:'PATCH',body:JSON.stringify({active:b.dataset.on==='1'})});toast(b.dataset.on==='1'?'Access turned on':'Access turned off');usersView()}catch{toast('Could not update access')}});
+ document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(!confirm('Remove '+b.dataset.del+'? They will no longer be able to sign in.'))return;try{await api('/api/users/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});toast('User removed');usersView()}catch{toast('Could not remove user')}});
+}
+
 /* settings */
 async function settings(){
- const owner=ME.role==='owner';
- const users=await api('/api/users').catch(()=>({rows:[]}));
  $('#view').innerHTML=`
  <div class="card"><h3>Your password</h3>
   <p class="note">Signed in as <b>${esc(ME.email)}</b> · ${ROLE_NAME[ME.role]}. Changing it signs you out on your other devices.</p>
@@ -2624,18 +2685,8 @@ async function settings(){
   <div class="f2"><div><label class="l">WhatsApp number</label><input class="t" id="s-wa" inputmode="tel" value="${esc(SET.whatsapp||'')}"></div>
   <div><label class="l">Online payment link (Paystack)</label><input class="t" id="s-pay" inputmode="url" value="${esc(SET.pay_link||'')}" placeholder="https://paystack.com/pay/..."></div></div>
   <button class="btn btn-dark" id="ss" style="margin-top:14px">Save settings</button></div>
- <div class="card" id="team"><div class="ch"><h3>Team</h3>${owner?'<button class="btn btn-dark" id="u-new">Add a person</button>':''}</div>
-  <p class="note">${owner?'Only an owner (super admin) can add people, change roles, reset passwords or remove access. Changes take effect on the person\'s next click.':'Ask an owner to add people or reset a password.'} Anyone on this list can also use <b>Sign in with Google</b> if their Google account uses the same email address; Google accounts not on the list are refused.</p>
-  <div id="u-form"></div><div id="u-out"></div>
-  <div class="team">${users.rows.map(u=>{const me=u.email===ME.email;return `<div class="tm">
-   <div class="tm-a"><span class="av">${esc((u.name||u.email).trim()[0]||'?').toUpperCase()}</span>
-    <div><b>${esc(u.name||u.email)}</b>${me?' <span class="tag t-free">you</span>':''}<div class="note">${esc(u.email)} · last sign-in ${u.last_login?dt(u.last_login):'never'}</div>
-    <div style="margin-top:4px">${u.active===false?'<span class="tag t-canc">access off</span>':'<span class="tag t-paid">active</span>'} ${u.must_change?'<span class="tag t-due">has not chosen a password yet</span>':''} ${u.totp_on?'<span class="tag t-paid">two-step on</span>':''}</div></div></div>
-   <div class="tm-b">${owner&&!me?`<select class="t" data-role="${esc(u.email)}" aria-label="Role for ${esc(u.email)}">${['owner','admin','staff'].map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${ROLE_NAME[r]}</option>`).join('')}</select>
-     <div class="acts" style="margin:8px 0 0"><button class="btn btn-line" data-reset="${esc(u.email)}">Reset password</button>${u.totp_on?`<button class="btn btn-line" data-r2fa="${esc(u.email)}">Reset two-step</button>`:''}
-     <button class="btn btn-line" data-toggle="${esc(u.email)}" data-on="${u.active===false?'1':'0'}">${u.active===false?'Turn access on':'Turn access off'}</button>
-     <button class="btn btn-line danger" data-del="${esc(u.email)}">Remove</button></div>`:`<span class="note">${ROLE_NAME[u.role]}</span>`}</div></div>`}).join('')}</div>
-  <p class="note" style="margin-top:14px"><b>Owner (super admin)</b> everything, including this team list. <b>Admin</b> registrations, payments, events, outreach and settings. <b>Staff</b> view and door check-in only, with contact details hidden.</p></div>`;
+ <div class="card"><div class="ch"><h3>Users</h3><a class="btn btn-dark" href="#users">Open user management</a></div>
+  <p class="note">Add people, change access and reset sign-in details from the dedicated Users space.</p></div>`;
  wireEyes($('#view'));chatPrefsCard();
  $('#sp').onclick=async()=>{const b=$('#sp');b.disabled=true;
   if(await changePassword($('#cp-cur').value,$('#cp-new').value,$('#cp-new2').value,$('#cp-err'))){['cp-cur','cp-new','cp-new2'].forEach(i=>$('#'+i).value='');toast('Password changed')}
@@ -2645,37 +2696,6 @@ async function settings(){
   await api('/api/settings',{method:'POST',body:JSON.stringify({max_seats:v})});
   SET.max_seats=v;VENUE_MAX=parseInt(v)||0;toast('Venue limit saved');load()};
  $('#ss').onclick=async()=>{await api('/api/settings',{method:'POST',body:JSON.stringify({momo_number:$('#s-momo').value,momo_name:$('#s-name').value,whatsapp:$('#s-wa').value,pay_link:$('#s-pay').value})});toast('Settings saved');load()};
- const showPw=(r,what)=>{$('#u-out').innerHTML=`<div class="pwcard"><b>${what} for ${esc(r.name||r.email)}</b>
-   <div class="note">Sign-in name <code>${esc(r.email)}</code> · first password</div>
-   <div class="pwshow"><code id="u-pw">${esc(r.password)}</code><button class="btn btn-line" id="u-copy">Copy</button></div>
-   <div class="note">Give it to them in person or by phone. It works once: they choose their own password when they sign in at ${esc(location.origin)}/admin. This is the only time it is shown.</div></div>`;
-   $('#u-copy').onclick=async()=>{try{await navigator.clipboard.writeText(r.password);toast('Copied')}catch{toast('Select it and copy')}};$('#u-out').scrollIntoView({block:'nearest'})};
- if($('#u-new'))$('#u-new').onclick=()=>{$('#u-out').innerHTML='';$('#u-form').innerHTML=`<div class="subcard"><div class="f2">
-   <div><label class="l" for="u-name">Name</label><input class="t" id="u-name" autocomplete="off"></div>
-   <div><label class="l" for="u-email">Email or username</label><input class="t" id="u-email" type="text" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="joy@gothamconsult.com"></div></div>
-   <label class="l" for="u-role">Role</label><select class="t" id="u-role" style="max-width:320px"><option value="staff">Staff · view and door check-in</option><option value="admin">Admin · registrations, payments, events</option><option value="owner">Owner (super admin) · everything</option></select>
-   <p class="err" id="u-err"></p><div class="acts" style="margin:4px 0 0"><button class="btn btn-dark" id="u-add">Create sign-in</button><button class="btn btn-line" id="u-cancel">Cancel</button></div></div>`;
-  $('#u-name').focus();
-  $('#u-cancel').onclick=()=>$('#u-form').innerHTML='';
-  $('#u-add').onclick=async()=>{$('#u-err').textContent='';
-   try{const r=await api('/api/users',{method:'POST',body:JSON.stringify({name:$('#u-name').value,email:$('#u-email').value,role:$('#u-role').value})});
-    await settings();showPw(r,'Sign-in created');toast('Person added')}
-   catch(e){$('#u-err').textContent={exists:'Someone already signs in with that name or email.',bad_login_name:'Use an email address, or a username of letters, numbers and dots.',name_required:'Add their name.'}[e.message]||'Could not add them.'}}};
- document.querySelectorAll('[data-role]').forEach(sel=>sel.onchange=async()=>{
-  try{await api('/api/users/'+encodeURIComponent(sel.dataset.role),{method:'PATCH',body:JSON.stringify({role:sel.value})});toast('Role updated')}catch(e){toast('Could not change the role')}settings()});
- document.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{
-  if(!confirm('Give '+b.dataset.reset+' a new first password? Their current one stops working at once.'))return;
-  const r=await api('/api/users/'+encodeURIComponent(b.dataset.reset)+'/reset',{method:'POST'});
-  showPw({...r,name:b.dataset.reset},'New password');toast('Password reset')});
- document.querySelectorAll('[data-r2fa]').forEach(b=>b.onclick=async()=>{
-  if(!confirm('Turn off two-step sign-in for '+b.dataset.r2fa+'? Use this when they lost their phone. They are signed out and can set it up again.'))return;
-  await api('/api/users/'+encodeURIComponent(b.dataset.r2fa),{method:'PATCH',body:JSON.stringify({reset_2fa:true})});toast('Two-step sign-in reset');settings()});
- document.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{
-  await api('/api/users/'+encodeURIComponent(b.dataset.toggle),{method:'PATCH',body:JSON.stringify({active:b.dataset.on==='1'})});
-  toast(b.dataset.on==='1'?'Access turned on':'Access turned off');settings()});
- document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
-  if(!confirm('Remove '+b.dataset.del+' permanently? Their sign-in stops working immediately.'))return;
-  await api('/api/users/'+encodeURIComponent(b.dataset.del),{method:'DELETE'});toast('Removed');settings()});
  invoiceSettingsCard();safetyCard();factsCard();reportCard();tfaCard();logoCard();
  if($('#wa-on')){const drawWa=w=>{$('#wa-on').checked=w.on;
    $('#wa-st').innerHTML=!w.connected?'<span class="chip red">WhatsApp Business is not connected yet</span> Replies start once it is connected (Meta setup).':!w.ai?'<span class="chip red">AI is off on the server</span>':`<span class="chip ${w.on?'green':''}">${w.on?'Answering automatically':'Off: messages wait for the team'}</span>`;

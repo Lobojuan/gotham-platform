@@ -48,9 +48,12 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | A-6 | Turning access off, resetting or removing someone ends their open sessions on their next click; a role change applies at once. | api/09 |
 | A-7 | Changing your own password signs out your other devices and keeps this one signed in. | api/09 |
 | A-8 | An owner cannot remove or demote themselves by accident. | api/09 |
-| A-9 | Staff see no contact details; the team list never exposes password data. | api/01, api/09 |
+| A-9 | Staff see no client contact details and cannot read the team roster or its names/emails; the user list never exposes password data. | api/01, api/09 |
 | A-10 | Sign-in is rate-limited per visitor; a signed-out or expired session returns to the sign-in screen with a message. | api/06 |
 | A-11 | The sign-in page has an accessible show/hide password control and reports when Google sign-in has not been configured; Google OAuth only admits an active team account with a matching verified Google email. | api/19, manual login UI |
+| A-12 | A person can request a password reset from sign-in using their account email when SMTP or Resend is configured. Responses do not reveal whether an account exists; links are hashed at rest, expire after 30 minutes, work once, enforce password rules, revoke existing sessions, and preserve two-step verification. With no mail transport, the page explains that owner assistance is required. | api/09, manual login UI |
+| A-13 | Google sign-in does not require a prior password sign-in, but requires configured OAuth credentials and a verified Google email matching an existing active CRM team account. | api/19 |
+| A-14 | Account administration has a dedicated Users space; owners see a prominent Add user action and account controls, while admins can view users but cannot change them. Settings links to Users; staff cannot access the page. | `tests/ui/users_space_ui.js`, api/09 |
 
 ## 4. Back office content
 

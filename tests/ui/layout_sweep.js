@@ -69,7 +69,7 @@ const CHECK = (mobile) => {
     // back office
     await page.goto(B + '/admin', { waitUntil: 'networkidle' });
     await snap('admin-login');
-    await page.fill('#e', 'admin'); await page.fill('#pw', ADMIN_PW); await page.click('#lform button');
+    await page.fill('#e', 'admin'); await page.fill('#pw', ADMIN_PW); await page.click('#lbtn');
     await page.waitForTimeout(1200);
     for (const t of TABS) {
       const ok = await page.evaluate(v => { if (!document.querySelector(`#nav a[data-v="${v}"]`)) return false; location.hash = v; return true; }, t);

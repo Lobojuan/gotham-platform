@@ -3,7 +3,7 @@ const { chromium, devices } = require(process.env.PLAYWRIGHT);
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM});
 for (const [n,opt] of [['desk',{viewport:{width:1440,height:960}}],['phone',devices['iPhone 14']]]){
  const p=await b.newPage({...opt,extraHTTPHeaders:{'x-real-ip':'10.88.'+Math.floor(Math.random()*250)+'.5'}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>d.accept(n==='desk'?'Monthly promotion':'Phone design'));
- await p.goto('http://127.0.0.1:4199/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lform button'); await p.waitForSelector('#app',{state:'visible'});
+ await p.goto('http://127.0.0.1:4199/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app',{state:'visible'});
  await p.goto('http://127.0.0.1:4199/admin#out'); await p.waitForSelector('#c-new'); await p.click('#c-new'); await p.waitForSelector('#c-tpl');
  await p.selectOption('#c-tpl','designer'); await p.waitForSelector('#dz-blocks .dz-b'); await p.waitForTimeout(900);
  console.log(n,'default blocks',await p.$$eval('.dz-b .dz-tag',a=>a.map(x=>x.textContent).join(',')));

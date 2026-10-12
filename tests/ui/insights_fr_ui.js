@@ -34,7 +34,7 @@ const assert = (c, m) => { if (!c) throw new Error('FAIL ' + m); console.log('  
   }
   // visitors view in the back office
   const ctx = await b.newContext({ viewport: { width: 1440, height: 900 }, extraHTTPHeaders: { 'x-real-ip': '10.98.1.7' } }), p = await ctx.newPage();
-  await p.goto(B + '/admin'); await p.fill('#e', 'admin'); await p.fill('#pw', 'Admin2025-qa!'); await p.click('#lform button'); await p.waitForSelector('#app', { state: 'visible' });
+  await p.goto(B + '/admin'); await p.fill('#e', 'admin'); await p.fill('#pw', 'Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app', { state: 'visible' });
   await p.goto(B + '/admin#web'); await p.waitForSelector('.wv-chart');
   assert((await p.textContent('#view')).includes('Visitors per day'), 'visitors view shows the day chart, pages, sources');
   await p.screenshot({ path: '/tmp/qa/if-visitors.png', fullPage: true });

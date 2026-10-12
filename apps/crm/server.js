@@ -2658,7 +2658,7 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
 
     /* ---- auth ---- */
     /* ---- Sign in with Google ---- */
-    if (p === '/api/auth/options') return json(res, 200, { google: googleOn() });
+    if (p === '/api/auth/options') return json(res, 200, { google: googleOn(), password_reset_email: !!mailVia() });
     if (p === '/auth/google' && req.method === 'GET') {
       if (!googleOn()) { res.writeHead(302, { location: '/admin?google=off' }); return res.end(); }
       if (rateLimited(ip, 20, 300e3, 'google')) { res.writeHead(302, { location: '/admin?google=busy' }); return res.end(); }
@@ -2713,6 +2713,59 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       await q('update users set last_login=now() where id=$1', [u.id]);
       return json(res, 200, { name: u.name, email: u.email, role: u.role, must_change: u.must_change },
         { 'set-cookie': `gc_session=${makeToken(u)}; HttpOnly; Path=/; Max-Age=43200; SameSite=Lax; Secure` });
+    }
+    if (p === '/api/password/reset/request' && req.method === 'POST') {
+      if (!mailVia()) return json(res, 503, { error: 'reset_unavailable' });
+      if (rateLimited(ip, 5, 15 * 60e3, 'password_reset_request')) return json(res, 429, { error: 'too_many' });
+      const b = await body(req).catch(() => ({}));
+      const email = clean(b.email, 320).toLowerCase();
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        const u = (await q('select id,email,name from users where lower(email)=lower($1) and coalesce(active,true)', [email])).rows[0];
+        if (u) {
+          const token = crypto.randomBytes(32).toString('base64url');
+          const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+          await q('delete from user_password_resets where user_id=$1 and used_at is null', [u.id]);
+          await q('insert into user_password_resets(user_id,token_hash,expires_at) values($1,$2,now()+interval \'30 minutes\')', [u.id, tokenHash]);
+          const link = `${BASE}/admin?reset=${encodeURIComponent(token)}`;
+          const html = wrapMail('Reset your Gotham CRM password', `<p style="color:#182233;font-size:16px">A password reset was requested for your Gotham CRM account.</p>
+            <p><a href="${esc(link)}" style="display:inline-block;background:#101b2d;color:#fff;padding:13px 20px;border-radius:8px;text-decoration:none">Reset password</a></p>
+            <p style="color:#5a6472">This link expires in 30 minutes and can be used once. If you did not request it, ignore this email. Your password will not change.</p>`);
+          try {
+            if (mailVia() === 'smtp') await smtp().sendMail({ from: FROM, to: u.email, subject: 'Reset your Gotham CRM password', html, text: htmlToText(html) });
+            else {
+              const sent = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { authorization: 'Bearer ' + process.env.RESEND_API_KEY, 'content-type': 'application/json' },
+                body: JSON.stringify({ from: FROM, to: [u.email], subject: 'Reset your Gotham CRM password', html }) });
+              if (!sent.ok) throw new Error('mail_delivery_failed');
+            }
+          } catch { console.error('password reset email delivery failed'); }
+        }
+      }
+      // Same response for known and unknown addresses; never confirm that an account exists.
+      return json(res, 200, { ok: true });
+    }
+    if (p === '/api/password/reset/complete' && req.method === 'POST') {
+      if (rateLimited(ip, 8, 15 * 60e3, 'password_reset_complete')) return json(res, 429, { error: 'too_many' });
+      const b = await body(req).catch(() => ({}));
+      const token = String(b.token || '');
+      const pw = String(b.password || '');
+      if (pw.length < 10) return json(res, 400, { error: 'too_short' });
+      if (pw.length > 200) return json(res, 400, { error: 'too_long' });
+      if (/^(.)\1+$/.test(pw) || /^(0123456789|1234567890|password\d*|qwertyuiop)$/i.test(pw)) return json(res, 400, { error: 'too_weak' });
+      if (!/^[A-Za-z0-9_-]{40,50}$/.test(token)) return json(res, 400, { error: 'bad_reset' });
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      const account = (await q(`select u.pw_hash,u.pw_salt from user_password_resets r join users u on u.id=r.user_id
+        where r.token_hash=$1 and r.used_at is null and r.expires_at>now() and coalesce(u.active,true)`, [tokenHash])).rows[0];
+      if (!account) return json(res, 400, { error: 'bad_reset' });
+      if (crypto.timingSafeEqual(Buffer.from(hash(pw, account.pw_salt)), Buffer.from(account.pw_hash))) return json(res, 400, { error: 'same_as_old' });
+      const salt = newSalt();
+      const up = (await q(`with used as (
+          update user_password_resets set used_at=now() where token_hash=$1 and used_at is null and expires_at>now() returning user_id
+        ) update users set pw_hash=$2,pw_salt=$3,must_change=false,pw_changed_at=now(),sv=coalesce(sv,0)+1
+          where id=(select user_id from used) and coalesce(active,true) returning id,email`, [tokenHash, hash(pw, salt), salt])).rows[0];
+      if (!up) return json(res, 400, { error: 'bad_reset' });
+      await q('delete from user_password_resets where user_id=$1 and used_at is null', [up.id]);
+      await q('insert into jobs_log(job,detail) values($1,$2)', ['password_reset', up.email + ' reset their password by email']);
+      return json(res, 200, { ok: true });
     }
     if (p === '/api/login/code' && req.method === 'POST') {
       if (rateLimited(ip, 10, 300e3, 'login_code')) return json(res, 429, { error: 'too_many' });
@@ -3930,7 +3983,8 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       return json(res, 200, { email: login, name, role, password: pw });
     }
     if (p === '/api/users' && req.method === 'GET') {
-      if (!auth()) return json(res, 401, { error: 'no_session' });
+      const u = auth(); if (!u) return json(res, 401, { error: 'no_session' });
+      if (u.role === 'staff') return json(res, 403, { error: 'not_allowed' });
       const { rows } = await q('select email,name,role,last_login,coalesce(active,true) as active,must_change,totp_on from users order by id');
       return json(res, 200, { rows });
     }

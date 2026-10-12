@@ -24,7 +24,7 @@ Image.new('RGB',(1200,800),(90,140,60)).save('/tmp/qa/em/room.jpg')`]);
   assert(await p.locator('#login .mark img[src="/admin/brand/mark-white-256.png"]').count() === 1, 'sign-in card shows the logo, not a G');
   assert((await p.getAttribute('link[rel="icon"]', 'href')) === '/admin/brand/icon-64.png', 'back office tab icon is the logo');
   const ic = await p.request.get(B + '/admin/brand/icon-64.png'); assert(ic.status() === 200 && ic.headers()['content-type'] === 'image/png', 'logo files are served');
-  await p.fill('#e', 'admin'); await p.fill('#pw', 'Admin2025-qa!'); await p.click('#lform button'); await p.waitForSelector('#app', { state: 'visible' });
+  await p.fill('#e', 'admin'); await p.fill('#pw', 'Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app', { state: 'visible' });
   assert(await p.locator('.side .brand .mark img').isVisible(), 'sidebar shows the logo');
   assert(!(await p.locator('.mark').allInnerTexts()).some(t => t.trim() === 'G'), 'no G left anywhere');
   await p.locator('.side .brand').screenshot({ path: '/tmp/qa/em-sidebar.png' });

@@ -9,7 +9,7 @@ const ok = m => console.log('  ok', m);
   const c = await b.newContext({ viewport: { width: d.w, height: d.h }, isMobile: d.m, hasTouch: d.m, extraHTTPHeaders: { 'x-real-ip': '10.66.' + (d.m ? 2 : 1) + '.9' } });
   const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message + ' @ ' + (e.stack||'').split('\n').slice(0,3).join(' | ')));
   const tap = s => d.m ? p.tap(s) : p.click(s);
-  await p.goto(B + '/admin'); await p.fill('#e', 'admin'); await p.fill('#pw', PW); await tap('#lform button'); await p.waitForSelector('#app', { state: 'visible' });
+  await p.goto(B + '/admin'); await p.fill('#e', 'admin'); await p.fill('#pw', PW); await tap('#lbtn'); await p.waitForSelector('#app', { state: 'visible' });
   await p.waitForSelector('.kpi'); ok('dashboard loads with KPIs');
   // new deal from + New, for a brand-new company
   const co = 'Volta Logistics ' + d.n;

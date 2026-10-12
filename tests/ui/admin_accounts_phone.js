@@ -6,7 +6,7 @@ const B='http://127.0.0.1:4199', fs=require('fs');
  const ctx=()=>b.newContext({viewport:{width:375,height:667},isMobile:true,hasTouch:true,deviceScaleFactor:2,extraHTTPHeaders:{'x-real-ip':'10.99.'+Math.floor(Math.random()*250)+'.3'}});
  // staff member on a first password
  let c=await ctx(), p=await c.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
- await p.goto(B+'/admin'); await p.fill('#e','door'); await p.fill('#pw',fs.readFileSync(QA+'/staffpw','utf8').trim()); await p.tap('#lform button');
+ await p.goto(B+'/admin'); await p.fill('#e','door'); await p.fill('#pw',fs.readFileSync(QA+'/staffpw','utf8').trim()); await p.tap('#lbtn');
  await p.waitForSelector('#pwform'); ok('first sign-in shows "Choose your own password", nothing else');
  await p.screenshot({path:QA+'/first_pw.png'});
  await p.fill('#fp-cur',fs.readFileSync(QA+'/staffpw','utf8').trim()); await p.fill('#fp-new','door-staff-2026'); await p.fill('#fp-new2','door-staff-2027');
@@ -14,12 +14,12 @@ const B='http://127.0.0.1:4199', fs=require('fs');
  await p.tap('[data-eye="fp-new"]'); if(await p.getAttribute('#fp-new','type')!=='text') throw new Error('show toggle'); ok('Show/Hide works');
  await p.fill('#fp-new2','door-staff-2026'); await p.tap('#pwform button.btn-dark'); await p.waitForSelector('#app',{state:'visible'}); ok('password saved, back office opens');
  await c.close();
- // owner: menu, settings, add a person
+ // owner: menu, dedicated Users space, add a person
  c=await ctx(); p=await c.newPage(); p.on('pageerror',e=>errs.push(e.message));
- await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.tap('#lform button'); await p.waitForSelector('#app',{state:'visible'});
+ await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.tap('#lbtn'); await p.waitForSelector('#app',{state:'visible'});
  if(!await p.isVisible('#bnav')) throw new Error('no bottom bar on phone'); if(!await p.isVisible('#hamb')) throw new Error('no menu button'); ok('phone shows the bottom bar and a menu button');
- await p.tap('#hamb'); await p.waitForTimeout(300); await p.tap('#nav a[data-v="settings"]'); await p.waitForSelector('#u-new'); ok('Menu → Settings');
- await p.tap('#u-new'); await p.fill('#u-name','Operations Lead'); await p.fill('#u-email','ops'+Date.now()%100000+'@gothamconsult.com'); await p.selectOption('#u-role','owner'); await p.tap('#u-add');
+ await p.tap('#hamb'); await p.waitForTimeout(300); await p.tap('#nav a[data-v="users"]'); await p.waitForSelector('#users-add-top'); ok('Menu → Users');
+ await p.tap('#users-add-top'); await p.fill('#u-name','Operations Lead'); await p.fill('#u-email','ops'+Date.now()%100000+'@gothamconsult.com'); await p.selectOption('#u-role','owner'); await p.tap('#u-add');
  await p.waitForSelector('#u-pw'); const pw=await p.textContent('#u-pw'); ok('owner added a new owner (super admin); first password shown once: '+pw.length+' chars');
  await p.screenshot({path:QA+'/team.png',fullPage:true});
  await p.tap('#u-new'); await p.fill('#u-name','Dup'); await p.fill('#u-email','JOY@GOTHAMCONSULT.COM'); await p.tap('#u-add'); await p.waitForTimeout(500);

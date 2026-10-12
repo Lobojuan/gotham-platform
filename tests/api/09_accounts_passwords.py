@@ -7,6 +7,7 @@ ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 os.chdir(ROOT+'/apps/crm')
 env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'t','PORT':'4199',
  'ADMIN_EMAIL':'Admin','ADMIN_PASSWORD':'Admin2025','ADMIN_NAME':'Admin','MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4199'})
+for key in ('SMTP_HOST','SMTP_PASS','RESEND_API_KEY'): env.pop(key, None)
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
 def _cleanup_server():
     if srv.poll() is None:
@@ -28,6 +29,11 @@ for _ in range(60):
     time.sleep(.4)
 else: print(srv.stdout.read()[:2000]); sys.exit(1)
 ok=lambda m: print('  ok',m)
+
+st,opts,_=call('/api/auth/options'); assert st==200 and opts=={'google':False,'password_reset_email':False},opts
+ok('Google and email-reset availability are reported accurately when no providers are configured')
+st,d,_=call('/api/password/reset/request',{'email':'admin@gotham.test'}); assert st==503 and d['error']=='reset_unavailable'
+ok('email reset does not pretend to work when outbound mail is unavailable')
 
 def login(u,p):
     st,d,h=call('/api/login',{'email':u,'password':p}); return st,d,(h['set-cookie'].split(';')[0] if st==200 else None)
@@ -58,10 +64,12 @@ st,d,_=call('/api/users',{'name':'X','email':'x@y.com','role':'superuser'},cooki
 st,d,kck=login('kofi',kpw); assert st==200 and d['must_change']; ok('new person signs in with the first password and must choose their own')
 st,d,h=call('/api/password',{'current':kpw,'password':'kofi-door-2026'},cookie=kck); assert st==200,d; kck=h['set-cookie'].split(';')[0]; ok('they set their own password')
 st,d,_=call('/api/users',{'name':'Sneaky','email':'sneaky','role':'owner'},cookie=kck); assert st==401; ok('staff cannot add people')
+st,d,_=call('/api/users',cookie=kck); assert st==403; ok('staff cannot read team names or email addresses')
 st,d,_=call('/api/users/kofi/reset',{},cookie=kck); assert st==401; ok('staff cannot reset passwords')
 st,d,_=call('/api/users/admin',{'role':'staff'},method='PATCH',cookie=kck); assert st==401; ok('staff cannot change roles')
 st,d,ack=login('ama@gothamconsult.com',apw); st,d,h=call('/api/password',{'current':apw,'password':'ama-pass-2026'},cookie=ack); ack=h['set-cookie'].split(';')[0]
 st,d,_=call('/api/users',{'name':'Z','email':'z','role':'owner'},cookie=ack); assert st==401; ok('admin (not owner) cannot add people either')
+st,d,_=call('/api/users',cookie=ack); assert st==200 and 'email' in d['rows'][0]; ok('admin can view the Users workspace roster')
 
 # role change applies at once
 st,d,_=call('/api/users/ama%40gothamconsult.com',{'role':'staff'},method='PATCH',cookie=ck); assert st==200
@@ -77,6 +85,14 @@ st,d,kck=login('kofi','kofi-door-2026'); assert st==200; ok('turning access back
 st,d,_=call('/api/users/kofi/reset',{},cookie=ck); assert st==200; npw=d['password']
 st,d,_=call('/api/registrations',cookie=kck); assert st==401; ok('reset signs out their open sessions')
 st,d,_=login('kofi','kofi-door-2026'); assert st==401; st,d,kck=login('kofi',npw); assert st==200 and d['must_change']; ok('reset password works once and forces a new choice')
+# Email recovery consumes an opaque one-time hash, changes the password, and revokes sessions.
+import hashlib, secrets
+rtoken=secrets.token_urlsafe(32); rhash=hashlib.sha256(rtoken.encode()).hexdigest()
+subprocess.run(['psql',DB,'-v','ON_ERROR_STOP=1','-c',f"insert into user_password_resets(user_id,token_hash,expires_at) select id,'{rhash}',now()+interval '30 minutes' from users where email='kofi'"],check=True,stdout=subprocess.DEVNULL)
+st,d,_=call('/api/password/reset/complete',{'token':rtoken,'password':'kofi-new-secure-2026'}); assert st==200 and d['ok'],(st,d)
+st,d,_=call('/api/me',cookie=kck); assert st==401; ok('email reset invalidates existing sessions')
+st,d,_=call('/api/password/reset/complete',{'token':rtoken,'password':'kofi-another-secure-2026'}); assert st==400 and d['error']=='bad_reset'; ok('email reset link is single use')
+st,d,kck=login('kofi','kofi-new-secure-2026'); assert st==200 and not d['must_change']; ok('email reset sets the new password without signing the user in')
 # remove
 st,d,_=call('/api/users/kofi',method='DELETE',cookie=ck); assert st==200
 st,d,_=call('/api/me',cookie=kck); assert st==401; ok('removing someone ends their session at once')

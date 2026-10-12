@@ -12,7 +12,7 @@ const psql = sql => execSync(`psql ${DB} -qAtc "${sql}"`).toString().trim();
   const errs = [];
   const watch = p => { p.on('pageerror', e => errs.push(e.message)); p.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push(m.text()); }); p.on('dialog', d => d.accept()); };
   const own = await b.newContext({ viewport: { width: 1360, height: 900 } }), po = await own.newPage(); watch(po);
-  const signIn = async (p, e, pw) => { await p.goto(B + '/admin'); await p.fill('#e', e); await p.fill('#pw', pw); await p.click('#lform button'); await p.waitForSelector('#app', { state: 'visible' }); };
+  const signIn = async (p, e, pw) => { await p.goto(B + '/admin'); await p.fill('#e', e); await p.fill('#pw', pw); await p.click('#lbtn'); await p.waitForSelector('#app', { state: 'visible' }); };
   await signIn(po, 'admin', 'Admin2025'); assert(true, 'owner signs in');
   const joyPw = await po.evaluate(async () => (await (await fetch('/api/users', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'joy@gothamconsult.com', name: 'Joy Preston', role: 'admin' }) })).json()).password);
   psql("update users set must_change=false");

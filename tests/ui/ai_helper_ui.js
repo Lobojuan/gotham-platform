@@ -4,7 +4,7 @@ const B='http://127.0.0.1:4199';
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM});
 for (const [n,opt] of [['desk',{viewport:{width:1440,height:960}}],['phone',devices['iPhone 14']]]){
  const p=await b.newPage({...opt,extraHTTPHeaders:{'x-real-ip':'10.91.'+Math.floor(Math.random()*250)+'.7'}}); const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>d.accept());
- await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lform button'); await p.waitForSelector('#app',{state:'visible'});
+ await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app',{state:'visible'});
  // campaign: classic email
  await p.goto(B+'/admin#out'); await p.waitForSelector('#c-new'); await p.click('#c-new'); await p.waitForSelector('#c-ai');
  await p.click('#c-ai'); await p.fill('.ai-brief textarea','Invite mining MDs to the October forum'); await p.click('.ai-brief .btn-dark'); await p.waitForFunction(()=>document.querySelector('#c-intro').value.length>5);

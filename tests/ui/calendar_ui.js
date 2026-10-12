@@ -4,7 +4,7 @@ const B='http://127.0.0.1:4199';
 (async()=>{const b=await chromium.launch({executablePath:process.env.CHROMIUM});
 for (const [n,opt] of [['desk',{viewport:{width:1440,height:960}}],['phone',devices['iPhone 14']]]){
  const p=await b.newPage(opt); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
- await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lform button'); await p.waitForSelector('#app',{state:'visible'});
+ await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app',{state:'visible'});
  await p.evaluate(()=>{try{localStorage.removeItem('gc-cal')}catch(e){}});
  await p.goto(B+'/admin#cal'); await p.waitForSelector('#calw'); await p.waitForTimeout(500);
  console.log(n,'mode',await p.$eval('#cal-mode .on',e=>e.dataset.m),'| sum:',(await p.textContent('.cal-sum')).trim());

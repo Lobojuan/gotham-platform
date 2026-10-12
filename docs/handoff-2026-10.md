@@ -1,5 +1,14 @@
 # Gotham Consult — October 2026 handoff
 
+### 2026-10-12 — Email-based CRM password recovery
+
+- Added a **Forgot password?** action on `/admin`. It accepts the account email and, when SMTP or Resend is configured, emails a 30-minute single-use reset link. Reset tokens are random, stored only as SHA-256 hashes, rate-limited, and invalidated after use. Password rules match the existing change-password route; a reset revokes existing sessions and does not disable two-step verification.
+- Responses do not reveal whether an address belongs to an account. If no outgoing mail transport is configured, the form explains that a CRM owner must reset access under **Settings → Team**. Username-only accounts cannot use email recovery until their account email is set.
+- `/api/auth/options` now reports email-reset availability alongside Google availability. Google sign-in does not require a previous password login; it still requires OAuth credentials and a verified Google address matching an active team account. Last production check recorded `google:false`; recheck OAuth after a deployment.
+- Code and coverage: `apps/crm/server.js`, `apps/crm/schema.sql`, `apps/crm/public/admin.html`, `tests/api/09_accounts_passwords.py`, `tests/api/19_invoices_google.py`; requirements A-12 and A-13 in `docs/srs.md`.
+- Verification/release status: implementation is being validated locally. No password was accessed, changed or added. No mail has been sent. Do not claim the reset link is live until the guarded CRM deployment and production `/api/auth/options` check are complete.
+- Next: run the auth API coverage, full API/E2E release checks, push, deploy via `scripts/deploy-crm.sh`, and verify whether the server exposes reset email as configured. Then Uffe can select **Forgot password?** from `/admin` and request a link for the mailbox on the owner account.
+
 ### 2026-10-09 — Arabic and Chinese typography
 
 - Fixed missing-glyph rendering on the Arabic and Chinese site pages. Their body styles now set the `--font` token actually used by the design, and the shared chrome uses Noto Arabic/SC fonts with suitable local fallbacks. Added the Noto web fonts to both page families, corrected the shared footer to inherit the active locale font, and bumped the CSS cache versions.
@@ -57,3 +66,7 @@
 - Verification: local browser smoke test confirmed show/hide and accessible state changes; `node --check apps/crm/server.js` and `git diff --check` passed. Production `/api/auth/options` still reports `google:false`.
 - Release: sign-in update commit `78cf9a4` and release-note commit `31dfe18` pushed to `origin/main` and deployed with `scripts/deploy-crm.sh`; production health check returned `{"ok":true,"database":"ok"}`. The follow-up visible Google-logo update is pending release.
 - Next: enable Google only after a Google OAuth web client is created and its client ID/secret are installed securely. Password recovery must be completed by Uffe through a private input prompt; no password was viewed or changed in this session.
+
+### 2026-10-12 — Dedicated Users workspace
+
+Uffe could not find account creation under Settings → Team. The System navigation already referenced `#users`, but its `usersView` implementation was absent, leaving the route broken; Add a person was buried in Settings. Added the dedicated Users screen, visible to admins/owners, with an owner-only **Add user** page action, account status/controls, and a Settings shortcut. The audit also found that the user-roster API returned names and emails to staff despite hiding the page; staff access is now denied server-side and covered in API/UI tests. Added `tests/ui/users_space_ui.js`, wired it into the E2E runner, corrected existing login UI selectors to target the explicit Sign in button, and updated SRS A-9/A-14. Verification: 38/38 API suites; final public E2E 17,533 checks, zero failures across 176 routes/six screen profiles; voice, investor, presentation (1,167), locale (73), report download (30), and phone target (512) suites pass; Users role/mobile flow passes (12 assertions). `node --check`, shell syntax, all UI JavaScript syntax, Python test compilation and `git diff --check` pass. Local only; no commit or deployment. GitHub fetch failed because DNS could not resolve `github.com`, so remote freshness is unverified. Next: when connectivity returns, fetch/rebase, rerun required tests on latest main, then commit/push and deploy through guarded CRM script.
