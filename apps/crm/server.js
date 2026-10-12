@@ -362,27 +362,27 @@ async function sendWhatsApp(to, template, lang, params) {
   if (!r.ok) throw new Error(JSON.stringify(d.error || d).slice(0, 300));
   return d.messages && d.messages[0] && d.messages[0].id || null;
 }
-const DEFAULT_WA_INQUIRY_NUMBERS = ['+233550416627', '+233552395548']; // Gotham and Carlson Capital service lines
+const DEFAULT_ENQUIRY_EMAILS = ['joy@gothamconsult.com', 'uffe.carlson@gothamconsult.com'];
 async function notifyTeamInquiry(source, name, organisation, need) {
   try {
     const settings = Object.fromEntries((await q(`select key,value from settings where key = any($1)`,
-      [['wa_inquiry_alerts','wa_inquiry_numbers','wa_inquiry_template','wa_mention_template']])).rows.map(x => [x.key, x.value]));
-    if (settings.wa_inquiry_alerts === 'off') return false;
-    const template = String(settings.wa_inquiry_template || settings.wa_mention_template || '').trim();
-    if (!waReady() || !template) return false;
-    const savedNumbers = String(settings.wa_inquiry_numbers || '').split(/[\n,;]+/).map(x => phoneGH(clean(x, 32))).filter(x => /^\+\d{9,15}$/.test(x));
-    const recipients = [...new Set(savedNumbers.length ? savedNumbers : DEFAULT_WA_INQUIRY_NUMBERS)];
+      [['website_enquiry_alerts','website_enquiry_emails']])).rows.map(x => [x.key, x.value]));
+    if (settings.website_enquiry_alerts === 'off') return false;
+    const savedEmails = String(settings.website_enquiry_emails || '').split(/[,;\s]+/).map(x => clean(x, 160).toLowerCase()).filter(x => /^\S+@\S+\.\S+$/.test(x));
+    const recipients = [...new Set(savedEmails.length ? savedEmails : DEFAULT_ENQUIRY_EMAILS)];
     const who = clean(name, 100) || 'New website enquiry';
     const where = clean(`${source}${organisation ? ' · ' + organisation : ''}`, 180);
-    // Keep personal email addresses and phone numbers out of team notification text.
     const message = clean(need, 280) || 'Open the back office to review and follow up.';
-    for (const to of recipients) await q(`insert into msg_outbox(channel,to_phone,to_name,body,template,lang,params,kind)
-      values ('whatsapp',$1,$2,$3,$4,'en',$5::jsonb,'team_inquiry')`,
-      [to, who, `${where}\n${message}`, template, JSON.stringify(['New Gotham enquiry', where, message])]);
-    // Start delivery now; queued rows remain visible and the regular job retries the queue later.
-    flushMessages(Math.max(10, recipients.length)).catch(e => console.error('team WhatsApp alert:', String(e.message || e).slice(0, 200)));
+    const subject = `New Gotham enquiry · ${clean(source, 100) || 'Website'}`;
+    const content = `<p style="color:#0F1B2D;font-size:15px"><b>${esc(who)}</b>${organisation ? ` · ${esc(clean(organisation, 120))}` : ''}</p>
+      <p style="color:#5A6472;font-size:15px;white-space:pre-wrap">${esc(message)}</p>
+      <p style="color:#5A6472;font-size:13px">Source: ${esc(where)}</p>
+      <p><a href="${BASE}/admin#contacts">Open Gotham CRM → Contacts &amp; people</a></p>`;
+    for (const to of recipients) await queueMail(to, '', subject, wrapMail('New website enquiry', content), 'staff_alert', null);
+    // Start delivery now; if SMTP is unavailable, messages remain visible in the email outbox.
+    flushMail(Math.max(10, recipients.length)).catch(e => console.error('team enquiry email:', String(e.message || e).slice(0, 200)));
     return true;
-  } catch (e) { console.error('team WhatsApp alert queue:', String(e.message || e).slice(0, 200)); return false; }
+  } catch (e) { console.error('team enquiry email queue:', String(e.message || e).slice(0, 200)); return false; }
 }
 async function flushMessages(limit = 60) {
   const chans = [smsReady() && 'sms', waReady() && 'whatsapp'].filter(Boolean);
@@ -6012,7 +6012,7 @@ async function reportDataPack() {
   const n = wb.addWorksheet('About'); n.addRow(['Ghana Investment Report 2026 – data pack']); n.addRow([`${R.edition?.label || ''}, data as of ${R.updated}`]); n.addRow(['Gotham Consult, Accra · gothamconsult.com · general information, not investment advice']);
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
-const CHAT = CHT.makeChat({ q, json, body, bodyBig, clean, phoneGH, defaultInquiryNumbers: DEFAULT_WA_INQUIRY_NUMBERS, askModel, aiOn: () => !!OPENAI_KEY, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto,
+const CHAT = CHT.makeChat({ q, json, body, bodyBig, clean, phoneGH, defaultInquiryEmails: DEFAULT_ENQUIRY_EMAILS, mailReady: () => !!mailVia(), askModel, aiOn: () => !!OPENAI_KEY, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto,
   setting: async k => (await q('select value from settings where key=$1', [k])).rows[0]?.value || '' });
 
 init().then(async () => {

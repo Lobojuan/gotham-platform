@@ -55,16 +55,16 @@ const ok = (value, message) => { if (!value) throw new Error(message); console.l
  await page.setViewportSize({ width: 390, height: 844 });
  await page.click('#hamb'); await page.waitForSelector('#side.open');
  await page.click('#nav a[data-v="settings"]');
- await page.waitForSelector('#wa-inquiry-prefs');
- const waSettings = await page.evaluate(() => ({ width: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
-  numbers: document.querySelector('#cp-wa-numbers').value, save: document.querySelector('#cp-wa-save').getBoundingClientRect().toJSON(),
-  explanation: document.querySelector('#wa-inquiry-prefs').innerText }));
- ok(waSettings.numbers.includes('+233550416627') && waSettings.numbers.includes('+233552395548'), 'owner sees both WhatsApp team recipients prefilled');
- ok(waSettings.explanation.includes('WhatsApp Manager') && waSettings.explanation.includes('email address or phone number'), 'settings explains Meta template setup and keeps enquiry contact details out of team alerts');
- ok(waSettings.scroll <= waSettings.width && waSettings.save.width >= 44 && waSettings.save.height >= 44, 'WhatsApp alert settings fit a phone screen and save button has a 44px tap target');
- await page.fill('#cp-wa-template', 'team_mention'); await page.click('#cp-wa-save');
- await page.waitForFunction(() => document.querySelector('#toast')?.textContent.includes('Enquiry alerts saved'));
- ok(true, 'owner can save the Meta template name; the panel still reports missing sender setup when WhatsApp is disconnected');
+ await page.waitForSelector('#enquiry-email-prefs');
+ const emailSettings = await page.evaluate(() => ({ width: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth,
+  addresses: document.querySelector('#cp-enquiry-emails').value, save: document.querySelector('#cp-enquiry-save').getBoundingClientRect().toJSON(),
+  explanation: document.querySelector('#enquiry-email-prefs').innerText }));
+ ok(emailSettings.addresses.includes('joy@gothamconsult.com') && emailSettings.addresses.includes('uffe.carlson@gothamconsult.com'), 'owner sees both Gotham team inboxes prefilled');
+ ok(emailSettings.explanation.includes('No Meta or WhatsApp Business account is needed') && emailSettings.explanation.includes('email outbox'), 'settings explains email alerts and the outbox fallback');
+ ok(emailSettings.scroll <= emailSettings.width && emailSettings.save.width >= 44 && emailSettings.save.height >= 44, 'email alert settings fit a phone screen and save button has a 44px tap target');
+ await page.fill('#cp-enquiry-emails', 'joy@gothamconsult.com, uffe.carlson@gothamconsult.com'); await page.click('#cp-enquiry-save');
+ await page.waitForFunction(() => document.querySelector('#toast')?.textContent.includes('Enquiry email settings saved'));
+ ok(true, 'owner can save the team email recipients; the panel reports when server email is not configured');
  await page.click('#view a[href="#users"]'); await page.waitForSelector('#users-add-top');
  ok(await page.isVisible('#users-add-top'), 'Settings provides a direct shortcut back to Users');
  const staff = await createUser('Test Staff', 'staff');
