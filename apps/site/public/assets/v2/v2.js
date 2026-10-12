@@ -32,9 +32,13 @@
     sc.onload = () => {
       const extra = document.createElement('script'); extra.src = ASSET + '/assets/v2/gipa-i18n.js?v=1';
       extra.onload = () => {
-        const base = window.GC_I18N || {};
-        dictionaries[l] = { ...base, [l]: { ...(base[l] || {}), ...(window.GC_GIPA_I18N?.[l] || {}) } };
-        dict = dictionaries[l]; res();
+        const services = document.createElement('script'); services.src = ASSET + '/assets/v2/credit-services-i18n.js?v=1';
+        const finish = () => {
+          const base = window.GC_I18N || {};
+          dictionaries[l] = { ...base, [l]: { ...(base[l] || {}), ...(window.GC_GIPA_I18N?.[l] || {}), ...(window.GC_CREDIT_I18N?.[l] || {}) } };
+          dict = dictionaries[l]; res();
+        };
+        services.onload = finish; services.onerror = finish; document.head.append(services);
       };
       extra.onerror = () => { dictionaries[l] = window.GC_I18N || {}; dict = dictionaries[l]; res(); };
       document.head.append(extra);
