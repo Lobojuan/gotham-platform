@@ -14,7 +14,7 @@ const FILE_TYPES = { 'image/jpeg': 'image', 'image/png': 'image', 'image/webp': 
   'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'file', 'text/plain': 'file', 'text/csv': 'file' };
 
 export function makeChat(ctx) {
-  const { q, json, body, bodyBig, clean, askModel, aiOn, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto } = ctx;
+  const { q, json, body, bodyBig, clean, phoneGH, defaultInquiryNumbers, askModel, aiOn, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto } = ctx;
   const isStaff = u => u.role === 'staff';
   const firstName = s => String(s || '').trim().split(/[\s@._-]+/)[0] || '';
 
@@ -161,7 +161,10 @@ Use "updates": [] when nothing should change.`;
     /* alerts: my own WhatsApp number; the approved WhatsApp template name (admins) */
     if (p === '/api/chat/prefs' && req.method === 'GET') {
       const me = (await q('select phone from users where email=$1', [u.email])).rows[0] || {};
-      json(res, 200, { phone: me.phone || '', wa_template: isStaff(u) ? undefined : await ctx.setting('wa_mention_template'), wa_ready: waReady() }); return true;
+      json(res, 200, { phone: me.phone || '', wa_template: isStaff(u) ? undefined : await ctx.setting('wa_mention_template'),
+        wa_inquiry_numbers: isStaff(u) ? undefined : (await ctx.setting('wa_inquiry_numbers') || defaultInquiryNumbers.join(', ')),
+        wa_inquiry_template: isStaff(u) ? undefined : (await ctx.setting('wa_inquiry_template') || await ctx.setting('wa_mention_template')),
+        wa_inquiry_enabled: isStaff(u) ? undefined : (await ctx.setting('wa_inquiry_alerts')) !== 'off', wa_ready: waReady() }); return true;
     }
     if (p === '/api/chat/prefs' && req.method === 'POST') {
       const b = await body(req);
@@ -175,6 +178,25 @@ Use "updates": [] when nothing should change.`;
         const t = clean(String(b.wa_template || ''), 60);
         if (t && !/^[a-z0-9_]{1,60}$/.test(t)) { json(res, 400, { error: 'bad_template' }); return true; }
         await q(`insert into settings(key,value) values ('wa_mention_template',$1) on conflict (key) do update set value=excluded.value`, [t]);
+      }
+      if (b.wa_inquiry_numbers !== undefined || b.wa_inquiry_template !== undefined || b.wa_inquiry_enabled !== undefined) {
+        if (isStaff(u)) { json(res, 403, { error: 'not_allowed' }); return true; }
+        if (b.wa_inquiry_numbers !== undefined) {
+          const raw = String(b.wa_inquiry_numbers || '').trim();
+          const numbers = raw ? raw.split(/[\n,;]+/).map(x => phoneGH(clean(x, 32))) : [];
+          if (numbers.length < 1 || numbers.length > 4 || numbers.some(x => !/^\+\d{9,15}$/.test(x))) { json(res, 400, { error: 'bad_alert_numbers' }); return true; }
+          await q(`insert into settings(key,value) values ('wa_inquiry_numbers',$1) on conflict (key) do update set value=excluded.value`, [numbers.join(',')]);
+        }
+        if (b.wa_inquiry_template !== undefined) {
+          const t = clean(String(b.wa_inquiry_template || ''), 60);
+          if (t && !/^[a-z0-9_]{1,60}$/.test(t)) { json(res, 400, { error: 'bad_template' }); return true; }
+          await q(`insert into settings(key,value) values ('wa_inquiry_template',$1) on conflict (key) do update set value=excluded.value`, [t]);
+        }
+        if (b.wa_inquiry_enabled !== undefined) {
+          const enabled = b.wa_inquiry_enabled === true ? 'on' : b.wa_inquiry_enabled === false ? 'off' : '';
+          if (!enabled) { json(res, 400, { error: 'bad_enabled' }); return true; }
+          await q(`insert into settings(key,value) values ('wa_inquiry_alerts',$1) on conflict (key) do update set value=excluded.value`, [enabled]);
+        }
       }
       json(res, 200, { ok: true }); return true;
     }

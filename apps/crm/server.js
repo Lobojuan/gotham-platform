@@ -362,6 +362,28 @@ async function sendWhatsApp(to, template, lang, params) {
   if (!r.ok) throw new Error(JSON.stringify(d.error || d).slice(0, 300));
   return d.messages && d.messages[0] && d.messages[0].id || null;
 }
+const DEFAULT_WA_INQUIRY_NUMBERS = ['+233550416627', '+233552395548']; // Gotham and Carlson Capital service lines
+async function notifyTeamInquiry(source, name, organisation, need) {
+  try {
+    const settings = Object.fromEntries((await q(`select key,value from settings where key = any($1)`,
+      [['wa_inquiry_alerts','wa_inquiry_numbers','wa_inquiry_template','wa_mention_template']])).rows.map(x => [x.key, x.value]));
+    if (settings.wa_inquiry_alerts === 'off') return false;
+    const template = String(settings.wa_inquiry_template || settings.wa_mention_template || '').trim();
+    if (!waReady() || !template) return false;
+    const savedNumbers = String(settings.wa_inquiry_numbers || '').split(/[\n,;]+/).map(x => phoneGH(clean(x, 32))).filter(x => /^\+\d{9,15}$/.test(x));
+    const recipients = [...new Set(savedNumbers.length ? savedNumbers : DEFAULT_WA_INQUIRY_NUMBERS)];
+    const who = clean(name, 100) || 'New website enquiry';
+    const where = clean(`${source}${organisation ? ' · ' + organisation : ''}`, 180);
+    // Keep personal email addresses and phone numbers out of team notification text.
+    const message = clean(need, 280) || 'Open the back office to review and follow up.';
+    for (const to of recipients) await q(`insert into msg_outbox(channel,to_phone,to_name,body,template,lang,params,kind)
+      values ('whatsapp',$1,$2,$3,$4,'en',$5::jsonb,'team_inquiry')`,
+      [to, who, `${where}\n${message}`, template, JSON.stringify(['New Gotham enquiry', where, message])]);
+    // Start delivery now; queued rows remain visible and the regular job retries the queue later.
+    flushMessages(Math.max(10, recipients.length)).catch(e => console.error('team WhatsApp alert:', String(e.message || e).slice(0, 200)));
+    return true;
+  } catch (e) { console.error('team WhatsApp alert queue:', String(e.message || e).slice(0, 200)); return false; }
+}
 async function flushMessages(limit = 60) {
   const chans = [smsReady() && 'sms', waReady() && 'whatsapp'].filter(Boolean);
   if (!chans.length) return 0;
@@ -1990,6 +2012,7 @@ const server = http.createServer(async (req, res) => {
         `<tr><td style="padding:4px 14px 4px 0;color:#5A6472;vertical-align:top">${k}</td><td style="padding:4px 0">${esc(v)}</td></tr>`).join('')}</table>`);
       const subject = `Report: ${KINDS[kind]} from ${full_name}${company ? ' (' + company + ')' : ''}`;
       await queueMail('uffe.carlson@gothamconsult.com', 'Uffe Carlson', subject, alertHtml, 'staff_alert', null);
+      if (kind !== 'download' || role === 'investor') await notifyTeamInquiry(`Investment report · ${KINDS[kind]}`, full_name, company, message || `${ROLES[role] || ''}${country ? ' · ' + country : ''}${pack ? ' · ' + PACK[pack] : ''}`);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'report_enquiry', `${kind} · ${pack || role} · ${chapter || country}`]);
       webEnquiry(req, ip, 'report').catch(() => {});
       return json(res, 200, link ? { ok: true, url: link } : { ok: true }, cors);
@@ -2265,6 +2288,7 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
         }
       }
       webEnquiry(req, ip, 'chat').catch(() => {});
+      await notifyTeamInquiry('Website chat enquiry', name, company, need || b.question || 'The visitor asked for a personal follow-up.');
       return json(res, 200, { ok: true }, cors);
     }
 
@@ -2288,6 +2312,8 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       await inboundDeal({ company, full_name: clean(b.contact_name, 120), email, phone: phoneGH(clean(b.phone, 40)), kind: 'sponsorship',
         title: `${company} · ${b.tier ? b.tier + ' sponsorship' : 'sponsorship'}`, source: 'Website sponsor enquiry', sponsor_lead_id: rows[0].id,
         task: `Send the sponsorship pack to ${clean(b.contact_name, 120) || company}` }).catch(e => console.error('inboundDeal', e.message));
+      await notifyTeamInquiry('Website partnership enquiry', clean(b.contact_name, 120) || company, company,
+        [b.tier && `Interest: ${clean(b.tier, 40)}`, b.message && clean(b.message, 280)].filter(Boolean).join(' · ') || 'Open the back office to review the enquiry.');
       webEnquiry(req, ip, 'sponsor').catch(() => {});
       return json(res, 200, { ok: true, id: rows[0].id }, cors);
     }
@@ -2436,6 +2462,8 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       await queueMail('uffe.carlson@gothamconsult.com', 'Uffe Carlson', subject, alert, 'staff_alert', null);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)',
         ['website', 'investor_interest', `${country} · ${type} · ${ticket} · ${sectors.join(', ')}`]);
+      await notifyTeamInquiry('Website investor enquiry', full_name, company,
+        [type, ticket, sectors.slice(0, 3).join(', '), when, message].filter(Boolean).join(' · '));
       webEnquiry(req, ip, 'investor').catch(() => {});
       return json(res, 200, { ok: true }, cors);
     }
@@ -2539,6 +2567,8 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
           await q(`insert into tasks(title,due_at,contact_id,reg_id,created_by,priority)
                    values ($1, coalesce(date_trunc('day',$2::timestamptz),date_trunc('day',now())) + interval '1 day 10 hours', $3, $4, 'website', $5)`,
             [`Follow up: ${full_name} said ${follow} at ${it.title}`, it.starts_at, cid.id, reg.id, follow === 'yes' ? 'high' : 'normal']);
+        await notifyTeamInquiry('Forum registration · service follow-up', full_name, company === 'Not given' ? '' : company,
+          [it.title, `Asked for follow-up: ${follow}`, challenge].filter(Boolean).join(' · '));
       }
 
       if (method === 'invoice' && amount > 0) await draftFromRegistration(reg, it, { full_name, company, email, phone, country: clean(b.country, 60), seats, amount }).catch(e => console.error('draft invoice', e.message));
@@ -5982,7 +6012,7 @@ async function reportDataPack() {
   const n = wb.addWorksheet('About'); n.addRow(['Ghana Investment Report 2026 – data pack']); n.addRow([`${R.edition?.label || ''}, data as of ${R.updated}`]); n.addRow(['Gotham Consult, Accra · gothamconsult.com · general information, not investment advice']);
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
-const CHAT = CHT.makeChat({ q, json, body, bodyBig, clean, askModel, phoneGH, aiOn: () => !!OPENAI_KEY, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto,
+const CHAT = CHT.makeChat({ q, json, body, bodyBig, clean, phoneGH, defaultInquiryNumbers: DEFAULT_WA_INQUIRY_NUMBERS, askModel, aiOn: () => !!OPENAI_KEY, queueMail, wrapMail, esc, BASE, waReady, sendWhatsApp, sharp, crypto,
   setting: async k => (await q('select value from settings where key=$1', [k])).rows[0]?.value || '' });
 
 init().then(async () => {

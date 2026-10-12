@@ -447,6 +447,7 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 .help-topic summary{cursor:pointer;font-weight:700;line-height:1.4}.help-topic p{margin:10px 0;color:var(--mute);line-height:1.55}.help-topic a{font-weight:700}
 .help-ask{position:sticky;top:82px}.help-ask textarea{min-height:106px}.help-answer{margin-top:12px;white-space:pre-wrap;line-height:1.6;border-left:3px solid var(--gold);background:var(--sunk);border-radius:0 12px 12px 0;padding:12px 14px}
 .help-shortcut{font-weight:700;font-size:18px;min-width:44px;min-height:44px}
+.wa-setup{display:inline-flex;align-items:center;border-radius:999px;padding:7px 11px;font-size:13px;background:#F5E9D3;color:#6F4E15}.wa-setup.ready{background:#E2F3EC;color:#17634A}
 @media(max-width:900px){.help-grid{grid-template-columns:1fr}.help-ask{position:static}}
 @media(max-width:600px){.help-topics{grid-template-columns:1fr}.help-intro{padding:18px}.top .site-link{display:none}}
 .wa-row{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
@@ -3283,5 +3284,18 @@ async function chatPrefsCard(){
  $('#view').appendChild(c);
  $('#cp-save').onclick=async()=>{const b={phone:$('#cp-ph').value};if($('#cp-tpl'))b.wa_template=$('#cp-tpl').value.trim();
   try{await api('/api/chat/prefs',{method:'POST',body:JSON.stringify(b)});toast('Alerts saved')}catch(e){toast(e.message==='bad_phone'?'Check the phone number':e.message==='bad_template'?'Template names use lowercase letters, numbers and _':'Not saved')}};
+ if(p.wa_inquiry_numbers!==undefined){
+  const ready=p.wa_ready&&!!p.wa_inquiry_template;
+  const w=document.createElement('div');w.className='card';w.id='wa-inquiry-prefs';
+  w.innerHTML=`<h3>New website enquiry alerts</h3><p class="note">When someone asks Gotham to follow up about services, partnership or investment, send an internal WhatsApp alert to both numbers below. Alerts contain the person’s name and request summary, not their email address or phone number. Only an approved Meta message template can start a new business chat.</p>
+   <div class="f2"><div><label class="l" for="cp-wa-numbers">WhatsApp recipients</label><textarea class="t" id="cp-wa-numbers" rows="2" inputmode="tel" placeholder="+233 55 041 6627, +233 55 239 5548">${esc(p.wa_inquiry_numbers||'')}</textarea><div class="note">Separate numbers with commas or new lines. Ghana numbers can use local or +233 format.</div></div>
+   <div><label class="l" for="cp-wa-template">Meta template name</label><input class="t" id="cp-wa-template" value="${esc(p.wa_inquiry_template||'')}" placeholder="e.g. team_mention"><div class="note">Use a Meta-approved template with three body fields, for example: “{{1}} · Source: {{2}} · Request: {{3}}”. Leave blank to use the Team chat alert template above. Confirm approval and its English language variant in WhatsApp Manager.</div></div></div>
+   <label class="ck" style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" id="cp-wa-enabled" ${p.wa_inquiry_enabled?'checked':''}><span>Send alerts when new enquiries arrive</span></label>
+   <div class="acts"><button class="btn btn-dark" id="cp-wa-save">Save enquiry alerts</button><span class="wa-setup ${ready?'ready':''}" id="cp-wa-state">${ready?'Sender configured · confirm Meta template approval':'Needs WhatsApp sender and template setup'}</span></div><p class="note">Meta setup: WhatsApp Manager → Account tools → Message templates. Create or select an approved utility template with those three text fields, then enter its exact name here. The server sends through the connected WhatsApp Business phone ID.</p>`;
+  $('#view').appendChild(w);
+  $('#cp-wa-save').onclick=async()=>{const b={wa_inquiry_numbers:$('#cp-wa-numbers').value,wa_inquiry_template:$('#cp-wa-template').value.trim(),wa_inquiry_enabled:$('#cp-wa-enabled').checked};
+   try{await api('/api/chat/prefs',{method:'POST',body:JSON.stringify(b)});toast('Enquiry alerts saved');const isReady=p.wa_ready&&(b.wa_inquiry_template||p.wa_template);$('#cp-wa-state').textContent=isReady?'Sender configured · confirm Meta template approval':'Needs WhatsApp sender and template setup';$('#cp-wa-state').classList.toggle('ready',isReady)}
+   catch(e){toast(e.message==='bad_alert_numbers'?'Enter up to four valid WhatsApp numbers':e.message==='bad_template'?'Template names use lowercase letters, numbers and _':'Could not save enquiry alerts')}};
+ }
 }
 </script></body></html>
