@@ -63,7 +63,7 @@ RUN /opt/kokoro-venv/bin/python make-intros.py /opt/kokoro/kokoro-v1.0.onnx /opt
  && /opt/kokoro-zh-venv/bin/python make-intros.py /opt/ask-voices/ar/onnx/tts.json /opt/ask-voices/ar/voice_styles/M1.json ask-payment.json /opt/kokoro-payments ar
 COPY package.json ./
 RUN npm install --omit=dev --no-audit --no-fund
-COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-piper.py ask-chinese.py ask-arabic.py ask-voices.json ask-welcome.json ask-payment.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json fact-watch.js facts.json schema.sql assistant.md ./
+COPY server.js media-tools.js events-pages.js receptionist.js chat.js tts.js tts.py stt.js stt.py ask-voice.js ask-voice.py ask-piper.py ask-chinese.py ask-arabic.py ask-voices.json ask-welcome.json ask-payment.json ghana-data.js ghana-pdf.py ghana-snapshot.json chat-knowledge.js research-checks.js research-sources.json fact-watch.js facts.json schema.sql assistant.md backoffice-guide.md ./
 COPY public ./public
 COPY ask-context.js ./
 RUN mkdir -p /data/media

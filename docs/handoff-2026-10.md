@@ -1,5 +1,13 @@
 # Gotham Consult — October 2026 handoff
 
+### 2026-10-12 — Back-office onboarding and phone access
+
+- Added **Help & workflows** in the CRM for all signed-in roles, with role-filtered quick guides and AI answers grounded only in `apps/crm/backoffice-guide.md`. The helper cannot read client records, change CRM data, send messages, or replace supervisor review for legal, tax, immigration, licensing or investment questions. The guide is included in the CRM container image.
+- Added a persistent `?` Help shortcut in the top bar. On phone widths it remains directly tappable without opening the menu; the public-site shortcut is hidden at narrow widths so the header fits. Controls use the existing 44px touch sizing and 16px form text.
+- Verification: `tests/run_api.sh` passed all 38 suites against a fresh disposable local database using the bundled Python/Node runtimes. `tests/ui/users_space_ui.js` passed owner, admin and staff workflows, including direct phone access to Help, no horizontal overflow and a 44px Help target. `node --check` and `git diff --check` passed. The broader site E2E run completed 17,533 checks and then stopped on an existing 164×24px touch target in `/forums` (`div.past-ev>div.pe-h>a`); this change does not modify that page. The focused CRM mobile journey passed separately.
+- Release: local implementation only at handoff time. Push and guarded CRM deployment still need to be completed and verified before claiming the feature is live.
+- Next: fetch/rebase to `origin/main`, commit/push, deploy with `scripts/deploy-crm.sh`, and verify CRM health plus the new `/admin#help` entry.
+
 ### 2026-10-12 — Email-based CRM password recovery
 
 - Added a **Forgot password?** action on `/admin`. It accepts the account email and, when SMTP or Resend is configured, emails a 30-minute single-use reset link. Reset tokens are random, stored only as SHA-256 hashes, rate-limited, and invalidated after use. Password rules match the existing change-password route; a reset revokes existing sessions and does not disable two-step verification.

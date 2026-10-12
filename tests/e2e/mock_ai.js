@@ -8,7 +8,9 @@ http.createServer((req, res) => {
   let b = ''; req.on('data', c => b += c); req.on('end', () => {
     let q = '', sys = ''; try { const j = JSON.parse(b); q = (j.messages || []).slice(-1)[0].content || ''; sys = (j.messages || [])[0].content || ''; } catch {}
     let out;
-    if (/keep the website's forum pages up to date/.test(q)) {
+    if (/You are the Gotham Consult CRM onboarding guide/.test(sys)) {
+      out = JSON.stringify({ answer: '1. Open System → Users. 2. Select Add user, enter their details, and choose the correct role. Only the owner can create an account.' });
+    } else if (/keep the website's forum pages up to date/.test(q)) {
       /* the team chat: a confirmed speaker becomes a proposal for forum F1; anything else proposes nothing */
       const msg = (q.match(/New message from [^:]+: ([^\n]*)/) || [])[1] || '';
       out = /confirmed/i.test(msg) ? JSON.stringify({ code: 'F1', updates: [{ type: 'add_speaker', name: 'Kwame Test', role: 'CEO, Test Mining' }, { type: 'news', text: 'MOCK news: Kwame Test joins the panel.' }, { type: 'nonsense' }] })

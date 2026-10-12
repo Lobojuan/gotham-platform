@@ -54,6 +54,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | A-12 | A person can request a password reset from sign-in using their account email when SMTP or Resend is configured. Responses do not reveal whether an account exists; links are hashed at rest, expire after 30 minutes, work once, enforce password rules, revoke existing sessions, and preserve two-step verification. With no mail transport, the page explains that owner assistance is required. | api/09, manual login UI |
 | A-13 | Google sign-in does not require a prior password sign-in, but requires configured OAuth credentials and a verified Google email matching an existing active CRM team account. | api/19 |
 | A-14 | Account administration has a dedicated Users space; owners see a prominent Add user action and account controls, while admins can view users but cannot change them. Settings links to Users; staff cannot access the page. | `tests/ui/users_space_ui.js`, api/09 |
+| A-15 | All signed-in users can open Help & workflows, view role-appropriate CRM quick guides, and ask a grounded AI help question; answers do not access client records or perform actions, and role-restricted workflows remain protected. | `tests/ui/users_space_ui.js`, api/09 |
 
 ## 4. Back office content
 

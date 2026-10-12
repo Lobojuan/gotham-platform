@@ -63,6 +63,8 @@ st,d,_=call('/api/users',{'name':'X','email':'x@y.com','role':'superuser'},cooki
 # the new person
 st,d,kck=login('kofi',kpw); assert st==200 and d['must_change']; ok('new person signs in with the first password and must choose their own')
 st,d,h=call('/api/password',{'current':kpw,'password':'kofi-door-2026'},cookie=kck); assert st==200,d; kck=h['set-cookie'].split(';')[0]; ok('they set their own password')
+st,d,_=call('/api/ai',{'task':'backoffice_help','question':'How do I add a user?'},cookie=kck); assert st==503 and d['error']=='ai_off',(st,d); ok('signed-in staff may use the workflow-help endpoint even when AI is not configured')
+st,d,_=call('/api/ai',{'task':'backoffice_help','question':'How do I add a user?'}); assert st==401; ok('workflow-help endpoint still requires sign-in')
 st,d,_=call('/api/users',{'name':'Sneaky','email':'sneaky','role':'owner'},cookie=kck); assert st==401; ok('staff cannot add people')
 st,d,_=call('/api/users',cookie=kck); assert st==403; ok('staff cannot read team names or email addresses')
 st,d,_=call('/api/users/kofi/reset',{},cookie=kck); assert st==401; ok('staff cannot reset passwords')

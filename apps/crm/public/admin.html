@@ -439,6 +439,16 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 @keyframes aispin{to{transform:rotate(360deg)}}
 .ai-out{border-left:3px solid #8B6CC9;background:#FBF8FF;border-radius:0 12px 12px 0;padding:10px 14px;margin-top:10px;white-space:pre-wrap;line-height:1.55}
 .ai-out b{display:block;margin-top:8px}
+.help-intro{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;background:linear-gradient(120deg,#101B2D,#243B5A);color:#fff;border-radius:18px;padding:22px 24px;margin:8px 0 16px}
+.help-intro h2{margin:0 0 6px;font-size:24px}.help-intro p{margin:0;color:#DCE3EB;max-width:720px;line-height:1.55}
+.help-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr);gap:14px;align-items:start}
+.help-topics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.help-topic{border:1px solid var(--line);border-radius:14px;background:#fff;padding:13px 15px}
+.help-topic summary{cursor:pointer;font-weight:700;line-height:1.4}.help-topic p{margin:10px 0;color:var(--mute);line-height:1.55}.help-topic a{font-weight:700}
+.help-ask{position:sticky;top:82px}.help-ask textarea{min-height:106px}.help-answer{margin-top:12px;white-space:pre-wrap;line-height:1.6;border-left:3px solid var(--gold);background:var(--sunk);border-radius:0 12px 12px 0;padding:12px 14px}
+.help-shortcut{font-weight:700;font-size:18px;min-width:44px;min-height:44px}
+@media(max-width:900px){.help-grid{grid-template-columns:1fr}.help-ask{position:static}}
+@media(max-width:600px){.help-topics{grid-template-columns:1fr}.help-intro{padding:18px}.top .site-link{display:none}}
 .wa-row{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
 .wa-row .dir{font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;align-self:start}
 .wa-row .dir.in{background:var(--sunk)}.wa-row .dir.out{background:var(--green-soft);color:var(--green)}
@@ -680,7 +690,8 @@ label.cal-mine{display:inline-flex;align-items:center;gap:10px}
       <button class="hamb" id="hamb" type="button" aria-label="Open menu" aria-controls="side"><svg><use href="#i-menu"/></svg></button>
       <div class="crumb" id="crumb"><b>Gotham CRM</b></div>
       <div class="gsearch" id="gs"><svg><use href="#i-search"/></svg><input id="gq" type="search" placeholder="Search companies, people, deals, references" autocomplete="off" aria-label="Search"><kbd>/</kbd><div class="sres" id="sres"></div></div>
-      <a class="iconbtn" href="https://gothamconsult.com" title="View website" aria-label="View website"><svg><use href="#i-home"/></svg></a>
+      <a class="iconbtn site-link" href="https://gothamconsult.com" title="View website" aria-label="View website"><svg><use href="#i-home"/></svg></a>
+      <a class="iconbtn help-shortcut" href="#help" title="Help & workflows" aria-label="Help and workflows"><span aria-hidden="true">?</span></a>
       <div class="newbtn"><button class="btn btn-dark" id="newb" type="button" aria-haspopup="true"><svg width="16" height="16"><use href="#i-plus"/></svg><span class="nl">New</span></button>
         <div class="menu" id="newm" role="menu">
           <button type="button" data-new="task"><svg><use href="#i-check"/></svg>Task</button>
@@ -825,10 +836,10 @@ const NAV=[
  ['Overview',[['dash','Dashboard','home'],['cal','Calendar','cal'],['tasks','Tasks','check','tcnt'],['chat','Team chat','chat','chcnt']]],
  ['Sales',[['pipe','Pipeline','cols',null,1],['contacts','Companies & people','users',null,1],['members','Members','star',null,1],['imp','Import clients','upload',null,1],['out','Outreach & campaigns','send',null,1],['spon','Sponsors','star',null,1],['inv','Invoices & quotes','bill',null,1],['reports','Reports','chart',null,1],['web','Website visitors','globe2',null,1]]],
  ['Events',[['regs','Registrations','ticket','cnt'],['events','Events & media','cal',null,1],['door','Door check-in','scan'],['subs','Subscribers','news','scnt',1],['qr','Scan codes & posters','qr',null,1],['links','Campaign links','link',null,1]]],
- ['System',[['users','Users','users',null,1],['inbox','Email inbox','mail','incnt',1],['mail','Email outbox','send','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
+ ['System',[['help','Help & workflows','note'],['users','Users','users',null,1],['inbox','Email inbox','mail','incnt',1],['mail','Email outbox','send','mcnt',1],['data','Data health','shield',null,1],['settings','Settings','gear']]]];
 const TITLES={dash:'Dashboard',members:'Members',mem:'Member',chat:'Team chat',cal:'Calendar',tasks:'Tasks',pipe:'Pipeline',contacts:'Companies & people',imp:'Import clients',inv:'Invoices & quotes',web:'Website visitors',rec:'Company record',reports:'Reports',
  regs:'Registrations',events:'Events, content & media',subs:'Ghana Business Brief subscribers',door:'Door check-in',inbox:'Email inbox',mail:'Email outbox',users:'Users',
- out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings'};
+ out:'Outreach & campaigns',spon:'Sponsors, partners & advertising',qr:'Scan codes & posters',links:'Campaign links',data:'Data health',settings:'Settings',help:'Help & workflows'};
 const ADMIN_ONLY=new Set(['members','mem','web','inv','pipe','contacts','imp','rec','reports','out','spon','events','subs','qr','links','inbox','mail','data','users']);
 let V='dash', ARG=null, USERS=[];
 function buildNav(){
@@ -852,13 +863,13 @@ addEventListener('hashchange',()=>{if(ME&&!ME.must_change)route()});
 function pageActions(html){$('#pact').innerHTML=html+`<button class="iconbtn" id="pref" type="button" title="Refresh" aria-label="Refresh">${ic('refresh')}</button>`;
  $('#pref').onclick=async()=>{await load();toast('Updated')}}
 function render(){
- const m={dash:dashboard,chat:chatView,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,members:membersView,mem:()=>memberView(+ARG),imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,users:usersView,
+ const m={dash:dashboard,chat:chatView,cal:calView,tasks:tasksView,pipe:pipeline,contacts:contactsView,members:membersView,mem:()=>memberView(+ARG),imp:importView,inv:invoicesView,web:webView,rec:()=>record(+ARG),reports:reportsView,users:usersView,help:helpView,
   regs,events,qr:qrview,spon:sponsors,out:outreach,links,subs,door,inbox,mail,data,settings};
  const acts={regs:'<a class="btn btn-line" href="/api/export.csv">Export CSV</a>',pipe:'<button class="btn btn-dark" data-new="deal">New deal</button>',
   contacts:'<a class="btn btn-line" href="#imp">Import</a><button class="btn btn-dark" data-new="contact">Add company or person</button>',tasks:'<button class="btn btn-dark" data-new="task">New task</button>',
   inv:`<button class="btn btn-line" data-new="acct">For the accountant</button><button class="btn btn-line" data-new="quote">New quotation</button><button class="btn btn-dark" data-new="invoice">New invoice</button>`,users:ME.role==='owner'?'<button class="btn btn-dark" id="users-add-top">Add user</button>':''};
  pageActions(acts[V]||'');
- const f=m[V];if(!f)return;const r=f();if(typeof r==='string')$('#view').innerHTML=r;
+ const f=m[V];if(!f)return;const r=f();if(typeof r==='string')$('#view').innerHTML=r;if(V==='help')bindHelp();
 }
 /* side menu on phones */
 function openSide(){$('#side').classList.add('open');$('#scrim').classList.add('side-on')}
@@ -2639,6 +2650,29 @@ async function links(){
 }
 
 /* user management */
+const HELP_TOPICS=[
+ {q:'Where do I begin?',a:'Start with the Dashboard. Use the left menu on desktop. On a phone, open More in the bottom bar to find the full menu. Your role controls which screens are available.',link:'#dash',label:'Open Dashboard'},
+ {q:'How do I add a user?',a:'Only the owner can manage accounts. Open System → Users → Add user, enter the name and sign-in name, and choose the least-privileged suitable role. Share the one-time password privately; the new user must replace it at first sign-in.',link:'#users',label:'Open Users',ownerOnly:true},
+ {q:'How do I record a client conversation?',a:'Open the company or person record, add a dated note describing the meaningful outcome, then create a task for the next agreed action. Keep passwords and financial credentials out of notes.',link:'#contacts',label:'Open Companies & people',adminOnly:true},
+ {q:'How do I keep track of follow-ups?',a:'Open Tasks and create a specific action with an owner and due date. Mark it done when completed. For opportunities, administrators can use Pipeline to keep the stage and next step current.',link:'#tasks',label:'Open Tasks'},
+ {q:'Can AI send a message or change a record?',a:'No. AI suggestions are drafts. Review all text, recipients, dates, prices and claims yourself. Sending messages and changing CRM records require their normal screens and permissions.'},
+ {q:'What if a screen is missing?',a:'Some sections are administrator-only; user management is owner-only. Ask the owner to confirm your role. Do not share a password or one-time sign-in code to get access.'},
+];
+function helpView(){
+ const topics=HELP_TOPICS.filter(x=>(!x.adminOnly||isAdmin())&&(!x.ownerOnly||ME.role==='owner'));
+ return `<div class="help-intro"><div><h2>Welcome to the Gotham back office</h2><p>Use these short guides to find your way around. You can ask the AI about CRM workflows; it answers from Gotham’s documented guide and cannot change records or send messages.</p></div><span class="pill">Signed in as ${esc(ROLE_NAME[ME.role])}</span></div>
+  <div class="help-grid"><section class="card"><h3 style="margin:0 0 12px">Common questions</h3><div class="help-topics">${topics.map((x,i)=>`<details class="help-topic" ${i===0?'open':''}><summary>${esc(x.q)}</summary><p>${esc(x.a)}</p>${x.link?`<a href="${x.link}">${esc(x.label)} →</a>`:''}</details>`).join('')}</div></section>
+  <section class="card help-ask"><h3 style="margin:0 0 5px">Ask back-office AI</h3><p class="note" style="margin:0 0 10px">Ask where to find a feature or how a documented workflow works. Don’t include passwords, sign-in codes, or private client details.</p><label class="sr" for="help-question">Your question</label><textarea class="t" id="help-question" maxlength="900" placeholder="For example: How do I add a new user?" rows="4"></textarea><div class="acts"><button class="btn btn-dark" id="help-send">Ask</button><span class="note" id="help-status" role="status" aria-live="polite"></span></div><div id="help-answer" aria-live="polite"></div><div class="note" style="margin-top:12px">For legal, tax, immigration, licensing, or investment decisions, ask a supervisor to verify with the relevant authority.</div></section></div>`;
+}
+function bindHelp(){
+ const field=$('#help-question'),button=$('#help-send');if(!field||!button)return;
+ const ask=async()=>{const question=field.value.trim();if(!question){field.focus();return}button.disabled=true;$('#help-status').textContent='Checking the guide…';$('#help-answer').innerHTML='';
+  try{const r=await api('/api/ai',{method:'POST',body:JSON.stringify({task:'backoffice_help',question})});$('#help-answer').innerHTML=`<div class="help-answer">${esc(r.answer)}</div>`;$('#help-status').textContent='Based on the back-office guide.'}
+  catch(e){$('#help-status').textContent=['ai_off','help_unavailable'].includes(e.message)?'AI help is temporarily unavailable; use the guides on this page.':'Could not get an answer. Use the guides or ask the owner.'}
+  finally{button.disabled=false}
+ };
+ button.onclick=ask;field.onkeydown=e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){e.preventDefault();ask()}};
+}
 async function usersView(){
  const owner=ME.role==='owner';
  const {rows=[]}=await api('/api/users').catch(()=>({rows:[]}));

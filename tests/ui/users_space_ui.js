@@ -29,6 +29,11 @@ const ok = (value, message) => { if (!value) throw new Error(message); console.l
   ownerPassword = firstPassword;
  }
  await page.waitForSelector('#app', { state: 'visible' });
+ ok(await page.locator('.help-shortcut').isVisible(), 'Help is directly available from the top bar');
+ await page.click('#nav a[data-v="help"]'); await page.waitForSelector('#help-question');
+ ok((await page.textContent('#view')).includes('Common questions'), 'all signed-in users can find the Help & workflows page');
+ await page.fill('#help-question', 'How do I add a user?'); await page.click('#help-send'); await page.waitForSelector('#help-answer .help-answer');
+ ok((await page.textContent('#help-answer')).includes('Only the owner'), 'back-office AI answers from the workflow guide');
  await page.click('#nav a[data-v="users"]'); await page.waitForSelector('#users-add-top');
  ok(await page.isVisible('#users-add-top'), 'System → Users has a clear Add user action');
  ok((await page.textContent('#view')).includes('Manage who can sign in'), 'Users page explains its purpose');
@@ -72,6 +77,13 @@ const ok = (value, message) => { if (!value) throw new Error(message); console.l
 
  const staffFlow = await finishFirstPassword(staff.email, staff.password, `Test-staff-${suffix}-pass!`);
  ok(!(await staffFlow.page.locator('#nav a[data-v="users"]').count()), 'staff navigation does not expose Users');
+ ok(await staffFlow.page.locator('#nav a[data-v="help"]').count(), 'staff navigation exposes onboarding help');
+ ok(await staffFlow.page.locator('.help-shortcut').isVisible(), 'phone users can reach Help without opening the menu');
+ const phoneLayout = await staffFlow.page.evaluate(() => ({ width: document.documentElement.clientWidth, scroll: document.documentElement.scrollWidth, help: document.querySelector('.help-shortcut').getBoundingClientRect().toJSON() }));
+ ok(phoneLayout.scroll <= phoneLayout.width && phoneLayout.help.width >= 44 && phoneLayout.help.height >= 44, 'phone top bar fits without horizontal scroll and Help has a 44px tap target');
+ await staffFlow.page.click('.help-shortcut');
+ await staffFlow.page.fill('#help-question', 'How do I add a user?'); await staffFlow.page.click('#help-send'); await staffFlow.page.waitForSelector('#help-answer .help-answer');
+ ok((await staffFlow.page.textContent('#help-status')).includes('Based on the back-office guide'), 'staff can ask workflow questions while admin-only features stay protected');
  const rosterStatus = await staffFlow.page.evaluate(async () => (await fetch('/api/users')).status);
  ok(rosterStatus === 403, 'server also blocks staff from reading team names and email addresses');
  await staffFlow.page.evaluate(() => { location.hash = '#users'; }); await staffFlow.page.waitForTimeout(200);
