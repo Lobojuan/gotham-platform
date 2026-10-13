@@ -72,6 +72,9 @@ assert 'Language: fr' in psql("select body from notes where contact_id=%d" % c['
 ok('"Leave your details" makes a contact, a deal and a task for tomorrow; no marketing consent is assumed')
 
 # ---------- back-office helper ----------
+guide = open('backoffice-guide.md', encoding='utf-8').read().lower()
+assert 'event plan for joy' in guide and 'client pays supplier' in guide and 'does not issue or email it' in guide
+ok('back-office guide explains event budget ownership and draft quote safeguards')
 st, r = call('/api/ai', {'task': 'email', 'brief': 'Invite mining MDs to the October forum'}, cookie=ck)
 assert st == 200 and r['subject'] == 'MOCK subject for {{first_name}}' and r['body'].startswith('Hello {{first_name}}'), r
 psql("update contacts set full_name='PII_SENTINEL', email='pii-sentinel@example.test', phone='+233240000000', client_type='investor', company='Nordic Sun', sector='Renewable energy', country='Denmark' where id=%d" % c['id'])

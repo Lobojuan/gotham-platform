@@ -33,7 +33,11 @@ This guide documents current CRM navigation and actions. It is for signed-in sta
 
 ## Events and registrations
 
-- Administrators manage dates, event details, and media under **Events → Events & media**. Review event details before publishing or sharing a poster.
+- Administrators create and manage events under **Events → Events & media**. Open an event to manage the public details, registration, speakers, agenda, gallery, flyer and QR code in one record. Check dates, venue, capacity, price, access and registration phase before publishing or sharing a poster.
+- Use the private **Event plan for Joy** inside the event record for the client brief, lead, guest target, budget ceiling, contingency and planning notes. The plan and its client details are for authorized back-office users; they do not appear on the public event page.
+- Use the readiness checklist to assign an owner, due date and status. Mark blocked tasks as blocked and record decisions or supplier changes in the plan.
+- Add budget estimates by category (for example venue, catering, speaker, production, travel, marketing or livestream). Record the supplier, estimate and who pays. **Client pays supplier** is planning-only and stays out of Gotham's quote. **Gotham charges client** is eligible for a quote only when the line is priced and **Include in quote** is checked. **Included in service fee** is not added as a separate amount. Do not assume supplier availability, confirm bookings, or choose who pays without client agreement.
+- **Save plan & prepare a quote** creates a draft from only the selected Gotham-billed lines. It does not issue or email it. Open the draft under **Sales → Invoices & quotes** and confirm the client, scope, amounts, tax treatment, dates and payment terms before issuing or sending it. Keep estimates clearly labelled until suppliers confirm them.
 - **Registrations** lists attendee records; **Door check-in** is for validating attendees at the event. Do not share attendee lists outside the authorized team.
 
 ## Quotes and invoices
