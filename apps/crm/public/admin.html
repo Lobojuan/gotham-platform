@@ -1353,9 +1353,12 @@ document.addEventListener('click',e=>{const d=e.target.dataset||{};
 
 /* ---------------- events: list + full editor ---------------- */
 let EV=null;                         /* the event being edited, or null for the list */
+const EVENT_STARTER_TASKS=['Confirm client brief and event outcome','Agree date, venue and capacity','Approve written scope, budget and payment terms','Collect deposit before confirming suppliers','Get written venue, catering and speaker quotes','Confirm dietary, accessibility and safeguarding needs','Publish registration page, flyer and QR links','Confirm AV, livestream and backup plan','Share final programme and team run sheet','Complete guest follow-up and event cost reconciliation'];
 const EMPTY={code:'',kind:'event',title:'',subtitle:'',summary:'',description:'',venue:'',starts_at:null,ends_at:null,
  currency:'GHS',price:0,per:'',capacity:null,published:true,sort:0,approval:false,phase:'open',audiences:'',
  cover:null,cover_image:null,gallery:[],images:[],docs:[],documents:[],agenda:[],speakers:[],flyer:{}};
+EMPTY.event_plan={purpose:'',owner:'Joy',client_name:'',client_company:'',client_email:'',guest_target:0,budget_ceiling:0,contingency_pct:10,notes:'',
+ checklist:EVENT_STARTER_TASKS.map(task=>({task,owner:'Joy',due:'',status:'todo'})),budget_lines:[]};
 
 async function events(){
  if(EV) return evEditor();
@@ -1504,6 +1507,26 @@ function evEditor(){
   <div id="i-sp">${(i.speakers||[]).map(spRow).join('')}</div>
   <button class="btn btn-line" id="i-sp-add" style="margin-top:6px">Add a speaker</button>
 
+  <h4 class="sec">Event plan for Joy</h4>
+  <p class="note">Private back-office plan. This stays out of the public event page. Track the client brief, readiness tasks and working budget here.</p>
+  <div class="f2"><div><label class="l">Event purpose / outcome</label><input class="t" id="ep-purpose" maxlength="600" value="${esc((i.event_plan||{}).purpose||'')}" placeholder="What should guests learn, decide or do?"></div>
+   <div><label class="l">Event lead</label><input class="t" id="ep-owner" maxlength="120" value="${esc((i.event_plan||{}).owner||'Joy')}" placeholder="Joy or assigned lead"></div>
+   <div><label class="l">Client contact</label><input class="t" id="ep-client" maxlength="160" value="${esc((i.event_plan||{}).client_name||'')}" placeholder="Name for the event quotation"></div>
+   <div><label class="l">Client / organisation</label><input class="t" id="ep-company" maxlength="160" value="${esc((i.event_plan||{}).client_company||'')}" placeholder="Optional"></div>
+   <div><label class="l">Client email</label><input class="t" id="ep-email" type="email" maxlength="160" value="${esc((i.event_plan||{}).client_email||'')}" placeholder="For the quotation"></div>
+   <div><label class="l">Expected guests</label><input class="t" id="ep-guests" type="number" min="0" max="100000" value="${+(i.event_plan||{}).guest_target||''}" placeholder="e.g. 80"></div>
+   <div><label class="l">Working budget ceiling (GHS)</label><input class="t" id="ep-budget" type="number" min="0" step="0.01" value="${+(i.event_plan||{}).budget_ceiling||''}" placeholder="Client's total budget"></div>
+   <div><label class="l">Contingency (%)</label><input class="t" id="ep-contingency" type="number" min="0" max="50" value="${+(i.event_plan||{}).contingency_pct||0}" placeholder="10"></div></div>
+  <label class="l">Client requirements / decisions / risks</label><textarea class="t" id="ep-notes" rows="3" maxlength="4000" placeholder="Accessibility, dietary needs, approvals, cancellation terms, key decisions…">${esc((i.event_plan||{}).notes||'')}</textarea>
+  <div class="ch" style="margin-top:14px"><h4 class="sec" style="margin:0">Readiness checklist</h4><button class="btn btn-line" type="button" id="ep-task-add">+ Task</button></div>
+  <p class="note">Start with the essentials, then add event-specific work. Assign a person and a due date; mark blocked items clearly.</p>
+  <div id="ep-tasks">${(((i.event_plan||{}).checklist?.length?(i.event_plan||{}).checklist:EVENT_STARTER_TASKS.map(task=>({task,owner:'Joy',due:'',status:'todo'})))).map((t,n)=>`<div class="f2 ep-task" data-ep-task="${n}" style="align-items:end"><div><label class="l">Task</label><input class="t" data-ep-taskname value="${esc(t.task||'')}" maxlength="160"></div><div><label class="l">Owner</label><input class="t" data-ep-taskowner value="${esc(t.owner||'')}" maxlength="100"></div><div><label class="l">Due</label><input class="t" data-ep-taskdue type="date" value="${esc(t.due||'')}"></div><div><label class="l">Status</label><select class="t" data-ep-taskstatus>${[['todo','To do'],['doing','In progress'],['done','Done'],['blocked','Blocked']].map(([v,l])=>`<option value="${v}" ${t.status===v?'selected':''}>${l}</option>`).join('')}</select></div><button class="btn btn-line" type="button" data-ep-taskdel="${n}" aria-label="Remove task">Remove</button></div>`).join('')}</div>
+  <div class="ch" style="margin-top:14px"><h4 class="sec" style="margin:0">Services and supplier budget</h4><button class="btn btn-line" type="button" id="ep-cost-add">+ Budget line</button></div>
+  <p class="note">Keep Gotham’s service fee separate from venue, catering, speaker and other supplier costs. “Client pays supplier” means it is planning-only. Select “Include in quote” only for amounts Gotham is charging the client. Never treat vendor pass-through as Gotham revenue.</p>
+  <div id="ep-costs">${((i.event_plan||{}).budget_lines||[]).map((x,n)=>`<div class="f2 ep-cost" data-ep-cost="${n}" style="align-items:end;border-bottom:1px solid var(--line);padding:10px 0"><div><label class="l">Category</label><select class="t" data-ep-cat>${[['other','Other'],['venue','Venue'],['catering','Catering'],['speaker','Speaker fee'],['production','Production / AV'],['travel','Travel'],['staffing','Event staff'],['marketing','Marketing / coverage'],['technology','Technology / livestream']].map(([v,l])=>`<option value="${v}" ${x.category===v?'selected':''}>${l}</option>`).join('')}</select></div><div><label class="l">Description / supplier</label><input class="t" data-ep-desc value="${esc(x.description||'')}" maxlength="180" placeholder="e.g. Buffet for 80 guests"></div><div><label class="l">Provider</label><input class="t" data-ep-provider value="${esc(x.provider||'')}" maxlength="160" placeholder="Optional"></div><div><label class="l">Estimate (GHS)</label><input class="t" data-ep-est type="number" min="0" step="0.01" value="${+x.estimate||''}"></div><div><label class="l">Payment route</label><select class="t" data-ep-payer>${[['client_direct','Client pays supplier'],['gotham','Gotham charges client'],['included','Included in service fee']].map(([v,l])=>`<option value="${v}" ${x.payer===v?'selected':''}>${l}</option>`).join('')}</select></div><label class="own"><input type="checkbox" data-ep-quote ${x.quote?'checked':''}> Include in quote</label><button class="btn btn-line" type="button" data-ep-costdel="${n}">Remove</button></div>`).join('')}</div>
+  <div class="f2" style="margin-top:12px"><div class="kpi"><span>Estimated event budget (all lines)</span><b id="ep-total">GHS 0.00</b><small>Compare this with the client's budget ceiling; estimates are not confirmed bookings.</small></div><div class="kpi"><span>Draft quote value (selected lines)</span><b id="ep-quote-total">GHS 0.00</b><small>Only selected lines marked “Gotham charges client” are offered for quote creation.</small></div></div>
+  <div class="ch" style="justify-content:flex-start"><button class="btn btn-dark" type="button" id="ep-make-quote" ${i.__new?'disabled':''}>Save plan &amp; prepare a quote</button><span class="note">Creates an editable draft; Joy checks taxes, scope, terms and amounts before issuing.</span></div>
+
   <h4 class="sec">Money, seats and access</h4>
   <div class="f2"><div><label class="l">Currency <span class="note">· cedis only, Bank of Ghana rule</span></label><select class="t" id="i-cur">${'<option>GHS</option>'}</select></div>
    <div><label class="l">Price (0 = free)</label><input class="t" id="i-price" type="number" min="0" step="1" value="${Number(i.price)||0}"></div></div>
@@ -1538,6 +1561,9 @@ function evEditor(){
   EV.capacity=g('#i-cap')||null;EV.published=g('#i-pub')==='true';EV.sort=g('#i-sort')||0;
   EV.approval=g('#i-appr')==='true';EV.phase=g('#i-phase');EV.audiences=g('#i-aud');EV.recap=g('#i-recap');
   EV.flyer={eyebrow:g('#flyer-eyebrow'),headline:g('#flyer-headline'),body:g('#flyer-body'),cta:g('#flyer-cta'),template:g('#flyer-template')||'navy',format:g('#flyer-format')||'social',image:g('#flyer-image'),language:g('#flyer-language')||'en',qr_slug:EV.flyer?.qr_slug||''};
+  EV.event_plan={...(EV.event_plan||{}),purpose:g('#ep-purpose'),owner:g('#ep-owner'),client_name:g('#ep-client'),client_company:g('#ep-company'),client_email:g('#ep-email'),guest_target:+g('#ep-guests')||0,budget_ceiling:+g('#ep-budget')||0,contingency_pct:+g('#ep-contingency')||0,notes:g('#ep-notes'),
+   checklist:[...document.querySelectorAll('.ep-task')].map(r=>({task:r.querySelector('[data-ep-taskname]').value,owner:r.querySelector('[data-ep-taskowner]').value,due:r.querySelector('[data-ep-taskdue]').value,status:r.querySelector('[data-ep-taskstatus]').value})).filter(x=>x.task.trim()),
+   budget_lines:[...document.querySelectorAll('.ep-cost')].map(r=>({category:r.querySelector('[data-ep-cat]').value,description:r.querySelector('[data-ep-desc]').value,provider:r.querySelector('[data-ep-provider]').value,estimate:+r.querySelector('[data-ep-est]').value||0,payer:r.querySelector('[data-ep-payer]').value,quote:r.querySelector('[data-ep-quote]').checked})).filter(x=>x.description.trim())};
   document.querySelectorAll('[data-doclabel]').forEach(el=>{const n=+el.dataset.doclabel;
    if(EV.documents[n]){EV.documents[n].label=el.value;EV.docs[n]={id:EV.documents[n].id,label:el.value}}});
   EV.agenda=[...document.querySelectorAll('[data-agtime]')].map((el,n)=>({time:el.value,what:(document.querySelector('[data-agwhat="'+n+'"]')||{}).value||''})).filter(a=>a.time||a.what);
@@ -1555,6 +1581,21 @@ function evEditor(){
    :e.error==='code_and_title_required'?'A code and a title are needed':'Could not save');return false}
  };
  $('#ev-save').onclick=save; $('#ev-save2').onclick=save;
+ const redrawPlan=()=>{collect();redraw()};
+ $('#ep-task-add')?.addEventListener('click',()=>{collect();EV.event_plan.checklist.push({task:'',owner:'',due:'',status:'todo'});redraw()});
+ $('#ep-cost-add')?.addEventListener('click',()=>{collect();EV.event_plan.budget_lines.push({category:'other',description:'',provider:'',estimate:0,payer:'client_direct',quote:false});redraw()});
+ document.querySelectorAll('[data-ep-taskdel]').forEach(b=>b.onclick=()=>{collect();EV.event_plan.checklist.splice(+b.dataset.epTaskdel,1);redraw()});
+ document.querySelectorAll('[data-ep-costdel]').forEach(b=>b.onclick=()=>{collect();EV.event_plan.budget_lines.splice(+b.dataset.epCostdel,1);redraw()});
+ const planTotals=()=>{const list=EV.event_plan?.budget_lines||[],sum=list.reduce((a,x)=>a+(+x.estimate||0),0),quote=list.filter(x=>x.quote&&x.payer==='gotham').reduce((a,x)=>a+(+x.estimate||0),0);$('#ep-total').textContent=imoney(sum,'GHS');$('#ep-quote-total').textContent=imoney(quote,'GHS')};
+ document.querySelectorAll('#ep-costs input,#ep-costs select').forEach(x=>x.oninput=x.onchange=()=>{collect();planTotals()});
+ planTotals();
+ $('#ep-make-quote')?.addEventListener('click',async()=>{collect();const p=EV.event_plan;const lines=p.budget_lines.filter(x=>x.quote&&x.payer==='gotham'&&x.description&&x.estimate>0).map(x=>({description:`${EV.title} — ${x.description}${x.provider?' ('+x.provider+')':''}`,qty:1,unit:x.estimate,discount:0}));
+  if(!lines.length){toast('Select at least one priced line marked “Gotham charges client” and include in quote.');return}
+  if(!p.client_name&&!p.client_company){$('#ep-client').focus();toast('Add the client or company name first.');return}
+  if(!(await save()))return;
+  try{const d=await api('/api/invoices',{method:'POST',body:JSON.stringify({kind:'quote',bill_to:{name:p.client_name,company:p.client_company,email:p.client_email,country:'Ghana',residency:'resident'},currency:'GHS',lines,notes:`Event services quotation for ${EV.title} (${EV.code}). Supplier estimates marked client-direct are excluded. Confirm final scope, availability and supplier pricing before issuing.`})});
+   EV=null;await invSettingsLoad();go('inv');await new Promise(ok=>setTimeout(ok,40));await invOpen(d.id);toast('Draft quotation created — review it before issuing');
+  }catch(e){toast(e.error==='bill_to_required'?'Add a client name first.':'Could not prepare the quote. Check the event plan and try again.')}});
  $('#ev-back').onclick=()=>{EV=null;events()};if($('#ev-chat'))$('#ev-chat').onclick=()=>chatThread('item',i.code);
  if($('#flyer-ai'))$('#flyer-ai').onclick=async()=>{
   collect();if(!(await save()))return;try{toast('Drafting flyer copy…');const r=await api('/api/items/'+encodeURIComponent(EV.code)+'/flyer-copy',{method:'POST',body:JSON.stringify({language:EV.flyer.language,style:'clear, welcoming and professional'})});

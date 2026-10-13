@@ -25,6 +25,9 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | R-9 | "Yes" / "Maybe" to follow-up puts the person on the Outreach list; "No" and do-not-contact are respected. | api/08 |
 | R-10 | Registration is also possible by WhatsApp or email from the same screen, with only the lines the person filled in. | manual |
 | R-11 | After an event ends, it is marked past automatically and retained in the back office; it is removed from the homepage and registration choices, and stale registration links are refused. Historical event pages may remain in the public events archive. | api/08; site build; browser E2E |
+| EVT-1 | An event record keeps a private client brief, event lead, guest target, budget ceiling, contingency, notes and assigned readiness checklist; private planning fields never appear in the public events API. | api/01_media_events |
+| EVT-2 | Event budgets identify category, supplier, estimate and payer route. Supplier-direct estimates are planning-only and are never silently counted as Gotham revenue or copied into a quote. | api/01_media_events; admin event planner |
+| EVT-3 | Joy can select priced lines explicitly marked for Gotham's quote, save the plan and create an editable draft GHS quotation; issuing or emailing remains a deliberate review action in Invoices & quotes. | admin event planner; invoices API |
 
 ## 2. Prices and money
 

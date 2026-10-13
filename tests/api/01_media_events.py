@@ -92,6 +92,10 @@ ev={'code':'F5','kind':'event','title':'SMEs at the Centre','subtitle':'A workin
  'docs':[{'id':doc['id'],'label':'Sponsorship pack'}],
  'agenda':[{'time':'09:30','what':'Registration'},{'time':'10:00','what':'Opening'}],
  'speakers':[{'name':'Joy Anthony Preston','role':'Gotham Consult'}],
+ 'event_plan':{'purpose':'Connect local makers with buyers','owner':'Joy','client_name':'Ama Client','client_company':'Accra Makers','client_email':'ama@example.test','guest_target':80,'budget_ceiling':25000,'contingency_pct':10,
+   'notes':'Confirm venue access and dietary needs.','checklist':[{'task':'Confirm venue','owner':'Joy','due':'2026-10-20','status':'doing'}],
+   'budget_lines':[{'category':'catering','description':'Guest catering','provider':'Test Caterer','estimate':8500,'payer':'client_direct','quote':False},
+                   {'category':'speaker','description':'Speaker fee','provider':'Guest Speaker','estimate':3000,'payer':'gotham','quote':True}]},
  'flyer':{'eyebrow':'You are invited','headline':'SMEs at the Centre','body':'A working forum for Ghanaian enterprise.','cta':'Scan to register',
           'template':'navy','format':'social','language':'en','image':'cover','qr_slug':'event-f5'} }
 st,d,_ = call('/api/items', ev, cookie=ck)
@@ -103,7 +107,15 @@ st,d,_ = call('/api/items')
 assert st==200, (st,d)  # public list is intentionally available without a session
 it=[x for x in d['items'] if x['code']=='F5'][0]
 assert it['flyer']['headline']=='SMEs at the Centre' and it['flyer']['template']=='navy' and it['flyer']['qr_slug']=='event-f5', it.get('flyer')
+assert 'event_plan' not in it, 'private event plan leaked into public API'
 print('flyer settings persisted and returned OK')
+
+st,admin_items,_=call('/api/items/all',cookie=ck)
+assert st==200,(st,admin_items)
+plan=[x for x in admin_items['rows'] if x['code']=='F5'][0]['event_plan']
+assert plan['client_email']=='ama@example.test' and plan['checklist'][0]['status']=='doing'
+assert plan['budget_lines'][0]['payer']=='client_direct' and plan['budget_lines'][1]['quote'] is True
+print('private event brief, checklist and supplier/service budget persist for CRM users only')
 
 # AI flyer suggestions stay behind the admin gate and explain when the server key is absent.
 st,d,_ = call('/api/items/F5/flyer-copy', {'language':'en'}, cookie=None)

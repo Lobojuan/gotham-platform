@@ -516,6 +516,7 @@ alter table users add column if not exists phone text;
 alter table users add column if not exists chat_since timestamptz default now();
 alter table items add column if not exists updates jsonb default '[]'::jsonb;   -- [{at,text}] public news lines on the forum page
 alter table items add column if not exists flyer jsonb default '{}'::jsonb;   -- editable admin flyer artwork/copy settings
+alter table items add column if not exists event_plan jsonb not null default '{}'::jsonb; -- private planning, checklist and budget; never public
 create table if not exists chat_channels (
   id serial primary key,
   kind text not null default 'channel' check (kind in ('channel','dm','record')),

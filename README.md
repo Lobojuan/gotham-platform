@@ -26,6 +26,17 @@ The site reads events and sponsors from the API on load, so
 content edited in the back office appears without a redeploy — and falls back to
 the copy baked into the page if the API is unreachable.
 
+Event delivery stays in that same back office: **Events & media** holds the public
+event page, registration, speakers, agenda, QR code and flyer. Its private **Event
+plan for Joy** adds the client brief, a task checklist with owners/due dates, guest
+target, budget ceiling and contingency, plus a supplier/service estimate. Mark each
+budget item as client-paid-direct, Gotham-billed, or included in a service fee. Only
+priced items deliberately checked for the quotation and marked Gotham-billed are
+copied into a draft GHS quote. Client-direct supplier estimates remain planning-only.
+The quote still needs Joy's review of scope, price, tax and terms before issue/email.
+This private planning data is stored on the event record and is not returned by the
+public events API.
+
 The site is plain static files. Moving it onto a CDN later is a matter of
 copying `apps/site/dist` there; nothing in the code assumes where it is served
 from.

@@ -3743,7 +3743,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (p === '/api/items/all' && req.method === 'GET') {
       if (!auth()) return json(res, 401, { error: 'no_session' });
       await archiveExpiredEvents();
-      const { rows } = await q(`select ${ITEM_COLS},
+      const { rows } = await q(`select ${ITEM_COLS}, i.event_plan,
         (select count(*) from registrations r where r.item_code=i.code and r.status<>'cancelled') as registrations
         from items i order by i.sort, i.starts_at nulls last`);
       return json(res, 200, { rows: await withMedia(rows) });
@@ -3938,15 +3938,35 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         format:['social','a4'].includes(b.flyer.format) ? b.flyer.format : 'social',
         image:clean(b.flyer.image,32), qr_slug:clean(b.flyer.qr_slug,40), language:clean(b.flyer.language,2).toLowerCase() || 'en'
       } : {};
+      const plan = b.event_plan && typeof b.event_plan === 'object' && !Array.isArray(b.event_plan) ? b.event_plan : {};
+      const eventPlan = {
+        purpose: clean(plan.purpose, 600), owner: clean(plan.owner, 120), client_name: clean(plan.client_name, 160),
+        client_company: clean(plan.client_company, 160), client_email: clean(plan.client_email, 160).toLowerCase(),
+        guest_target: Math.max(0, Math.min(100000, parseInt(plan.guest_target, 10) || 0)),
+        budget_ceiling: Math.max(0, Math.min(1000000000, Number(plan.budget_ceiling) || 0)),
+        contingency_pct: Math.max(0, Math.min(50, Number(plan.contingency_pct) || 0)),
+        notes: clean(plan.notes, 4000),
+        checklist: (Array.isArray(plan.checklist) ? plan.checklist : []).slice(0, 40).map(x => ({
+          task: clean(x.task, 160), owner: clean(x.owner, 100), due: /^\d{4}-\d{2}-\d{2}$/.test(x.due || '') ? x.due : '',
+          status: ['todo','doing','done','blocked'].includes(x.status) ? x.status : 'todo'
+        })).filter(x => x.task),
+        budget_lines: (Array.isArray(plan.budget_lines) ? plan.budget_lines : []).slice(0, 80).map(x => ({
+          category: ['venue','catering','speaker','production','travel','staffing','marketing','technology','other'].includes(x.category) ? x.category : 'other',
+          description: clean(x.description, 180), provider: clean(x.provider, 160),
+          estimate: Math.max(0, Math.min(1000000000, Number(x.estimate) || 0)),
+          payer: ['client_direct','gotham','included'].includes(x.payer) ? x.payer : 'client_direct',
+          quote: x.quote === true
+        })).filter(x => x.description)
+      };
       await q(`insert into items(code,kind,title,subtitle,venue,starts_at,ends_at,currency,price,per,capacity,published,sort,approval,phase,audiences,
-                 slug,summary,description,cover,gallery,docs,agenda,speakers,recap,flyer)
-        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26)
+                 slug,summary,description,cover,gallery,docs,agenda,speakers,recap,flyer,event_plan)
+        values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
         on conflict (code) do update set kind=excluded.kind,title=excluded.title,subtitle=excluded.subtitle,venue=excluded.venue,
           starts_at=excluded.starts_at,ends_at=excluded.ends_at,currency=excluded.currency,price=excluded.price,per=excluded.per,
           capacity=excluded.capacity,published=excluded.published,sort=excluded.sort,approval=excluded.approval,
           phase=excluded.phase,audiences=excluded.audiences,slug=excluded.slug,summary=excluded.summary,
           description=excluded.description,cover=excluded.cover,gallery=excluded.gallery,docs=excluded.docs,
-          agenda=excluded.agenda,speakers=excluded.speakers,recap=excluded.recap,flyer=excluded.flyer`,
+          agenda=excluded.agenda,speakers=excluded.speakers,recap=excluded.recap,flyer=excluded.flyer,event_plan=excluded.event_plan`,
         [code, clean(b.kind, 12) || 'event', clean(b.title, 200), clean(b.subtitle, 200), clean(b.venue, 120),
           b.starts_at || null, b.ends_at || null, 'GHS', Number(b.price) || 0, clean(b.per, 20) || null,
           b.capacity ? +b.capacity : null, b.published !== false, +b.sort || 0,
@@ -3955,7 +3975,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
           JSON.stringify(list(b.gallery).slice(0, 80)),
           JSON.stringify(list(b.docs).slice(0, 8).map(d => ({ id: clean(d.id, 32), label: clean(d.label, 120) }))),
           JSON.stringify(list(b.agenda).slice(0, 30).map(a => ({ time: clean(a.time, 20), what: clean(a.what, 200) }))),
-          JSON.stringify(list(b.speakers).slice(0, 20).map(x => ({ name: clean(x.name, 100), role: clean(x.role, 140), media: clean(x.media, 32) || null }))), clean(b.recap, 8000) || null, JSON.stringify(flyer)]);
+          JSON.stringify(list(b.speakers).slice(0, 20).map(x => ({ name: clean(x.name, 100), role: clean(x.role, 140), media: clean(x.media, 32) || null }))), clean(b.recap, 8000) || null, JSON.stringify(flyer), JSON.stringify(eventPlan)]);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'item_save', code + ' — ' + clean(b.title, 120)]);
       return json(res, 200, { ok: true, code, slug });
     }
