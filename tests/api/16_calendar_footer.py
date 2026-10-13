@@ -55,6 +55,9 @@ ok('system emails and QR posters no longer name Carlson')
 st, d, _ = call('/api/items', {'code': 'F9', 'kind': 'event', 'title': 'Investor Breakfast', 'venue': 'Kempinski Accra', 'starts_at': D(5) + 'T08:00:00Z',
     'ends_at': D(5) + 'T11:00:00Z', 'price': 100, 'currency': 'GHS', 'capacity': 40, 'published': True, 'phase': 'open'}, cookie=ck); assert st == 200, d
 st, d, _ = call('/api/items', {'code': 'D1', 'kind': 'event', 'title': 'Secret Draft', 'starts_at': D(6) + 'T08:00:00Z', 'price': 0, 'currency': 'GHS', 'published': False}, cookie=ck); assert st == 200, d
+st, d, _ = call('/api/items', {'code': 'F10', 'kind': 'event', 'title': 'Maker Showcase', 'starts_at': D(9) + 'T08:00:00Z', 'ends_at': D(9) + 'T12:00:00Z',
+    'price': 0, 'currency': 'GHS', 'published': True, 'event_plan': {'purpose': 'Show local makers', 'owner': 'Joy', 'client_name': 'Private client',
+    'checklist': [{'task': 'Confirm venue', 'owner': 'Joy', 'due': D(4), 'status': 'doing'}, {'task': 'Print badges', 'owner': 'Team', 'due': D(7), 'status': 'done'}]}}, cookie=ck); assert st == 200, d
 st, t1, _ = call('/api/tasks', {'title': 'Call Adwoa about the breakfast', 'due_at': D(1) + 'T09:30:00Z', 'contact_id': cid}, cookie=ck); assert st == 200, t1
 st, dl, _ = call('/api/deals', {'title': 'Volta sponsorship', 'contact_id': cid, 'kind': 'sponsorship', 'value': 25000, 'stage': 'proposal', 'next_step': 'Send the proposal', 'next_date': D(2)}, cookie=ck); assert st == 200, dl
 st, n1, _ = call('/api/notes', {'contact_id': cid, 'kind': 'meeting', 'body': 'Met at the office, keen on headline tier'}, cookie=ck); assert st == 200, n1
@@ -70,10 +73,16 @@ ok('campaign scheduled for a future time; a past time is refused')
 
 st, cal, _ = call('/api/calendar?from=%s&to=%s' % (D(-3), D(30)), cookie=ck); assert st == 200, cal
 types = {}; [types.setdefault(e['type'], []).append(e) for e in cal['rows']]
-need = {'event', 'task', 'deal', 'closed', 'campaign', 'activity', 'registration', 'payment', 'sponsor'}
+need = {'event', 'eventtask', 'task', 'deal', 'closed', 'campaign', 'activity', 'registration', 'payment', 'sponsor'}
 assert need <= set(types), sorted(types)
 ev = [e for e in types['event'] if e['id'] == 'F9'][0]; assert ev['sub'].startswith('Kempinski') and '2/40 registered' in ev['sub'], ev
 assert any(e['id'] == 'D1' and 'draft' in e['sub'] for e in types['event'])
+plan_tasks = [e for e in types['eventtask'] if e['link'] == {'kind': 'event', 'id': 'F10'}]
+assert len(plan_tasks) == 2 and any(e['title'] == 'Confirm venue' and e['start'] == D(4) and not e['done'] for e in plan_tasks), plan_tasks
+assert any(e['title'] == 'Print badges' and e['done'] for e in plan_tasks), plan_tasks
+st, deadline_only, _ = call('/api/calendar?from=%s&to=%s' % (D(3), D(5)), cookie=ck)
+assert not any(e['id'] == 'F10' and e['type'] == 'event' for e in deadline_only['rows'])
+assert any(e['title'] == 'Confirm venue' and e['type'] == 'eventtask' for e in deadline_only['rows']), deadline_only['rows']
 assert types['task'][0]['link'] == {'kind': 'task', 'id': t1['id']} and types['task'][0]['movable'] and 'Volta Foods' in types['task'][0]['sub']
 assert types['deal'][0]['title'] == 'Book a call' and types['deal'][0]['start'] == D(2)
 assert types['closed'][0]['title'] == 'Won: Volta sponsorship'
@@ -108,6 +117,7 @@ st, sc2, _ = call('/api/calendar?from=%s&to=%s' % (D(-3), D(30)), cookie=sck)
 st_types = {e['type'] for e in sc2['rows']}
 assert st_types <= {'event', 'task', 'registration', 'payment'} and 'event' in st_types, st_types
 assert [e['title'] for e in sc2['rows'] if e['type'] == 'task'] == ['Print badges'] and not any(e['id'] == 'D1' for e in sc2['rows'] if e['type'] == 'event')
+assert not any(e['type'] == 'eventtask' or 'Private client' in e.get('sub', '') for e in sc2['rows']), sc2['rows']
 assert not any('GHS' in e['title'] for e in sc2['rows'])
 ok('staff see events, their own tasks and registration counts only: no deals, clients, campaigns, drafts or money')
 

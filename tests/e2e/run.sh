@@ -1,6 +1,6 @@
 #!/bin/bash
-# Website end-to-end test: builds the site, starts the server on a fresh test database with a mock AI provider,
-# then runs tests/e2e/site_e2e.js on phones (iPhone SE, iPhone 15, Galaxy A, Pixel 7), iPad and desktop.
+# Website and CRM end-to-end test: builds the site, starts the server on a fresh test database with a mock AI provider,
+# then runs the CRM command-centre flow and site tests on phones, iPad and desktop.
 #   PLAYWRIGHT=/path/to/playwright CHROMIUM=/path/to/chromium TEST_DATABASE_URL=postgres://user@127.0.0.1:5432/gotham_test bash tests/e2e/run.sh
 set -u
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
@@ -20,7 +20,9 @@ rm -rf /tmp/e2e-media; mkdir -p /tmp/e2e-media
   OPENAI_API_KEY=e2e-test-key OPENAI_BASE_URL=http://127.0.0.1:4299 OPENAI_MODEL=mock-model ASK_DAILY_CAP=500 \
   exec node server.js >/tmp/e2e-server.log 2>&1 ) & SRV=$!
 for i in $(seq 60); do curl -s -o /dev/null -w '%{http_code}' 127.0.0.1:$PORT/api/health | grep -q 200 && break; sleep .4; done
-BASE=http://127.0.0.1:$PORT node "$ROOT/tests/e2e/site_e2e.js"; rc=$?
+psql "$DB" -q -c "update users set must_change=false where email='admin'" || exit 2
+BASE=http://127.0.0.1:$PORT ADMIN_PW=e2e-owner-pass PLAYWRIGHT=${PLAYWRIGHT:-playwright} CHROMIUM=${CHROMIUM:-} node "$ROOT/tests/ui/crm_flows.js"; rc=$?
+if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/e2e/site_e2e.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/v2_carousel_language.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/ask_voice_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/investor_portal_ui.js"; rc=$?; fi

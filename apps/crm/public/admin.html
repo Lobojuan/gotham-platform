@@ -27,6 +27,18 @@ input.t:focus,select.t:focus,textarea.t:focus{border-color:var(--ink);box-shadow
 .kpi{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px}
 .kpi b{display:block;font-size:26px}.kpi span{font-size:13px;color:var(--mute)}
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:18px}
+.command-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 22px;margin-bottom:16px;border-radius:18px;color:#fff;background:radial-gradient(ellipse at 90% 10%,rgba(201,162,75,.3),transparent 40%),linear-gradient(120deg,#0F1B2D,#172D43);box-shadow:0 12px 30px rgba(15,27,45,.12)}
+.command-head h2{font-size:21px}.command-head p{margin:3px 0 0;color:#D9E0E7;font-size:13px}.command-head .btn-line{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff}
+.command-head .btn-dark{background:#C9A24B;color:#0F1B2D}
+.command-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(280px,.85fr);gap:16px;margin-bottom:18px;align-items:start}.command-grid .card{margin:0;height:100%}
+.command-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}.command-card-head h3{font-size:16px}.command-card-head p{font-size:12px;color:var(--mute);margin:2px 0 0}
+.command-list{display:flex;flex-direction:column;gap:7px}.command-row{display:flex;align-items:center;gap:11px;width:100%;min-width:0;min-height:58px;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:left;cursor:pointer;transition:border-color .15s,transform .15s,box-shadow .15s}
+.command-row:hover{border-color:var(--gold);transform:translateY(-1px);box-shadow:0 5px 14px rgba(15,27,45,.06)}.command-dot{width:9px;height:36px;border-radius:8px;background:var(--gold);flex:none}.command-dot.task{background:var(--ink)}.command-dot.deal{background:var(--green)}.command-dot.activity{background:#2F6DB5}.command-dot.eventtask{background:#0F7C86}
+.command-date{width:54px;flex:none;color:var(--mute);font-size:12px;line-height:1.3;text-align:center}.command-date b{display:block;font-size:12px;color:var(--ink)}.command-copy{min-width:0;flex:1}.command-copy b,.command-copy small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.command-copy b{font-size:13px}.command-copy small{font-size:12px;color:var(--mute)}
+.command-empty{padding:18px 10px;text-align:center;color:var(--mute);font-size:13px;background:var(--paper);border-radius:12px}.command-event{padding:11px 0;border-top:1px solid var(--line)}.command-event:first-child{border-top:0;padding-top:0}.command-event-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.command-event-top button{border:0;background:none;padding:0;text-align:left;font-weight:600;cursor:pointer}.command-event-top button:hover{text-decoration:underline;text-underline-offset:3px}.command-progress{height:7px;border-radius:8px;background:var(--sunk);overflow:hidden;margin:8px 0 4px}.command-progress i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--green),#54A781)}
+.command-news{padding:10px 0;border-top:1px solid var(--line)}.command-news:first-of-type{border-top:0;padding-top:0}.command-news a{font-weight:600;color:var(--ink);text-decoration:none}.command-news a:hover{text-decoration:underline;text-underline-offset:3px}.command-news p{font-size:12px;color:var(--mute);margin:3px 0 0;line-height:1.45}.command-meta{font-size:12px;color:var(--mute);margin-top:3px}
+@media(max-width:900px){.command-grid{grid-template-columns:1fr}}
+@media(max-width:700px){.command-head{align-items:flex-start;flex-direction:column;padding:18px}.command-head .pact{width:100%}.command-head .btn{justify-content:center;flex:1}.command-date{width:48px}.command-event-top button{min-height:44px;display:flex;align-items:center}.tcheck,input[type=checkbox].tcheck{-webkit-appearance:none;appearance:none;width:44px;height:44px;min-width:44px;border:0;border-radius:10px;background:transparent;margin:0;position:relative;cursor:pointer}.tcheck:before{content:"";position:absolute;inset:11px;border:2px solid #B9BEC6;border-radius:6px;background:#fff}.tcheck:checked,.tcheck:checked:hover{background:transparent;border:0}.tcheck:checked:before{background:var(--green);border-color:var(--green)}.tcheck:checked:after{position:absolute;left:20px;top:14px}}
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 .filters input.t,.filters select.t{width:auto;min-width:150px}
 table{width:100%;border-collapse:collapse;font-size:14px}
@@ -363,7 +375,7 @@ a.chip{cursor:pointer}a.chip:hover{background:#E7E7E1}
 .cal-f{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .cal-fc{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;min-height:36px;transition:opacity .15s}
 .cal-fc i{width:9px;height:9px;border-radius:50%}.cal-fc b{color:var(--mute);font-weight:600}.cal-fc.off{opacity:.42}.cal-fc.off i{background:#C9CDD3!important}
-.t-event{--c:#A9761F}.t-task{--c:#0F1B2D}.t-deal{--c:#1F6B4E}.t-closed{--c:#6E8B3D}.t-campaign{--c:#6B4EA0}.t-activity{--c:#2F6DB5}.t-registration{--c:#0F7C86}.t-payment{--c:#B7791F}.t-sponsor{--c:#9C7A2B}
+.t-event{--c:#A9761F}.t-eventtask{--c:#0F7C86}.t-task{--c:#0F1B2D}.t-deal{--c:#1F6B4E}.t-closed{--c:#6E8B3D}.t-campaign{--c:#6B4EA0}.t-activity{--c:#2F6DB5}.t-registration{--c:#0F7C86}.t-payment{--c:#B7791F}.t-sponsor{--c:#9C7A2B}
 .cal-fc i,.cal-dots i{background:var(--c)}
 .cal-wd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));font-size:12px;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.06em;padding:0 2px 6px}
 .cal-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--line);gap:1px}
@@ -920,7 +932,11 @@ async function badges(){const o=await api('/api/overview').catch(()=>null);if(!o
 async function dashboard(){
  const h=new Date().getHours();setTitle((h<12?'Good morning':h<17?'Good afternoon':'Good evening')+', '+first(ME.name||ME.email),new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}));
  $('#view').innerHTML='<div class="empty">Loading…</div>';
- const [o,tk]=await Promise.all([badges(),api('/api/tasks?scope=mine')]);if(!o||V!=='dash')return;
+ const todayISO=ymd(new Date()), through=addD(todayISO,13);
+ const [o,tk,cal,market,events]=await Promise.all([
+  badges(),api('/api/tasks?scope=mine'),api(`/api/calendar?from=${todayISO}&to=${through}`).catch(()=>({rows:[]})),
+  api('/api/report/public').catch(()=>({updates:[]})),isAdmin()?api('/api/items/all').catch(()=>({rows:[]})):Promise.resolve({rows:[]})
+ ]);if(!o||V!=='dash')return;
  const ev=o.next_event, pend=ROWS.filter(r=>r.status==='pending'), unpaid=ROWS.filter(r=>!r.paid&&Number(r.amount)>0&&!['cancelled','declined'].includes(r.status));
  const kp=(label,val,sub,to)=>`<div class="kpi ${to?'link':''}" ${to?`data-go="${to}"`:''}><span>${label}</span><b>${val}</b>${sub?`<small>${sub}</small>`:''}</div>`;
  const t=o.my_tasks;
@@ -935,7 +951,23 @@ async function dashboard(){
    <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:14px"><span><b>${ev.seats}</b> seats taken${ev.capacity?' of '+ev.capacity:''}</span><span class="muted">${ev.pending?`<b style="color:#7A5310">${ev.pending} waiting for approval</b> · `:''}${ev.checked_in} checked in</span></div>
    ${ev.capacity?`<div class="bar" style="height:8px"><i style="width:${Math.min(100,ev.seats/ev.capacity*100)}%"></i></div>`:''}</div>`:'';
  const stages=['lead','contacted','meeting','proposal'].map(s=>({s,...(o.pipeline.find(p=>p.stage===s)||{n:0,v:0})}));const maxv=Math.max(1,...stages.map(s=>s.v));
- const html=`<div class="kpis">${kpis}</div>
+ const dateFor=e=>e.all_day?new Date(String(e.start).slice(0,10)+'T12:00:00'):new Date(e.start);
+ const calRows=(cal.rows||[]).filter(e=>!e.done&&dateFor(e)>=new Date(todayISO+'T00:00:00')).sort((a,b)=>dateFor(a)-dateFor(b)).slice(0,8);
+ const calType={event:'Event',eventtask:'Event task',task:'Task',deal:'Sales next step',closed:'Deal update',campaign:'Campaign',activity:'Client meeting',registration:'Registration',payment:'Payment milestone',sponsor:'Sponsor'};
+ const dashCalendarRows=calRows.map((e,n)=>`<button type="button" class="command-row" data-dash-cal="${n}"><i class="command-dot ${esc(e.type)}"></i><span class="command-date"><b>${dateFor(e).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:e.all_day?'UTC':'Africa/Accra'})}</b>${e.all_day?'All day':dateFor(e).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',timeZone:'Africa/Accra'})}</span><span class="command-copy"><b>${esc(e.title)}</b><small>${esc(calType[e.type]||'CRM item')}${e.sub?' · '+esc(e.sub):''}</small></span><span aria-hidden="true">›</span></button>`).join('');
+ const dashEvents=(events.rows||[]).filter(i=>i.kind==='event'&&i.starts_at&&new Date(i.starts_at)>=new Date()).sort((a,b)=>new Date(a.starts_at)-new Date(b.starts_at)).slice(0,4);
+ const dashEventProgress=dashEvents.map(i=>{const list=Array.isArray(i.event_plan?.checklist)?i.event_plan.checklist:[],done=list.filter(t=>t.status==='done').length,blocked=list.filter(t=>t.status==='blocked').length,overdue=list.filter(t=>t.status!=='done'&&t.due&&t.due<todayISO).length;return {i,list,done,blocked,overdue,pct:list.length?Math.round(done/list.length*100):0}});
+ const newest=(market.updates||[]).filter(u=>u&&u.title&&u.at).slice(0,3);
+ const newsChecked=market.checked?new Date(market.checked).toLocaleString('en-GB',{timeZone:'Africa/Accra',dateStyle:'medium',timeStyle:'short'}):'';
+ const command=`<div class="command-head"><div><h2>Your day at Gotham</h2><p>Events, client work and verified market signals—connected to their CRM records.</p></div><div class="pact"><a class="btn btn-line" href="#cal">Open calendar</a>${isAdmin()?'<a class="btn btn-dark" href="#events">Manage events</a>':''}</div></div>
+ <div class="command-grid"><section class="card"><div class="command-card-head"><div><h3>Next 14 days</h3><p>${calRows.length?`${calRows.length} upcoming items across your CRM`:'Your schedule, follow-ups and event deadlines'}</p></div><a class="btn btn-line" href="#cal">Full calendar</a></div>
+  <div class="command-list">${dashCalendarRows||'<div class="command-empty">Nothing scheduled in the next two weeks. Add an event or follow-up to start your plan.</div>'}</div></section>
+  <div><section class="card"><div class="command-card-head"><div><h3>Event readiness</h3><p>Checklist progress for upcoming events</p></div><a class="btn btn-line" href="${isAdmin()?'#events':'#regs'}">${isAdmin()?'Events':'Guests'}</a></div>
+   ${isAdmin()?(dashEventProgress.length?dashEventProgress.map(x=>`<div class="command-event"><div class="command-event-top"><button type="button" data-dash-event="${esc(x.i.code)}">${esc(x.i.title)}</button><span class="note">${new Date(x.i.starts_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Africa/Accra'})}</span></div>${x.list.length?`<div class="command-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${x.pct}" aria-label="Event checklist ${x.pct}% complete"><i style="width:${x.pct}%"></i></div><div class="command-meta">${x.done} of ${x.list.length} checklist items complete${x.blocked?` · ${x.blocked} blocked`:''}${x.overdue?` · <b class="cal-od">${x.overdue} overdue</b>`:''}</div>`:'<div class="command-meta">Planning checklist not started</div>'}</div>`).join(''):'<div class="command-empty">No upcoming events yet. Create one to start tracking readiness.</div>'):'<div class="command-empty">Event operations are available to CRM administrators.</div>'}
+  </section><section class="card"><div class="command-card-head"><div><h3>Ghana market watch</h3><p>${newsChecked?`Source check · ${esc(newsChecked)} Accra time`:'Latest approved updates'}</p></div><a class="btn btn-line" href="#settings">Review</a></div>
+   ${newest.length?newest.map(u=>`<article class="command-news"><a href="${/^https:\/\//i.test(u.url||'')?esc(u.url):'#settings'}" ${/^https:\/\//i.test(u.url||'')?'target="_blank" rel="noopener noreferrer"':''}>${esc(u.title)}</a><p>${esc(u.text||u.chapter||'Published after source review.')}</p><div class="command-meta">${esc(u.chapter||'Market update')} · ${new Date(u.at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric',timeZone:'Africa/Accra'})} · Verified publication</div></article>`).join(''):'<div class="command-empty">No reviewed market updates are published yet. Source changes stay private until approved.</div>'}
+  </section></div></div>`;
+ const html=`${command}<div class="kpis">${kpis}</div>
  <div class="grid2"><div>
   ${evCard}
   <div class="card"><div class="ch"><h3>My tasks</h3><a class="btn btn-line" href="#tasks">All tasks</a></div>
@@ -949,6 +981,8 @@ async function dashboard(){
   <div class="card"><div class="ch"><h3>Events</h3></div>${(STATS.events||[]).map(e=>{const pct=e.capacity?Math.min(100,e.seats/e.capacity*100):0;return `<div class="ev"><div style="flex:1"><b>${esc(e.title)}</b><div class="note">${e.seats} registered${e.capacity?' of '+e.capacity:''} · ${e.seats_paid} paid · ${e.checked_in} checked in</div>${e.capacity?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}</div></div>`}).join('')||'<div class="empty">No events yet.</div>'}</div>
  </div></div>`;
  $('#view').innerHTML=html;wireTasks($('#view'),dashboard);
+ const scheduleLookup=calRows;document.querySelectorAll('[data-dash-cal]').forEach(b=>b.onclick=()=>calOpen(scheduleLookup[+b.dataset.dashCal]));
+ if(isAdmin())document.querySelectorAll('[data-dash-event]').forEach(b=>b.onclick=()=>{const i=(events.rows||[]).find(x=>x.code===b.dataset.dashEvent);if(i){EV=JSON.parse(JSON.stringify(i));go('events')}});
  document.querySelectorAll('[data-go]').forEach(k=>k.onclick=()=>go(k.dataset.go));
 }
 
@@ -1846,9 +1880,9 @@ async function designerPanel(c,evOpts){
 }
 
 /* ===================== calendar: everything with a date ===================== */
-const CALT={event:['Events','#A9761F'],task:['Tasks','#0F1B2D'],deal:['Next steps','#1F6B4E'],closed:['Won & lost','#6E8B3D'],campaign:['Campaigns','#6B4EA0'],
+const CALT={event:['Events','#A9761F'],eventtask:['Event tasks','#0F7C86'],task:['Tasks','#0F1B2D'],deal:['Next steps','#1F6B4E'],closed:['Won & lost','#6E8B3D'],campaign:['Campaigns','#6B4EA0'],
  activity:['Calls & meetings','#2F6DB5'],registration:['Registrations','#0F7C86'],payment:['Payments','#B7791F'],sponsor:['Sponsors','#9C7A2B']};
-const CAL1={event:'event',task:'task',deal:'next step',closed:'deal won or lost',campaign:'campaign',activity:'call or meeting',registration:'registration day',payment:'payment day',sponsor:'sponsor date'};
+const CAL1={event:'event',eventtask:'event checklist task',task:'task',deal:'next step',closed:'deal won or lost',campaign:'campaign',activity:'call or meeting',registration:'registration day',payment:'payment day',sponsor:'sponsor date'};
 let CAL=(()=>{let s={};try{s=JSON.parse(localStorage.getItem('gc-cal')||'{}')}catch(e){}
  return {mode:s.mode||(innerWidth<700?'agenda':'month'),anchor:new Date().toISOString().slice(0,10),off:new Set(s.off||[]),mine:!!s.mine,sel:null}})();
 const calSave=()=>{try{localStorage.setItem('gc-cal',JSON.stringify({mode:CAL.mode,off:[...CAL.off],mine:CAL.mine}))}catch(e){}};

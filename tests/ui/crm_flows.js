@@ -1,6 +1,6 @@
 // CRM end to end in a browser: laptop and phone. Needs seed_demo.py + seed_crm.py on :4199.
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright-core');
-const B = 'http://127.0.0.1:4199', PW = process.env.ADMIN_PW || 'Admin2025-qa!';
+const B = process.env.BASE || 'http://127.0.0.1:4199', PW = process.env.ADMIN_PW || 'Admin2025-qa!';
 const ok = m => console.log('  ok', m);
 (async () => {
  const b = await chromium.launch({ executablePath: process.env.CHROMIUM || undefined, args: ['--no-sandbox'] });
@@ -11,6 +11,10 @@ const ok = m => console.log('  ok', m);
   const tap = s => d.m ? p.tap(s) : p.click(s);
   await p.goto(B + '/admin'); await p.fill('#e', 'admin'); await p.fill('#pw', PW); await tap('#lbtn'); await p.waitForSelector('#app', { state: 'visible' });
   await p.waitForSelector('.kpi'); ok('dashboard loads with KPIs');
+  await p.waitForSelector('.command-head'); ok('dashboard opens the CRM command centre');
+  await p.waitForSelector('.command-grid'); ok('calendar, event readiness and market-watch panels are connected');
+  if (await p.locator('.command-grid .command-card-head').count() !== 3) throw new Error('command-centre cards did not all render');
+  ok('schedule, event readiness and sourced market-watch cards render');
   // new deal from + New, for a brand-new company
   const co = 'Volta Logistics ' + d.n;
   await tap('#newb'); await tap('#newm [data-new="deal"]'); await p.waitForSelector('#nd-c');

@@ -5667,7 +5667,7 @@ async function paystackRecord(ref) {
    starts and what went out each day), logged calls and meetings, registrations and payments
    per day, sponsor start and end dates. Each entry says where it lives, so a click opens it. */
 const ymdOf = d => (d instanceof Date ? d : new Date(d)).toISOString().slice(0, 10);
-const CAL_TYPES = ['event', 'task', 'deal', 'closed', 'campaign', 'activity', 'registration', 'payment', 'sponsor'];
+const CAL_TYPES = ['event', 'eventtask', 'task', 'deal', 'closed', 'campaign', 'activity', 'registration', 'payment', 'sponsor'];
 async function calEntries(u, from, to, opt = {}) {
   const admin = u.role !== 'staff', mine = !!opt.mine, want = t => (!opt.types || opt.types.includes(t)) && (admin || ['event', 'task', 'registration', 'payment'].includes(t));
   const lo = from + 'T00:00:00Z', hi = to + 'T23:59:59Z', out = [];
@@ -5679,6 +5679,18 @@ async function calEntries(u, from, to, opt = {}) {
     for (const r of rows) out.push({ key: 'event-' + r.code, type: 'event', id: r.code, title: r.title,
       sub: [r.venue, `${r.taken}${r.capacity ? '/' + r.capacity : ''} registered`, r.published ? '' : 'draft'].filter(Boolean).join(' · '),
       start: r.starts_at, end: r.ends_at, all_day: false, location: r.venue || '', link: { kind: 'event', id: r.code } });
+  }
+  if (admin && want('eventtask')) {
+    const { rows } = await q(`select i.code,i.title,x.ordinality,x.value as task
+      from items i cross join lateral jsonb_array_elements(case when jsonb_typeof(i.event_plan->'checklist')='array' then i.event_plan->'checklist' else '[]'::jsonb end)
+        with ordinality as x(value,ordinality)
+      where i.kind='event' and x.value->>'due' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' and x.value->>'due' between $1 and $2 order by x.value->>'due'`, [from, to]);
+    for (const r of rows) {
+      const t = r.task || {}, due = String(t.due || ''), task = String(t.task || '').trim(); if (!task) continue;
+      out.push({ key: `eventtask-${r.code}-${r.ordinality}`, type: 'eventtask', id: `${r.code}-${r.ordinality}`, title: task.slice(0, 160),
+        sub: [r.title, t.owner ? `Owner: ${String(t.owner).slice(0, 80)}` : '', t.status === 'blocked' ? 'Blocked' : t.status === 'doing' ? 'In progress' : ''].filter(Boolean).join(' · '),
+        start: due, all_day: true, done: t.status === 'done', link: { kind: 'event', id: r.code } });
+    }
   }
   if (want('task')) {
     const cond = !admin ? 'and t.assignee=$3' : mine ? 'and (t.assignee=$3 or (t.assignee is null and t.created_by=$3))' : '';

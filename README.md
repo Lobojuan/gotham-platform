@@ -37,6 +37,12 @@ The quote still needs Joy's review of scope, price, tax and terms before issue/e
 This private planning data is stored on the event record and is not returned by the
 public events API.
 
+The back-office Dashboard brings the calendar into a shared command centre: upcoming
+work across the next 14 days, Joy's event-checklist readiness and the latest human-approved
+market updates with original source links. Select an agenda item to open the record it belongs
+to. Event-plan checklist deadlines also appear in the calendar, visible to administrators only;
+staff can continue to use the calendar without seeing private client planning details.
+
 The site is plain static files. Moving it onto a CDN later is a matter of
 copying `apps/site/dist` there; nothing in the code assumes where it is served
 from.

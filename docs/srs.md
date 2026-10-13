@@ -29,6 +29,8 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | EVT-2 | Event budgets identify category, supplier, estimate and payer route. Supplier-direct estimates are planning-only and are never silently counted as Gotham revenue or copied into a quote. | api/01_media_events; admin event planner |
 | EVT-3 | Joy can select priced lines explicitly marked for Gotham's quote, save the plan and create an editable draft GHS quotation; issuing or emailing remains a deliberate review action in Invoices & quotes. | admin event planner; invoices API |
 | EVT-4 | The grounded back-office guide explains the event brief, checklist, budget payer choices and draft quote safeguards. | api/18_ai; backoffice guide |
+| CAL-1 | The CRM home dashboard is a shared command centre: a two-week agenda, event-plan checklist readiness and the latest human-approved, source-linked market updates are visible together and link back to their owning CRM records. Updates retain source-check time; empty or unavailable feeds are stated honestly. | api/16_calendar_footer; ui/crm_flows |
+| CAL-2 | Dated tasks in a private event plan appear in the unified calendar as event checklist items and open their event plan when selected. Only administrators see these private planning tasks; staff calendar results do not expose checklist text or client details. | api/16_calendar_footer |
 
 ## 2. Prices and money
 
