@@ -5230,8 +5230,27 @@ function cleanBank(o) {
   o = o && typeof o === 'object' ? o : {};
   const t = (v, n = 120) => clean(String(v ?? ''), n), acct = v => t(v, 40).toUpperCase().replace(/\s+/g, ''), sw = v => t(v, 14).toUpperCase().replace(/\s+/g, '');
   const out = { bank_name: t(o.bank_name), bank_address: t(o.bank_address, 300), branch: t(o.branch, 80), branch_code: t(o.branch_code, 20), swift: sw(o.swift),
-    account_name: t(o.account_name), account_ghs: acct(o.account_ghs), charges: o.charges === 'SHA' ? 'SHA' : 'OUR', fx: {}, corr: [] };
+    account_name: t(o.account_name), account_ghs: acct(o.account_ghs), charges: o.charges === 'SHA' ? 'SHA' : 'OUR', fx: {}, corr: [], accounts: [] };
   for (const c of BANK_CURS) { const a = acct(o.fx && o.fx[c]); if (a) out.fx[c] = a; }
+  const currencies = ['GHS', ...BANK_CURS];
+  const source = Array.isArray(o.accounts) ? o.accounts.slice(0, 12) : [
+    ...(out.account_ghs ? [{ currency: 'GHS', account_number: out.account_ghs, bank_name: out.bank_name, swift: out.swift, branch: out.branch, branch_code: out.branch_code, account_name: out.account_name, bank_address: out.bank_address, is_default: true }] : []),
+    ...BANK_CURS.filter(c => out.fx[c]).map(c => ({ currency: c, account_number: out.fx[c], bank_name: out.bank_name, swift: out.swift, branch: out.branch, branch_code: out.branch_code, account_name: out.account_name, bank_address: out.bank_address }))
+  ];
+  out.accounts = source.map(x => ({ currency: currencies.includes(x && x.currency) ? x.currency : '', label: t(x && x.label, 80),
+    bank_name: t(x && x.bank_name), account_name: t(x && x.account_name), account_number: acct(x && x.account_number), account_type: t(x && x.account_type, 40),
+    swift: sw(x && x.swift), branch: t(x && x.branch, 80), branch_code: t(x && x.branch_code, 20), bank_address: t(x && x.bank_address, 300), is_default: x && (x.is_default === true || x.is_default === 'true') }))
+    .filter(x => x.currency || x.label || x.bank_name || x.account_name || x.account_number || x.swift || x.branch || x.bank_address);
+  for (const c of currencies) {
+    const same = out.accounts.filter(x => x.currency === c);
+    if (same.length && !same.some(x => x.is_default)) same[0].is_default = true;
+    let seen = false;
+    for (const x of same) { if (x.is_default && !seen) seen = true; else x.is_default = false; }
+  }
+  const primary = c => out.accounts.find(x => x.currency === c && x.is_default) || out.accounts.find(x => x.currency === c);
+  const ghs = primary('GHS');
+  if (ghs) { out.bank_name = ghs.bank_name || out.bank_name; out.bank_address = ghs.bank_address || out.bank_address; out.branch = ghs.branch || out.branch; out.branch_code = ghs.branch_code || out.branch_code; out.swift = ghs.swift || out.swift; out.account_name = ghs.account_name || out.account_name; out.account_ghs = ghs.account_number || out.account_ghs; }
+  for (const c of BANK_CURS) { const x = primary(c); if (x && x.account_number) out.fx[c] = x.account_number; }
   out.corr = (Array.isArray(o.corr) ? o.corr : []).slice(0, 6).map(x => ({ currency: BANK_CURS.includes(x && x.currency) ? x.currency : '', bank: t(x && x.bank), swift: sw(x && x.swift),
     city: t(x && x.city, 160), account: acct(x && x.account) })).filter(x => x.currency && (x.bank || x.swift));
   return out;
@@ -5241,6 +5260,13 @@ function bankErrors(b) {
   if (b.swift && !SWIFT_RE.test(b.swift)) f.push('swift');
   if (b.account_ghs && !ACCT_RE.test(b.account_ghs)) f.push('account_ghs');
   for (const c of Object.keys(b.fx)) if (!ACCT_RE.test(b.fx[c])) f.push('fx_' + c);
+  b.accounts.forEach((x, i) => {
+    if (!['GHS', ...BANK_CURS].includes(x.currency)) f.push(`accounts_${i}_currency`);
+    if (x.account_number && !ACCT_RE.test(x.account_number)) f.push(`accounts_${i}_account_number`);
+    if (x.swift && !SWIFT_RE.test(x.swift)) f.push(`accounts_${i}_swift`);
+    if (x.currency && !x.account_number) f.push(`accounts_${i}_account_number`);
+    if (x.account_number && !x.currency) f.push(`accounts_${i}_currency`);
+  });
   b.corr.forEach((x, i) => { if (x.swift && !SWIFT_RE.test(x.swift)) f.push(`corr_${i}_swift`); if (x.account && !ACCT_RE.test(x.account)) f.push(`corr_${i}_account`); });
   return f;
 }
@@ -5392,23 +5418,25 @@ async function draftFromRegistration(reg, it, g) {
    with the correspondent bank for the currency. Every value has a copy button; the reference is the invoice number. */
 function payBlocks(inv, st, legacy, due) {
   const B = st.bank || {}, cur = inv.currency, ref = inv.number || '';
+  const accountFor = currency => B.accounts?.find(x => x.currency === currency && x.is_default) || B.accounts?.find(x => x.currency === currency) || null;
   const row = (k, v, copy = true) => v ? `<dt>${esc(k)}</dt><dd>${esc(v)}${copy ? ` <button type="button" class="cp" data-c="${esc(v)}" aria-label="Copy ${esc(k)}">Copy</button>` : ''}</dd>` : '';
   const cards = [];
-  const bankRows = acct => row('Account name', B.account_name || st.co_name) + row('Account number', acct) + row('Bank', B.bank_name, false)
-    + row('Branch', [B.branch, B.branch_code ? 'code ' + B.branch_code : ''].filter(Boolean).join(', '), false);
+  const bankRows = acct => row('Account name', acct?.account_name || B.account_name || st.co_name) + row('Account number', acct?.account_number || acct || '') + row('Bank', acct?.bank_name || B.bank_name, false)
+    + row('Branch', [acct?.branch || B.branch, (acct?.branch_code || B.branch_code) ? 'code ' + (acct?.branch_code || B.branch_code) : ''].filter(Boolean).join(', '), false);
   const swiftCard = (c, title, lead) => {
-    const acct = B.fx[c] || B.account_ghs, via = B.corr.filter(x => x.currency === c);
-    return `<div class="pc"><b class="t">${title}</b><p>${lead}</p><dl>${row('Beneficiary', B.account_name || st.co_name)}${row('Account number', acct)}
-      ${row('Beneficiary bank', B.bank_name, false)}${row('SWIFT / BIC', B.swift)}${row('Bank address', B.bank_address, false)}${row('Reference', ref)}
+    const acct = accountFor(c) || accountFor('GHS'), via = B.corr.filter(x => x.currency === c);
+    return `<div class="pc"><b class="t">${title}</b><p>${lead}</p><dl>${row('Beneficiary', acct?.account_name || B.account_name || st.co_name)}${row('Account number', acct?.account_number || B.fx[c] || B.account_ghs)}
+      ${row('Beneficiary bank', acct?.bank_name || B.bank_name, false)}${row('SWIFT / BIC', acct?.swift || B.swift)}${row('Bank address', acct?.bank_address || B.bank_address, false)}${row('Reference', ref)}
       <dt>Charges</dt><dd>${B.charges === 'SHA' ? 'SHA (shared)' : 'OUR: please pay all bank charges so the full amount arrives'}</dd></dl>
       ${via.map((x, i) => `<div class="via"><dl>${row(i ? 'Or intermediary bank' : 'Intermediary bank', x.bank, false)}${row('Intermediary SWIFT', x.swift)}${row('Location', x.city, false)}
         ${row('Our bank’s account there', x.account)}</dl></div>`).join('')}
       <p style="margin:8px 0 0">Ghana has no IBAN: enter the account number and SWIFT/BIC code.${!B.fx[c] ? ` Payments arrive in our cedi account, converted by the bank on the day.` : ''}</p></div>`;
   };
-  if (B.account_ghs && B.swift) {
+  const receivingAccount = accountFor(cur) || accountFor('GHS');
+  if ((receivingAccount?.account_number || B.account_ghs) && (receivingAccount?.swift || B.swift)) {
     if (cur === 'GHS') {
       if (st.momo_number) cards.push(`<div class="pc"><b class="t">Mobile Money</b><dl>${row('Number', st.momo_number)}${row('Name', st.momo_name || st.co_name, false)}${row('Amount', money2(due, 'GHS'))}${row('Reference', ref)}</dl></div>`);
-      cards.push(`<div class="pc"><b class="t">Bank transfer in Ghana</b><dl>${bankRows(B.account_ghs)}${row('Amount', money2(due, 'GHS'))}${row('Reference', ref)}</dl></div>`);
+      cards.push(`<div class="pc"><b class="t">Bank transfer in Ghana</b><dl>${bankRows(accountFor('GHS') || B.account_ghs)}${row('Amount', money2(due, 'GHS'))}${row('Reference', ref)}</dl></div>`);
       const cs = BANK_CURS.filter(c => B.fx[c] || B.corr.some(x => x.currency === c));
       if (cs.length) cards.push(swiftCard(cs[0], 'Paying from abroad (SWIFT)', `Send US dollars, euros or pounds; this invoice is settled when ${esc(money2(due, 'GHS'))} arrives.${cs.length > 1 ? ' Intermediary banks for other currencies below.' : ''}`)
         + cs.slice(1).map(c => `<div class="pc"><b class="t">Sending ${c}</b><dl>${B.corr.filter(x => x.currency === c).map((x, i) => row(i ? 'Or intermediary' : 'Intermediary bank', x.bank, false) + row('Intermediary SWIFT', x.swift) + row('Account there', x.account)).join('')}</dl></div>`).join(''));

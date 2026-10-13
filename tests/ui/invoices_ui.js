@@ -9,8 +9,20 @@ for (const [n,opt] of [['desk',{viewport:{width:1440,height:900}}],['phone',devi
  await p.goto(B+'/admin'); await p.fill('#e','admin'); await p.fill('#pw','Admin2025-qa!'); await p.click('#lbtn'); await p.waitForSelector('#app',{state:'visible'});
  // settings: company & invoicing
  await p.goto(B+'/admin#settings'); await p.waitForSelector('#is-sv');
- await p.fill('#is-tin','C0099887766'); await p.selectOption('#is-vr','yes'); await p.fill('#is-vn','C0099887766'); await p.fill('#bk-bn','TEST BANK GHANA LIMITED'); await p.fill('#bk-sw','TSTBGHAC'); await p.fill('#bk-br','Osu'); await p.fill('#bk-bc','200116'); await p.fill('#bk-an','GOTHAM CONSULT'); await p.fill('#bk-ag','0202090000999');
- await p.fill('#bk-ad','Oxford Street, Osu, Accra, Ghana');
+ await p.fill('#is-tin','C0099887766'); await p.selectOption('#is-vr','yes'); await p.fill('#is-vn','C0099887766');
+ const addBank=async(currency,label,number,swift,bank='TEST BANK GHANA LIMITED')=>{
+  await p.click('#bk-add-account'); let row=p.locator('#bk-accounts .bk-account').last();
+  await row.locator('[data-k=currency]').selectOption(currency); row=p.locator('#bk-accounts .bk-account').last();
+  await row.locator('[data-k=label]').fill(label); await row.locator('[data-k=bank_name]').fill(bank);
+  await row.locator('[data-k=account_name]').fill('GOTHAM CONSULT'); await row.locator('[data-k=account_number]').fill(number);
+  await row.locator('[data-k=swift]').fill(swift); await row.locator('[data-k=branch]').fill('Osu');
+  await row.locator('[data-k=branch_code]').fill('200116'); await row.locator('[data-k=bank_address]').fill('Oxford Street, Osu, Accra, Ghana');
+  await row.locator('[data-default]').check(); return row;
+ };
+ await addBank('GHS','Ghana cedi account','0202090000999','TSTBGHAC');
+ await addBank('EUR','Gotham euro account','88990011','TSTBGHAC');
+ await addBank('USD','Gotham dollar account','77889900','TSTBGHAC');
+ await addBank('GBP','Gotham pound account','66778899','TSTBGHAC');
  const cr=p.locator('#bk-corr .bk-c'); await cr.nth(0).locator('[data-k=currency]').selectOption('EUR'); await cr.nth(0).locator('[data-k=bank]').fill('Test Correspondent AG'); await cr.nth(0).locator('[data-k=swift]').fill('TSTCDEFF'); await cr.nth(0).locator('[data-k=city]').fill('Frankfurt, Germany'); await cr.nth(0).locator('[data-k=account]').fill('111122223333');
  await cr.nth(1).locator('[data-k=currency]').selectOption('USD'); await cr.nth(1).locator('[data-k=bank]').fill('Test Trust Americas'); await cr.nth(1).locator('[data-k=swift]').fill('TSTAUS33'); await cr.nth(1).locator('[data-k=city]').fill('New York, USA'); await cr.nth(1).locator('[data-k=account]').fill('44445555');
  await cr.nth(2).locator('[data-k=swift]').fill('bad'); await cr.nth(2).locator('[data-k=currency]').selectOption('GBP'); await cr.nth(2).locator('[data-k=bank]').fill('Test London');
@@ -18,7 +30,7 @@ for (const [n,opt] of [['desk',{viewport:{width:1440,height:900}}],['phone',devi
  await cr.nth(2).locator('[data-k=swift]').fill('TSTLGB2L');
  await p.click('#is-sv'); await p.waitForTimeout(600);
  assert(await p.inputValue('#is-tin')==='C0099887766', n+' settings saved (TIN, VAT registered, bank)');
- assert(await p.inputValue('#bk-ag')==='0202090000999', n+' bank details saved');
+ assert(await p.inputValue('#bk-accounts .bk-account:first-child [data-k=account_number]')==='0202090000999', n+' GHS bank account saved');
  const pv=await b.newPage(opt); await p.context().cookies().then(c=>pv.context().addCookies(c)); await pv.goto(B+'/api/invoices/preview?c=USD');
  assert((await pv.textContent('body')).includes('TSTAUS33'), n+' sample preview shows the dollar intermediary bank'); await pv.screenshot({path:'/tmp/qa/inv-preview-usd-'+n+'.png',fullPage:true}); await pv.goto(B+'/api/invoices/preview?c=GHS'); await pv.screenshot({path:'/tmp/qa/inv-preview-ghs-'+n+'.png',fullPage:true}); await pv.close();
  if(n==='desk') await p.screenshot({path:'/tmp/qa/inv-settings.png',fullPage:false,clip:{x:0,y:0,width:1440,height:900}});

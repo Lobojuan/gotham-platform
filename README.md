@@ -156,6 +156,14 @@ mailbox messages, and flushes the mail outbox.
 run registrations, payments, events and settings; `staff` can view and do door
 check-in with contact details hidden.
 
+**Invoice bank accounts.** Owners/admins manage receiving accounts in
+**Settings → Company & invoicing**. Add a separate entry for each GHS, USD, EUR
+or GBP account, set one default per currency, and preview invoices before
+issuing. Older single-account settings are migrated in memory and remain
+editable. Account details are admin-only in settings and appear on the
+corresponding client invoice; they are never included in public content feeds.
+Verify account coordinates and international routing with the bank before use.
+
 ---
 
 ## Things to know before changing anything

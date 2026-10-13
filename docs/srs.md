@@ -56,6 +56,12 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | A-14 | Account administration has a dedicated Users space; owners see a prominent Add user action and account controls, while admins can view users but cannot change them. Settings links to Users; staff cannot access the page. | `tests/ui/users_space_ui.js`, api/09 |
 | A-15 | All signed-in users can open Help & workflows, view role-appropriate CRM quick guides, and ask a grounded AI help question; answers do not access client records or perform actions, and role-restricted workflows remain protected. | `tests/ui/users_space_ui.js`, api/09 |
 
+## 3A. Invoicing and payment settings (back office)
+
+| ID | Requirement | Test |
+|---|---|---|
+| FIN-1 | Admins can securely add, edit, remove and select a default receiving bank account per currency in Company & invoicing settings. Account data is returned only to admins and appears on client invoice links, never in public content feeds. Existing single-account settings remain compatible. | api/19_invoices_google.py; admin UI smoke |
+
 ## 4. Back office content
 
 | ID | Requirement | Test |

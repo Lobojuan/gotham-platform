@@ -2849,7 +2849,7 @@ function invEdit(inv){
    +(!isQ&&c.wht_rate?`<tr><td class="note">Client withholds ${c.wht_rate}% of ${imoney(t.taxable,C)}</td><td class="note">− ${imoney(ir2(t.taxable*c.wht_rate/100),C)}</td></tr><tr><td class="note">So you receive</td><td class="note">${imoney(ir2(t.total-t.taxable*c.wht_rate/100),C)}</td></tr>`:'')};
  const resid=()=>{const ok=['non_resident','expatriate'].includes($('#iv-res').value);$('#iv-cur').querySelectorAll('option').forEach(o=>o.disabled=o.value!=='GHS'&&!ok);
   if(!ok&&cur()!=='GHS'){$('#iv-cur').value='GHS';curCh()}curNote()};
- const curNote=()=>{const ok=['non_resident','expatriate'].includes($('#iv-res').value),c=cur(),fx=((INVSET.inv_bank||{}).fx||{})[c];
+ const curNote=()=>{const ok=['non_resident','expatriate'].includes($('#iv-res').value),c=cur(),B=INVSET.inv_bank||{},fx=B.accounts?.some(a=>a.currency===c&&a.account_number)||(B.fx||{})[c];
   $('#iv-curn').innerHTML=!ok?'Dollars, euros and pounds are only for non-resident or expatriate clients (Bank of Ghana).':c==='GHS'?'The client can still pay from abroad by SWIFT; the bank converts to cedis.':fx?`Paid into Gotham’s ${c} foreign exchange account.`:`<span style="color:#8A5A00">No ${c} account yet: the money lands in the cedi account, converted by the bank. The Bank of Ghana expects foreign-currency invoices to be paid into a foreign exchange account; ask the bank to open one (Settings → Company & invoicing).</span>`};
  const curCh=()=>{$('#iv-fxw').hidden=cur()==='GHS';$('#iv-fxc').textContent=cur();curNote();sums()};
  $('#iv-res').onchange=resid;$('#iv-cur').onchange=curCh;$('#iv-fx').oninput=()=>{$('#iv-fxd').value=new Date().toISOString().slice(0,10);sums()};
@@ -3120,6 +3120,24 @@ async function safetyCard(){
 }
 async function invoiceSettingsCard(){
  const s=await invSettingsLoad();if(!s||!$('#inv-set'))return;const B=s.inv_bank||{fx:{},corr:[]};
+ const bankAccounts=Array.isArray(B.accounts)?B.accounts.map(x=>({...x})):[];
+ if(!bankAccounts.length){if(B.account_ghs)bankAccounts.push({currency:'GHS',label:'Ghana cedi',bank_name:B.bank_name,account_name:B.account_name,account_number:B.account_ghs,swift:B.swift,branch:B.branch,branch_code:B.branch_code,bank_address:B.bank_address,is_default:true});for(const c of ['USD','EUR','GBP'])if(B.fx?.[c])bankAccounts.push({currency:c,label:c+' foreign account',bank_name:B.bank_name,account_name:B.account_name,account_number:B.fx[c],swift:B.swift,branch:B.branch,branch_code:B.branch_code,bank_address:B.bank_address,is_default:true})}
+ const renderBankAccounts=()=>{const root=$('#bk-accounts');if(!root)return;root.innerHTML=bankAccounts.map((a,i)=>`<section class="bk-account" data-i="${i}" style="border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0">
+  <div class="f2"><div><label class="l">Currency</label><select class="t" data-k="currency" aria-label="Account currency">${['','GHS','USD','EUR','GBP'].map(c=>`<option value="${c}" ${c===(a.currency||'')?'selected':''}>${c||'Choose currency'}</option>`).join('')}</select></div>
+  <div><label class="l">Account label</label><input class="t" data-k="label" value="${esc(a.label||'')}" placeholder="e.g. FirstBank cedi account"></div>
+  <div><label class="l">Bank name</label><input class="t" data-k="bank_name" value="${esc(a.bank_name||'')}" placeholder="Bank name"></div>
+  <div><label class="l">Account name</label><input class="t" data-k="account_name" value="${esc(a.account_name||'')}" placeholder="Exact beneficiary name"></div>
+  <div><label class="l">Account number</label><input class="t" data-k="account_number" value="${esc(a.account_number||'')}" inputmode="numeric" autocomplete="off"></div>
+  <div><label class="l">SWIFT / BIC</label><input class="t" data-k="swift" value="${esc(a.swift||'')}" autocapitalize="characters" placeholder="8 or 11 letters"></div>
+  <div><label class="l">Account type</label><input class="t" data-k="account_type" value="${esc(a.account_type||'')}" placeholder="Current, savings, FEA…"></div>
+  <div><label class="l">Branch</label><input class="t" data-k="branch" value="${esc(a.branch||'')}"></div>
+  <div><label class="l">Branch code</label><input class="t" data-k="branch_code" value="${esc(a.branch_code||'')}"></div>
+  <div><label class="l">Bank address</label><input class="t" data-k="bank_address" value="${esc(a.bank_address||'')}"></div></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px"><label style="display:flex;gap:8px;align-items:center"><input type="radio" name="bk-default-${a.currency||'none'}" data-default="${i}" ${a.is_default?'checked':''}> Default ${a.currency||'currency'} account</label><button class="btn btn-line" type="button" data-bank-remove="${i}">Remove account</button></div></section>`).join('')||'<p class="note">No accounts added. Add an account before issuing invoices.</p>';
+ root.querySelectorAll('.bk-account [data-k]').forEach(el=>el.onchange=()=>{const i=+el.closest('.bk-account').dataset.i;bankAccounts[i][el.dataset.k]=el.value;if(el.dataset.k==='currency')renderBankAccounts()});
+ root.querySelectorAll('[data-default]').forEach(el=>el.onchange=()=>{const i=+el.dataset.default,c=bankAccounts[i].currency;bankAccounts.forEach((a,j)=>{if(a.currency===c)a.is_default=j===i});renderBankAccounts()});
+ root.querySelectorAll('[data-bank-remove]').forEach(el=>el.onclick=()=>{bankAccounts.splice(+el.dataset.bankRemove,1);renderBankAccounts()});
+ };
  $('#inv-set').innerHTML=`<div class="ch"><h3>Company & invoicing</h3></div>
   <p class="note" style="margin-top:0">Printed on every quotation and invoice. Ghana tax since 1 January 2026: VAT 15% + NHIL 2.5% + GETFund 2.5% (20% in total), each on the same amount. Consultancy services must register for VAT whatever the turnover.</p>
   <div class="f2"><div><label class="l" for="is-co">Company name</label><input class="t" id="is-co" value="${esc(s.inv_co_name||'')}" placeholder="Gotham Consult"></div>
@@ -3129,18 +3147,11 @@ async function invoiceSettingsCard(){
   <div><label class="l" for="is-vn">VAT registration number</label><input class="t" id="is-vn" value="${esc(s.inv_vat_number||'')}"></div>
   <div><label class="l" for="is-td">Payment terms (days)</label><input class="t" id="is-td" inputmode="numeric" value="${esc(s.inv_terms_days||'')}" placeholder="14"></div></div>
   <label class="l" for="is-ad">Address</label><textarea class="t" id="is-ad" rows="2" placeholder="Street, area, Accra · GhanaPost GPS">${esc(s.inv_co_address||'')}</textarea>
-  <h4 class="sec">Bank account for payments</h4>
-  <p class="note" style="margin-top:0">Copy these from the bank’s account-details letter, exactly. Clients see them on every invoice, with copy buttons, for transfers in Ghana and from abroad (SWIFT). They are never shown on the public website.</p>
-  <div class="f2"><div><label class="l" for="bk-bn">Bank name</label><input class="t" id="bk-bn" value="${esc(B.bank_name)}" placeholder="e.g. FIRSTBANK GHANA LIMITED"></div>
-  <div><label class="l" for="bk-sw">Bank SWIFT / BIC</label><input class="t" id="bk-sw" value="${esc(B.swift)}" placeholder="8 or 11 letters" autocapitalize="characters"></div>
-  <div><label class="l" for="bk-br">Branch</label><input class="t" id="bk-br" value="${esc(B.branch)}" placeholder="e.g. Osu"></div>
-  <div><label class="l" for="bk-bc">Branch code</label><input class="t" id="bk-bc" value="${esc(B.branch_code)}" inputmode="numeric"></div>
-  <div><label class="l" for="bk-an">Account name</label><input class="t" id="bk-an" value="${esc(B.account_name)}" placeholder="e.g. GOTHAM CONSULT"></div>
-  <div><label class="l" for="bk-ag">Cedi (GHS) account number</label><input class="t" id="bk-ag" value="${esc(B.account_ghs)}" inputmode="numeric"></div></div>
-  <label class="l" for="bk-ad">Bank address</label><input class="t" id="bk-ad" value="${esc(B.bank_address)}" placeholder="e.g. Alpha One Building, Oxford Street, Osu, Accra, Ghana">
-  <h4 class="sec">Foreign exchange accounts <span class="note">(if the bank has opened them)</span></h4>
-  <p class="note" style="margin-top:0">Without one, money sent in dollars, euros or pounds lands in the cedi account, converted by the bank. The Bank of Ghana expects foreign-currency invoices to be paid into a foreign exchange account, so ask the bank to open USD and EUR (and GBP) accounts on the same relationship.</p>
-  <div class="f2">${['USD','EUR','GBP'].map(c=>`<div><label class="l" for="bk-fx-${c}">${c} account number</label><input class="t" id="bk-fx-${c}" value="${esc(B.fx[c]||'')}" placeholder="not opened yet"></div>`).join('')}
+  <h4 class="sec">Bank accounts for payments</h4>
+  <p class="note" style="margin-top:0">Add one entry for each receiving account. Choose one default per currency. These details appear only on client invoices, never on the public website. Verify every account and routing detail against a current bank letter before issuing invoices.</p>
+  <div id="bk-accounts"></div><button class="btn btn-line" id="bk-add-account" type="button">+ Add bank account</button>
+  <h4 class="sec">International transfer charges</h4>
+  <div class="f2">
   <div><label class="l" for="bk-ch">Bank charges on transfers from abroad</label><select class="t" id="bk-ch"><option value="OUR">OUR: the sender pays all charges (recommended)</option><option value="SHA" ${B.charges==='SHA'?'selected':''}>SHA: charges shared</option></select></div></div>
   <h4 class="sec">Correspondent banks <span class="note">(for transfers from abroad)</span></h4>
   <p class="note" style="margin-top:0">From the “correspondent bank details” table in the letter: the bank abroad, its SWIFT code, its address, and our bank’s account number there.</p>
@@ -3155,10 +3166,12 @@ async function invoiceSettingsCard(){
   <p class="note">${s.paystack?'<span class="chip green">Online payment on</span> Clients can pay GHS and USD invoices by card or MoMo (Paystack). Euro invoices are paid by bank transfer.':'<span class="chip">Online payment off</span> Clients pay by MoMo or bank transfer. Add a Paystack key on the server to let them pay by card or MoMo online.'}</p>
   <p class="err" id="is-err"></p><button class="btn btn-dark" id="is-sv">Save company & invoicing</button>`;
  $('#is-sv').onclick=async()=>{$('#is-err').textContent='';try{await api('/api/invoice-settings',{method:'POST',body:JSON.stringify({inv_co_name:$('#is-co').value,inv_email:$('#is-em').value,inv_tin:$('#is-tin').value,inv_vat_registered:$('#is-vr').value,
-  inv_vat_number:$('#is-vn').value,inv_terms_days:$('#is-td').value,inv_co_address:$('#is-ad').value,inv_bank:{bank_name:$('#bk-bn').value,swift:$('#bk-sw').value,branch:$('#bk-br').value,branch_code:$('#bk-bc').value,account_name:$('#bk-an').value,account_ghs:$('#bk-ag').value,bank_address:$('#bk-ad').value,charges:$('#bk-ch').value,
-  fx:Object.fromEntries(['USD','EUR','GBP'].map(c=>[c,$('#bk-fx-'+c).value])),corr:[...document.querySelectorAll('#bk-corr .bk-c')].map(r=>Object.fromEntries([...r.querySelectorAll('[data-k]')].map(x=>[x.dataset.k,x.value])))},inv_footer:$('#is-ft').value,
+  inv_vat_number:$('#is-vn').value,inv_terms_days:$('#is-td').value,inv_co_address:$('#is-ad').value,inv_bank:{accounts:[...document.querySelectorAll('#bk-accounts .bk-account')].map(r=>{const a={};r.querySelectorAll('[data-k]').forEach(x=>a[x.dataset.k]=x.value);a.is_default=!!r.querySelector('[data-default]')?.checked;return a}),charges:$('#bk-ch').value,
+  corr:[...document.querySelectorAll('#bk-corr .bk-c')].map(r=>Object.fromEntries([...r.querySelectorAll('[data-k]')].map(x=>[x.dataset.k,x.value])))},inv_footer:$('#is-ft').value,
   inv_tax_vat:$('#is-rv').value,inv_tax_nhil:$('#is-rn').value,inv_tax_getfund:$('#is-rg').value})});toast('Saved');invoiceSettingsCard()}catch(e){$('#is-err').textContent=invErr(e);
-  (e.fields||[]).forEach(f=>{const m=f.match(/^corr_(\d+)_(\w+)$/);const el=m?document.querySelector(`#bk-corr .bk-c[data-i="${m[1]}"] [data-k="${m[2]}"]`):$({swift:'#bk-sw',account_ghs:'#bk-ag',fx_USD:'#bk-fx-USD',fx_EUR:'#bk-fx-EUR',fx_GBP:'#bk-fx-GBP'}[f]||'#x-none');if(el)el.classList.add('bad')})}};
+  (e.fields||[]).forEach(f=>{const m=f.match(/^corr_(\d+)_(\w+)$/),a=f.match(/^accounts_(\d+)_(\w+)$/);const el=m?document.querySelector(`#bk-corr .bk-c[data-i="${m[1]}"] [data-k="${m[2]}"]`):a?document.querySelector(`#bk-accounts .bk-account:nth-child(${+a[1]+1}) [data-k="${a[2]}"]`):$({swift:'#bk-sw',account_ghs:'#bk-ag'}[f]||'#x-none');if(el)el.classList.add('bad')})}};
+ $('#bk-add-account').onclick=()=>{if(bankAccounts.length>=12){toast('You can save up to 12 bank accounts');return}bankAccounts.push({currency:'',label:'',bank_name:'',account_name:'',account_number:'',account_type:'',swift:'',branch:'',branch_code:'',bank_address:'',is_default:false});renderBankAccounts()};
+ renderBankAccounts();
 }
 async function recordInvoices(cid){const box=$('#rc-inv');if(!box)return;const r=await api('/api/invoices').catch(()=>null);if(!r||!$('#rc-inv'))return;
  const L=r.rows.filter(x=>x.contact_id===cid);

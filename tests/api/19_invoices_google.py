@@ -71,6 +71,8 @@ psql('update users set must_change=false')
 req = urllib.request.Request(B + '/api/login', data=json.dumps({'email': 'admin@gotham.test', 'password': 'ownerpass123'}).encode(), method='POST'); req.add_header('content-type', 'application/json')
 ck = urllib.request.urlopen(req).headers['set-cookie'].split(';')[0]
 Y = time.strftime('%Y')
+st, adminhtml = call('/admin', cookie=ck, text=True)
+assert st == 200 and '+ Add bank account' in adminhtml and 'data-bank-remove' in adminhtml and 'Default ${a.currency' in adminhtml, 'bank account manager missing from back office'
 
 # ---------- settings ----------
 st, s = call('/api/invoice-settings', cookie=ck)
@@ -241,6 +243,7 @@ st, e = call('/api/invoice-settings', {'inv_bank': {**BANK, 'swift': 'NOTASWIFT!
 st, e = call('/api/invoice-settings', {'inv_bank': {**BANK, 'corr': [{**BANK['corr'][0], 'swift': 'x'}]}}, cookie=ck); assert st == 400 and e['fields'] == ['corr_0_swift'], e
 st, s = call('/api/invoice-settings', {'inv_bank': BANK}, cookie=ck); assert st == 200, s
 BK = s['inv_bank']; assert BK['swift'] == 'TSTBGHAC' and BK['account_ghs'] == '0202090000999' and len(BK['corr']) == 4 and BK['fx'] == {}, BK
+assert BK['accounts'][0]['currency'] == 'GHS' and BK['accounts'][0]['account_number'] == '0202090000999' and BK['accounts'][0]['is_default'], BK['accounts']
 tokof = lambda i: psql("select token from invoices where id=%d" % i)
 st, html = call('/i/' + tokof(pinv) + '?x', text=True)   # paid: no payment block
 assert 'How to pay' not in html
@@ -250,6 +253,15 @@ st, html = call('/i/' + tokof(gid), text=True)
 for want in ['Mobile Money', 'Bank transfer in Ghana', '0202090000999', 'TEST BANK GHANA LIMITED', 'code 200116', 'Paying from abroad (SWIFT)', 'TSTBGHAC', 'TSTAUS33', 'OTHRUS33', 'TSTCDEFF', 'TSTLGB2L',
              'Ghana has no IBAN', 'OUR: please pay all bank charges', 'never change by email', 'data-c="0202090000999"']:
     assert want in html, want
+multi = {'charges': 'OUR', 'accounts': [
+    {'currency': 'GHS', 'label': 'Old cedi account', 'bank_name': 'TEST BANK GHANA LIMITED', 'account_name': 'GOTHAM CONSULT', 'account_number': '0202090000999', 'swift': 'TSTBGHAC', 'is_default': False},
+    {'currency': 'GHS', 'label': 'New cedi account', 'bank_name': 'NEW TEST BANK', 'account_name': 'GOTHAM CONSULT', 'account_number': '0202090000111', 'swift': 'NEWTGHAC', 'is_default': True}], 'corr': BANK['corr']}
+st, e = call('/api/invoice-settings', {'inv_bank': {**multi, 'accounts': [{**multi['accounts'][0], 'swift': 'BAD'}]}}, cookie=ck); assert st == 400 and 'accounts_0_swift' in e['fields'], e
+st, s = call('/api/invoice-settings', {'inv_bank': multi}, cookie=ck); assert st == 200 and s['inv_bank']['account_ghs'] == '0202090000111', s
+st, d = call('/api/invoices', {'bill_to': {'name': 'Ama'}, 'lines': [{'description': 'Advisory', 'qty': 1, 'unit': 100}]}, cookie=ck)
+mid = d['id']; call('/api/invoices/%d/issue' % mid, {}, cookie=ck); st, html = call('/i/' + tokof(mid), text=True)
+assert 'data-c="0202090000111"' in html and '0202090000999' not in html and 'NEW TEST BANK' in html, 'selected default account not used'
+call('/api/invoice-settings', {'inv_bank': BANK}, cookie=ck)
 st, d = call('/api/invoices', {'bill_to': {'name': 'Anna Schmidt', 'company': 'Solar GmbH', 'country': 'Germany', 'residency': 'non_resident', 'email': 'anna@solar.test'}, 'currency': 'EUR', 'fx_rate': 17,
     'tax_mode': 'zero', 'tax_note': 'Export of services', 'lines': [{'description': 'Market study', 'qty': 1, 'unit': 1000}]}, cookie=ck)
 eid = d['id']; call('/api/invoices/%d/issue' % eid, {}, cookie=ck)
