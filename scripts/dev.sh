@@ -4,10 +4,33 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-if ! docker ps --format '{{.Names}}' | grep -q '^gotham-dev-db$'; then
+if ! docker info >/dev/null 2>&1; then
+  if [[ "$(uname -s)" == "Darwin" && -d "$HOME/Applications/Docker.app" ]]; then
+    echo "→ starting Docker Desktop"
+    open "$HOME/Applications/Docker.app" >/dev/null 2>&1 || true
+    for _ in {1..60}; do
+      docker info >/dev/null 2>&1 && break
+      sleep 2
+    done
+  fi
+fi
+if ! docker info >/dev/null 2>&1; then
+  echo "Docker is not running. Start Docker Desktop (or your Docker engine), then retry." >&2
+  exit 1
+fi
+
+if docker ps -a --format '{{.Names}}' | grep -qx 'gotham-dev-db'; then
+  docker update --restart unless-stopped gotham-dev-db >/dev/null
+  if ! docker ps --format '{{.Names}}' | grep -qx 'gotham-dev-db'; then
+    echo "→ restarting Postgres"
+    docker start gotham-dev-db >/dev/null
+    sleep 5
+  fi
+else
   echo "→ starting Postgres"
-  docker run -d --name gotham-dev-db -e POSTGRES_PASSWORD=dev -e POSTGRES_USER=gotham \
-    -e POSTGRES_DB=gotham -p 5433:5432 postgres:16 >/dev/null
+  docker run -d --name gotham-dev-db --restart unless-stopped \
+    -e POSTGRES_PASSWORD=dev -e POSTGRES_USER=gotham -e POSTGRES_DB=gotham \
+    -p 5433:5432 postgres:16 >/dev/null
   sleep 5
 fi
 
