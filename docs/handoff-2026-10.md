@@ -120,3 +120,10 @@ Uffe could not find account creation under Settings → Team. The System navigat
 - Kept the existing month/week/agenda views and workstream toggles, and improved mobile command-centre spacing and 44px touch areas. The E2E runner now includes the CRM laptop/phone flow; fresh test fixtures complete the initial password-change state only in the disposable database.
 - Verification: all 39 API suites passed. Full `tests/e2e/run.sh` passed, including 17,533 route/device checks, desktop and phone CRM dashboard workflows, six-language chat/voice, investor portal, presentation, 73 locale checks, 30 report-download checks, 510 touch-target checks, and Users role/mobile flows. `node --check apps/crm/server.js` and `git diff --check` passed.
 - Release state: tested changes are local on `codex/invoice-bank-accounts`, based on freshly fetched `origin/main` `e0f60d8`; commit, push and CRM deploy are the next steps. No production data or event records were changed by the tests.
+
+## 15 October 2026 — About page story and leadership profiles
+
+- Reframed the About page around the user-approved Gotham name story and a single leadership section with Joy first and Uffe second. Joy's profile covers enterprise development, project delivery, stakeholder engagement and inclusive business work. Uffe's profile summarizes consulting/operating experience, Carlson Capital and attributed prior projects, with explicit wording that historical assignments are not current Gotham client relationships and that Dawa's current status is unverified.
+- Added localized copy for the new About-page sections in French, Spanish, German, Arabic and Simplified Chinese; English remains the source copy.
+- Verification: `bash scripts/build-site.sh` generated all six locale routes successfully; `git diff --check` passed. Full API/E2E suites were not run for this content-only change.
+- Release state: commit and push to `origin/main` are pending. The isolated branch's base is the latest fetched `origin/main` (`29c75f6`). Site deployment is a separate step and has not been run.
