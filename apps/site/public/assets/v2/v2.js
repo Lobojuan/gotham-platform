@@ -427,23 +427,30 @@
       return s.url ? `<a class="logo" href="${esc(s.url)}" target="_blank" rel="noopener sponsored">${inner}</a>` : `<div class="logo">${inner}</div>`; }).join('')}</div></div>`).join('');
   }).catch(() => {});
 
-  /* ---- contact form: WhatsApp or email, nothing stored ---- */
+  /* ---- website enquiries are recorded in the CRM and acknowledged by email ---- */
   const cf = LEG ? null : $('#contactF');
   if (cf) {
-    const text = () => `Hello Gotham Consult,\nName: ${$('#c-name').value}${$('#c-co').value ? '\nCompany: ' + $('#c-co').value : ''}\nTopic: ${$('#c-topic').selectedOptions[0]?.textContent || $('#c-topic').value}\n\n${$('#c-msg').value}`;
-    cf.addEventListener('submit', e => {
-      e.preventDefault(); if (!$('#c-name').reportValidity()) return;
-      const topic = $('#c-topic').value;
-      const details = $('#c-msg').value;
-      const technical = ['tech-ai', 'tech-digital', 'tech-creative'].includes(topic)
-        || /\b(ai|it|website|web[- ]?site|web ?build|software|app development|financial software|finance platform)\b/i.test(details);
-      const recipient = technical ? '233552395548' : '233550416627';
-      open('https://wa.me/' + recipient + '?text=' + encodeURIComponent(text()), '_blank', 'noopener');
+    cf.addEventListener('submit', async e => {
+      e.preventDefault(); if (!cf.reportValidity()) return;
+      const button = cf.querySelector('button[type="submit"]'), status = $('#c-status');
+      const topic = $('#c-topic').selectedOptions[0]?.textContent || $('#c-topic').value;
+      button.disabled = true; status.textContent = 'Sending your enquiry…';
+      try {
+        const r = await fetch('/api/site-enquiry', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ type: 'contact', name: $('#c-name').value.trim(), email: $('#c-email').value.trim(),
+            company: $('#c-co').value.trim(), topic, message: $('#c-msg').value.trim(), consent: $('#c-consent').checked,
+            language: current }) });
+        const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || 'failed');
+        status.textContent = "We've recorded your enquiry and sent a confirmation to your email. Joy and Uffe have been notified.";
+        cf.reset();
+      } catch (err) {
+        status.textContent = err.message === 'consent_required' ? 'Please agree to the privacy notice before sending.'
+          : 'We could not send your enquiry. Please try again or contact us by phone or WhatsApp.';
+      } finally { button.disabled = false; }
     });
-    $('#c-mail')?.addEventListener('click', () => { if (!$('#c-name').reportValidity()) return; location.href = `mailto:info@gothamconsult.com?subject=${encodeURIComponent('Enquiry: ' + $('#c-topic').value)}&body=${encodeURIComponent(text())}`; });
   }
 
-  /* ---- book a call: the next working days and a time; the request goes by WhatsApp or email, nothing stored ---- */
+  /* ---- request a call: save the lead and preferred time in CRM, then email both sides ---- */
   const bkf = LEG ? null : $('#bookF');
   if (bkf) {
     const dsel = $('#b-day'); const d = new Date(); let n = 0;
@@ -457,9 +464,23 @@
     }
     const label = () => `${dsel.selectedOptions[0].dataset.enText || dsel.selectedOptions[0].value} at ${$('#b-time').value} (Accra time, GMT)`;
     $$('#b-day option').forEach(o => { o.dataset.enText = o.textContent; });
-    const text = () => `Hello Gotham Consult,\nI would like to book a free 20-minute call.\nName: ${$('#b-name').value}\nTopic: ${$('#b-topic').value}\nPreferred time: ${label()}`;
-    bkf.addEventListener('submit', e => { e.preventDefault(); if (!$('#b-name').reportValidity()) return; open('https://wa.me/233550416627?text=' + encodeURIComponent(text()), '_blank', 'noopener'); });
-    $('#b-mail')?.addEventListener('click', () => { if (!$('#b-name').reportValidity()) return; location.href = `mailto:info@gothamconsult.com?subject=${encodeURIComponent('Call request: ' + $('#b-topic').value)}&body=${encodeURIComponent(text())}`; });
+    bkf.addEventListener('submit', async e => {
+      e.preventDefault(); if (!bkf.reportValidity()) return;
+      const button = bkf.querySelector('button[type="submit"]'), status = $('#b-status');
+      button.disabled = true; status.textContent = 'Sending your request…';
+      try {
+        const r = await fetch('/api/site-enquiry', { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ type: 'call', name: $('#b-name').value.trim(), email: $('#b-email').value.trim(),
+            topic: $('#b-topic').value, preferred_day: dsel.value, preferred_time: $('#b-time').value,
+            consent: $('#b-consent').checked, language: current }) });
+        const data = await r.json().catch(() => ({})); if (!r.ok) throw new Error(data.error || 'failed');
+        status.textContent = "Your request is saved. We emailed a confirmation; Joy or Uffe will reply to confirm availability.";
+        bkf.reset(); dsel.value = dsel.options[0]?.value || '';
+      } catch (err) {
+        status.textContent = err.message === 'consent_required' ? 'Please agree to the privacy notice before sending.'
+          : 'We could not send your request. Please try again or contact us by phone or WhatsApp.';
+      } finally { button.disabled = false; }
+    });
   }
 
   /* ---- next forum, live from the back office ---- */

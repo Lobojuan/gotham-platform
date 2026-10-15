@@ -53,7 +53,8 @@ item={'code':'PAY1','kind':'event','title':'Payment test event','starts_at':'202
  'price':25,'capacity':20,'published':True,'approval':False,'phase':'open'}
 st,d,_=call('/api/items',item,cookie=ck); assert st==200,d
 def register(name,phone):
-    return call('/api/register',{'item_code':'PAY1','full_name':name,'phone':phone,'consent':True,'payment_method':'momo'})
+    address=name.lower().replace(' ','-')+'@example.test'
+    return call('/api/register',{'item_code':'PAY1','full_name':name,'email':address,'phone':phone,'consent':True,'payment_method':'momo'})
 st,first,_=register('Ama Mensah','0244000000'); assert st==200 and not first['paid'],(st,first)
 assert first['payment_details']=={'method':'momo','number':'+233550416627','account_name':'Gotham Consult','transaction_reference':first['reference']},first
 ok('successful registration returns the exact payment number, account and reference')
@@ -65,13 +66,14 @@ st,d,_=call('/api/payment-reported',{'reference':first['reference'],'txn':'TXN-1
 ok('valid reports are recorded once; duplicate transaction IDs are blocked')
 st,second,_=register('Kojo Asare','0244000001'); assert st==200,second
 st,d,_=call('/api/payment-reported',{'reference':second['reference'],'txn':'TXN-10001','network':'MTN'}); assert st==409 and d['error']=='transaction_already_reported',(st,d)
-st,free,_=call('/api/register',{'item_code':'F1','full_name':'Kofi Free','phone':'0244000002','consent':True}); assert st==200,free
+st,free,_=call('/api/register',{'item_code':'F1','full_name':'Kofi Free','email':'kofi-free@example.test','phone':'0244000002','consent':True}); assert st==200,free
 st,d,_=call('/api/payment-reported',{'reference':free['reference'],'txn':'FREE-10001','network':'MTN'}); assert st==409 and d['error']=='momo_payment_not_applicable',(st,d)
 ok('a transaction cannot be reused on another registration or claimed for a free application')
 cap_item={**item,'code':'CAP1','title':'Last seat test','price':0,'capacity':1}
 st,d,_=call('/api/items',cap_item,cookie=ck); assert st==200,d
 def reserve(name,ip):
-    return call('/api/register',{'item_code':'CAP1','full_name':name,'phone':'0244000099','consent':True},client_ip=ip)
+    address=name.lower().replace(' ','-')+'@example.test'
+    return call('/api/register',{'item_code':'CAP1','full_name':name,'email':address,'phone':'0244000099','consent':True},client_ip=ip)
 with ThreadPoolExecutor(max_workers=2) as pool:
     results=list(pool.map(lambda a: reserve(*a), [('Concurrent One','10.8.0.1'),('Concurrent Two','10.8.0.2')]))
 assert sorted(x[0] for x in results)==[200,409],results

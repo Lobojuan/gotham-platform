@@ -366,7 +366,11 @@ def main():
             doc, miss = IF.translate_html(doc, d)
             if n == 'index.html' and lang in NEW_LANGUAGES:
                 # Translate the complete headline, preserving natural word order in each language.
-                heading = {'de':'Partnerschaften in <span class="serif">Ghana aufbauen.</span>', 'ar':'ابنوا شراكات في <span class="serif">غانا.</span>', 'zh':'在加纳，<span class="serif">建立合作伙伴关系。</span>'}[lang]
+                heading = {
+                    'de':'Praktische Unterstützung für <span class="serif">Unternehmen in Ghana.</span>',
+                    'ar':'دعم عملي للشركات <span class="serif">الغانية.</span>',
+                    'zh':'为加纳企业提供<span class="serif">务实支持。</span>',
+                }[lang]
                 doc = re.sub(r'(<h1 id="h1">).*?(</h1>)', lambda m:m[1]+heading+m[2], doc, count=1, flags=re.S)
             if not n.startswith('insights'): report[n] = miss
             doc = IF.localise_links(set_meta(doc, n, title, desc, lang), paths, lang)

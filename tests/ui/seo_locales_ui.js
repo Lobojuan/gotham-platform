@@ -7,7 +7,7 @@ const ok=(c,m)=>{if(!c)throw Error(m);checks++;console.log('  ok',m);};
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM});
  try {
   const offline=await browser.newContext({javaScriptEnabled:false});
-  for (const [lang,h1] of [['fr',/Nouez des partenariats/],['es',/Construya alianzas/],['de',/Partnerschaften/],['ar',/شراكات/],['zh',/合作伙伴/]]) {
+  for (const [lang,h1] of [['fr',/Un accompagnement concret/],['es',/Apoyo práctico/],['de',/Praktische Unterstützung/],['ar',/دعم عملي/],['zh',/为加纳企业/]]) {
    const p=await offline.newPage();await p.goto(base+'/'+lang);
    ok((await p.locator('html').getAttribute('lang'))===lang,'Without JS: language '+lang);
    ok(h1.test(await p.locator('h1').textContent()),'Without JS: translated headline '+lang);

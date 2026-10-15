@@ -293,10 +293,10 @@ async function journeys(browser) {
     await p.evaluate(() => { try { localStorage.clear(); } catch {} });
     // registration, shortest path
     await p.goto(B + '/register?e=F1', NAV); await settle(p);
-    await p.fill('#nm', 'E2E Test ' + dev); await p.fill('#ph', '024 412 3456'); await p.locator('#cons').tap();
+    await p.fill('#nm', 'E2E Test ' + dev); await p.fill('#ph', '024 412 3456'); await p.fill('#em', `e2e-${dev}@example.com`); await p.locator('#cons').tap();
     if (LIVE) check(`${dev}: registration form ready (not sent on the live site)`, await p.isVisible('#goSend') && await p.isChecked('#cons'));
     else { await p.locator('#goSend').tap();
-      check(`${dev}: registration with name + WhatsApp succeeds`, await p.waitForSelector('#ok.on', { timeout: 10000 }).then(() => true, () => false)); }
+      check(`${dev}: registration with name, WhatsApp and email succeeds`, await p.waitForSelector('#ok.on', { timeout: 10000 }).then(() => true, () => false)); }
     check(`${dev}: no JS errors during the journeys`, !errs.length, errs.slice(0, 2).join(' | '));
     await ctx.close();
   }

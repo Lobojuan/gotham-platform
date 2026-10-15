@@ -3,9 +3,9 @@
   <section class="hero" aria-labelledby="h1">
     <div class="wrap hero-in">
       <div>
-        <p class="eyebrow long">Business consulting · Investment · Market entry · Accra</p>
-        <h1 id="h1">Build partnerships in <span class="serif">Ghana.</span></h1>
-        <p class="lead">Gotham Consult is a business consultancy in Accra. We bring businesses, investors, public institutions and international partners together through advisory, company registration, technology, forums and introductions.</p>
+        <p class="eyebrow long">Company set-up · Digital services · Business forums · Accra</p>
+        <h1 id="h1">Practical support for <span class="serif">Ghanaian businesses.</span></h1>
+        <p class="lead">We help Ghanaian businesses get set up, work smarter and reach new customers. Joy Preston leads our business forums and inclusive enterprise work; Uffe Carlson leads technology and financial software projects.</p>
         <div class="hero-cta">
           <a class="btn btn-gold" href="#book">Book a free call <span class="arrow">→</span></a>
           <a class="btn btn-ghost" href="#services">Explore our practices</a>
@@ -36,10 +36,10 @@
         <p class="lead">Pick your path. Fixed prices in cedis, paid by mobile money, and the first step is always free.</p>
       </div>
       <div class="aud">
-        <a class="card rv" href="/services#packages"><span class="ic"><svg class="icon"><use href="#i-rocket"/></svg></span><span class="tag">Business owners</span><h3>Grow and get funded</h3><p>Grants, tax and E-VAT, exports, tenders and going digital.</p><span class="go">Start <span class="arrow">→</span></span></a>
-        <a class="card rv" href="/services#packages"><span class="ic"><svg class="icon"><use href="#i-chart"/></svg></span><span class="tag">Investors</span><h3>Invest in Ghana safely</h3><p>Briefings, company setup, due diligence and a local desk.</p><span class="go">Start <span class="arrow">→</span></span></a>
-        <a class="card rv" href="/mining"><span class="ic"><svg class="icon"><use href="#i-pick"/></svg></span><span class="tag">Mining investors</span><h3>Mining and minerals</h3><p>Concession checks, licensing, joint ventures and mine power.</p><span class="go">Start <span class="arrow">→</span></span></a>
-        <a class="card rv" href="/family"><span class="ic"><svg class="icon"><use href="#i-home"/></svg></span><span class="tag">Individuals &amp; diaspora</span><h3>Start or invest from abroad</h3><p>Register a business, verify deals and look after family.</p><span class="go">Start <span class="arrow">→</span></span></a>
+        <a class="card rv" href="/services#packages"><span class="ic"><svg class="icon"><use href="#i-rocket"/></svg></span><span class="tag">Ghanaian business owners</span><h3>Set up and grow</h3><p>Company formation, compliance, digital tools and practical business support.</p><span class="go">Explore services <span class="arrow">→</span></span></a>
+        <a class="card rv" href="/forums"><span class="ic"><svg class="icon"><use href="#i-users"/></svg></span><span class="tag">Joy’s forums &amp; events</span><h3>Meet, learn and make connections</h3><p>Business forums, inclusive enterprise programmes and curated events in Accra.</p><span class="go">See upcoming events <span class="arrow">→</span></span></a>
+        <a class="card rv" href="/services#packages"><span class="ic"><svg class="icon"><use href="#i-chip"/></svg></span><span class="tag">Technology with Uffe</span><h3>Make your business work smarter</h3><p>Websites, AI integration and financial software through Carlson Capital Ltd.</p><span class="go">Explore digital services <span class="arrow">→</span></span></a>
+        <a class="card rv" href="/invest"><span class="ic"><svg class="icon"><use href="#i-chart"/></svg></span><span class="tag">Investors &amp; partners</span><h3>Explore opportunities in Ghana</h3><p>Market-entry support, company set-up, research and local partnerships.</p><span class="go">Investor information <span class="arrow">→</span></span></a>
       </div>
     </div>
   </section>
@@ -50,15 +50,17 @@
         <div>
           <p class="eyebrow" style="color:var(--gold-2)">Book a call</p>
           <h2 id="bk-h">A free 20-minute call, <span class="serif" style="color:var(--gold-2)">at a time that suits you.</span></h2>
-          <p class="lead">Pick a day and a time, Accra time (GMT). We confirm by WhatsApp or email, usually the same day.</p>
+          <p class="lead">Pick a day and time in Accra. Your request is saved in our client system, and we email you to confirm the appointment.</p>
           <ul class="bk-pts"><li>No cost and no obligation</li><li>Company set-up, investment, AI, mining or a forum</li><li>You speak to a person, not a form</li></ul>
         </div>
         <form class="form" id="bookF" novalidate>
           <label>Your name<input id="b-name" autocomplete="name" required></label>
+          <label>Email for confirmation<input id="b-email" type="email" autocomplete="email" required></label>
           <div class="row2"><label>Day<select id="b-day"></select></label><label>Time (Accra, GMT)<select id="b-time"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option></select></label></div>
           <label>What is it about?<select id="b-topic"><option>General enquiry</option><option>Investment readiness &amp; GIPA</option><option>Market entry &amp; international projects</option><option>AI in your business</option><option>Energy, mining &amp; infrastructure</option><option>Forums &amp; sponsorship</option></select></label>
-          <div class="cta-row" style="justify-content:flex-start"><button class="btn btn-wa" type="submit"><svg class="icon"><use href="#i-wa"/></svg>Request this time on WhatsApp</button><button class="btn btn-ghost" type="button" id="b-mail">Send by email</button></div>
-          <p class="fine">Nothing is stored on this page. Your request goes from your own WhatsApp or email, and we confirm the time by reply.</p>
+          <label class="fine"><input id="b-consent" type="checkbox" required> I agree that Gotham Consult may use my details to manage this request and email me about it under the <a href="/privacy">privacy notice</a>.</label>
+          <div class="cta-row" style="justify-content:flex-start"><button class="btn btn-gold" type="submit">Request this time</button></div>
+          <p class="fine" id="b-status" role="status">Your preferred time is a request. We will email you after confirming availability.</p>
         </form>
       </div>
     </div>

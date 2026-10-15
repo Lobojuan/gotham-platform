@@ -141,8 +141,8 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
 <main class="wrap">
   <section class="intro">
     <p class="eyebrow">Registration</p>
-    <h1>Register in a minute. <em class="serif">Just your name and WhatsApp.</em></h1>
-    <p class="lead">Book a forum seat, a membership or an investor briefing. Business details are optional. We confirm on WhatsApp, usually the same day.</p>
+    <h1>Register in a minute. <em class="serif">Your confirmation by email.</em></h1>
+    <p class="lead">Book a forum seat, a membership or an investor briefing. Business details are optional. We email your reference and registration details.</p>
     <div class="feat" id="feat"></div>
   </section>
 
@@ -162,11 +162,11 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
 
       <fieldset>
         <legend class="step"><i id="n3">3</i>Your details</legend>
-        <p class="hint">Only your name and WhatsApp number are needed. Everything else is optional.</p>
+        <p class="hint">Your name, WhatsApp number and email are needed so we can send your confirmation. Everything else is optional.</p>
         <div class="f2">
           <div><label class="l" for="nm">Your full name</label><input class="t" id="nm" required autocomplete="name"></div>
           <div><label class="l" for="ph">WhatsApp number</label><input class="t" id="ph" required type="tel" inputmode="tel" autocomplete="tel" placeholder="024 000 0000"></div>
-          <div><label class="l" for="em">Email <span>(optional)</span></label><input class="t" id="em" type="email" inputmode="email" autocomplete="email" autocapitalize="off"></div>
+          <div><label class="l" for="em">Email</label><input class="t" id="em" required type="email" inputmode="email" autocomplete="email" autocapitalize="off"></div>
           <div id="catBox" hidden><label class="l" for="cat">I am attending as</label><select class="t" id="cat"></select></div>
         </div>
         <div style="margin-top:12px" id="guestsBox"><label class="l" for="gs">Other attendees <span>(names, optional)</span></label><textarea class="t" id="gs" placeholder="One name per line"></textarea></div>
@@ -221,8 +221,6 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
         <div id="rows"></div>
         <div class="acts">
           <button class="btn btn-dark" id="goSend" type="button">Complete registration</button>
-          <button class="btn btn-wa" id="goWa" type="button">Register via WhatsApp</button>
-          <button class="btn btn-line" id="goMail" type="button">Register via email</button>
         </div>
         <p class="err" id="err2" role="alert"></p>
         <p class="fine">Your seat or service is held for 24 hours while payment is confirmed, and for 48 hours once you report a mobile money transaction. Our fees are for preparation and delivery, never for access or approvals. Cancellations and refunds are covered in the <a href="/terms" target="_blank" rel="noopener">terms</a>.<br><br><b>Photography:</b> our forums are photographed and filmed for reporting and promotion, so you may appear in that material. Tell us at the desk or by email if you would rather not be.</p>
@@ -230,7 +228,7 @@ details.more>div,details.more>.evq{padding:0 16px 16px}
       <div class="ok" id="ok">
         <div class="tick">✓</div>
         <h3 id="okTitle">Registration received</h3>
-        <p style="color:var(--mute);margin:8px 0 14px">Your reference is <span class="ref" id="refOk"></span>. We confirm on WhatsApp or email, usually the same day.</p>
+        <p style="color:var(--mute);margin:8px 0 14px">Your reference is <span class="ref" id="refOk"></span>. We've sent a confirmation to your email. If it doesn't arrive, check your spam folder or WhatsApp us.</p>
         <div id="okExtra"></div>
         <button class="btn btn-line" type="button" id="again">Register someone else</button>
       </div>
@@ -336,7 +334,6 @@ function render(){
 </div>`}
  else info=`<div class="box"><b style="color:var(--ink)">Invoice & bank transfer</b><br>We email an invoice from Gotham Consult within one working day, with bank details for a transfer in Ghana or from abroad (SWIFT), and reference <span class="ref">${ref}</span>. Your place is confirmed when payment arrives.</div>`;
  $('#payInfo').innerHTML=info;
- $('#goWa').textContent=free?'Reserve via WhatsApp':'Register via WhatsApp';
  $('#goSend').textContent=sel.appr?'Request my invitation':(free?'Reserve my seat':'Complete registration');
 }
 
@@ -353,7 +350,7 @@ function valid(){
  if(!ph)return fail('#ph','Please add your WhatsApp number, so we can confirm your seat.');
  if(ph.length<9)return fail('#ph','Please check your WhatsApp number.');
  const em=$('#em').value.trim();
- if(em&&!/^\S+@\S+\.\S+$/.test(em))return fail('#em','Please check your email address, or leave it empty.');
+ if(!/^\S+@\S+\.\S+$/.test(em))return fail('#em','Please enter a valid email address so we can send your confirmation.');
  if(!$('#cons').checked)return fail('#cons','Please tick the box to agree, just below your details.');
  $('#err').textContent='';$('#err2').textContent='';return true}
 function done(extra){$('#refOk').textContent=ref;$('#sumBody').hidden=true;$('#ok').classList.add('on'); $('#okTitle').textContent=OKT;
@@ -410,15 +407,13 @@ $('#goSend').onclick=async()=>{
   OKT = d.status==='pending' ? 'Application received' : 'Registration received';
   done(extra);
  }catch(err){
-  const m={missing_fields:'Please check your name and WhatsApp number.',consent_required:'Please tick the box to agree.',
+  const m={missing_fields:'Please check your name, WhatsApp number and email address.',consent_required:'Please tick the box to agree.',
    sold_out:'Sorry, this is now full. Message us on WhatsApp and we will put you on the waiting list.',closed:'Registration for this has closed.',
    too_many:'Too many tries from this connection. Wait a minute and press again.',unknown_item:'This item is no longer available. Please refresh the page.'}[err.message];
   if(err.message==='missing_fields'&&err.fields.length){fail({full_name:'#nm',phone:'#ph',email:'#em'}[err.fields[0]]||'#nm',m)}
-  else{const t=m||'We could not reach our system just now. Please press "Reserve via WhatsApp" instead, it works the same.';$('#err').textContent=t;$('#err2').textContent=t}
+  else{const t=m||'We could not reach the registration system just now. Please try again in a moment or contact us for help.';$('#err').textContent=t;$('#err2').textContent=t}
  }finally{ b.disabled=false; render(); }
 };
-$('#goWa').onclick=()=>{if(!valid())return;window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg())}`,'_blank','noopener');done()};
-$('#goMail').onclick=()=>{if(!valid())return;location.href=`mailto:${EMAIL}?subject=${encodeURIComponent('Registration '+ref+': '+sel.t)}&body=${encodeURIComponent(msg())}`;done()};
 $('#again').onclick=()=>{$('#ok').classList.remove('on');$('#sumBody').hidden=false;['#nm','#role','#em','#ph','#gs'].forEach(s=>$(s).value='');newRef();render()};
 const NAV=[['Start here','#start'],['Invest in Ghana','#ghana'],['Mining','#mining'],['Free tools','#tools'],['Forums','#forums'],['Membership','#join'],['Contact','#contact']];
 $('#nav').innerHTML=NAV.map(([t,h])=>`<a href="${SITE_URL}${h}">${t}</a>`).join('')+'<a href="/admin" style="border:1px solid var(--line);border-radius:999px;padding:5px 12px">Login</a>'+'<a class="here" href="#form" aria-current="page">Register</a>';

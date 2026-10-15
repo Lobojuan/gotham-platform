@@ -53,6 +53,45 @@ assert 'New Gotham enquiry' in mail and 'Nordic Sun' in mail and 'solar project'
 assert psql("select count(*) from msg_outbox where kind='team_inquiry'")=='0'
 ok('consented service enquiry queues email to both team inboxes and does not use Meta WhatsApp')
 
+# Every registration queues the registrant's receipt and a CRM notice for Joy and Uffe,
+# even when the person declines marketing or service follow-up.
+st,item,_=call('/api/items',{'code':'MAIL1','kind':'event','title':'Email confirmation forum','starts_at':'2026-12-02T14:00:00Z',
+ 'price':0,'currency':'GHS','capacity':20,'published':True,'approval':False,'phase':'open'},cookie=owner)
+assert st==200,item
+st,reg,_=call('/api/register',{'item_code':'MAIL1','full_name':'Ama Registered','email':'ama.registered@example.test',
+ 'phone':'0244000123','consent':True,'follow_up':'no'},ip='127.0.0.35')
+assert st==200,reg
+for _ in range(30):
+ if psql("select count(*) from outbox where reg_id=(select id from registrations where reference='"+reg['reference']+"')")== '3':break
+ time.sleep(.1)
+reg_id=psql("select id from registrations where reference='"+reg['reference']+"'")
+assert psql(f"select count(*) from outbox where reg_id={reg_id} and to_email='ama.registered@example.test' and kind='ticket'")=='1'
+assert psql(f"select string_agg(to_email,',' order by to_email) from outbox where reg_id={reg_id} and kind='staff_alert'")== 'joy@gothamconsult.com,uffe.carlson@gothamconsult.com'
+assert psql(f"select count(*) from registrations where id={reg_id} and email='ama.registered@example.test'")=='1'
+ok('every registration is saved in CRM and queues a registrant confirmation plus email notices to Joy and Uffe')
+
+# The required email is enforced server-side, not just by browser validation.
+st,err,_=call('/api/register',{'item_code':'MAIL1','full_name':'No Email','phone':'0244000124','consent':True},ip='127.0.0.36')
+assert st==400 and err['fields']==['email'],err
+ok('registration without a deliverable confirmation address is rejected')
+
+# The homepage appointment and About contact forms use the same CRM-first email flow.
+st,lead,_=call('/api/site-enquiry',{'type':'call','name':'Kofi Request','email':'kofi.request@example.test',
+ 'topic':'Company set-up','preferred_day':'2026-11-02','preferred_time':'14:00','consent':True},ip='127.0.0.37')
+assert st==200 and lead['ok'] and lead['email_queued'],lead
+for _ in range(30):
+ if psql("select count(*) from outbox where to_email='kofi.request@example.test'")=='1':break
+ time.sleep(.1)
+assert psql("select count(*) from contacts where lower(email)='kofi.request@example.test'")=='1'
+assert psql("select count(*) from deals where source='Website call request' and title like '%website call request'")=='1'
+assert psql("select count(*) from notes where author='website' and body like '%2026-11-02 at 14:00 Accra time%'")=='1'
+assert psql("select count(*) from outbox where kind='staff_alert' and to_email in ('joy@gothamconsult.com','uffe.carlson@gothamconsult.com') and subject like 'New enquiry · Call request'")=='2'
+ok('call requests are saved as CRM contacts/deals with preferred time and email confirmations to the visitor and both staff')
+
+st,err,_=call('/api/site-enquiry',{'type':'contact','name':'No consent','email':'no.consent@example.test','consent':False},ip='127.0.0.38')
+assert st==400 and err['error']=='consent_required',err
+ok('website contact information is stored only after explicit privacy consent')
+
 # Lead capture still works with no consent, but notification is rejected; owner may pause alerts.
 st,err,_=call('/api/chat-lead',{'name':'Another Client','contact':'another@example.test','need':'Advice','consent':False},ip='127.0.0.33')
 assert st==400 and err['error']=='consent_required',err

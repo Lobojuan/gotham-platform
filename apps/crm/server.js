@@ -2292,6 +2292,52 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       return json(res, 200, { ok: true }, cors);
     }
 
+    /* Homepage and About enquiries are saved in CRM before email acknowledgements go out. */
+    if (p === '/api/site-enquiry' && req.method === 'POST') {
+      if (rateLimited(ip, 8, 300e3, 'siteenquiry')) return json(res, 429, { error: 'too_many' }, cors);
+      const b = await body(req);
+      const name = clean(b.name, 120), email = clean(b.email, 160).toLowerCase();
+      const company = clean(b.company, 160), phone = phoneGH(clean(b.phone, 40));
+      const type = ['contact', 'call'].includes(b.type) ? b.type : 'contact';
+      const topic = clean(b.topic, 160), message = clean(b.message, 2000);
+      const preferredDay = clean(b.preferred_day, 10), preferredTime = clean(b.preferred_time, 5);
+      const fields = [];
+      if (!name) fields.push('name');
+      if (!/^\S+@\S+\.\S+$/.test(email)) fields.push('email');
+      if (type === 'call' && (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDay) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(preferredTime))) fields.push('preferred_time');
+      if (fields.length) return json(res, 400, { error: 'missing_fields', fields }, cors);
+      if (b.consent !== true) return json(res, 400, { error: 'consent_required' }, cors);
+      const source = type === 'call' ? 'Website call request' : 'Website contact form';
+      const when = type === 'call' ? `Preferred time: ${preferredDay} at ${preferredTime} Accra time (GMT).` : '';
+      const need = [topic ? `Topic: ${topic}` : '', message, when].filter(Boolean).join('\n');
+      const dealId = await inboundDeal({ company: company || null, full_name: name, email, phone: phone || null,
+        kind: 'consulting', title: `${company || name} · ${type === 'call' ? 'website call request' : 'website enquiry'}`,
+        source, task: `Reply to ${firstName(name)} · ${type === 'call' ? 'call request' : 'website enquiry'}${topic ? ': ' + topic : ''}` });
+      if (dealId) {
+        const c = (await q('select contact_id from deals where id=$1', [dealId])).rows[0];
+        if (c?.contact_id) {
+          if (phone) await q('update contacts set phone=coalesce(nullif(phone,\'\'),$2) where id=$1', [c.contact_id, phone]);
+          await q("insert into notes(contact_id,deal_id,kind,body,author) values ($1,$2,'note',$3,'website')",
+            [c.contact_id, dealId, `${source}${need ? `\n${need}` : ''}`]);
+        }
+      }
+      const acknowledgement = type === 'call'
+        ? `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have received your request for <b>${esc(preferredDay)} at ${esc(preferredTime)} Accra time (GMT)</b>. This is a request, not a confirmed appointment. Joy or Uffe will reply by email to confirm a time.</p>`
+        : `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have received your enquiry${topic ? ` about <b>${esc(topic)}</b>` : ''}. Joy or Uffe will reply by email within one working day.</p>`;
+      await queueMail(email, name, type === 'call' ? 'We received your call request · Gotham Consult' : 'We received your enquiry · Gotham Consult',
+        wrapMail('Your request is recorded', `${acknowledgement}<p style="color:#5A6472;font-size:13px">If you did not send this request, you can ignore this email.</p>`), 'website_ack', null);
+      const teamBody = `<p style="color:#0F1B2D;font-size:15px"><b>${esc(name)}</b>${company ? ` · ${esc(company)}` : ''}</p>
+        <p style="color:#5A6472;font-size:15px;white-space:pre-wrap">${esc(need || '(No additional details supplied)')}</p>
+        <p style="color:#5A6472;font-size:13px">Email: ${esc(email)}${phone ? ` · WhatsApp: ${esc(phone)}` : ''} · Source: ${esc(source)}</p>
+        <p><a href="${BASE}/admin#contacts">Open Gotham CRM → Contacts &amp; people</a></p>`;
+      for (const [to, toName] of [['joy@gothamconsult.com', 'Joy Preston'], ['uffe.carlson@gothamconsult.com', 'Uffe Carlson']])
+        await queueMail(to, toName, `New enquiry · ${clean(type === 'call' ? 'Call request' : topic || 'Website', 100)}`,
+          wrapMail('A new website request was recorded', teamBody), 'staff_alert', null);
+      webEnquiry(req, ip, type === 'call' ? 'call' : 'contact').catch(() => {});
+      flushMail().catch(() => {});
+      return json(res, 200, { ok: true, email_queued: true }, cors);
+    }
+
     if (p === '/api/sponsor-enquiry' && req.method === 'POST') {
       if (rateLimited(ip, 6, 300e3, 'sponsor')) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
@@ -2471,14 +2517,14 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
     if (p === '/api/register' && req.method === 'POST') {
       if (rateLimited(ip, 10, 60e3, 'register')) return json(res, 429, { error: 'too_many' }, cors);
       const b = await body(req);
-      // Only a name and a phone number are required. Many SME owners have no registered
-      // company name or no email they check; asking for them lost registrations.
+      // Email is required because every online registrant receives a written confirmation.
+      // Company and job details remain optional for Ghanaian SMEs and event attendees.
       const full_name = clean(b.full_name), email = clean(b.email).toLowerCase(), phone = phoneGH(clean(b.phone));
       const company = clean(b.company) || 'Not given';
       const fields = [];
       if (!full_name) fields.push('full_name');
       if (!phone || phone.replace(/\D/g, '').length < 9) fields.push('phone');
-      if (email && !/^\S+@\S+\.\S+$/.test(email)) fields.push('email');
+      if (!/^\S+@\S+\.\S+$/.test(email)) fields.push('email');
       if (fields.length) return json(res, 400, { error: 'missing_fields', fields }, cors);
       if (b.consent !== true) return json(res, 400, { error: 'consent_required' }, cors);
       let it, category, seats, amount, method, status, reg;
@@ -2567,8 +2613,6 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
           await q(`insert into tasks(title,due_at,contact_id,reg_id,created_by,priority)
                    values ($1, coalesce(date_trunc('day',$2::timestamptz),date_trunc('day',now())) + interval '1 day 10 hours', $3, $4, 'website', $5)`,
             [`Follow up: ${full_name} said ${follow} at ${it.title}`, it.starts_at, cid.id, reg.id, follow === 'yes' ? 'high' : 'normal']);
-        await notifyTeamInquiry('Forum registration · service follow-up', full_name, company === 'Not given' ? '' : company,
-          [it.title, `Asked for follow-up: ${follow}`, challenge].filter(Boolean).join(' · '));
       }
 
       if (method === 'invoice' && amount > 0) await draftFromRegistration(reg, it, { full_name, company, email, phone, country: clean(b.country, 60), seats, amount }).catch(e => console.error('draft invoice', e.message));
@@ -2603,6 +2647,15 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
                `<p style="color:#5A6472;font-size:15px">Your place is held for 24 hours while payment is confirmed.</p>${method === 'momo' ? `<p style="color:#5A6472;font-size:15px">Send ${it.currency} ${amount} by mobile money to <b>${esc(paymentDetails.number)}</b> (${esc(paymentDetails.account_name)}). Use reference <b>${reg.reference}</b>, then send us the transaction ID on WhatsApp. We confirm your place after we verify receipt.</p>` : ''}`}`),
           paidNow ? 'ticket' : 'registration_received', reg.id);
       }
+      // Every completed registration goes to both Gotham administrators, regardless of
+      // the optional marketing/service follow-up answer or the general enquiry alert toggle.
+      const registrationNotice = `<p style="color:#0F1B2D;font-size:15px"><b>${esc(full_name)}</b>${company !== 'Not given' ? ` · ${esc(company)}` : ''}</p>
+        <p style="color:#5A6472;font-size:15px">${esc(it.title)} · Reference ${esc(reg.reference)} · ${seats} attendee${seats === 1 ? '' : 's'} · ${status}</p>
+        <p style="color:#5A6472;font-size:13px">Registrant email: ${esc(email)} · WhatsApp: ${esc(phone)}</p>
+        <p><a href="${BASE}/admin#regs">Open Gotham CRM → registrations</a></p>`;
+      const registrationSubject = `New registration · ${clean(it.title, 100)}`;
+      for (const [to, toName] of [['joy@gothamconsult.com', 'Joy Preston'], ['uffe.carlson@gothamconsult.com', 'Uffe Carlson']])
+        await queueMail(to, toName, registrationSubject, wrapMail('A new registration was recorded', registrationNotice), 'staff_alert', reg.id);
       flushMail().catch(() => {});
       webEnquiry(req, ip, 'register').catch(() => {});
       return json(res, 200, { reference: reg.reference, amount, currency: it.currency, paid: amount === 0,

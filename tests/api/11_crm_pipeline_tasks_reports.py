@@ -100,7 +100,7 @@ fam={'full_name':'Akua Mensah','email':'akua@example.co.uk','country':'United Ki
 st,d,_=call('/api/family-interest',fam); st,d,_=call('/api/family-interest',fam)
 st,d,_=call('/api/deals',cookie=ck); fd=[x for x in d['rows'] if x['kind']=='family_desk']; assert len(fd)==1 and fd[0]['open_tasks']==1; ok('a Family Desk family opens one deal + call task, not two on resubmit')
 st,d,_=call('/api/items',{'code':'F7','kind':'event','title':'Forum','starts_at':'2026-10-24T14:00:00Z','price':0,'capacity':40,'published':True,'phase':'open'},cookie=ck)
-st,d,_=call('/api/register',{'item_code':'F7','full_name':'Kwesi','phone':'0244000111','consent':True,'follow_up':'yes','company_about':'Shop','company_size':'2–5'})
+st,d,_=call('/api/register',{'item_code':'F7','full_name':'Kwesi','email':'kwesi@example.test','phone':'0244000111','consent':True,'follow_up':'yes','company_about':'Shop','company_size':'2–5'})
 st,d,_=call('/api/tasks?scope=unassigned',cookie=ck); ft=[x for x in d['rows'] if x['title'].startswith('Follow up: Kwesi')]
 assert ft and ft[0]['due_at'].startswith('2026-10-25'); ok('"Yes, follow up" at a forum creates a task for the day after the event')
 
