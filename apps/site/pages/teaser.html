@@ -66,6 +66,7 @@ footer a{color:var(--mute)}
     </div>
     <div class="cta">
       <a class="btn btn-gold" id="apply">Request your invitation →</a>
+      <a class="btn btn-ghost" href="/event-help">Already registered? Tell us where your business needs support →</a>
       <a class="btn btn-ghost" href="#who">Who it's for</a>
       <span class="seats" id="seats"></span>
     </div>
@@ -124,6 +125,7 @@ footer a{color:var(--mute)}
 <script>
 const REG='/register#F1';
 const SHARE=location.origin+'/teaser';
+const HELP=location.origin+'/event-help';
 const API='';   // same origin
 const $=s=>document.querySelector(s);
 const START=new Date('2026-10-24T14:00:00+00:00');   // Accra time (UTC)
@@ -138,7 +140,7 @@ const utm=[q.get('utm_source')&&'utm_source='+encodeURIComponent(q.get('utm_sour
            q.get('utm_campaign')&&'utm_campaign='+encodeURIComponent(q.get('utm_campaign'))].filter(Boolean).join('&');
 $('#apply').href=utm?REG.replace('#F1','?'+utm+'#F1'):REG;
 
-const msg='SMEs at the Centre: inclusive partnerships under the GIPA Act.\nSaturday 24 October 2026, 14:00, Tang Palace Hotel, Accra.\nBy invitation, free for SMEs, stakeholders and investors.\nRequest your invitation: '+SHARE;
+const msg='SMEs at the Centre · Saturday 24 October 2026, 14:00, Tang Palace Hotel, Accra.\n\nAlready registered? Help Joy and Uffe understand how Gotham Consult can best support your business. Select all relevant areas, describe your biggest challenge, and use the same email address as your registration. We will record your response in our CRM and email you a confirmation.\n\nBusiness-support follow-up form: '+HELP+'\nEvent details and invitation: '+SHARE+'\nQuestions? WhatsApp Gotham Consult: https://wa.me/233550416627';
 $('#shWa').href='https://wa.me/?text='+encodeURIComponent(msg);
 $('#shLi').href='https://www.linkedin.com/sharing/share-offsite/?url='+encodeURIComponent(SHARE);
 $('#linkbox').textContent=SHARE;

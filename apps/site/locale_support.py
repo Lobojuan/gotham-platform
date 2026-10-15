@@ -20,9 +20,10 @@ def gipa_dictionary(lang):
 def translate(value, dictionary):
     return dictionary.get(re.sub(r'\s+', ' ', html.unescape(value)).strip(), value)
 
-def prepare_locale(lang, metadata, articles):
+def prepare_locale(lang, metadata, articles, additional=None):
     d = IF.load_dict(lang)
     d.update(gipa_dictionary(lang))
+    d.update(additional or {})
     # Missing search metadata must fail the build instead of publishing English metadata under a new locale.
     missing = [v[k] for v in metadata.values() for k in ('title','desc') if v.get(k) and v[k] not in d]
     if missing: raise ValueError(f'{lang}: untranslated search metadata ({len(missing)})')

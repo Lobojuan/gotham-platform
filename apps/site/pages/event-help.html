@@ -1,0 +1,149 @@
+<!--#top-->
+<style>
+  .eh-hero{background:radial-gradient(ellipse at 85% 10%,rgba(201,162,75,.18),transparent 42%),var(--ink);color:#fff;padding:clamp(38px,8vw,76px) 0}
+  .eh-wrap{width:min(100% - 32px,900px);margin:auto}
+  .eh-hero .eyebrow{color:#E6B866;letter-spacing:.16em;text-transform:uppercase;font-size:12px;font-weight:700}
+  .eh-hero h1{font-size:clamp(34px,7vw,62px);line-height:1.06;letter-spacing:-.035em;margin:12px 0 14px;max-width:15ch}
+  .eh-hero h1 em{font-family:Newsreader,Georgia,serif;font-weight:400;color:#E6B866}
+  .eh-hero p{color:#D2D7DF;max-width:62ch;font-size:clamp(16px,2.2vw,19px)}
+  .eh-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+  .eh-meta span{border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:7px 12px;color:#F4F5F2;font-size:14px}
+  .eh-main{padding:30px 0 68px}
+  .eh-card{background:#fff;border:1px solid #E2E4E7;border-radius:22px;padding:clamp(20px,4vw,34px);box-shadow:0 18px 55px rgba(15,27,45,.08)}
+  .eh-card h2{font-size:clamp(24px,4vw,32px);margin-bottom:8px}
+  .eh-lead{color:#5A6472;margin-bottom:24px;max-width:68ch}
+  .eh-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .eh-field{display:grid;gap:7px;min-width:0}
+  .eh-field.full,.eh-topics,.eh-consent,.eh-actions,.eh-status{grid-column:1/-1}
+  .eh-field label,.eh-label{font-weight:650;font-size:15px}
+  .eh-field input,.eh-field textarea{width:100%;border:1px solid #D9DDE2;border-radius:12px;padding:13px 14px;background:#fff;color:#0F1B2D;font:inherit;font-size:16px;min-width:0}
+  .eh-field input:focus,.eh-field textarea:focus{outline:3px solid rgba(201,162,75,.24);border-color:#A9761F}
+  .eh-field textarea{min-height:116px;resize:vertical}
+  .eh-topics{border:0;padding:0;margin:5px 0 0;min-width:0}
+  .eh-topics legend{font-weight:650;font-size:15px;margin-bottom:5px}
+  .eh-topics .hint{color:#5A6472;font-size:14px;margin-bottom:11px}
+  .eh-topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .eh-topic{display:flex;align-items:flex-start;gap:11px;border:1px solid #E2E4E7;border-radius:13px;padding:12px;min-width:0;cursor:pointer;transition:border-color .15s,background .15s}
+  .eh-topic:has(input:checked){border-color:#A9761F;background:#FFFDF8}
+  .eh-topic input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:#0F1B2D}
+  .eh-topic span{font-size:14.5px;line-height:1.35}
+  .eh-consent{display:grid;grid-template-columns:24px 1fr;gap:11px;align-items:start;border-radius:13px;background:#F5F5F1;padding:14px;color:#46505D;font-size:14px;line-height:1.5}
+  .eh-consent input{width:22px;height:22px;margin:1px 0 0;accent-color:#0F1B2D}
+  .eh-consent a{color:#0F1B2D;text-underline-offset:2px}
+  .eh-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:2px}
+  .eh-actions .btn{min-height:48px}
+  .eh-status{min-height:24px;color:#5A6472;font-size:14px;margin:0}
+  .eh-status.error{color:#A1322B;font-weight:600}
+  .eh-success{display:none;border:1px solid #B9D7C6;background:#F1F8F3;border-radius:16px;padding:20px}
+  .eh-success.on{display:block}
+  .eh-success h2{font-size:25px;margin:0 0 8px}
+  .eh-success p{color:#43564A;margin:0 0 12px}
+  .eh-ref{display:inline-block;padding:5px 9px;border-radius:7px;background:#fff;font:600 14px ui-monospace,Menlo,monospace}
+  .eh-next{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  .eh-note{margin-top:16px;color:#5A6472;font-size:13.5px}
+  @media(max-width:620px){.eh-fields,.eh-topic-grid{grid-template-columns:1fr}.eh-actions>*{width:100%}.eh-card{border-radius:17px}}
+</style>
+<main id="main">
+  <section class="eh-hero">
+    <div class="eh-wrap">
+      <p class="eyebrow">For registered guests · SMEs at the Centre · 24 October 2026</p>
+      <h1>How can we support your business?</h1>
+      <p>You’ve already registered for the event. Tell us which areas of your business could use support and what your biggest challenge is. Use the same email address you used to register so we can match your response to your CRM record. We’ll email you a confirmation after we record it.</p>
+      <div class="eh-meta"><span>Private business-support follow-up</span><span>Your event registration stays unchanged</span></div>
+    </div>
+  </section>
+  <section class="eh-main">
+    <div class="eh-wrap">
+      <div class="eh-card">
+        <form id="eventHelpForm">
+          <h2>Where would support help most?</h2>
+          <p class="eh-lead">Choose all the areas where Gotham could be useful. Add enough detail for Joy and Uffe to understand your priorities. Please do not include passwords, payment PINs, or confidential business documents.</p>
+          <div class="eh-fields">
+            <div class="eh-field"><label for="eh-name">Your name</label><input id="eh-name" name="name" autocomplete="name" maxlength="120" required></div>
+            <div class="eh-field"><label for="eh-email">Email used for your registration</label><input id="eh-email" name="email" type="email" autocomplete="email" maxlength="160" required></div>
+            <div class="eh-field full"><label for="eh-company">Business or organisation <span style="font-weight:400;color:#5A6472">(optional)</span></label><input id="eh-company" name="company" autocomplete="organization" maxlength="160"></div>
+            <fieldset class="eh-topics">
+              <legend>Which areas would you like help with?</legend>
+              <p class="hint">Choose all that apply. You can also describe something different below.</p>
+              <div class="eh-topic-grid">
+                <label class="eh-topic"><input type="checkbox" name="need" value="Company setup and market entry"><span>Company setup and market entry</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="Business growth, funding and investor readiness"><span>Business growth, funding and investor readiness</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="Compliance and business documentation"><span>Compliance and business documentation</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="Website, e-commerce and SEO"><span>Website, e-commerce and online visibility</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="AI, IT and business software"><span>AI, IT and business software</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="Financial and credit software"><span>Financial and credit software</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="Events, livestreaming and event coverage"><span>Events, livestreaming and event coverage</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="Marketing, publishing and social media"><span>Marketing, publishing and social media</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="Training and digital skills"><span>Training and digital skills</span></label>
+                <label class="eh-topic"><input type="checkbox" name="need" value="Partnerships and expansion across Africa"><span>Partnerships and expansion across Africa</span></label>
+              </div>
+            </fieldset>
+            <div class="eh-field full"><label for="eh-challenge">What is your biggest business challenge right now?</label><textarea id="eh-challenge" name="message" maxlength="1800" placeholder="A few sentences are enough." required></textarea></div>
+            <label class="eh-consent"><input id="eh-consent" type="checkbox" required><span>I agree that Gotham Consult may use these details to respond to this enquiry, as described in the <a href="/privacy">privacy notice</a>.</span></label>
+            <div class="eh-actions"><button class="btn btn-dark" type="submit">Send my support needs</button><a class="btn btn-line" href="https://wa.me/233550416627?text=Hello%20Gotham%20Consult%2C%20I%20have%20a%20question%20about%20the%20business-support%20follow-up%20form." target="_blank" rel="noopener">Question? WhatsApp Gotham</a></div>
+            <p class="eh-status" id="eh-status" role="status" aria-live="polite">Your response is private and recorded in Gotham Consult’s CRM. We’ll email you after a successful submission.</p>
+          </div>
+        </form>
+        <section class="eh-success" id="eh-success" aria-live="polite">
+          <h2>Thank you. Your support request is recorded.</h2>
+          <p id="eh-result-message"><span class="eh-ref" id="eh-reference"></span></p>
+          <div class="eh-next"><a class="btn btn-wa" id="eh-whatsapp" href="https://wa.me/233550416627" target="_blank" rel="noopener">Continue in WhatsApp</a><a class="btn btn-line" href="/">Back to Gotham Consult</a></div>
+          <p class="eh-note">WhatsApp is optional. Your enquiry is already in our CRM. The WhatsApp button opens a message for you to review and send; it does not send anything automatically.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+</main>
+<script>
+/*__EVENT_HELP_RUNTIME__*/
+(() => {
+  const copy = COPY[document.documentElement.lang] || COPY.en;
+  const form = document.getElementById('eventHelpForm');
+  const status = document.getElementById('eh-status');
+  const button = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const needs = [...form.querySelectorAll('input[name="need"]:checked')].map(input => input.value);
+    const challenge = document.getElementById('eh-challenge').value.trim();
+    if (!needs.length && !challenge) { status.textContent = copy.prompt; status.classList.add('error'); return; }
+    const email = document.getElementById('eh-email').value.trim();
+    const name = document.getElementById('eh-name').value.trim();
+    button.disabled = true;
+    status.classList.remove('error');
+    status.textContent = copy.sending;
+    try {
+      const response = await fetch('/api/site-enquiry', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type: 'event', item_code: 'F1', name, email,
+          company: document.getElementById('eh-company').value.trim(),
+          language: document.documentElement.lang,
+          topic: needs.join(', '), message: challenge, consent: document.getElementById('eh-consent').checked })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'failed');
+      const reference = data.reference || `GC-EF-${data.deal_id || 'RECORDED'}`;
+      document.getElementById('eh-reference').textContent = reference;
+      const notices = [copy.recorded];
+      if (data.team_alerts_queued) notices.push(copy.team.replace('{names}', data.team_alerts_queued === 2 ? 'Joy and Uffe' : 'Gotham Consult'));
+      notices.push(data.email_queued ? copy.receipt : copy.no_receipt);
+      notices.push(copy.reference);
+      const notice = notices.join(' ');
+      document.getElementById('eh-result-message').prepend(document.createTextNode(notice));
+      const tech = needs.some(value => /AI, IT|software|Website/i.test(value));
+      const number = tech ? '233552395548' : '233550416627';
+      const recipient = tech ? 'Uffe' : 'Joy';
+      const text = copy.whatsapp.replace('{person}', recipient).replace('{ref}', reference);
+      document.getElementById('eh-whatsapp').href = `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+      form.hidden = true;
+      document.getElementById('eh-success').classList.add('on');
+      document.getElementById('eh-success').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (error) {
+      status.classList.add('error');
+      status.textContent = error.message === 'consent_required' ? copy.consent
+        : error.message === 'too_many' ? copy.limit : copy.failed;
+    } finally { button.disabled = false; }
+  });
+})();
+</script>
+<!--#bottom-->

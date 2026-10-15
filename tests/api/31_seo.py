@@ -34,7 +34,7 @@ urls = [n.text for n in ET.parse(DIST / 'sitemap.xml').findall('.//{*}loc')]
 ok(len(urls) == len(set(urls)), 'Sitemap has no duplicate URLs')
 for lang in ('fr', 'es', 'de', 'ar', 'zh'):
     localized = [u for u in urls if u == SITE + '/' + lang or u.startswith(SITE + '/' + lang + '/')]
-    ok(len(localized) == 26, lang + ': all 26 translated pages in sitemap (24 + the investment report + membership)')
+    ok(len(localized) == 27, lang + ': all 27 translated pages in sitemap (including the business-support follow-up)')
     for url in localized:
         path = url.removeprefix(SITE); name = path.removeprefix('/' + lang).strip('/')
         doc = read(path)
@@ -82,5 +82,5 @@ except ValueError:
     ok(True, 'Proxy patch refuses unexpected configuration')
 else:
     raise AssertionError('Unexpected Caddy shape was accepted')
-print('  ok SEO:', count, 'checks across 120 localized pages')
+print('  ok SEO:', count, 'checks across 135 localized pages')
 print('PASSED')

@@ -7,6 +7,7 @@ const ok = m => console.log('  ok', m);
  for (const d of [{ n: 'laptop', w: 1366, h: 820, m: false }, { n: 'phone', w: 390, h: 844, m: true }]) {
   console.log(d.n);
   const c = await b.newContext({ viewport: { width: d.w, height: d.h }, isMobile: d.m, hasTouch: d.m, extraHTTPHeaders: { 'x-real-ip': '10.66.' + (d.m ? 2 : 1) + '.9' } });
+  await c.route('https://fonts.googleapis.com/**', route => route.abort());
   const p = await c.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message + ' @ ' + (e.stack||'').split('\n').slice(0,3).join(' | ')));
   const tap = s => d.m ? p.tap(s) : p.click(s);
   await p.goto(B + '/admin'); await p.fill('#e', 'admin'); await p.fill('#pw', PW); await tap('#lbtn'); await p.waitForSelector('#app', { state: 'visible' });

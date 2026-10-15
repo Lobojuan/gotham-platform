@@ -15,6 +15,7 @@ import report_page as REPORTP
 import members_page as MEMP
 from seo_locales import ES_META
 from locale_support import prepare_locale, localize_investor_data, gipa_dictionary, NEW_LANGUAGES
+from event_help_i18n import TRANSLATIONS as EVENT_HELP_I18N, RUNTIME as EVENT_HELP_RUNTIME
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DIST = os.path.join(HERE, 'dist')
@@ -53,6 +54,10 @@ V2 = {
 }
 for _n, (_t, _d, _o) in V2.items():
     META[_n] = dict(title=_t, desc=_d, og=_o, extra=V2_EXTRA)
+META['event-help.html'] = dict(
+   title='Business Support Follow-up | Gotham Consult',
+   desc='Already registered for SMEs at the Centre? Tell Gotham Consult which areas of your business need support. Your response is recorded in the CRM and confirmed by email.',
+   og='img/og/forum.jpg', extra=V2_EXTRA + '\n<meta name="robots" content="noindex, follow">')
 # practice detail pages: /services/<slug>
 PRACTICES = {
  'investment-readiness': ('Investment readiness and GIPA registration', "Get your company registered, your numbers in order and your story clear, so you can apply to programmes, banks and investors with documents that hold up to scrutiny.", 'img/real-airportcity.webp'),
@@ -217,6 +222,8 @@ def main():
     # page bodies -> complete documents
     for name, m in META.items():
         body = GEN.get(name) or open(os.path.join(HERE, 'pages', name), encoding='utf-8').read()
+        if name == 'event-help.html':
+            body = body.replace('/*__EVENT_HELP_RUNTIME__*/', 'const COPY=' + json.dumps(EVENT_HELP_RUNTIME, ensure_ascii=False) + ';')
         body = body.replace('<!--#research-->', INVESTOR.render())
         for part in ('top', 'bottom'):   # shared header/footer of the new design
             if f'<!--#{part}-->' in body:
@@ -292,7 +299,7 @@ def main():
     print('  tools.html (from classic)')
 
     # Crawlable six-language twins share dictionaries, article data and reciprocal alternates.
-    locale_pages = ['index.html', 'services.html', *[f'services/{p}.html' for p in PRACTICES], 'invest.html', 'mining.html', 'forums.html', 'about.html']
+    locale_pages = ['index.html', 'services.html', *[f'services/{p}.html' for p in PRACTICES], 'invest.html', 'mining.html', 'forums.html', 'about.html', 'event-help.html']
     twins = locale_pages + ['insights.html'] + [f'insights/{a["slug"]}.html' for a in ARTS] + ['ghana-investment-report.html', 'membership.html', 'account.html']
     def path_of(n): return '' if n == 'index.html' else n[:-5]
     paths = {('/' + path_of(n)).rstrip('/') or '/' for n in twins}
@@ -326,10 +333,17 @@ def main():
         ld = IF.article_ld(a, lang, SITE) if a else ld_for(n, m, doc, lang)
         return doc.replace('</head>', ld + '\n' + IF.alternates(SITE, pth) + '</head>', 1)
     base_investor_html = INVESTOR.render()
-    for code in NEW_LANGUAGES: prepare_locale(code, META, ARTS)
-    for lang, metadata in (('fr', IF.FR_META), ('es', ES_META), *((code, {n:(IF.load_dict(code)[META[n]['title']],IF.load_dict(code)[META[n]['desc']]) for n in locale_pages}) for code in NEW_LANGUAGES)):
+    locale_meta = {n: META[n] for n in locale_pages}
+    for code in NEW_LANGUAGES: prepare_locale(code, locale_meta, ARTS, EVENT_HELP_I18N[code])
+    fr_meta = {**IF.FR_META, 'event-help.html': (EVENT_HELP_I18N['fr'][META['event-help.html']['title']], EVENT_HELP_I18N['fr'][META['event-help.html']['desc']])}
+    es_meta = {**ES_META, 'event-help.html': (EVENT_HELP_I18N['es'][META['event-help.html']['title']], EVENT_HELP_I18N['es'][META['event-help.html']['desc']])}
+    new_locale_meta = {code: {n:(IF.load_dict(code).get(META[n]['title']) or EVENT_HELP_I18N[code].get(META[n]['title']),
+                              IF.load_dict(code).get(META[n]['desc']) or EVENT_HELP_I18N[code].get(META[n]['desc'])) for n in locale_pages}
+                        for code in NEW_LANGUAGES}
+    for lang, metadata in (('fr', fr_meta), ('es', es_meta), *((code, new_locale_meta[code]) for code in NEW_LANGUAGES)):
         d = IF.load_dict(lang)
         if lang in NEW_LANGUAGES: d.update(gipa_dictionary(lang))
+        d.update(EVENT_HELP_I18N[lang])
         report = {}
         for n in twins:
             if n.startswith('insights'):

@@ -10,9 +10,9 @@ This guide documents current CRM navigation and actions. It is for signed-in sta
 
 ## Add and manage users
 
-- Only the **owner** can create, change, disable, or remove accounts. Go to **System → Users → Add user**, enter the person's name and sign-in name, and choose the least-privileged suitable role.
+- Only the **owner** (shown as **Super user** in the CRM) can create, change, disable, or remove accounts. Go to **System → Users → Add user**, enter the person's name and sign-in name, and choose the least-privileged suitable role.
 - The system shows a one-time password after creation or reset. Share it privately. The user must choose a new password at first sign-in. Do not post passwords or sign-in codes in team chat or ask the AI to handle them.
-- **Admin** can access operational screens and settings. **Staff** has limited access. **Owner** has full access, including user administration. Do not promote a user merely to make a hidden screen appear.
+- **Basic user** (internal role: staff) has limited access for assigned work. **Admin** can access operational screens and settings. **Super user** (internal role: owner) has full access, including user administration. Do not promote a user merely to make a hidden screen appear.
 
 ## Companies and people
 

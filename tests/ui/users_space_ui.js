@@ -17,6 +17,7 @@ const ok = (value, message) => { if (!value) throw new Error(message); console.l
  await probe.close();
 
  const owner = await browser.newContext({ viewport: { width: 1440, height: 900 }, extraHTTPHeaders: { 'x-real-ip': '10.91.17.3' } });
+ await owner.route('https://fonts.googleapis.com/**', route => route.abort());
  const page = await owner.newPage();
  const errors = [];
  page.on('pageerror', e => errors.push(e.message));
@@ -36,11 +37,14 @@ const ok = (value, message) => { if (!value) throw new Error(message); console.l
  ok((await page.textContent('#help-answer')).includes('Only the owner'), 'back-office AI answers from the workflow guide');
  await page.click('#nav a[data-v="users"]'); await page.waitForSelector('#users-add-top');
  ok(await page.isVisible('#users-add-top'), 'System → Users has a clear Add user action');
- ok((await page.textContent('#view')).includes('Manage who can sign in'), 'Users page explains its purpose');
+ ok((await page.textContent('#view')).includes('Add a teammate, choose what they can access'), 'Users page explains its purpose');
+ ok((await page.textContent('#view')).includes('Super user') && (await page.textContent('#view')).includes('Basic user'), 'Users page explains the plain-language access levels');
 
  const suffix = Date.now();
  const createUser = async (name, role) => {
-  await page.click('#users-add-top');
+  await page.click('#users-add-inline');
+  ok((await page.textContent('#u-form')).includes('Create a back-office account'), 'Add user opens a clear account form');
+  ok((await page.textContent('#u-form')).includes('temporary password') && (await page.textContent('#u-form')).includes('Super user'), 'account form explains the generated password and role choices');
   await page.fill('#u-name', name);
   await page.fill('#u-email', `${role}${suffix}@gothamconsult.com`);
   await page.selectOption('#u-role', role);
@@ -71,6 +75,7 @@ const ok = (value, message) => { if (!value) throw new Error(message); console.l
 
  const finishFirstPassword = async (email, password, nextPassword) => {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, extraHTTPHeaders: { 'x-real-ip': `10.91.18.${email.startsWith('admin') ? 3 : 4}` } });
+  await c.route('https://fonts.googleapis.com/**', route => route.abort());
   const p = await c.newPage(); p.on('pageerror', e => errors.push(e.message));
   await p.goto(B + '/admin'); await p.fill('#e', email); await p.fill('#pw', password); await p.tap('#lbtn');
   await p.waitForSelector('#pwform');
@@ -83,7 +88,7 @@ const ok = (value, message) => { if (!value) throw new Error(message); console.l
  await adminFlow.page.click('#hamb'); await adminFlow.page.waitForSelector('#side.open');
  await adminFlow.page.click('#nav a[data-v="users"]'); await adminFlow.page.waitForSelector('#view .team');
  ok(!(await adminFlow.page.locator('#users-add-top').count()), 'admin can find Users but does not see owner-only Add user');
- ok((await adminFlow.page.textContent('#view')).includes('Only the owner can add users'), 'admin sees who can manage accounts');
+ ok((await adminFlow.page.textContent('#view')).includes('Only a Super user can add accounts'), 'admin sees who can manage accounts');
  const forbidden = await adminFlow.page.evaluate(async () => (await fetch('/api/users', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Should not exist', email: 'forbidden@example.test', role: 'staff' }) })).status);
  ok(forbidden === 401, 'server denies an admin attempt to add a user');
 

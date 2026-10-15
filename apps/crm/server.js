@@ -2298,8 +2298,9 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       const b = await body(req);
       const name = clean(b.name, 120), email = clean(b.email, 160).toLowerCase();
       const company = clean(b.company, 160), phone = phoneGH(clean(b.phone, 40));
-      const type = ['contact', 'call'].includes(b.type) ? b.type : 'contact';
-      const topic = clean(b.topic, 160), message = clean(b.message, 2000);
+      const type = ['contact', 'call', 'event'].includes(b.type) ? b.type : 'contact';
+      const topic = clean(b.topic, type === 'event' ? 500 : 160), message = clean(b.message, 2000);
+      const language = ['en','fr','es','de','ar','zh'].includes(clean(b.language, 5)) ? clean(b.language, 5) : 'en';
       const preferredDay = clean(b.preferred_day, 10), preferredTime = clean(b.preferred_time, 5);
       const fields = [];
       if (!name) fields.push('name');
@@ -2307,35 +2308,65 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       if (type === 'call' && (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDay) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(preferredTime))) fields.push('preferred_time');
       if (fields.length) return json(res, 400, { error: 'missing_fields', fields }, cors);
       if (b.consent !== true) return json(res, 400, { error: 'consent_required' }, cors);
-      const source = type === 'call' ? 'Website call request' : 'Website contact form';
+      const source = type === 'call' ? 'Website call request'
+        : type === 'event' ? 'SMEs at the Centre (F1) · post-registration business support follow-up'
+        : 'Website contact form';
       const when = type === 'call' ? `Preferred time: ${preferredDay} at ${preferredTime} Accra time (GMT).` : '';
-      const need = [topic ? `Topic: ${topic}` : '', message, when].filter(Boolean).join('\n');
+      const need = [topic ? `Topic: ${topic}` : '', message, when, type === 'event' ? `Preferred language: ${language}` : ''].filter(Boolean).join('\n');
+      const followTask = `Reply to ${firstName(name)} · ${type === 'event' ? 'SMEs at the Centre business-support follow-up' : type === 'call' ? 'call request' : 'website enquiry'}${topic ? ': ' + topic : ''}`;
       const dealId = await inboundDeal({ company: company || null, full_name: name, email, phone: phone || null,
-        kind: 'consulting', title: `${company || name} · ${type === 'call' ? 'website call request' : 'website enquiry'}`,
-        source, task: `Reply to ${firstName(name)} · ${type === 'call' ? 'call request' : 'website enquiry'}${topic ? ': ' + topic : ''}` });
+        kind: type === 'event' ? 'event' : 'consulting',
+        title: type === 'event' ? `SMEs at the Centre · ${company || name} · support enquiry`
+          : `${company || name} · ${type === 'call' ? 'website call request' : 'website enquiry'}`,
+        source, task: type === 'event' ? null : followTask });
+      const reference = `GC-EF-${String(dealId || 'RECORDED').padStart(5, '0')}`;
       if (dealId) {
-        const c = (await q('select contact_id from deals where id=$1', [dealId])).rows[0];
+        const deal = (await q('select contact_id from deals where id=$1', [dealId])).rows[0];
+        const c = deal && deal.contact_id ? { contact_id: deal.contact_id } : null;
         if (c?.contact_id) {
           if (phone) await q('update contacts set phone=coalesce(nullif(phone,\'\'),$2) where id=$1', [c.contact_id, phone]);
           await q("insert into notes(contact_id,deal_id,kind,body,author) values ($1,$2,'note',$3,'website')",
-            [c.contact_id, dealId, `${source}${need ? `\n${need}` : ''}`]);
+            [c.contact_id, dealId, `${source}${type === 'event' ? ` · ${reference}` : ''}${need ? `\n${need}` : ''}`]);
+          if (type === 'event') {
+            await q('update deals set next_step=$2,next_date=(now() + interval \'1 day\')::date where id=$1', [dealId, followTask]);
+            await q(`insert into tasks(title,due_at,assignee,contact_id,deal_id,created_by,priority)
+              values ($1,date_trunc('day',now()) + interval '1 day 10 hours',null,$2,$3,'website','high')`, [followTask, c.contact_id, dealId]);
+          }
         }
       }
       const acknowledgement = type === 'call'
         ? `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have received your request for <b>${esc(preferredDay)} at ${esc(preferredTime)} Accra time (GMT)</b>. This is a request, not a confirmed appointment. Joy or Uffe will reply by email to confirm a time.</p>`
-        : `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have received your enquiry${topic ? ` about <b>${esc(topic)}</b>` : ''}. Joy or Uffe will reply by email within one working day.</p>`;
-      await queueMail(email, name, type === 'call' ? 'We received your call request · Gotham Consult' : 'We received your enquiry · Gotham Consult',
-        wrapMail('Your request is recorded', `${acknowledgement}<p style="color:#5A6472;font-size:13px">If you did not send this request, you can ignore this email.</p>`), 'website_ack', null);
+        : type === 'event'
+          ? `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have recorded your business-support follow-up for SMEs at the Centre${topic ? ` about <b>${esc(topic)}</b>` : ''}. Your event registration is unchanged. Joy or Uffe will review your needs and reply by email within one working day.</p><p style="color:#5A6472;font-size:14px">Your reference: <b>${esc(reference)}</b></p>`
+          : `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have received your enquiry${topic ? ` about <b>${esc(topic)}</b>` : ''}. Joy or Uffe will reply by email within one working day.</p>`;
+      let emailQueued = true;
+      try {
+        await queueMail(email, name, type === 'call' ? 'We received your call request · Gotham Consult'
+          : type === 'event' ? 'Your business-support follow-up is recorded · Gotham Consult' : 'We received your enquiry · Gotham Consult',
+          wrapMail('Your request is recorded', `${acknowledgement}<p style="color:#5A6472;font-size:13px">If you did not send this request, you can ignore this email.</p>`), 'website_ack', null);
+      } catch (e) {
+        if (type !== 'event') throw e;
+        emailQueued = false;
+        console.error('event enquiry acknowledgement queue:', String(e.message || e).slice(0, 200));
+      }
       const teamBody = `<p style="color:#0F1B2D;font-size:15px"><b>${esc(name)}</b>${company ? ` · ${esc(company)}` : ''}</p>
         <p style="color:#5A6472;font-size:15px;white-space:pre-wrap">${esc(need || '(No additional details supplied)')}</p>
-        <p style="color:#5A6472;font-size:13px">Email: ${esc(email)}${phone ? ` · WhatsApp: ${esc(phone)}` : ''} · Source: ${esc(source)}</p>
-        <p><a href="${BASE}/admin#contacts">Open Gotham CRM → Contacts &amp; people</a></p>`;
-      for (const [to, toName] of [['joy@gothamconsult.com', 'Joy Preston'], ['uffe.carlson@gothamconsult.com', 'Uffe Carlson']])
-        await queueMail(to, toName, `New enquiry · ${clean(type === 'call' ? 'Call request' : topic || 'Website', 100)}`,
-          wrapMail('A new website request was recorded', teamBody), 'staff_alert', null);
-      webEnquiry(req, ip, type === 'call' ? 'call' : 'contact').catch(() => {});
+        <p style="color:#5A6472;font-size:13px">Email: ${esc(email)}${phone ? ` · WhatsApp: ${esc(phone)}` : ''} · Source: ${esc(source)}${type === 'event' ? ` · CRM reference: ${esc(reference)}` : ''}</p>
+        <p><a href="${BASE}/admin#${type === 'event' ? 'pipe' : 'contacts'}">Open Gotham CRM → ${type === 'event' ? 'Deals pipeline' : 'Contacts &amp; people'}</a></p>`;
+      let teamAlertsQueued = 0;
+      for (const [to, toName] of [['joy@gothamconsult.com', 'Joy Preston'], ['uffe.carlson@gothamconsult.com', 'Uffe Carlson']]) {
+        try {
+          await queueMail(to, toName, `New enquiry · ${clean(type === 'call' ? 'Call request' : type === 'event' ? 'SMEs at the Centre support follow-up' : topic || 'Website', 100)}`,
+            wrapMail('A new website request was recorded', teamBody), 'staff_alert', null);
+          teamAlertsQueued++;
+        } catch (e) {
+          if (type !== 'event') throw e;
+          console.error('event enquiry team alert queue:', String(e.message || e).slice(0, 200));
+        }
+      }
+      webEnquiry(req, ip, type === 'call' ? 'call' : type === 'event' ? 'enquiry' : 'contact').catch(() => {});
       flushMail().catch(() => {});
-      return json(res, 200, { ok: true, email_queued: true }, cors);
+      return json(res, 200, { ok: true, email_queued: emailQueued, team_alerts_queued: teamAlertsQueued, deal_id: dealId, reference }, cors);
     }
 
     if (p === '/api/sponsor-enquiry' && req.method === 'POST') {

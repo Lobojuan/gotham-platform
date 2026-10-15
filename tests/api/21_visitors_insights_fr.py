@@ -83,7 +83,7 @@ ok('Act 1173 workforce rule is translated accurately in German, Arabic and Chine
 # ---------- French site ----------
 st, f = call('/fr', text=True)
 assert st == 200 and '<html lang="fr" data-page-lang="fr" dir="ltr">' in f and '<title>Conseil aux entreprises au Ghana | Gotham Consult, Accra</title>' in f, f[:400]
-assert 'Nouez des partenariats au' in f and 'href="/fr/invest"' in f and 'href="/fr/insights"' in f and '<meta property="og:locale" content="fr_FR">' in f
+assert 'Investisseurs et partenaires' in f and 'href="/fr/invest"' in f and 'href="/fr/insights"' in f and '<meta property="og:locale" content="fr_FR">' in f
 assert '<link rel="canonical" href="https://gothamconsult.com/fr">' in f and 'hreflang="x-default" href="https://gothamconsult.com/"' in f
 st, f = call('/fr/invest', text=True); assert 'Investir au Ghana :' in f and 'Promulguée le 15 juillet 2026,' in f
 st, e = call('/invest', text=True); assert 'hreflang="fr" href="https://gothamconsult.com/fr/invest"' in e and '<html lang="en">' in e

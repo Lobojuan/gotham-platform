@@ -142,6 +142,20 @@ reference and a ticket code, and queues a confirmation email. Paid items are
 held for 24 hours (48 once a mobile money transaction is reported) and released
 by the jobs loop if unpaid.
 
+**Post-registration business-support follow-up.** Share
+`https://gothamconsult.com/event-help` with people already registered for SMEs at
+the Centre. This is a follow-up questionnaire, not event registration: clients
+select all relevant business-support areas, describe their biggest challenge, and
+use the same email address as their registration. Each submission reuses the
+matching CRM contact where possible, creates or reuses an open event deal, and
+saves the answers as a private contact note. A next-day follow-up task is added.
+After the CRM confirms storage, it queues a confirmation email to the client and
+alerts for Joy and Uffe; the page reports accurately if mail could not be queued.
+The WhatsApp contact link is optional and opens a draft for the client to review.
+Find submissions in **Back office → Pipeline** (event deals) and the matching
+contact's notes. The event page's WhatsApp share button includes a ready-to-send
+invitation to this follow-up form.
+
 **Content.** Events live in the CRM, not in the site's code. The back office
 writes them to the `items` table with their cover image, description, agenda and
 PDFs. The site calls `GET /api/items` on load and renders whatever it finds,
