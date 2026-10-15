@@ -1685,6 +1685,99 @@ async function askModel(messages, opt = {}) {
   throw new Error(last || 'ai: no model answered');
 }
 
+/* Ask Gotham's spoken path streams the provider reply into short-lived browser-polled jobs. The WordPress bridge
+   buffers one HTTP response, so SSE cannot reach a visitor; small JSON polls carry text and locale-matched audio. */
+const ASK_STREAMS = new Map();
+function pruneAskStreams() {
+  const time=Date.now();
+  for(const [id,s] of ASK_STREAMS)if(s.expires<=time){s.controller.abort();s.voice?.close();ASK_STREAMS.delete(id);}
+}
+function openAskStream(ip,language,voice) {
+  pruneAskStreams();
+  if(ASK_STREAMS.size>=100)return null;
+  const id=crypto.randomBytes(24).toString('base64url');
+  const state={id,ip,language,voice,controller:new AbortController(),events:[],baseOffset:0,nextSequence:0,complete:false,expires:Date.now()+5*60e3};
+  ASK_STREAMS.set(id,state);return state;
+}
+function pushAskStream(state,event) {
+  if(state.controller.signal.aborted || !ASK_STREAMS.has(state.id))return;
+  state.events.push({id:state.nextSequence++,...event});
+  if(state.events.length>300){state.events.shift();state.baseOffset++;}
+  state.expires=Date.now()+5*60e3;
+}
+function askStreamResult(id,ip,cursor=0) {
+  pruneAskStreams();const state=ASK_STREAMS.get(id);
+  if(!state || state.ip!==ip || !Number.isSafeInteger(cursor) || cursor<0)return {status:403,error:'invalid_ask_stream'};
+  const at=Math.max(state.baseOffset,cursor),events=state.events.slice(at-state.baseOffset,at-state.baseOffset+24);
+  const next_cursor=at+events.length;
+  if(state.complete && next_cursor>=state.events.length)ASK_STREAMS.delete(id);
+  return events.length?{status:200,events,next_cursor,complete:state.complete}:{status:state.complete?200:202,...(state.complete?{events:[],next_cursor,complete:true}:{retry_after:0.2})};
+}
+function cancelAskStream(id,ip) {
+  const state=ASK_STREAMS.get(id);
+  if(!state || state.ip!==ip)return {status:403,error:'invalid_ask_stream'};
+  state.controller.abort();state.voice?.close();ASK_STREAMS.delete(id);return {status:200,ok:true};
+}
+function splitSpeech(text,final=false) {
+  const parts=[];let rest=String(text||'').replace(/\s+/g,' ').trimStart();
+  while(rest){
+    const sentence=rest.search(/[.!?。！？؟؛](?:[\s"'”’»»)\]]|$)/u);
+    if(sentence>=0){let end=sentence+1;while(end<rest.length && /["'”’»»)\]]/.test(rest[end]))end++;parts.push(rest.slice(0,end).trim());rest=rest.slice(end).trimStart();continue;}
+    const chars=Array.from(rest);if(chars.length<(final?1:56))break;
+    const limit=Math.min(chars.length,64);let cut=0;
+    for(let i=limit-1;i>=32;i--)if(/[،,;:，；、\s]/u.test(chars[i])){cut=i+1;break;}
+    if(!cut)cut=Math.min(48,limit);
+    parts.push(chars.slice(0,cut).join('').trim());rest=chars.slice(cut).join('').trimStart();
+  }
+  if(final && rest)parts.push(rest);
+  return {parts,rest};
+}
+async function askModelStream(messages,opt={},onDelta,signal) {
+  const models=OPENAI_MODEL.split(',').map(m=>m.trim()).filter(Boolean);let last='';
+  for(const model of models){
+    const effort=process.env.OPENAI_REASONING||(/gpt-oss/.test(model)?'low':/^(gpt-5|o\d)/.test(model)?'minimal':'');
+    let opts={temperature:opt.temperature??0.2,max_completion_tokens:opt.max||900,...(effort?{reasoning_effort:effort}:{})};let emitted=false;
+    for(let attempt=0;attempt<3;attempt++){
+      const r=await fetch(OPENAI_BASE+'/chat/completions',{method:'POST',signal:AbortSignal.any([signal,AbortSignal.timeout(25e3)]),headers:{'content-type':'application/json',authorization:'Bearer '+OPENAI_KEY},body:JSON.stringify({model,messages,...opts,stream:true})});
+      if(r.ok){if(!r.body)throw new Error('ai_stream_body_missing');const reader=r.body.getReader(),decoder=new TextDecoder();let buffer='',answer='';
+        while(true){if(signal.aborted)throw new Error('ask_cancelled');const {value,done}=await reader.read();if(done)break;buffer+=decoder.decode(value,{stream:true});let nl;
+          while((nl=buffer.indexOf('\n'))>=0){const line=buffer.slice(0,nl).trim();buffer=buffer.slice(nl+1);if(!line.startsWith('data:'))continue;const data=line.slice(5).trim();if(data==='[DONE]')break;let j;try{j=JSON.parse(data);}catch{continue;}const delta=j.choices?.[0]?.delta?.content;if(typeof delta==='string'&&delta){emitted=true;answer+=delta;onDelta(delta);}}
+        }
+        if(!answer.trim())throw new Error('ai_empty_stream');
+        return answer.replace(/\*\*(.+?)\*\*/g,'$1').replace(/__(.+?)__/g,'$1').replace(/^#{1,6}\s+/gm,'').replace(/^\s*[*]\s+/gm,'• ').replace(/\[([^\]]+)\]\((https?:[^)]+)\)/g,'$1 ($2)').trim();
+      }
+      const t=(await r.text()).slice(0,300);last='ai '+model+' '+r.status+' '+t;
+      if(r.status===400&&opts.reasoning_effort&&/reasoning/i.test(t)){const {reasoning_effort,...rest}=opts;opts=rest;continue;}
+      if(r.status===400&&opts.max_completion_tokens&&/max_completion_tokens/i.test(t)){const {max_completion_tokens,...rest}=opts;opts={...rest,max_tokens:opt.max||900};continue;}
+      if(r.status===429||r.status>=500)break;if(emitted)throw new Error(last);throw new Error(last);
+    }
+  }
+  throw new Error(last||'ai: no model answered');
+}
+function runAskStream(state,messages) {
+  const signal=state.controller.signal;let raw='',sent=0,speechText='';let speechChain=Promise.resolve();
+  const enqueueSpeech=segment=>{segment=segment.replace(/\[\[[^\]]*\]\]/g,'').replace(/https?:\/\/\S+/g,'source link in the chat').replace(/[*_#`]/g,'').trim();if(!segment)return;
+    speechChain=speechChain.then(async()=>{if(signal.aborted)return;const audio=await state.voice.say(segment,signal);if(audio?.length)pushAskStream(state,{type:'audio',audio:audio.toString('base64')});}).catch(()=>{if(!signal.aborted)pushAskStream(state,{type:'voice_error'});});};
+  const acceptDelta=delta=>{
+    raw+=delta;let visible=raw;const open=visible.lastIndexOf('[['),close=visible.lastIndexOf(']]');if(open>close)visible=visible.slice(0,open);
+    if(visible.length-sent>=80 || (visible.slice(sent).includes('\n') && visible.length>sent)){
+      pushAskStream(state,{type:'text',text:visible.slice(sent)});sent=visible.length;
+    }
+    speechText+=delta;const split=splitSpeech(speechText);speechText=split.rest;for(const part of split.parts)enqueueSpeech(part);
+  };
+  void (async()=>{try{
+    ASK_VOICE.warm(state.language);
+    const answer=await askModelStream(messages,{temperature:0.2},acceptDelta,signal);
+    const result=await chatActions(answer);const reply=result.text.slice(0,2000);
+    const open=raw.lastIndexOf('[['),close=raw.lastIndexOf(']]'),visible=open>close?raw.slice(0,open):raw;
+    if(visible.length>sent)pushAskStream(state,{type:'text',text:visible.slice(sent)});
+    pushAskStream(state,{type:'answer',answer:reply,actions:result.actions});
+    const finalParts=splitSpeech(speechText,true);for(const part of finalParts.parts)enqueueSpeech(part);
+    await speechChain;if(signal.aborted)return;pushAskStream(state,{type:'complete'});state.complete=true;
+  }catch(e){if(!signal.aborted){await speechChain;pushAskStream(state,{type:'error'});console.error('ask stream failed:',String(e.message||e).slice(0,240));pushAskStream(state,{type:'complete'});state.complete=true;}}
+  finally{state.voice?.close();}})();
+}
+
 
 /* The chat's buttons: the model ends a reply with [[register:F1]], [[lead]] or [[person]]; we check a
    forum code against what is really open, and a register link written in the answer counts too. */
@@ -2092,6 +2185,15 @@ const server = http.createServer(async (req, res) => {
 
     /* Public speech: one-use, visitor-bound tokens from /api/ask; no arbitrary text accepted. */
     if(p==='/api/ask/voice/cancel' && req.method==='POST'){const b=await body(req),out=ASK_VOICE.cancel(String(b.job || ''),ip);return json(res,out.status,out.error?{error:out.error}:{ok:true},cors);}
+    if(p==='/api/ask/stream/cancel' && req.method==='POST'){
+      if(rateLimited(ip,30,60e3,'ask-stream-cancel'))return json(res,429,{error:'voice_limit'},cors);
+      const b=await body(req),out=cancelAskStream(String(b.job||''),ip);return json(res,out.status,out.error?{error:out.error}:{ok:true},cors);
+    }
+    if(p==='/api/ask/stream/result' && req.method==='POST'){
+      if(rateLimited(ip,240,60e3,'ask-stream-result'))return json(res,429,{error:'voice_limit'},cors);
+      const b=await body(req),out=askStreamResult(String(b.job||''),ip,Number.isSafeInteger(b.cursor)?b.cursor:0);
+      return json(res,out.status,out.error?{error:out.error}:out,cors);
+    }
     if (p === '/api/ask/voice/result' && req.method === 'POST') {
       if (rateLimited(ip,120,60e3,'ask-voice-result')) return json(res,429,{error:'voice_limit'},cors);
       const b=await body(req),out=ASK_VOICE.result(String(b.job || ''),ip);
@@ -2158,6 +2260,10 @@ General knowledge is welcome: explain common concepts, geography, history, scien
 Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year round.`;
       try {
         const messages = publicAskMessages({ rules, knowledge: await askKnowledge(), sources: websiteKnowledge(question, process.env.SITE_DIR || '/data/site'), history, question });
+        if(b.stream===true && b.speech===true && ASK_VOICE.available(b.language)){
+          const voice=ASK_VOICE.session(ip,b.language),state=voice&&openAskStream(ip,b.language,voice);
+          if(state){runAskStream(state,messages);return json(res,202,{stream_job:state.id,retry_after:0.2},cors);}
+        }
         const answer = await askModel(messages, { temperature: 0.2 });
         if (!answer) return unavailable();
         const { text, actions } = await chatActions(answer);

@@ -46,6 +46,18 @@ export function makeAskVoice({ enabled = installationAvailable, render = renderV
   dailyCap = Number(process.env.ASK_TTS_DAILY_CAP ?? 400), now = Date.now } = {}) {
   const tickets = new Map(),jobs=new Map(); let day = '', used = 0, minute = 0, burst = 0, active = 0;
   const available = (language='en') => enabled(language) && Number.isFinite(dailyCap) && dailyCap > 0;
+  function warm(language='en') { const worker=workers[language] || voice; if(available(language))worker.warm(); }
+  function session(ip,language='en') {
+    language=Object.hasOwn(voices,language)?language:'en';
+    if(!available(language))return null;
+    const today=new Date(now()).toISOString().slice(0,10),m=Math.floor(now()/60000);
+    if(day!==today){day=today;used=0;} if(minute!==m){minute=m;burst=0;}
+    if(used>=dailyCap || burst>=20 || active>=2)return null;
+    used++;burst++;active++;
+    let closed=false;
+    return {say:(text,signal)=>closed?Promise.reject(new Error('voice_session_closed')):render(String(text).slice(0,2000),language,signal),
+      close:()=>{if(!closed){closed=true;active--;}}};
+  }
   function issue(text, ip, language = 'en') {
     language = Object.hasOwn(voices,language) ? language : 'en';
     if (!available(language)) return null;
@@ -102,5 +114,5 @@ export function makeAskVoice({ enabled = installationAvailable, render = renderV
     jobs.delete(job);return {status:503,error:'voice_unavailable'};
   }
   function cancel(job,ip){const state=jobs.get(job);if(!state || state.ip!==ip)return {status:403,error:'invalid_voice_job'};jobs.delete(job);if(!state.complete && !state.released){state.released=true;active--;}state.controller.abort();return {status:200,ok:true};}
-  return { issue, speak, start, result, cancel, available };
+  return { issue, speak, start, result, cancel, available, warm, session };
 }

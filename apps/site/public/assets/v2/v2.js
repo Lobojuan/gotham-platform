@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {}; const dictionaries = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=26';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=28';
     sc.onload = () => {
       const extra = document.createElement('script'); extra.src = ASSET + '/assets/v2/gipa-i18n.js?v=1';
       extra.onload = () => {
@@ -526,7 +526,7 @@
     zh:{on:'语音已开启',off:'语音已关闭',play:'播放回答',stop:'停止播放',ready:'普通话 · 人工智能语音',loading:'正在准备普通话语音…',speaking:'正在用普通话朗读回答…',blocked:'请点击播放回答。',unavailable:'语音暂不可用，您仍可阅读回答。',disclosure:'这是在我们的服务器上生成的普通话人工智能语音。来源：/downloads/voice-credits.txt'},
     ar:{on:'الصوت مفعّل',off:'الصوت متوقف',play:'استمع إلى الإجابة',stop:'أوقف الصوت',ready:'العربية الفصحى · صوت بالذكاء الاصطناعي',loading:'جارٍ إعداد الصوت العربي…',speaking:'جارٍ قراءة الإجابة بالعربية الفصحى…',blocked:'اضغطوا على استمع إلى الإجابة.',unavailable:'الصوت غير متاح. يمكنكم قراءة الإجابة.',disclosure:'صوت عربي مولّد بالذكاء الاصطناعي على خادمنا. المصدر: /downloads/voice-credits.txt'}
   });
-  let voiceOn = true, voiceState = 'ready', audioContext, audioSource, audioBuffer, voiceRequest, voiceEpoch = 0, voiceJob=null, nextAudioAt=0;
+  let voiceOn = true, voiceState = 'ready', audioContext, audioSource, audioBuffer, voiceRequest, voiceEpoch = 0, voiceJob=null, askStreamJob=null, askStreamEpoch=0, nextAudioAt=0;
   const playingSources=new Set();
   try { voiceOn = localStorage.getItem('gc-chat-voice') !== 'off'; } catch {}
   const voiceWords = () => VOICE_TEXT[current] || VOICE_TEXT.en;
@@ -554,7 +554,7 @@
     if(!audioContext || audioContext.state!=='running'){voiceState='blocked';updateVoiceUI();return;}
     const source=audioContext.createBufferSource();source.buffer=buffer;source.connect(audioContext.destination);
     playingSources.add(source);audioSource=source;
-    source.onended=()=>{playingSources.delete(source);if(!playingSources.size){audioSource=null;voiceState=voiceJob?'loading':'ready';updateVoiceUI();}};
+    source.onended=()=>{playingSources.delete(source);if(!playingSources.size){audioSource=null;voiceState=(voiceJob||askStreamJob)?'loading':'ready';updateVoiceUI();}};
     const at=Math.max(Number(audioContext.currentTime)||0,nextAudioAt);nextAudioAt=at+(Number(buffer.duration)||0);
     voiceState='speaking';updateVoiceUI();source.start(at);
   }
@@ -607,9 +607,10 @@
     if (voiceState === 'speaking') { stopVoice(); return; }
     unlockVoice(); try { await audioContext?.resume(); } catch {} playVoice();
   });
-  new MutationObserver(() => { stopVoice(true); updateVoiceUI(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
-  document.addEventListener('visibilitychange', () => { if (document.hidden) stopVoice(); });
-  window.addEventListener('pagehide', () => stopVoice(true)); updateVoiceUI();
+  function cancelAskStream(){askStreamEpoch++;if(askStreamJob){fetch('/api/ask/stream/cancel',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job:askStreamJob}),keepalive:true}).catch(()=>{});askStreamJob=null;}}
+  new MutationObserver(() => { cancelAskStream();stopVoice(true); updateVoiceUI(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) {cancelAskStream();stopVoice();} });
+  window.addEventListener('pagehide', () => {cancelAskStream();stopVoice(true);}); updateVoiceUI();
   const say = (t, who) => { const m = document.createElement('div'); m.className = 'm ' + who; m.dir='auto';
     String(t).split(/(\+233[\d ]{8,16})/g).forEach(part=>{if(/^\+233/.test(part)){const bdi=document.createElement('bdi');bdi.dir='ltr';bdi.textContent=part;m.append(bdi);}else m.append(document.createTextNode(part));}); msgs.append(m); msgs.scrollTop = msgs.scrollHeight; return m; };
   const WELCOME = (()=>{try{return JSON.parse($('#ask-welcome')?.textContent || '{}');}catch{return {};}})();
@@ -624,7 +625,7 @@
     if (!msgs.children.length) { say(WELCOME[current] || WELCOME.en || 'Welcome to Gotham Consult. Ask me about services, business, investing in Ghana, forums, registration and payments.', 'bot'); speakIntro(); }
     if (innerWidth > 520) $('#chatI').focus();
   }
-  const closeChat = () => { stopVoice(true); chat.hidden = true; chatO.hidden = false; chatO.setAttribute('aria-expanded', 'false'); if (getComputedStyle(chatO).display !== 'none') chatO.focus(); };
+  const closeChat = () => { cancelAskStream();stopVoice(true); chat.hidden = true; chatO.hidden = false; chatO.setAttribute('aria-expanded', 'false'); if (getComputedStyle(chatO).display !== 'none') chatO.focus(); };
   chatO?.addEventListener('click', openChat);
   $('#chatX')?.addEventListener('click', closeChat);
   const FALLBACK = 'The AI is temporarily unavailable. Please try again, or browse our services at /services and forums at /forums.';
@@ -646,13 +647,39 @@
       es: 'La IA no está disponible temporalmente. Puedes consultar servicios y precios en /services y próximos foros en /forums. Vuelve a hacer tu pregunta aquí.'
     })[current] || FALLBACK;
   }
+  async function readAskStream(job,t,q) {
+    askStreamJob=job;const epoch=askStreamEpoch,spoken=[];let cursor=0,hasAnswer=false,answer='',acts=[],voiceFailed=false;
+    voiceState='loading';updateVoiceUI();
+    while(epoch===askStreamEpoch && !chat.hidden){
+      let r,j;try{r=await fetch('/api/ask/stream/result',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job,cursor})});j=await r.json();}catch{break;}
+      if(r.status===202){await new Promise(resolve=>setTimeout(resolve,Math.max(120,Math.min(1000,Number(j.retry_after)*1000||200))));continue;}
+      if(!r.ok)break;
+      cursor=Number.isSafeInteger(j.next_cursor)?j.next_cursor:cursor;
+      for(const event of (Array.isArray(j.events)?j.events:[])){
+        if(event.type==='text' && typeof event.text==='string'){t.textContent+=event.text;msgs.scrollTop=msgs.scrollHeight;}
+        if(event.type==='audio' && typeof event.audio==='string'){
+          try{const bytes=Uint8Array.from(atob(event.audio),c=>c.charCodeAt(0)).buffer,decoded=await audioContext.decodeAudioData(bytes);spoken.push(decoded);if(epoch===askStreamEpoch && !chat.hidden)queueAudio(decoded);}catch{}
+        }
+        if(event.type==='voice_error'&&!spoken.length){voiceFailed=true;voiceState='unavailable';updateVoiceUI();}
+        if(event.type==='answer'){
+          answer=String(event.answer||'');acts=Array.isArray(event.actions)?event.actions:[];hasAnswer=true;t.textContent=answer;msgs.scrollTop=msgs.scrollHeight;
+          HIST.push({role:'user',content:q},{role:'assistant',content:answer});if(acts.length)actions(acts,q);
+        }
+        if(event.type==='error'&&!hasAnswer){answer=offlineAnswer(q);t.textContent=answer;acts=[{type:'person'}];hasAnswer=true;HIST.push({role:'user',content:q},{role:'assistant',content:answer});actions(acts,q);}
+        if(event.type==='complete'){if(!hasAnswer){answer=t.textContent||offlineAnswer(q);if(!t.textContent)t.textContent=answer;HIST.push({role:'user',content:q},{role:'assistant',content:answer});}audioBuffer=spoken.length?joinAudio(spoken):null;askStreamJob=null;voiceState=voiceFailed&&!spoken.length?'unavailable':'ready';updateVoiceUI();return;}
+      }
+      if(j.complete && !j.events?.length)break;
+    }
+    if(epoch===askStreamEpoch){if(askStreamJob===job){fetch('/api/ask/stream/cancel',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job}),keepalive:true}).catch(()=>{});}askStreamJob=null;if(!hasAnswer){answer=offlineAnswer(q);t.textContent=answer;HIST.push({role:'user',content:q},{role:'assistant',content:answer});actions([{type:'person'}],q);}audioBuffer=spoken.length?joinAudio(spoken):null;voiceState=voiceFailed&&!spoken.length?'unavailable':'ready';updateVoiceUI();}
+  }
   async function ask(q) {
-    stopVoice(true); unlockVoice(); const epoch = voiceEpoch;
+    cancelAskStream();stopVoice(true);unlockVoice(); const epoch = voiceEpoch, streamEpoch=askStreamEpoch;
     say(q, 'me'); const t = say('•••', 'bot typing'); let a = '', acts = [], speech = null;
     try {
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ q, history: HIST.slice(-6), language: current, speech: voiceOn }), signal: AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined });
+        body: JSON.stringify({ q, history: HIST.slice(-6), language: current, speech: voiceOn, stream: voiceOn }), signal: AbortSignal.timeout ? AbortSignal.timeout(30000) : undefined });
       const j = await r.json().catch(() => ({}));
+      if(j.stream_job){if(streamEpoch!==askStreamEpoch || chat.hidden){fetch('/api/ask/stream/cancel',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({job:j.stream_job}),keepalive:true}).catch(()=>{});t.remove();return;}await readAskStream(j.stream_job,t,q);return;}
       a = j.answer || (r.status === 429 ? 'You have asked a lot in a short time. Please wait and try again here.' : '');
       acts = Array.isArray(j.actions) ? j.actions : [];
       speech = j.speech;

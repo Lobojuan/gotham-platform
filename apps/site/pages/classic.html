@@ -853,8 +853,8 @@ nav.main a{white-space:nowrap}
   <div>
     <p class="eyebrow">About Gotham Consult</p>
     <h2>A bridge between business, government and <em class="serif">global partners.</em></h2>
-    <p>Gotham Consult is an Accra-based business development and international projects consultancy, founded in 2018. We facilitate investment between the private sector and governments across Ghana, Nigeria, the UK, the US and Europe, combining business advisory, technology and media.</p>
-    <p><b style="color:var(--ink)">Joy Anthony Preston</b>, MSc Strategic Leadership and Governance, leads the firm. She brings a decade of experience facilitating high-value partnerships, founded the Global Genius Foundation and convenes the Gotham Consult Business Seminar. She works with a team of senior consultants in finance, energy, mining and technology.</p>
+    <p>Gotham Consult is an Accra-based business development and international projects consultancy, founded in 2018. We help businesses build partnerships across Ghana and other markets. Where appropriate, we can introduce a business to potential partners who may be interested in investing in it or its projects. We provide commercial and project-investment guidance. Regulated investment advice or fund management is provided only through an appropriately licensed professional. Gotham does not hold client funds or guarantee an investment; any investment is assessed and agreed directly by the parties.</p>
+    <p><b style="color:var(--ink)">Joy Anthony Preston</b>, MSc Strategic Leadership and Governance, leads the firm. She brings a decade of experience building high-value partnerships, founded the Global Genius Foundation and convenes the Gotham Consult Business Seminar. She works with a team of senior consultants in finance, energy, mining and technology.</p>
     <div class="partner"><b>Partner for company set-up, AI, software, apps &amp; mining: Carlson Capital Ltd.</b> Carlson Capital Ltd, a company registered in Ghana, is our partner for company set-up for large companies, AI, software, apps and mining.</div>
     <div class="facts">
       <div><b>2018</b><span>Founded in Accra</span></div>
@@ -961,7 +961,7 @@ const ghs=n=>'GHS '+n.toLocaleString('en-GH');
 
 const services=[
  {t:'Investment readiness & GIPA',p:'Get registered, compliant and ready for investors.',l:['GIPA Act 1173 registration','Business plans & 3-statement models','Credit profile & pitch decks']},
- {t:'Market entry & international projects',p:'Enter Ghana or expand abroad, with local partners in place.',l:['Ghana, Nigeria, UK, US, EU','Francophone West Africa','Feasibility & due diligence']},
+ {t:'Market entry & international projects',p:'Enter Ghana or expand abroad with local market insight and introductions, where suitable.',l:['Ghana, Nigeria, UK, US, EU','Francophone West Africa','Feasibility & due diligence']},
  {t:'AI in your business',new:1,p:'Put AI to work in finance, research and daily operations.',l:['AI readiness audit','Finance & reporting automation','Staff training workshops']},
  {t:'Digital & managed hosting',new:1,p:'Websites and apps that take mobile-money payments, run for you.',l:['Websites & online shops','MoMo & card payments','Hosting, email, daily backups']},
  {t:'AI creative studio',new:1,p:'Marketing made in minutes, in local languages.',l:['Jingles & radio spots','Posters & video adverts','Voice-overs in Twi & English']},
@@ -1146,7 +1146,7 @@ const PATHS={
    {t:'Export & AfCFTA readiness',d:'Pricing, certificates of origin, logistics and buyer introductions across Africa.',pr:'GHS 9,500',ps:'one-off'},
    {t:'Tenders & 24-Hour Economy',d:'GHANEPS registration and bid writing, or registration for 24H+ incentives.',pr:'From GHS 5,500',ps:'per bid or application'}],
   flow:[['1 · Free check','E-VAT check or funding finder'],['2 · 30-min call','On WhatsApp, free'],['3 · Fixed quote','Pay with MoMo'],['4 · Delivered','Tracked to the outcome']]},
- inv:{h:'For investors: enter Ghana with a local desk',p:'From your first briefing to a registered company and a verified partner. We work in English, French and Nordic languages, and keep you informed with regular written reports.',
+ inv:{h:'For investors: enter Ghana with a local desk',p:'From your first briefing to a registered company and, where appropriate, introductions to potential business partners, including prospective investors. We work in English, French and Nordic languages, and keep you informed with regular written reports.',
   pains:['Is Ghana right for us?','Company setup under Act 1173','Who can we trust?','Need eyes on the ground','Energy, mining, agro projects'],
   pk:[
    {t:'Ghana briefing',d:'60-minute call on your sector: numbers, rules, risks and next steps.',pr:'GHS 6,500',ps:'credited to any follow-on work'},
@@ -1310,7 +1310,7 @@ const TIERS=[
  {t:'Ghana Business Brief',p:'Free',s:'',f:['Weekly brief on WhatsApp','Grant & tender alerts','Forum announcements'],c:'Join free',m:'Please add me to the free Ghana Business Brief on WhatsApp.'},
  {t:'Member',p:'GHS 250',s:'/ month',f:['Everything in Brief','20% off all forums','Monthly online business clinic','Priority grant alerts'],c:'Become a member',m:'I would like to become a Member (GHS 250/month).'},
  {t:'Business Pro',hot:1,p:'GHS 1,500',s:'/ month',f:['Bookkeeping & E-VAT filing','Tax & compliance calendar','Quarterly finance review','Two forum seats per quarter'],c:'Start Business Pro',m:'I would like Business Pro (GHS 1,500/month).'},
- {t:'Investor Desk',p:'GHS 30,000',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Deal pipeline & introductions','3-month minimum'],c:'Talk to us',m:'I am interested in the Investor Desk (GHS 30,000/month).'}];
+ {t:'Investor Desk',p:'GHS 30,000',s:'/ month',f:['Local representation','Meetings & site visits','Monthly written report','Introductions to potential business partners, including prospective investors, where appropriate','3-month minimum'],c:'Talk to us',m:'I am interested in the Investor Desk (GHS 30,000/month).'}];
 $('#tiers').innerHTML=TIERS.map(x=>`<div class="tier reveal ${x.hot?'hot':''}"><h3>${x.t}</h3><div class="price">${x.p} <small>${x.s}</small></div><ul>${x.f.map(i=>`<li>${i}</li>`).join('')}</ul><a class="btn ${x.hot?'btn-dark':'btn-line'}" href="${wa('Hello Gotham Consult. '+x.m)}" target="_blank" rel="noopener">${x.c}</a></div>`).join('');
 
 /* Ask Gotham: provided by the shared chrome script (/assets/v2/v2.js) */
