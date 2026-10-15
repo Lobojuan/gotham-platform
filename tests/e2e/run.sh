@@ -23,6 +23,7 @@ for i in $(seq 60); do curl -s -o /dev/null -w '%{http_code}' 127.0.0.1:$PORT/ap
 psql "$DB" -q -c "update users set must_change=false where email='admin'" || exit 2
 BASE=http://127.0.0.1:$PORT ADMIN_PW=e2e-owner-pass PLAYWRIGHT=${PLAYWRIGHT:-playwright} CHROMIUM=${CHROMIUM:-} node "$ROOT/tests/ui/crm_flows.js"; rc=$?
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/e2e/site_e2e.js"; rc=$?; fi
+if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT PLAYWRIGHT=${PLAYWRIGHT:-playwright} CHROMIUM=${CHROMIUM:-} node "$ROOT/tests/ui/event_help_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/v2_carousel_language.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/ask_voice_ui.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/ui/investor_portal_ui.js"; rc=$?; fi
