@@ -1,6 +1,6 @@
 /* Gotham members: free accounts, paid plans and the compliance calendar.
 
-   Free account   sign-in by an emailed link (no password), sectors and language chosen by the member, a weekly digest
+   Free account   sign-in by an emailed link (no password), sectors and language chosen by the member, a daily digest
                   of the report updates a person approved, the next compliance deadlines as a preview.
    Paid           Pro membership, compliance calendar per company, expert calls and counterparty checks. Every purchase
                   is a normal cedi invoice (VAT and levies added by the invoice rules), paid on the /i/ page by Paystack
@@ -271,28 +271,45 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
   }
 
   /* ---------- jobs ---------- */
-  async function weekly(force = false) {   // Monday digest: approved report updates in the member's sectors, the next deadlines, one useful offer
-    const d = new Date(now()); if (!force && d.getUTCDay() !== 1) return 0;
-    const week = `${d.getUTCFullYear()}-${ymd(d)}`.slice(0, 15), since = new Date(now() - 7 * 864e5);
+  async function dailyBrief() {   // daily, human-reviewed report updates in the member's sectors and upcoming deadlines
+    const today = ymd(new Date(now()));
+    const since = new Date(now() - 24 * 60 * 60e3);
     const pub = (await report.publicReport()).updates.filter(u => new Date(u.at) >= since);
+    const events = (await q(`select code,title,subtitle,venue,starts_at,currency,price from items
+      where kind='event' and published and starts_at >= $1 and starts_at < $1::timestamptz + interval '60 days'
+      order by starts_at limit 3`, [new Date(now()).toISOString()])).rows;
     let n = 0;
-    for (const m of (await q("select * from members where alerts and verified_at is not null and closed_at is null")).rows) {
-      if ((await q('select 1 from member_digests where member_id=$1 and week=$2', [m.id, week])).rows.length) continue;
+    // Event invitations are promotional email. Respect both the member's daily-brief
+    // preference and the explicit Gotham email-updates consent captured at signup.
+    for (const m of (await q("select * from members where alerts and marketing and verified_at is not null and closed_at is null")).rows) {
+      const claim = await q('insert into member_digest_days(member_id,day) values ($1,$2) on conflict do nothing returning member_id', [m.id, today]);
+      if (!claim.rows.length) continue;
       const mine = pub.filter(u => !u.chapter || (m.sectors || []).includes(u.chapter));
       const cal = (await calendar(m)).flatMap(c => c.deadlines.slice(0, 3).map(x => ({ ...x, company: c.company.name }))).filter(x => Date.parse(x.due) - now() < 21 * 864e5);
-      if (!mine.length && !cal.length) continue;
       const L = m.lang, li = s => `<li style="margin:0 0 8px">${s}</li>`;
-      const body = (mine.length ? `<h3 style="font-size:16px;margin:18px 0 8px;color:#0F1B2D">${esc(T(L, 'New in the Ghana Investment Report'))}</h3><ul style="padding-inline-start:18px;color:#0F1B2D;font-size:14.5px;line-height:1.55">`
+      const dateTime = x => new Date(x).toLocaleString(({ en: 'en-GB', fr: 'fr-FR', es: 'es-ES', de: 'de-DE', ar: 'ar', zh: 'zh-CN' })[L] || 'en-GB',
+        { dateStyle: 'full', timeStyle: 'short', timeZone: 'Africa/Accra' });
+      const body = `<p style="color:#5A6472;font-size:13px">${esc(dateTime(today + 'T12:00:00Z').split(',')[0])}</p>`
+        + (mine.length ? `<h3 style="font-size:16px;margin:18px 0 8px;color:#0F1B2D">${esc(T(L, 'New in the Ghana Investment Report'))}</h3><ul style="padding-inline-start:18px;color:#0F1B2D;font-size:14.5px;line-height:1.55">`
           + mine.slice(0, 8).map(u => li(`<b>${esc(u.title)}</b>${u.text ? ' ' + esc(u.text) : ''}${u.url ? ` <a href="${esc(u.url)}">${esc(T(L, 'source'))}</a>` : ''}`)).join('') + '</ul>' : '')
+        + (!mine.length ? `<p style="color:#5A6472;font-size:14.5px;line-height:1.6">${esc(T(L, 'No new reviewed report updates in the last 24 hours.'))} <a href="${page(L, '/ghana-investment-report')}">${esc(T(L, 'Read the latest report'))}</a></p>` : '')
         + (cal.length ? `<h3 style="font-size:16px;margin:18px 0 8px;color:#0F1B2D">${esc(T(L, 'Your next deadlines'))}</h3><ul style="padding-inline-start:18px;color:#0F1B2D;font-size:14.5px;line-height:1.55">`
           + cal.map(x => li(`<b>${esc(x.due)}</b> · ${esc(dname(L, x))} · ${esc(x.company)}`)).join('') + '</ul>' : '')
-        + `<p style="margin:22px 0"><a href="${page(L, '/account')}" style="background:#0F1B2D;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;display:inline-block">${esc(T(L, 'Open your account'))}</a></p>`
-        + `<p style="color:#8A93A0;font-size:12px">${esc(T(L, 'You get this because you chose sector alerts in your Gotham account.'))} <a href="${base}/m/stop?u=${m.unsub_token}" style="color:#8A93A0">${esc(T(L, 'Stop these emails'))}</a></p>`;
-      await queueMail(m.email, m.name || '', T(L, 'Ghana this week: your Gotham alerts'), wrapMail(esc(T(L, 'Ghana this week')), `<div dir="${L === 'ar' ? 'rtl' : 'ltr'}">${body}</div>`), 'member_digest', null, `${base}/m/stop?u=${m.unsub_token}`);
-      await q('insert into member_digests(member_id, week) values ($1,$2) on conflict do nothing', [m.id, week]); n++;
+        + (events.length ? `<h3 style="font-size:16px;margin:18px 0 8px;color:#0F1B2D">${esc(T(L, 'Upcoming Gotham events'))}</h3><ul style="padding-inline-start:18px;color:#0F1B2D;font-size:14.5px;line-height:1.55">`
+          + events.map(e => li(`<b>${esc(e.title)}</b><br>${esc(dateTime(e.starts_at))} · ${esc(e.venue || '')}${e.subtitle ? `<br>${esc(e.subtitle)}` : ''}<br>${Number(e.price) > 0 ? `${esc(e.currency)} ${esc(e.price)}` : esc(T(L, 'Free'))} · <a href="${page(L, '/register?e=' + encodeURIComponent(e.code))}">${esc(T(L, 'Register'))}</a>`)).join('') + '</ul>' : '')
+        + `<p style="margin:22px 0"><a href="${page(L, '/ghana-investment-report')}" style="background:#0F1B2D;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;display:inline-block">${esc(T(L, 'Read the latest report'))}</a></p>`
+        + `<p style="color:#8A93A0;font-size:12px">${esc(T(L, 'You receive this because you opted in to Gotham daily email updates.'))} <a href="${base}/m/stop?u=${m.unsub_token}" style="color:#8A93A0">${esc(T(L, 'Stop these emails'))}</a></p>`;
+      try {
+        await queueMail(m.email, m.name || '', T(L, 'Ghana today: your Gotham brief'), wrapMail(esc(T(L, 'Ghana today')), `<div dir="${L === 'ar' ? 'rtl' : 'ltr'}">${body}</div>`), 'member_digest', null, `${base}/m/stop?u=${m.unsub_token}`);
+        n++;
+      } catch (e) {
+        await q('delete from member_digest_days where member_id=$1 and day=$2', [m.id, today]);
+        throw e;
+      }
     }
     return n;
   }
+  const weekly = dailyBrief; // keep the old back-office endpoint compatible during the transition
   async function daily() {
     const today = ymd(new Date(now())), out = { reminders: 0, renewals: 0, expired: 0, nudges: 0, recovered: 0 };
     /* safety sweep: a paid invoice whose order never started (process stopped mid-way) gets its plan now */
@@ -384,5 +401,5 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
     return r;
   }
 
-  return { signup, sendLink, login, fromCookie, prefs, buy, invoicePaid, activate, grant, saveCompany, calendar, me, weekly, daily, stop, dashboard, memberDetail, addUpdate, closeOrder, post, prices, active, deadlines };
+  return { signup, sendLink, login, fromCookie, prefs, buy, invoicePaid, activate, grant, saveCompany, calendar, me, weekly, dailyBrief, daily, stop, dashboard, memberDetail, addUpdate, closeOrder, post, prices, active, deadlines };
 }

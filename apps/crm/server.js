@@ -2093,7 +2093,7 @@ const server = http.createServer(async (req, res) => {
             `<div dir="${rtl ? 'rtl' : 'ltr'}"><p style="color:#5A6472;font-size:15px;line-height:1.6">${esc(T('Thank you for your interest. Your copy of the Ghana Investment Report 2026 is ready.'))}</p>
             <p style="margin:22px 0"><a href="${esc(link)}" style="background:#B8862F;color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px;display:inline-block">${esc(T('Download the PDF'))}</a></p>
             <p style="color:#5A6472;font-size:13px;line-height:1.6">${esc(T('The link works for 30 days. The web version at {link} is checked against its sources every week.')).replace('{link}', web)}</p>
-            <p style="color:#0F1B2D;font-size:14.5px;line-height:1.6;margin:18px 0 6px"><b>${esc(MEMBER_TR(lang, 'Get Monday alerts when Ghana changes in your sectors.'))}</b> <a href="${BASE}${lang === 'en' ? '' : '/' + lang}/account?email=${encodeURIComponent(email)}#signup" style="color:#9A6A12">${esc(MEMBER_TR(lang, 'Create a free account'))}</a></p>` + contactsHtml + '</div>'), 'report_pdf', null);
+            <p style="color:#0F1B2D;font-size:14.5px;line-height:1.6;margin:18px 0 6px"><b>${esc(MEMBER_TR(lang, 'Get a daily brief with updates in your sectors and upcoming events.'))}</b> <a href="${BASE}${lang === 'en' ? '' : '/' + lang}/account?email=${encodeURIComponent(email)}#signup" style="color:#9A6A12">${esc(MEMBER_TR(lang, 'Create a free account'))}</a></p>` + contactsHtml + '</div>'), 'report_pdf', null);
       } else {
         await queueMail(email, full_name, T('Thank you for contacting Gotham Consult'),
           wrapMail(esc(T('Thank you, {name}').replace('{name}', firstName(full_name))),
@@ -4770,10 +4770,10 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     const mOrd = p.match(/^\/api\/members\/orders\/(\d+)\/done$/);
     if (mOrd && req.method === 'POST') { const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const r = await MEMBERS.closeOrder(+mOrd[1], u.email); return r ? json(res, 200, { ok: true }) : json(res, 400, { error: 'not_open' }); }
     if (p === '/api/members/posts' && req.method === 'POST') { const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req); if (!clean(b.title, 200)) return json(res, 400, { error: 'title' }); return json(res, 200, await MEMBERS.post(b, u.email)); }
-    if (p === '/api/members/run-jobs' && req.method === 'POST') {   // staff: send today's reminders, renewals and (optionally) the weekly digest now
+    if (p === '/api/members/run-jobs' && req.method === 'POST') {   // staff: send today's reminders, renewals and daily brief now
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req);
-      const d = await MEMBERS.daily(), w = await MEMBERS.weekly(b.weekly === true);
-      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'member_jobs', JSON.stringify({ ...d, digests: w })]);
+      const d = await MEMBERS.daily(), w = await MEMBERS.dailyBrief(b.daily === true || b.weekly === true);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'member_jobs', JSON.stringify({ ...d, daily_briefs: w })]);
       return json(res, 200, { ...d, digests: w });
     }
     if (p === '/api/members/prices' && req.method === 'POST') {
@@ -6245,12 +6245,14 @@ async function memberInvoice({ member, description, amount, note, send = false }
   return r.inv;
 }
 const MEMBERS = makeMembers({ q, sign, base: PUBLIC_URL, queueMail, wrapMail, esc, report: REPORT, alertTeam, invoices: { create: memberInvoice }, inboundDeal, mergeTags, flushMail });
-async function memberJobs() {   // once a day: reminders, renewals, follow-ups; Mondays: the alert digest
+async function memberJobs() {   // once a day: reminders, renewals, follow-ups and the member brief
   const today = new Date().toISOString().slice(0, 10), last = (await q("select value from settings where key='members_daily'")).rows[0]?.value;
-  if (last === today) return;
+  const accraHour = Number(new Date().toLocaleString('en-GB', { timeZone: 'Africa/Accra', hour: '2-digit', hourCycle: 'h23' }));
+  if (last === today) { if (accraHour >= 8) await MEMBERS.dailyBrief(); return; }
   await q("insert into settings(key,value) values ('members_daily',$1) on conflict (key) do update set value=excluded.value", [today]);
-  const d = await MEMBERS.daily(), w = await MEMBERS.weekly();
-  await q('insert into jobs_log(job,detail) values ($1,$2)', ['members', `${d.reminders} reminders, ${d.renewals} renewal invoices, ${d.expired} plans ended, ${d.nudges} follow-up tasks, ${w} digests`]);
+  const d = await MEMBERS.daily();
+  const w = accraHour >= 8 ? await MEMBERS.dailyBrief() : 0;
+  await q('insert into jobs_log(job,detail) values ($1,$2)', ['members', `${d.reminders} reminders, ${d.renewals} renewal invoices, ${d.expired} plans ended, ${d.nudges} follow-up tasks, ${w} daily briefs`]);
 }
 /* The Pro data pack: every figure of the report with its source, the forecasts and the 10-year history, as Excel. */
 async function reportDataPack() {

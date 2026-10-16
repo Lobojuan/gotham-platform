@@ -32,6 +32,14 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | CAL-1 | The CRM home dashboard is a shared command centre: a two-week agenda, event-plan checklist readiness and the latest human-approved, source-linked market updates are visible together and link back to their owning CRM records. Updates retain source-check time; empty or unavailable feeds are stated honestly. | api/16_calendar_footer; ui/crm_flows |
 | CAL-2 | Dated tasks in a private event plan appear in the unified calendar as event checklist items and open their event plan when selected. Only administrators see these private planning tasks; staff calendar results do not expose checklist text or client details. | api/16_calendar_footer |
 
+## 1A. Unified CRM data and member brief
+
+| ID | Requirement | Test |
+|---|---|---|
+| DATA-1 | CRM members, contacts, event registrations, events, reports, consent/preferences, email outbox and send history are stored in the same PostgreSQL database, in linked tables with stable IDs. No separate mailing-list database is introduced. | schema and API integration |
+| DATA-2 | A daily Ghana business brief is queued once per Accra calendar day for verified members who have both daily alerts enabled and explicitly opted into email updates. It contains only human-approved report updates, applicable member deadlines, and upcoming published events with a direct registration link. | api/36_members.py |
+| DATA-3 | The daily brief respects a member's language preference, records its daily send claim in the CRM database, and includes a one-click unsubscribe that turns off future member briefs. Members without marketing consent, who unsubscribe, or who close their account receive none. | api/36_members.py |
+
 ## 2. Prices and money
 
 | ID | Requirement | Test |

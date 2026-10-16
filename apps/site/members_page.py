@@ -81,7 +81,7 @@ def plans(L, pre):
                 + (f'<p class="alt">{alt}</p>' if alt else '') + '<ul>' + ''.join(f'<li>{esc(t(i))}</li>' for i in items) + f'</ul><a class="btn {"btn-gold" if cls else "btn-line"}" href="{pre}/account{href}">{esc(t(cta))} <span class="arrow">→</span></a></div>')
     per = lambda k, unit: f'<span data-price="{k}">{esc(ghs(L, P[k]["price"]))}</span> <small>{esc(t(unit))}</small>'
     return ('<div class="mb-plans">'
-        + card('', 'Start here', 'Free account', f'{esc(ghs(L, 0))}', '', ['Sector alerts every Monday, in your language', 'The Ghana Investment Report and its PDF in six languages',
+        + card('', 'Start here', 'Free account', f'{esc(ghs(L, 0))}', '', ['Opt in to the daily sector brief and event invitations', 'The Ghana Investment Report and its PDF in six languages',
                'A preview of your company’s next filing deadlines', 'Event invitations and recordings'], '#signup', 'Create a free account')
         + card(' hot', 'For international investors', 'Pro membership', per('pro_month', 'per month'), t('or {price} per year').format(price=f'<span data-price="pro_year">{esc(ghs(L, P["pro_year"]["price"]))}</span>'),
                ['Everything in the free account', 'A monthly briefing per sector from our team', 'The Excel data pack: every figure with its source, our forecasts and 10 years of history', 'One question to our team every month'],
@@ -144,11 +144,11 @@ el.textContent=t.replace(/[\\d][\\d.,\\u202f\\u00a0]*/,function(m){var sep=/\\d\
 
 
 # ---------- /account: the member's page (JavaScript app over /api/member/*) ----------
-UI = ['Your Gotham account', 'Create your free account', 'Already a member? We email you a sign-in link.', 'Email', 'Your name', 'Company', 'Country', 'Your sectors',
-      'Email me useful news and offers from Gotham Consult. I can unsubscribe at any time.', 'I agree that Gotham Consult keeps my details to run my account, under Ghana’s Data Protection Act, 2012 (Act 843).',
+UI = ['Your Gotham account', 'Create your free account', 'Already a member? We email you a sign-in link.', 'Email', 'Your name', 'Company', 'Country', 'Your sectors', 'Opt in to the daily sector brief and event invitations',
+      'Email me the daily Ghana business brief and invitations to upcoming Gotham events. I can unsubscribe at any time.', 'I agree that Gotham Consult keeps my details to run my account, under Ghana’s Data Protection Act, 2012 (Act 843).',
       'Create my account', 'Send me a sign-in link', 'Check your email: we sent you a sign-in link (valid 45 minutes).', 'Please add a valid email and tick the box.',
       'That sign-in link has expired or was already used. Ask for a new one below.', 'Your alerts are stopped. You can turn them back on here at any time.', 'Something went wrong. Please try again.',
-      'Overview', 'My companies', 'Services', 'Orders and invoices', 'Updates', 'Pro', 'Sign out', 'Your plans', 'No paid plan yet.', 'until', 'Alerts', 'Sector alerts every Monday',
+      'Overview', 'My companies', 'Services', 'Orders and invoices', 'Updates', 'Pro', 'Sign out', 'Your plans', 'No paid plan yet.', 'until', 'Alerts', 'Daily sector brief',
       'Save', 'Saved.', 'Language', 'Add a company', 'Company name', 'Tax ID (TIN)', 'Registration number', 'Date of incorporation', 'Financial year ends in month', 'Registered for VAT',
       'Has employees on payroll', 'Employs foreign staff (immigrant quota)', 'Permits and certificates with an expiry date', 'Name', 'Expires', 'Remind me (days before)', 'Add a row',
       'Next deadlines', 'Official source', 'Full calendar for 120 days and reminders by email: get the compliance calendar for this company.', 'more deadlines hidden', 'Get the calendar',
@@ -162,7 +162,7 @@ EXTRA = ['Gotham Consult membership: sector alerts, compliance calendar, expert 
          'Your account | Gotham Consult', 'Your sign-in link for Gotham Consult', 'Sign in to your Gotham account',
          'Click the button to sign in. The link works once, for 45 minutes. If you did not ask for it, you can ignore this email.', 'Sign in', 'Your plan is active', 'Thank you, your plan is active',
          'Open your account', 'New in the Ghana Investment Report', 'Your next deadlines', 'source', 'You get this because you chose sector alerts in your Gotham account.', 'Stop these emails',
-         'Ghana this week: your Gotham alerts', 'Ghana this week', 'Deadline', 'due', 'Membership', 'Get Monday alerts when Ghana changes in your sectors.', 'Create a free account'] \
+         'Ghana today: your Gotham brief', 'Ghana today', 'No new reviewed report updates in the last 24 hours.', 'Read the latest report', 'Upcoming Gotham events', 'Free', 'Register', 'Deadline', 'due', 'Membership', 'Get a daily brief with updates in your sectors and upcoming events.', 'Create a free account', 'Email me the daily Ghana business brief and invitations to upcoming Gotham events. I can unsubscribe at any time.'] \
     + [r['name'] for r in RULES] + [r['how'] for r in RULES] + [p['name'] for p in PERMITS] + [p['note'] for p in PERMITS if p['note']] + [s for _, s in SECTORS] + ['Update on your case']
 
 
@@ -184,7 +184,7 @@ def render_account(lang='en', L=None):
         f'<label>{esc(t("Country"))}<input name="country" autocomplete="country-name" maxlength="80"></label></div>'
         f'<fieldset class="ac-secs"><legend>{esc(t("Your sectors"))}</legend>{secs}</fieldset>'
         '<label class="ac-hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>'
-        f'<label class="chk"><input type="checkbox" name="marketing"> {esc(t("Email me useful news and offers from Gotham Consult. I can unsubscribe at any time."))}</label>'
+        f'<label class="chk"><input type="checkbox" name="marketing"> {esc(t("Email me the daily Ghana business brief and invitations to upcoming Gotham events. I can unsubscribe at any time."))}</label>'
         f'<label class="chk"><input type="checkbox" name="consent" required> {esc(t("I agree that Gotham Consult keeps my details to run my account, under Ghana’s Data Protection Act, 2012 (Act 843)."))}</label>'
         f'<div class="ac-row"><button class="btn btn-gold" type="submit">{esc(t("Create my account"))} <span class="arrow">→</span></button></div><p class="ac-msg" id="ac-su-msg" role="status" aria-live="polite"></p></form></div>'
         f'<div class="box ac-card"><h2>{esc(t("Send me a sign-in link"))}</h2><p class="mb-note" style="margin-top:0">{esc(t("Already a member? We email you a sign-in link."))}</p>'
@@ -223,12 +223,12 @@ function ov(root){var c=card(root,T("Your plans")),ul=E("ul",{"class":"ac-list"}
  S.plans.forEach(function(p){ul.appendChild(E("li",{},[E("b",{text:pname(p.product)+(p.company?" · "+p.company:"")}),E("span",{"class":"ac-pill ok",text:T("Active")+" · "+T("until")+" "+fmtDate(p.ends)})]))});c.appendChild(ul);
  c.appendChild(E("p",{},[E("a",{href:pre+"/membership",text:T("Plans and prices")+" →"})]));
  var a=card(root,T("Alerts")),f=E("form",{"class":"ac-form"}),m=S.member;
- f.appendChild(E("label",{"class":"chk"},[E("input",{type:"checkbox",name:"alerts"}),T("Sector alerts every Monday")]));f.alerts.checked=m.alerts;
+ f.appendChild(E("label",{"class":"chk"},[E("input",{type:"checkbox",name:"alerts"}),T("Daily sector brief")]));f.alerts.checked=m.alerts;
  var fs=E("fieldset",{"class":"ac-secs"},[E("legend",{text:T("Your sectors")})]);I._sectors.forEach(function(s){var i=E("input",{type:"checkbox",name:"sectors",value:s[0]});i.checked=(m.sectors||[]).indexOf(s[0])>-1;fs.appendChild(E("label",{},[i," "+s[1]]))});f.appendChild(fs);
  var sel=E("select",{name:"lang"});[["en","English"],["fr","Français"],["es","Español"],["de","Deutsch"],["ar","العربية"],["zh","中文"]].forEach(function(o){var op=E("option",{value:o[0],text:o[1]});if(o[0]===m.lang)op.selected=true;sel.appendChild(op)});
  f.appendChild(E("div",{"class":"two"},[E("label",{},[T("Your name"),E("input",{name:"name",value:m.name||""})]),E("label",{},[T("Language"),sel])]));
  f.appendChild(E("div",{"class":"two"},[E("label",{},[T("Company"),E("input",{name:"company",value:m.company||""})]),E("label",{},[T("Country"),E("input",{name:"country",value:m.country||""})])]));
- f.appendChild(E("label",{"class":"chk"},[E("input",{type:"checkbox",name:"marketing"}),T("Email me useful news and offers from Gotham Consult. I can unsubscribe at any time.")]));f.marketing.checked=!!m.marketing;
+ f.appendChild(E("label",{"class":"chk"},[E("input",{type:"checkbox",name:"marketing"}),T("Email me the daily Ghana business brief and invitations to upcoming Gotham events. I can unsubscribe at any time.")]));f.marketing.checked=!!m.marketing;
  var msg=E("p",{"class":"ac-msg",role:"status"});f.appendChild(E("div",{},[E("button",{"class":"btn btn-line",type:"submit",text:T("Save")})]));f.appendChild(msg);
  f.onsubmit=function(e){e.preventDefault();api("prefs",{alerts:f.alerts.checked,marketing:f.marketing.checked,lang:f.lang.value,name:f.name.value,company:f.company.value,country:f.country.value,
   sectors:[].slice.call(f.querySelectorAll("[name=sectors]:checked")).map(function(x){return x.value})}).then(function(x){if(x.ok){S=x.j;msg.textContent=T("Saved.")}else msg.textContent=T("Something went wrong. Please try again.")})};a.appendChild(f)}

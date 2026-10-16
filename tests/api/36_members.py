@@ -1,5 +1,5 @@
 """Members: a free account by emailed link, preferences, companies and their deadlines, paid plans through normal cedi
-invoices, bookings that become tasks, the Pro data pack, the weekly digest and the back-office dashboard."""
+invoices, bookings that become tasks, the Pro data pack, daily opt-in brief and the back-office dashboard."""
 import os, sys, json, re, subprocess, http.client, urllib.parse
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 ok = lambda m: print('  ok', m)
@@ -90,17 +90,23 @@ ama_id = psql("select id from members where email='ama@co.test'")
 st, r, _ = call(f"/api/members/{ama_id}/grant", {'product': 'pro_year', 'months': 12}, cookie=adm); assert st == 200
 st, h, data = raw('/api/member/datapack.xlsx', ck); assert st == 200 and data[:2] == b'PK' and 'spreadsheetml' in h['content-type']
 ok('Pro: staff can give a plan; Pro members download the Excel data pack, others cannot')
-# weekly digest and reminders
+# daily digest, event invitations and reminders
+st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm)
+assert st == 200 and r['digests'] == 0, 'no promotional digest without explicit email opt-in'
+call('/api/member/prefs', {'marketing': True}, cookie=ck)
 call('/api/report/decide', {'action': 'publish', 'title': 'Cocoa price set', 'text': 'New season price.', 'url': 'https://cocobod.gh/'}, cookie=adm)
+_sp.run(['psql', DB, '-qc', "insert into items(code,kind,title,venue,starts_at,currency,price,published,sort) values ('TST1','event','Test future forum','Accra',now()+interval '10 days','GHS',0,true,99) on conflict (code) do update set starts_at=excluded.starts_at,published=true"], check=True)
 _sp.run(['psql', DB, '-qc', "update member_orders set ends=current_date + 5 where product='compliance_year'"], check=True)
-st, r, _ = call('/api/members/run-jobs', {'weekly': True}, cookie=adm); assert st == 200 and r['digests'] == 1 and r['renewals'] == 1, r
+st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert st == 200 and r['digests'] == 1 and r['renewals'] == 1, r
 dg = psql("select subject||'#'||body from outbox where to_email='ama@co.test' and kind='member_digest'")
 DE = json.load(open(os.path.join(ROOT, 'apps/crm/site-i18n/de.json')))['strings']
-assert dg.startswith(DE['Ghana this week: your Gotham alerts']) and 'Cocoa price set' in dg and '/m/stop?u=' in dg, dg[:200]
+assert dg.startswith(DE['Ghana today: your Gotham brief']) and 'Cocoa price set' in dg and 'Test future forum' in dg and '/register?e=TST1' in dg and '/m/stop?u=' in dg, dg[:300]
 assert psql("select count(*) from member_orders where renewal_of is not null and status='pending'") == '1'
-st, r, _ = call('/api/members/run-jobs', {'weekly': True}, cookie=adm); assert r['digests'] == 0 and r['renewals'] == 0, 'not twice'
+st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert r['digests'] == 0 and r['renewals'] == 0, 'not twice in a day'
 tok = re.search(r'/m/stop\?u=([0-9a-f]+)', dg).group(1); st, h, _ = raw('/m/stop?u=' + tok, method='POST', body={}); assert st == 200 and psql("select alerts from members where email='ama@co.test'") == 'f'
-ok('weekly digest in the member’s language with the approved report update and a one-click stop; renewal invoice 7 days before the end, once')
+_sp.run(['psql', DB, '-qc', "delete from member_digest_days where member_id=(select id from members where email='ama@co.test')"], check=True)
+st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert r['digests'] == 0, 'unsubscribed member receives no further digest'
+ok('daily digest in the member’s language includes only an approved report update, a published event invitation with direct registration, and a one-click stop; unsubscribe suppresses future days')
 st, p, _ = call('/api/member/prices'); assert p['prices']['pro_year'] == 12000 and p['permits']
 call('/api/members/prices', {'pro_year': 5200}, cookie=adm); assert call('/api/member/prices')[1]['prices']['pro_year'] == 5200
 ok('prices are public for the membership page and the back office can change them')

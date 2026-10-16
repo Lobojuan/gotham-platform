@@ -577,6 +577,13 @@ create index if not exists member_orders_invoice on member_orders(invoice_id);
 create table if not exists member_updates (id serial primary key, member_id int not null references members(id) on delete cascade, title text not null, body text, url text, status text, by_user text, at timestamptz default now());
 create table if not exists member_reminders (company_id int not null, key text not null, due date not null, kind text not null, sent_at timestamptz default now(), primary key (company_id, key, due, kind));
 create table if not exists member_digests (member_id int not null, week text not null, sent_at timestamptz default now(), primary key (member_id, week));
+-- A daily member brief is claimed once per member and Accra calendar day; keep the weekly history intact.
+create table if not exists member_digest_days (
+  member_id int not null references members(id) on delete cascade,
+  day date not null,
+  sent_at timestamptz not null default now(),
+  primary key (member_id, day)
+);
 create table if not exists member_posts (id serial primary key, title text not null, sector text, body text, published_at timestamptz, by_user text, created_at timestamptz default now());
 
 -- Admin-only incoming mailbox mirror. Bodies are stored as plain text; attachments and HTML are not retained.
