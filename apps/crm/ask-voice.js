@@ -97,7 +97,7 @@ export function makeAskVoice({ enabled = installationAvailable, render = renderV
       if(!stream){state.parts.push(await render(taken.ticket.text,taken.ticket.language,state.controller.signal));state.complete=true;state.status=200;return;}
       // A short first phrase starts speaking sooner. Every word is retained; later parts continue in order.
       let rest=taken.ticket.text.replace(/\s+/g,' ').trim(),first=true;
-      while(rest){if(state.controller.signal.aborted)throw new Error('cancelled');const max=first?45:150;
+      while(rest){if(state.controller.signal.aborted)throw new Error('cancelled');const max=first?24:150;
         let cut=rest.length<=max?rest.length:rest.lastIndexOf(' ',max);if(cut<1)cut=Math.min(max,rest.length);
         const text=rest.slice(0,cut);rest=rest.slice(cut).trim();first=false;
         state.parts.push(await render(text,taken.ticket.language,state.controller.signal));

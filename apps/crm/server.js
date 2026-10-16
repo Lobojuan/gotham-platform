@@ -1718,16 +1718,18 @@ function cancelAskStream(id,ip) {
   if(!state || state.ip!==ip)return {status:403,error:'invalid_ask_stream'};
   state.controller.abort();state.voice?.close();ASK_STREAMS.delete(id);return {status:200,ok:true};
 }
-function splitSpeech(text,final=false) {
+function splitSpeech(text,final=false,opening=false) {
   const parts=[];let rest=String(text||'').replace(/\s+/g,' ').trimStart();
+  let firstPart=true;
   while(rest){
     const sentence=rest.search(/[.!?。！？؟؛](?:[\s"'”’»»)\]]|$)/u);
-    if(sentence>=0){let end=sentence+1;while(end<rest.length && /["'”’»»)\]]/.test(rest[end]))end++;parts.push(rest.slice(0,end).trim());rest=rest.slice(end).trimStart();continue;}
-    const chars=Array.from(rest);if(chars.length<(final?1:56))break;
-    const limit=Math.min(chars.length,64);let cut=0;
-    for(let i=limit-1;i>=32;i--)if(/[،,;:，；、\s]/u.test(chars[i])){cut=i+1;break;}
-    if(!cut)cut=Math.min(48,limit);
-    parts.push(chars.slice(0,cut).join('').trim());rest=chars.slice(cut).join('').trimStart();
+    const openingPart=opening&&firstPart,limitSize=openingPart?28:64;
+    if(sentence>=0&&(!openingPart||sentence+1<=limitSize)){let end=sentence+1;while(end<rest.length && /["'”’»»)\]]/.test(rest[end]))end++;parts.push(rest.slice(0,end).trim());rest=rest.slice(end).trimStart();firstPart=false;continue;}
+    const chars=Array.from(rest);if(chars.length<(final?1:openingPart?24:56))break;
+    const limit=Math.min(chars.length,limitSize);let cut=0;
+    for(let i=limit-1;i>=(openingPart?12:32);i--)if(/[،,;:，；、\s]/u.test(chars[i])){cut=i+1;break;}
+    if(!cut)cut=Math.min(openingPart?24:48,limit);
+    parts.push(chars.slice(0,cut).join('').trim());rest=chars.slice(cut).join('').trimStart();firstPart=false;
   }
   if(final && rest)parts.push(rest);
   return {parts,rest};
@@ -1755,7 +1757,7 @@ async function askModelStream(messages,opt={},onDelta,signal) {
   throw new Error(last||'ai: no model answered');
 }
 function runAskStream(state,messages) {
-  const signal=state.controller.signal;let raw='',sent=0,speechText='';let speechChain=Promise.resolve();
+  const signal=state.controller.signal;let raw='',sent=0,speechText='',speechStarted=false;let speechChain=Promise.resolve();
   const enqueueSpeech=segment=>{segment=segment.replace(/\[\[[^\]]*\]\]/g,'').replace(/https?:\/\/\S+/g,'source link in the chat').replace(/[*_#`]/g,'').trim();if(!segment)return;
     speechChain=speechChain.then(async()=>{if(signal.aborted)return;const audio=await state.voice.say(segment,signal);if(audio?.length)pushAskStream(state,{type:'audio',audio:audio.toString('base64')});}).catch(()=>{if(!signal.aborted)pushAskStream(state,{type:'voice_error'});});};
   const acceptDelta=delta=>{
@@ -1763,7 +1765,7 @@ function runAskStream(state,messages) {
     if(visible.length-sent>=80 || (visible.slice(sent).includes('\n') && visible.length>sent)){
       pushAskStream(state,{type:'text',text:visible.slice(sent)});sent=visible.length;
     }
-    speechText+=delta;const split=splitSpeech(speechText);speechText=split.rest;for(const part of split.parts)enqueueSpeech(part);
+    speechText+=delta;const split=splitSpeech(speechText,false,!speechStarted);speechText=split.rest;for(const part of split.parts){speechStarted=true;enqueueSpeech(part);}
   };
   void (async()=>{try{
     ASK_VOICE.warm(state.language);
@@ -1772,7 +1774,7 @@ function runAskStream(state,messages) {
     const open=raw.lastIndexOf('[['),close=raw.lastIndexOf(']]'),visible=open>close?raw.slice(0,open):raw;
     if(visible.length>sent)pushAskStream(state,{type:'text',text:visible.slice(sent)});
     pushAskStream(state,{type:'answer',answer:reply,actions:result.actions});
-    const finalParts=splitSpeech(speechText,true);for(const part of finalParts.parts)enqueueSpeech(part);
+    const finalParts=splitSpeech(speechText,true,!speechStarted);for(const part of finalParts.parts){speechStarted=true;enqueueSpeech(part);}
     await speechChain;if(signal.aborted)return;pushAskStream(state,{type:'complete'});state.complete=true;
   }catch(e){if(!signal.aborted){await speechChain;pushAskStream(state,{type:'error'});console.error('ask stream failed:',String(e.message||e).slice(0,240));pushAskStream(state,{type:'complete'});state.complete=true;}}
   finally{state.voice?.close();}})();
