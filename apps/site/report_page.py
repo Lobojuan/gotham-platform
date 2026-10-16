@@ -684,7 +684,7 @@ g.addEventListener("submit",function(e){e.preventDefault();var b={kind:"download
  if(!b.full_name||!/^\\S+@\\S+\\.\\S+$/.test(b.email)||!b.consent){gm.textContent=I.fill;return}
  var btn=g.querySelector("button");btn.disabled=true;gm.textContent=I.preparing;
  fetch("/api/report/enquiry",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})})
- .then(function(x){if(x.ok&&x.j.url){ready(x.j.url)}else if(x.ok&&x.j.reportRefreshing){gm.textContent=I.refreshing;btn.disabled=true}else if(x.ok){gm.textContent=I.check;btn.disabled=false}else{gm.textContent=x.j&&x.j.error==="too_many"?I.many:I.check;btn.disabled=false}})
+ .then(function(x){if(x.ok&&x.j.url){ready(x.j.url)}else if(x.ok&&x.j.reportRefreshing){gm.textContent=I.refreshing;btn.disabled=false}else if(x.ok){gm.textContent=I.check;btn.disabled=false}else{gm.textContent=x.j&&x.j.error==="too_many"?I.many:I.check;btn.disabled=false}})
  .catch(function(){gm.textContent=I.fail;btn.disabled=false})});
 var f=document.getElementById("rp-form"),msg=document.getElementById("rp-msg");
 f.addEventListener("change",function(){var k=f.kind.value;f.package.closest("label").hidden=k!=="partner"});

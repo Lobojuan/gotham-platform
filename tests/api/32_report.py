@@ -49,6 +49,7 @@ ids = [f['id'] for c in rep['chapters'] for f in c['figures']]
 assert all(f'data-fig="{i}"' in html for i in ids) and '/api/report/public' in html and '/api/report/enquiry' in html and '/api/ghana-data' in html
 assert html.count('class="sec rp-ch"') == len(rep['chapters']) and 'GHS 9,800' in html and 'EUR' not in html and 'Partner' in html
 assert 'x.j.reportRefreshing' in html, 'the download form explains when a stale edition is temporarily unavailable'
+assert 'gm.textContent=I.refreshing;btn.disabled=false' in html, 'the download form remains retryable while the edition is refreshing'
 ok(f'the report page shows {len(ids)} sourced figures in {len(rep["chapters"])} chapters, live numbers, the change log and the partner form')
 
 # 3. the server
