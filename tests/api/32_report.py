@@ -1,6 +1,6 @@
 """Ghana Investment Report: every figure sourced, the six-hour watch flags changed sources and newsrooms once,
 nothing is published without a person, company news and partner enquiries reach the back office."""
-import os, sys, json, threading, http.server, subprocess
+import os, sys, json, threading, http.server, subprocess, datetime
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 ok = lambda m: print('  ok', m)
 
@@ -48,6 +48,7 @@ html = report_page.render(); rep = report_page.load()
 ids = [f['id'] for c in rep['chapters'] for f in c['figures']]
 assert all(f'data-fig="{i}"' in html for i in ids) and '/api/report/public' in html and '/api/report/enquiry' in html and '/api/ghana-data' in html
 assert html.count('class="sec rp-ch"') == len(rep['chapters']) and 'GHS 9,800' in html and 'EUR' not in html and 'Partner' in html
+assert 'x.j.reportRefreshing' in html, 'the download form explains when a stale edition is temporarily unavailable'
 ok(f'the report page shows {len(ids)} sourced figures in {len(rep["chapters"])} chapters, live numbers, the change log and the partner form')
 
 # 3. the server
@@ -58,7 +59,11 @@ class H(http.server.BaseHTTPRequestHandler):
         self.send_response(200); self.send_header('content-type', 'text/html'); self.end_headers(); self.wfile.write(body)
 src = http.server.ThreadingHTTPServer(('127.0.0.1', 4297), H); threading.Thread(target=src.serve_forever, daemon=True).start()
 tf = '/tmp/report-test.json'
-json.dump({'updated': '2026-10-07', 'review_days': 120, 'chapters': [{'id': 'macro', 'title': 'Economy', 'figures': [
+json.dump({'updated': datetime.date.today().isoformat(), 'review_days': 120,
+    'snapshot': [
+        {'id': 'inflation', 'label': 'Inflation', 'value': '5.0', 'unit': '%', 'period': 'September 2026', 'published_at': datetime.date.today().isoformat(), 'source_url': 'https://gss.test/inflation'},
+        {'id': 'old-metric', 'label': 'Old metric marker', 'value': '999.0', 'unit': '%', 'period': 'July 2026', 'published_at': (datetime.date.today()-datetime.timedelta(days=15)).isoformat(), 'source_url': 'https://gss.test/old'}],
+    'chapters': [{'id': 'macro', 'title': 'Economy', 'figures': [
     {'id': 'macro-gdp', 'label': 'GDP growth', 'value': '6.0', 'unit': '%', 'period': 'Q2 2026', 'source_label': 'GSS', 'source_url': 'http://127.0.0.1:4297/gdp', 'official': True, 'quote': 'grew 6.0%'},
     {'id': 'macro-cpi', 'label': 'Inflation', 'value': '5.0', 'unit': '%', 'period': 'Aug 2026', 'source_label': 'GSS', 'source_url': 'http://127.0.0.1:4297/cpi', 'official': True, 'quote': 'inflation 9.9%'}],
     'watch': [{'label': 'Newsroom', 'url': 'http://127.0.0.1:4297/news', 'why': ''}]}],
@@ -108,7 +113,7 @@ ok('"Still correct" is recorded')
 assert call('/api/report/enquiry', {'kind': 'download', 'full_name': 'Kwame Investor', 'email': 'kwame@fund.test'})[0] == 400, 'consent is required'
 st, b, _ = call('/api/report/enquiry', {'kind': 'download', 'full_name': 'Kwame Investor', 'email': 'Kwame@Fund.test', 'company': 'Volta Fund', 'role': 'investor',
     'country': 'United Kingdom', 'phone': '+44 7700 900123', 'updates': True, 'consent': True})
-assert st == 200 and b['url'].startswith('http://127.0.0.1:4199/api/report/pdf?'), b
+assert st == 200 and b['url'].startswith(f'{B}/api/report/pdf?'), b
 row = _sp.run(['psql', DB, '-tAc', "select tags||'|'||consent_email||'|'||sector||'|'||phone from contacts where email='kwame@fund.test'"], capture_output=True, text=True).stdout.strip()
 assert row == 'report-download,report-updates|yes|Investor|+447700900123', row
 row = _sp.run(['psql', DB, '-tAc', "select country||'|'||client_type||'|'||consent_source||'|'||(consent_at is not null)||'|'||source from contacts where email='kwame@fund.test'"], capture_output=True, text=True).stdout.strip()
@@ -116,13 +121,16 @@ assert row == 'United Kingdom|investor|Ghana Investment Report: asked for quarte
 deal = _sp.run(['psql', DB, '-tAc', "select kind from deals where title like 'Report download%'"], capture_output=True, text=True).stdout.strip(); assert deal == 'investor', deal
 body = _sp.run(['psql', DB, '-tAc', "select body from outbox where to_email='kwame@fund.test' and subject='Your Ghana Investment Report 2026'"], capture_output=True, text=True).stdout
 assert b['url'].replace('&', '&amp;') in body and 'uffe@test.gh' in body and 'wa.me/233550000001' in body, body[:400]
+assert 'Ghana market snapshot' in body and 'No download is needed' in body and 'Read the full report online' in body, 'email must present an HTML briefing before optional downloads'
+assert 'https://gss.test/inflation' in body and '5.0' in body and '999.0' not in body, 'email includes source-linked indicators published within 14 days only'
+assert 'application/pdf' not in body, 'the PDF is offered as a link, never attached or auto-downloaded'
 alert = _sp.run(['psql', DB, '-tAc', "select body from outbox where to_email='uffe.carlson@gothamconsult.com' and subject like 'Report: Report download from Kwame%'"], capture_output=True, text=True).stdout
 assert 'United Kingdom' in alert and 'Investor or fund' in alert and 'opted in' in alert, alert[:300]
 ok('a download request becomes a tagged contact (opted in to updates), an investor lead, an email with the link and the authors, and an alert to Uffe')
 import http.client
 def raw_get(path):
-    c = http.client.HTTPConnection('127.0.0.1', 4199, timeout=10); c.request('GET', path, headers={'x-real-ip': '10.9.1.1'}); r = c.getresponse(); return r.status, r.getheader('location') or r.getheader('content-type'), r.read()
-path = b['url'].split('4199', 1)[1]
+    c = http.client.HTTPConnection('127.0.0.1', PORT, timeout=10); c.request('GET', path, headers={'x-real-ip': '10.9.1.1'}); r = c.getresponse(); return r.status, r.getheader('location') or r.getheader('content-type'), r.read()
+path = b['url'].replace(B, '', 1)
 st, ct, data = raw_get(path); assert st == 200 and ct == 'application/pdf' and data == PDF, (st, ct)
 st, loc, _ = raw_get(path[:-3] + 'abc'); assert st == 302 and 'link=expired' in loc, (st, loc)
 import re as _re
@@ -142,8 +150,8 @@ assert st == 200 and '&l=fr&' in b['url'], b
 row = _sp.run(['psql', DB, '-tAc', "select language from contacts where email='claire@fonds.test'"], capture_output=True, text=True).stdout.strip(); assert row == 'fr', row
 subj = _sp.run(['psql', DB, '-tAc', "select subject from outbox where to_email='claire@fonds.test'"], capture_output=True, text=True).stdout.strip()
 assert subj == FR['Your Ghana Investment Report 2026'] != 'Your Ghana Investment Report 2026', subj
-st, ct, data = raw_get(b['url'].split('4199', 1)[1]); assert st == 200 and data == PDF_FR, (st, ct)
-st, loc, _ = raw_get(b['url'].split('4199', 1)[1].replace('&l=fr', '&l=de')); assert st == 302 and loc.startswith('/de/'), 'the language is part of the signature'
+st, ct, data = raw_get(b['url'].replace(B, '', 1)); assert st == 200 and data == PDF_FR, (st, ct)
+st, loc, _ = raw_get(b['url'].replace(B, '', 1).replace('&l=fr', '&l=de')); assert st == 302 and loc.startswith('/de/'), 'the language is part of the signature'
 ok('a French reader gets the French email and the French PDF; the language is signed into the link and saved on the contact')
 # every language has a complete translation and its own page
 assert not [p for p in report_page.check() if p[0].startswith('i18n')], report_page.check()

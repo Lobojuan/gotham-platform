@@ -590,7 +590,8 @@ def render(lang='en', L=None):
          'source': 'Source', 'fill': 'Please add your name, a valid email and tick the box.', 'sending': 'Sending…', 'thanks': 'Thank you. We reply within one working day.',
          'check': 'Please check the form and try again.', 'fail': 'Could not send. Please email info@gothamconsult.com.', 'preparing': 'Preparing your copy…',
          'ready': 'Your PDF is ready.', 'downloadNote': 'You can download your copy below. This link is valid for 30 days.', 'dl': 'Download the PDF', 'mailcheck': 'Thank you. Check your email for the link.',
-         'many': 'Too many tries. Please wait a few minutes.', 'expired': 'That download link has expired. Fill in the form again for a new one.'}.items()}
+         'many': 'Too many tries. Please wait a few minutes.', 'expired': 'That download link has expired. Fill in the form again for a new one.',
+         'refreshing': 'PDF downloads are temporarily paused while we refresh this edition. Your request was recorded; please check back soon or read the online report.'}.items()}
     I['months'] = MONTHS[L.lang]; I['lang'] = L.lang
     body = (CSS + '\n<!--#top-->\n<main id="main" data-no-tr>\n'
         '<section class="phero" aria-labelledby="h1"><img class="bgimg" src="/img/real-airportcity.webp" alt="" fetchpriority="high"><div class="wrap">'
@@ -683,7 +684,7 @@ g.addEventListener("submit",function(e){e.preventDefault();var b={kind:"download
  if(!b.full_name||!/^\\S+@\\S+\\.\\S+$/.test(b.email)||!b.consent){gm.textContent=I.fill;return}
  var btn=g.querySelector("button");btn.disabled=true;gm.textContent=I.preparing;
  fetch("/api/report/enquiry",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){return{ok:r.ok,j:j}})})
- .then(function(x){if(x.ok&&x.j.url){ready(x.j.url)}else if(x.ok){gm.textContent=I.check;btn.disabled=false}else{gm.textContent=x.j&&x.j.error==="too_many"?I.many:I.check;btn.disabled=false}})
+ .then(function(x){if(x.ok&&x.j.url){ready(x.j.url)}else if(x.ok&&x.j.reportRefreshing){gm.textContent=I.refreshing;btn.disabled=true}else if(x.ok){gm.textContent=I.check;btn.disabled=false}else{gm.textContent=x.j&&x.j.error==="too_many"?I.many:I.check;btn.disabled=false}})
  .catch(function(){gm.textContent=I.fail;btn.disabled=false})});
 var f=document.getElementById("rp-form"),msg=document.getElementById("rp-msg");
 f.addEventListener("change",function(){var k=f.kind.value;f.package.closest("label").hidden=k!=="partner"});

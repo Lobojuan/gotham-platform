@@ -78,6 +78,18 @@ const REPORT = makeReportWatch({
    address that works for 30 days. The file ships with the server (report-files/); its name and the authors are in report.json. */
 const REPORT_PDF_DIR = process.env.REPORT_PDF_DIR || path.join(path.dirname(new URL(import.meta.url).pathname), 'report-files');
 const REPORT_META = loadReport(process.env.REPORT_FILE || new URL('./report.json', import.meta.url));
+// Do not send a client an old frozen edition. Source polling does not refresh this date;
+// the reviewed data and the corresponding PDF must be updated together.
+const REPORT_CLIENT_MAX_AGE_DAYS = 14;
+function reportClientDelivery(now = Date.now()) {
+  const updated = String(REPORT_META.updated || '');
+  const reviewedAt = /^\d{4}-\d{2}-\d{2}$/.test(updated) ? Date.parse(updated + 'T00:00:00Z') : NaN;
+  const ageMs = now - reviewedAt;
+  const valid = Number.isFinite(reviewedAt) && ageMs >= 0;
+  const ageDays = valid ? Math.floor(ageMs / 86400000) : null;
+  return { available: valid && ageMs <= REPORT_CLIENT_MAX_AGE_DAYS * 86400000,
+    updated: valid ? updated : null, ageDays, maxAgeDays: REPORT_CLIENT_MAX_AGE_DAYS };
+}
 /* the report in six languages: the page, the PDF edition and these emails (apps/crm/report-i18n/<lang>.json, keyed by the English text) */
 const REPORT_LANGS = ['en', 'fr', 'es', 'de', 'ar', 'zh'];
 const REPORT_TR = Object.fromEntries(REPORT_LANGS.slice(1).map(l => {
@@ -89,6 +101,55 @@ const reportPdfLink = (email, lang = 'en', now = Date.now()) => {
   const e = Buffer.from(email).toString('base64url'), x = Math.floor(now / 1000) + 30 * 86400, l = REPORT_LANGS.includes(lang) ? lang : 'en';
   return `${BASE}/api/report/pdf?e=${e}&x=${x}${l !== 'en' ? '&l=' + l : ''}&s=${sign(pdfPayload(e, x, l))}`;
 };
+
+function reportEmailPreview(lang, page, pdfLink, email, publicUpdates = []) {
+  const T = s => rt(lang, s), rtl = lang === 'ar';
+  const cutoff = Date.now() - 14 * 86400000;
+  const snapshots = (REPORT_META.snapshot || []).filter(item => {
+    const published = Date.parse(String(item.published_at || '') + 'T00:00:00Z');
+    return Number.isFinite(published) && published >= cutoff && published <= Date.now()
+      && item.source_url && /^https:\/\//.test(item.source_url);
+  });
+  const recentUpdates = publicUpdates.filter(item => {
+    const at = Date.parse(item.at || ''); return Number.isFinite(at) && at <= Date.now() && at >= cutoff && item.title;
+  }).slice(0, 3);
+  const updatesHtml = recentUpdates.length ? recentUpdates.map(item => {
+    const href = /^https:\/\//.test(item.url || '') ? item.url : page;
+    const stamp = new Date(item.at).toISOString().slice(0, 10);
+    const chapter = (REPORT_META.chapters || []).find(c => c.id === item.chapter)?.title || item.chapter || 'Ghana';
+    return `<tr><td style="padding:12px 14px;border:1px solid #E7E8E8;border-radius:10px;background:#FFFFFF">
+      <span style="display:block;color:#9A6A12;font-size:11px;font-weight:700;letter-spacing:.08em">${esc(T(chapter))} · ${esc(stamp)}</span>
+      <a href="${esc(href)}" style="display:block;margin-top:5px;color:#0F1B2D;font-size:15px;line-height:1.45;font-weight:700;text-decoration:underline">${esc(item.title)}</a>
+      ${item.text ? `<span style="display:block;margin-top:5px;color:#566170;font-size:13px;line-height:1.5">${esc(item.text)}</span>` : ''}
+    </td></tr><tr><td height="8" style="font-size:0;line-height:0">&nbsp;</td></tr>`;
+  }).join('') : '';
+  const rows = snapshots;
+  const metrics = rows.map(item => `<tr><td style="padding:13px 14px;border:1px solid #E7E8E8;border-radius:10px;background:#FFFFFF">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+        <td style="width:38%;vertical-align:middle;color:#0F1B2D;font-size:23px;line-height:1.15;font-weight:700;letter-spacing:-.03em">${esc(item.value)} <span style="font-size:13px;letter-spacing:0;color:#5A6472;font-weight:600">${esc(T(item.unit))}</span></td>
+        <td style="vertical-align:middle;padding-${rtl ? 'right' : 'left'}:12px"><b style="display:block;color:#0F1B2D;font-size:13px;line-height:1.35">${esc(T(item.label))}</b>
+          <span style="display:block;margin-top:3px;color:#68717D;font-size:12px;line-height:1.4">${esc(T(item.period))}</span></td>
+        <td style="width:58px;text-align:${rtl ? 'left' : 'right'};vertical-align:middle"><a href="${esc(item.source_url)}" style="color:#8B641D;font-size:11px;font-weight:700;text-decoration:underline">${esc(T('View source'))}</a></td>
+      </tr></table></td></tr><tr><td height="8" style="font-size:0;line-height:0">&nbsp;</td></tr>`).join('');
+  const reviewed = REPORT_META.updated && /^\d{4}-\d{2}-\d{2}$/.test(REPORT_META.updated)
+    ? new Date(REPORT_META.updated + 'T00:00:00Z').toLocaleDateString(({ en: 'en-GB', fr: 'fr-FR', es: 'es-ES', de: 'de-DE', ar: 'ar', zh: 'zh-CN' })[lang] || 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+    : '';
+  return `<div dir="${rtl ? 'rtl' : 'ltr'}" style="color:#182233">
+    <p style="margin:0 0 18px;color:#566170;font-size:15px;line-height:1.65">${esc(T('Thank you for your interest. Your Ghana Investment Report is ready to read right here in this email. No download is needed to see this briefing.'))}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border-collapse:separate"><tr><td style="padding:17px 18px;background:#F5F3ED;border-left:4px solid #B8862F;border-radius:10px">
+      <span style="display:block;color:#9A6A12;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase">${esc(T('Ghana market snapshot'))}</span>
+      <span style="display:block;margin-top:5px;color:#0F1B2D;font-size:14px;line-height:1.5">${esc(T('This email shows recent approved updates and indicators with their reporting periods and source links.'))}</span>
+      <span style="display:block;margin-top:7px;color:#68717D;font-size:12px">${esc(T('Reviewed edition'))}: ${esc(reviewed)}</span>
+    </td></tr></table>
+    ${recentUpdates.length ? `<p style="margin:0 0 9px;color:#0F1B2D;font-size:15px;font-weight:700">${esc(T('Recently verified developments'))}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate">${updatesHtml}</table>` : `<p style="margin:0 0 14px;padding:13px 14px;border:1px solid #E7E8E8;border-radius:10px;color:#566170;font-size:13px;line-height:1.5">${esc(T('There are no newly approved public updates in the past 14 days. The report still provides a dated, source-linked overview of the economy and key sectors.'))}</p>`}
+    ${metrics ? `<p style="margin:15px 0 9px;color:#0F1B2D;font-size:15px;font-weight:700">${esc(T('Recently published indicators'))}</p><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate">${metrics}</table>` : ''}
+    <p style="margin:7px 0 18px;color:#68717D;font-size:12px;line-height:1.55">${esc(T('Figures describe the periods shown and link to their source. They are not live prices or investment advice.'))}</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 10px"><tr><td style="padding:0 10px 10px 0"><a href="${esc(page)}" style="display:inline-block;padding:12px 17px;border:1px solid #D9DDE1;border-radius:8px;background:#FFFFFF;color:#0F1B2D;text-decoration:none;font-size:14px;font-weight:700">${esc(T('Read the full report online'))}</a></td></tr>
+      <tr><td style="padding:0 10px 12px 0"><a href="${esc(pdfLink)}" style="display:inline-block;padding:12px 17px;border-radius:8px;background:#0F1B2D;color:#FFFFFF;text-decoration:none;font-size:14px;font-weight:700">${esc(T('Download the PDF'))}</a></td></tr></table>
+    <p style="margin:0 0 18px;color:#68717D;font-size:12px;line-height:1.5">${esc(T('The PDF link is personal and works for 30 days. Download it only if you want to save or share the full report.'))}</p>
+    <p style="margin:0 0 16px;color:#182233;font-size:14px;line-height:1.6"><b>${esc(MEMBER_TR(lang, 'Get a daily brief with updates in your sectors and upcoming events.'))}</b> <a href="${esc(`${BASE}${lang === 'en' ? '' : '/' + lang}/account?email=${encodeURIComponent(email)}#signup`)}" style="color:#9A6A12">${esc(MEMBER_TR(lang, 'Create a free account'))}</a></p>
+  </div>`;
+}
 
 fs.mkdirSync(MEDIA, { recursive: true });
 
@@ -1986,7 +2047,7 @@ const server = http.createServer(async (req, res) => {
     }
     /* ---- Ghana Investment Report: public status and change log, the weekly watch for admins, enquiries ---- */
     if (p === '/api/report/public' && req.method === 'GET') {
-      res.setHeader('cache-control', 'public, max-age=600'); return json(res, 200, await REPORT.publicReport(), cors);
+      res.setHeader('cache-control', 'public, max-age=600'); return json(res, 200, { ...await REPORT.publicReport(), clientDelivery: reportClientDelivery() }, cors);
     }
     if (p === '/api/report/pdf' && req.method === 'GET') {    // the signed download link from the report form
       const e = String(url.searchParams.get('e') || ''), x = +url.searchParams.get('x') || 0, sg = String(url.searchParams.get('s') || '');
@@ -1995,6 +2056,7 @@ const server = http.createServer(async (req, res) => {
         && crypto.timingSafeEqual(Buffer.from(sign(pdfPayload(e, x, l)).padEnd(100)), Buffer.from(sg.padEnd(100)));
       const ed = REPORT_META.edition || {}, fname = (ed.files || {})[l] || ed.file, file = path.join(REPORT_PDF_DIR, path.basename(fname || 'none'));
       if (!good || !fname || !fs.existsSync(file)) { res.writeHead(302, { location: (l === 'en' ? '' : '/' + l) + '/ghana-investment-report?link=expired#download' }); return res.end(); }
+      if (!reportClientDelivery().available) { res.writeHead(302, { location: (l === 'en' ? '' : '/' + l) + '/ghana-investment-report?link=refreshing#download' }); return res.end(); }
       if (rateLimited(ip, 30, 3600e3, 'report-pdf')) return json(res, 429, { error: 'too_many' });
       q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'report_pdf', Buffer.from(e, 'base64url').toString('utf8').slice(0, 160)]).catch(() => {});
       res.writeHead(200, { 'content-type': 'application/pdf', 'content-length': fs.statSync(file).size, 'cache-control': 'private, no-store',
@@ -2003,7 +2065,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (p === '/api/report' && req.method === 'GET') {
       if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
-      return json(res, 200, await REPORT.report());
+      return json(res, 200, { ...await REPORT.report(), clientDelivery: reportClientDelivery() });
     }
     if (p === '/api/report/check' && req.method === 'POST') {
       if (!need('admin')) return json(res, 401, { error: 'not_allowed' });
@@ -2044,6 +2106,7 @@ const server = http.createServer(async (req, res) => {
       const pack = ['profile', 'sector', 'lead'].includes(b.package) ? b.package : '';
       const chapter = clean(b.chapter, 40), message = clean(b.message, 1500);
       const role = ROLES[b.role] ? b.role : '', country = clean(b.country, 80), updates = b.updates === true;
+      const clientDelivery = kind === 'download' ? reportClientDelivery() : null;
       const lang = REPORT_LANGS.includes(b.lang) ? b.lang : 'en', T = s => rt(lang, s), rtl = lang === 'ar';
       const clientType = { investor: 'investor', company: 'corporate', government: 'government', media: 'media', adviser: 'partner' }[role] || (b.kind === 'investor' ? 'investor' : '');
       const errors = [];
@@ -2085,15 +2148,18 @@ const server = http.createServer(async (req, res) => {
           <a href="mailto:${esc(a.email)}" style="color:#0F1B2D">${esc(a.email)}</a> · <a href="https://wa.me/${esc(a.whatsapp)}" style="color:#0F1B2D">WhatsApp ${esc(a.phone)}</a></p>`).join('') : '';
       let link = '';
       if (kind === 'download') {
-        link = reportPdfLink(email, lang);
         const page = `${BASE}${lang === 'en' ? '' : '/' + lang}/ghana-investment-report`;
-        const web = `<a href="${page}" style="color:#5A6472">${page.replace(/^https?:\/\//, '')}</a>`;
-        await queueMail(email, full_name, T('Your Ghana Investment Report 2026'),
-          wrapMail(esc(T('Your Ghana Investment Report, {name}').replace('{name}', firstName(full_name))),
-            `<div dir="${rtl ? 'rtl' : 'ltr'}"><p style="color:#5A6472;font-size:15px;line-height:1.6">${esc(T('Thank you for your interest. Your copy of the Ghana Investment Report 2026 is ready.'))}</p>
-            <p style="margin:22px 0"><a href="${esc(link)}" style="background:#B8862F;color:#fff;text-decoration:none;font-weight:700;padding:13px 22px;border-radius:999px;display:inline-block">${esc(T('Download the PDF'))}</a></p>
-            <p style="color:#5A6472;font-size:13px;line-height:1.6">${esc(T('The link works for 30 days. The web version at {link} is checked against its sources every week.')).replace('{link}', web)}</p>
-            <p style="color:#0F1B2D;font-size:14.5px;line-height:1.6;margin:18px 0 6px"><b>${esc(MEMBER_TR(lang, 'Get a daily brief with updates in your sectors and upcoming events.'))}</b> <a href="${BASE}${lang === 'en' ? '' : '/' + lang}/account?email=${encodeURIComponent(email)}#signup" style="color:#9A6A12">${esc(MEMBER_TR(lang, 'Create a free account'))}</a></p>` + contactsHtml + '</div>'), 'report_pdf', null);
+        if (!clientDelivery.available) {
+          await queueMail(email, full_name, T('Your Ghana Investment Report 2026'),
+            wrapMail(esc(T('Your Ghana Investment Report, {name}').replace('{name}', firstName(full_name))),
+              `<div dir="${rtl ? 'rtl' : 'ltr'}"><p style="color:#5A6472;font-size:15px;line-height:1.6">${esc(T('PDF downloads are temporarily paused while we refresh this edition. Your request was recorded; please check back soon or read the online report.'))}</p><p><a href="${esc(page)}" style="color:#0F1B2D">${esc(T('Read the full report online'))}</a></p>` + contactsHtml + '</div>'), 'report_pdf_wait', null);
+        } else {
+          link = reportPdfLink(email, lang);
+          const published = await REPORT.publicReport();
+          const preview = reportEmailPreview(lang, page, link, email, published.updates || []);
+          await queueMail(email, full_name, T('Your Ghana Investment Report 2026'),
+            wrapMail(esc(T('Your Ghana Investment Report, {name}').replace('{name}', firstName(full_name))), preview + contactsHtml), 'report_pdf', null);
+        }
       } else {
         await queueMail(email, full_name, T('Thank you for contacting Gotham Consult'),
           wrapMail(esc(T('Thank you, {name}').replace('{name}', firstName(full_name))),
@@ -2110,7 +2176,7 @@ const server = http.createServer(async (req, res) => {
       if (kind !== 'download' || role === 'investor') await notifyTeamInquiry(`Investment report · ${KINDS[kind]}`, full_name, company, message || `${ROLES[role] || ''}${country ? ' · ' + country : ''}${pack ? ' · ' + PACK[pack] : ''}`);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['website', 'report_enquiry', `${kind} · ${pack || role} · ${chapter || country}`]);
       webEnquiry(req, ip, 'report').catch(() => {});
-      return json(res, 200, link ? { ok: true, url: link } : { ok: true }, cors);
+      return json(res, 200, link ? { ok: true, url: link } : { ok: true, ...(clientDelivery && !clientDelivery.available ? { reportRefreshing: true } : {}) }, cors);
     }
     // Public, non-personal economic publications; bounded background refresh with persisted last-good data.
     if (p === '/api/ghana-data' && req.method === 'GET') {
