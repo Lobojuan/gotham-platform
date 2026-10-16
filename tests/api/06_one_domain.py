@@ -1,12 +1,13 @@
 import subprocess, time, json, os, urllib.request, urllib.error, signal, sys, atexit
 import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 os.chdir(ROOT+'/apps/crm')
 env=dict(os.environ); env.update({
- 'DATABASE_URL':DB,'SESSION_SECRET':'t','ALLOW_ORIGINS':'*','PORT':'4199',
+ 'DATABASE_URL':DB,'SESSION_SECRET':'t','ALLOW_ORIGINS':'*','PORT':str(TEST_PORT),
  'ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123','ADMIN_NAME':'Admin',
- 'MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4199','SITE_URL':'http://127.0.0.1:4199',
+ 'MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':f'http://127.0.0.1:{TEST_PORT}','SITE_URL':f'http://127.0.0.1:{TEST_PORT}',
  'SITE_DIR':ROOT+'/apps/site/dist'})
 os.makedirs('/tmp/mediatest',exist_ok=True)
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
@@ -16,7 +17,7 @@ def _cleanup_server():
         try: srv.wait(timeout=3)
         except subprocess.TimeoutExpired: srv.kill()
 atexit.register(_cleanup_server)
-B='http://127.0.0.1:4199'
+B=f'http://127.0.0.1:{TEST_PORT}'
 def get(path,cookie=None,raw=True):
     req=urllib.request.Request(B+path)
     if cookie: req.add_header('cookie',cookie)

@@ -5,6 +5,7 @@
 # plus spoken test sentences made with Piper in /tmp/qa/stt/u1.wav (made by this test if the Piper voice is there).
 import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit, base64
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 MODEL = os.environ.get('TEST_WHISPER_MODEL', '/tmp/qa/whisper/tiny')            # the multilingual model (French, Spanish)
@@ -13,11 +14,11 @@ PY = os.environ.get('TEST_WHISPER_PYTHON', '/tmp/qa/wh/bin/python')
 HAVE = os.path.exists(os.path.join(MODEL, 'model.bin')) and os.path.exists(os.path.join(MODEL_EN, 'model.bin')) and os.path.exists(PY) and subprocess.run([PY, '-c', 'import faster_whisper'], capture_output=True).returncode == 0
 mock = subprocess.Popen(['node', os.path.join(ROOT, 'tests', 'e2e', 'mock_ai.js')], env={**os.environ, 'MOCK_PORT': '4295'}, stdout=subprocess.DEVNULL)
 atexit.register(lambda: mock.poll() is None and mock.terminate())
-B = 'http://127.0.0.1:4199'
+B = f'http://127.0.0.1:{TEST_PORT}'
 IP = iter(range(10, 250))
 def start(ears):
-    env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
-        'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'http://example.org',
+    env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
+        'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': f'http://127.0.0.1:{TEST_PORT}', 'SITE_URL': 'http://example.org',
         'OPENAI_API_KEY': 'test', 'OPENAI_BASE_URL': 'http://127.0.0.1:4295', 'OPENAI_MODEL': 'mock-model',
         'WHISPER_PYTHON': PY if ears else '/nonexistent/python', 'WHISPER_MODEL': MODEL, 'WHISPER_MODEL_EN': MODEL_EN, 'PIPER_PYTHON': '/nonexistent/python'})
     os.makedirs('/tmp/mediatest', exist_ok=True)

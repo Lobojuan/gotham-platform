@@ -4,6 +4,7 @@
 import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit, threading, hmac, hashlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 mock = subprocess.Popen(['node', os.path.join(ROOT, 'tests', 'e2e', 'mock_ai.js')], env={**os.environ, 'MOCK_PORT': '4297'}, stdout=subprocess.DEVNULL)
@@ -15,14 +16,14 @@ class API(BaseHTTPRequestHandler):
         b = json.loads(self.rfile.read(int(self.headers['content-length']))); WA.append(b)
         o = json.dumps({'messages': [{'id': 'wamid.out%d' % len(WA)}]}).encode(); self.send_response(200); self.send_header('content-type', 'application/json'); self.end_headers(); self.wfile.write(o)
 api = HTTPServer(('127.0.0.1', 4296), API); threading.Thread(target=api.serve_forever, daemon=True).start()
-env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
-    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'http://example.org',
+env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
+    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': f'http://127.0.0.1:{TEST_PORT}', 'SITE_URL': 'http://example.org',
     'OPENAI_API_KEY': 'test', 'OPENAI_BASE_URL': 'http://127.0.0.1:4297', 'OPENAI_MODEL': 'mock-model',
     'WHATSAPP_TOKEN': 'wa-token', 'WHATSAPP_PHONE_ID': '123', 'WHATSAPP_APP_SECRET': 'shh', 'WHATSAPP_API_BASE': 'http://127.0.0.1:4296'})
 os.makedirs('/tmp/mediatest', exist_ok=True)
 srv = subprocess.Popen(['node', 'server.js'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 atexit.register(lambda: srv.poll() is None and srv.terminate())
-B = 'http://127.0.0.1:4199'
+B = f'http://127.0.0.1:{TEST_PORT}'
 def call(path, data=None, method=None, cookie=None, headers=None, raw=None):
     req = urllib.request.Request(B + path, data=raw if raw is not None else (json.dumps(data).encode() if data is not None else None), method=method or ('POST' if (data is not None or raw is not None) else 'GET'))
     req.add_header('content-type', 'application/json')

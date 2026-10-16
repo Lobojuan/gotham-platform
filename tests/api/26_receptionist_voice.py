@@ -5,6 +5,7 @@
 # Needs piper-tts for python3 and the voice file in /tmp/qa/voices (else the "installed" half is skipped).
 import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 MODEL = os.environ.get('TEST_PIPER_MODEL', '/tmp/qa/voices/en_GB-jenny_dioco-medium.onnx')
@@ -12,11 +13,11 @@ PY = subprocess.run(['bash', '-c', 'command -v python3'], capture_output=True, t
 HAVE = os.path.exists(MODEL) and subprocess.run([PY, '-c', 'import piper'], capture_output=True).returncode == 0
 mock = subprocess.Popen(['node', os.path.join(ROOT, 'tests', 'e2e', 'mock_ai.js')], env={**os.environ, 'MOCK_PORT': '4295'}, stdout=subprocess.DEVNULL)
 atexit.register(lambda: mock.poll() is None and mock.terminate())
-B = 'http://127.0.0.1:4199'
+B = f'http://127.0.0.1:{TEST_PORT}'
 IP = iter(range(10, 250))
 def start(voice):
-    env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
-        'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'http://example.org',
+    env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
+        'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': f'http://127.0.0.1:{TEST_PORT}', 'SITE_URL': 'http://example.org',
         'OPENAI_API_KEY': 'test', 'OPENAI_BASE_URL': 'http://127.0.0.1:4295', 'OPENAI_MODEL': 'mock-model',
         'PIPER_PYTHON': PY if voice else '/nonexistent/python', 'PIPER_MODEL': MODEL})
     os.makedirs('/tmp/mediatest', exist_ok=True)

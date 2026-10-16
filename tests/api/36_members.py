@@ -2,6 +2,7 @@
 invoices, bookings that become tasks, the Pro data pack, daily opt-in brief and the back-office dashboard."""
 import os, sys, json, re, subprocess, http.client, urllib.parse
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ok = lambda m: print('  ok', m)
 
 # 1. the calendar engine on its own
@@ -33,7 +34,7 @@ ok = lambda m: print('  ok', m)
 import subprocess as _sp
 psql = lambda sql: _sp.run(['psql', DB, '-tAc', sql], capture_output=True, text=True).stdout.strip()
 def raw(path, cookie=None, method='GET', body=None):
-    c = http.client.HTTPConnection('127.0.0.1', 4199, timeout=15); h = {'x-real-ip': '10.7.0.1', 'content-type': 'application/json'}
+    c = http.client.HTTPConnection('127.0.0.1', TEST_PORT, timeout=15); h = {'x-real-ip': '10.7.0.1', 'content-type': 'application/json'}
     if cookie: h['cookie'] = cookie
     c.request(method, path, body=json.dumps(body) if body is not None else None, headers=h); r = c.getresponse(); return r.status, {k.lower(): v for k, v in r.getheaders()}, r.read()
 assert call('/api/member/signup', {'email': 'ama@co.test', 'consent': False})[0] == 400, 'consent needed'
@@ -45,11 +46,11 @@ assert psql("select consent_email from contacts where email='ama@co.test'") == '
 mail = psql("select subject||'#'||body from outbox where to_email='ama@co.test' and kind='member_login' order by id desc limit 1")
 FR = json.load(open(os.path.join(ROOT, 'apps/crm/site-i18n/fr.json')))['strings']
 assert mail.startswith(FR['Your sign-in link for Gotham Consult']), mail[:80]
-link = re.search(r'href="(http://127\.0\.0\.1:4199/m/login\?t=[^"]+)"', mail).group(1).replace('&amp;', '&')
-st, h, _ = raw(link.split('4199', 1)[1]); assert st == 302 and h['location'] == '/fr/account' and 'gc_member=' in h['set-cookie'], (st, h)
+link = re.search(rf'href="(http://127\.0\.0\.1:{TEST_PORT}/m/login\?t=[^"]+)"', mail).group(1).replace('&amp;', '&')
+st, h, _ = raw(link.split(str(TEST_PORT), 1)[1]); assert st == 302 and h['location'] == '/fr/account' and 'gc_member=' in h['set-cookie'], (st, h)
 ck = h['set-cookie'].split(';')[0]
 assert psql("select consent_email from contacts where email='ama@co.test'") == 'yes', 'consent counts once the address is confirmed'
-st, h, _ = raw(link.split('4199', 1)[1]); assert st == 302 and 'link=expired' in h['location'], 'a sign-in link works once'
+st, h, _ = raw(link.split(str(TEST_PORT), 1)[1]); assert st == 302 and 'link=expired' in h['location'], 'a sign-in link works once'
 ok('free account: consent required, French sign-in email, the link signs in once, contact tagged member')
 st, me, _ = call('/api/member/me', cookie=ck); assert st == 200 and me['member']['email'] == 'ama@co.test' and me['plans'] == [] and me['pro'] is False
 assert call('/api/member/me', cookie='gc_member=x.y')[1] == {'member': None} and call('/api/member/prefs', {}, cookie='gc_member=x.y')[0] == 401

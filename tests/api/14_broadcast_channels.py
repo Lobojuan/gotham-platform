@@ -4,6 +4,7 @@
 import subprocess, time, json, os, urllib.request, urllib.error, sys, re, atexit, threading, socketserver, hmac, hashlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 
@@ -44,8 +45,8 @@ class API(BaseHTTPRequestHandler):
         o = json.dumps(out).encode(); self.send_response(200); self.send_header('content-type', 'application/json'); self.end_headers(); self.wfile.write(o)
 api = HTTPServer(('127.0.0.1', 4298), API); threading.Thread(target=api.serve_forever, daemon=True).start()
 
-BASEENV = {'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
-    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'http://example.org'}
+BASEENV = {'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'admin', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
+    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': f'http://127.0.0.1:{TEST_PORT}', 'SITE_URL': 'http://example.org'}
 os.makedirs('/tmp/mediatest', exist_ok=True)
 srv = None
 def start(extra):
@@ -60,7 +61,7 @@ def start(extra):
         time.sleep(0.4)
     print('NO START'); print(srv.stdout.read()[:3000]); sys.exit(1)
 atexit.register(lambda: srv and srv.poll() is None and srv.terminate())
-B = 'http://127.0.0.1:4199'
+B = f'http://127.0.0.1:{TEST_PORT}'
 def call(path, data=None, method=None, cookie=None, raw=False, headers=None, body=None):
     req = urllib.request.Request(B + path, data=body if body is not None else (json.dumps(data).encode() if data is not None else None),
         method=method or ('POST' if (data is not None or body is not None) else 'GET'))

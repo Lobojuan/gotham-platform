@@ -5,16 +5,17 @@
 import subprocess, time, json, os, urllib.request, urllib.error, sys, base64, io, shutil, tempfile
 from PIL import Image
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 DIST = ROOT + '/apps/site/dist'
 if not os.path.exists(DIST + '/event-shell.html'): subprocess.run(['python3', ROOT + '/apps/site/build.py'], check=True, capture_output=True)
 MEDIA = tempfile.mkdtemp(prefix='media22-')
-env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'admin@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
-    'MEDIA_DIR': MEDIA, 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'https://gothamconsult.com', 'SITE_DIR': DIST})
+env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'admin@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
+    'MEDIA_DIR': MEDIA, 'PUBLIC_URL': f'http://127.0.0.1:{TEST_PORT}', 'SITE_URL': 'https://gothamconsult.com', 'SITE_DIR': DIST})
 srv = subprocess.Popen(['node', 'server.js'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 import atexit; atexit.register(lambda: srv.poll() is None and srv.terminate())
-B = 'http://127.0.0.1:4199'
+B = f'http://127.0.0.1:{TEST_PORT}'
 def call(path, data=None, cookie=None, method=None, raw=None, headers=None, text=False, binary=False):
     body = raw if raw is not None else (json.dumps(data).encode() if data is not None else None)
     req = urllib.request.Request(B + path, data=body, method=method or ('POST' if body is not None else 'GET'))

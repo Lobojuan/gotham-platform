@@ -5,6 +5,7 @@ import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit, th
 from urllib.parse import urlparse, parse_qs
 from http.server import BaseHTTPRequestHandler, HTTPServer
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 PSK = 'sk_test_mock'
@@ -36,14 +37,14 @@ class Mock(BaseHTTPRequestHandler):
             return self.out(200, {'id_token': enc({'alg': 'RS256'}) + '.' + enc(c) + '.sig', 'access_token': 'x'})
         self.out(404, {})
 api = HTTPServer(('127.0.0.1', 4295), Mock); threading.Thread(target=api.serve_forever, daemon=True).start()
-env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'admin@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
-    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'http://example.org',
+env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'admin@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
+    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': f'http://127.0.0.1:{TEST_PORT}', 'SITE_URL': 'http://example.org',
     'PAYSTACK_SECRET_KEY': PSK, 'PAYSTACK_API_BASE': 'http://127.0.0.1:4295', 'FX_API': 'http://127.0.0.1:4295/fx',
     'GOOGLE_CLIENT_ID': 'cid.apps.googleusercontent.com', 'GOOGLE_CLIENT_SECRET': 'gsecret', 'GOOGLE_TOKEN_URL': 'http://127.0.0.1:4295/token'})
 os.makedirs('/tmp/mediatest', exist_ok=True)
 srv = subprocess.Popen(['node', 'server.js'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 atexit.register(lambda: srv.poll() is None and srv.terminate())
-B = B_URL = 'http://127.0.0.1:4199'
+B = B_URL = f'http://127.0.0.1:{TEST_PORT}'
 def call(path, data=None, method=None, cookie=None, headers=None, raw=None, text=False):
     req = urllib.request.Request(B + path, data=raw if raw is not None else (json.dumps(data).encode() if data is not None else None), method=method or ('POST' if (data is not None or raw is not None) else 'GET'))
     req.add_header('content-type', 'application/json')
@@ -57,7 +58,7 @@ def call(path, data=None, method=None, cookie=None, headers=None, raw=None, text
         try: return e.code, (b.decode() if text else json.loads(b or b'{}'))
         except Exception: return e.code, b[:300]
 def raw_req(method, path, body=None, headers=None):
-    c = http.client.HTTPConnection('127.0.0.1', 4199, timeout=30); c.request(method, path, body=body, headers=headers or {})
+    c = http.client.HTTPConnection('127.0.0.1', TEST_PORT, timeout=30); c.request(method, path, body=body, headers=headers or {})
     r = c.getresponse(); d = r.read(); return r.status, r.getheader('location'), r.getheader('set-cookie'), r.headers.get_all('set-cookie') or [], d
 for _ in range(60):
     try:
@@ -301,7 +302,7 @@ st, o = call('/api/auth/options'); assert o['google'] is True and 'password_rese
 s_, loc, _, cks, _ = raw_req('GET', '/auth/google')
 u = urlparse(loc); qs = parse_qs(u.query)
 assert s_ == 302 and u.netloc == 'accounts.google.com' and qs['client_id'] == ['cid.apps.googleusercontent.com'] and qs['code_challenge_method'] == ['S256'], loc
-assert qs['redirect_uri'] == ['http://127.0.0.1:4199/auth/google/callback'] and 'openid' in qs['scope'][0]
+assert qs['redirect_uri'] == [f'http://127.0.0.1:{TEST_PORT}/auth/google/callback'] and 'openid' in qs['scope'][0]
 gc = [c for c in cks if c.startswith('gc_g=')][0].split(';')[0]; state = qs['state'][0]
 assert 'HttpOnly' in cks[0] and 'Path=/auth/google' in cks[0]
 def cb(st_, cookie, code='abc'):

@@ -3,6 +3,7 @@
 import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit, threading, hmac, hashlib, base64, struct, http.client, io, datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 class Mock(BaseHTTPRequestHandler):
@@ -11,12 +12,12 @@ class Mock(BaseHTTPRequestHandler):
         b = json.dumps({'rates': {'GHS': 15.5, 'EUR': 0.9, 'GBP': 0.78}, 'time_last_update_utc': 'Tue, 29 Sep 2026 00:02:31 +0000'}).encode()
         self.send_response(200); self.send_header('content-type', 'application/json'); self.end_headers(); self.wfile.write(b)
 api = HTTPServer(('127.0.0.1', 4294), Mock); threading.Thread(target=api.serve_forever, daemon=True).start()
-env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'owner@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Owner',
-    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'http://example.org', 'FX_API': 'http://127.0.0.1:4294/fx', 'JOBS_EVERY_MS': '2500'})
+env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'owner@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Owner',
+    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': f'http://127.0.0.1:{TEST_PORT}', 'SITE_URL': 'http://example.org', 'FX_API': 'http://127.0.0.1:4294/fx', 'JOBS_EVERY_MS': '2500'})
 os.makedirs('/tmp/mediatest', exist_ok=True)
 srv = subprocess.Popen(['node', 'server.js'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 atexit.register(lambda: srv.poll() is None and srv.terminate())
-BASE = 'http://127.0.0.1:4199'
+BASE = f'http://127.0.0.1:{TEST_PORT}'
 def call(path, data=None, method=None, cookie=None, headers=None, text=False, binary=False):
     req = urllib.request.Request(BASE + path, data=json.dumps(data).encode() if data is not None else None, method=method or ('POST' if data is not None else 'GET'))
     req.add_header('content-type', 'application/json')

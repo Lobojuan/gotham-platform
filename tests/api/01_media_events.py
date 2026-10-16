@@ -1,14 +1,15 @@
 import subprocess, time, json, os, base64, urllib.request, urllib.error, signal, sys, atexit
 import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 os.chdir(ROOT+'/apps/crm')
 env = dict(os.environ)
 env.update({
  'DATABASE_URL':DB,
- 'SESSION_SECRET':'test-secret','ALLOW_ORIGINS':'*','PORT':'4199',
+ 'SESSION_SECRET':'test-secret','ALLOW_ORIGINS':'*','PORT':str(TEST_PORT),
  'ADMIN_EMAIL':'owner@test.local','ADMIN_PASSWORD':'ownerpass123','ADMIN_NAME':'Owner',
- 'MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4199','SITE_URL':'https://example.org'})
+ 'MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':f'http://127.0.0.1:{TEST_PORT}','SITE_URL':'https://example.org'})
 os.makedirs('/tmp/mediatest', exist_ok=True)
 srv = subprocess.Popen(['node','server.js'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 def _cleanup_server():
@@ -17,7 +18,7 @@ def _cleanup_server():
         try: srv.wait(timeout=3)
         except subprocess.TimeoutExpired: srv.kill()
 atexit.register(_cleanup_server)
-B='http://127.0.0.1:4199'
+B=f'http://127.0.0.1:{TEST_PORT}'
 def call(path, data=None, method=None, cookie=None, raw=False):
     req = urllib.request.Request(B+path, data=json.dumps(data).encode() if data is not None else None,
         method=method or ('POST' if data is not None else 'GET'))
@@ -61,7 +62,7 @@ print('image upload OK ->', {k:(v['w'],v['h']) for k,v in d['sizes'].items()})
 cover = d['id']
 for name,v in d['sizes'].items():
     for f in ('webp','jpg'):
-        s2,_b,_h = call(v[f].replace('http://127.0.0.1:4199',''), raw=True)
+        s2,_b,_h = call(v[f].replace(f'http://127.0.0.1:{TEST_PORT}',''), raw=True)
         assert s2==200, (name,f,s2)
 print('all variants served OK')
 

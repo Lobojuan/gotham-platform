@@ -2,16 +2,17 @@
 # the Insights guides and the French site (/fr) with hreflang. Needs the built site (bash scripts/build-site.sh).
 import subprocess, time, json, os, urllib.request, urllib.error, sys, re
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 DIST = ROOT + '/apps/site/dist'
 if not os.path.exists(DIST + '/fr/index.html'): subprocess.run(['bash', ROOT + '/scripts/build-site.sh'], check=True, capture_output=True)
-env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': '4199', 'ADMIN_EMAIL': 'admin@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
-    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': 'http://127.0.0.1:4199', 'SITE_URL': 'https://gothamconsult.com', 'SITE_DIR': DIST})
+env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'admin@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Admin',
+    'MEDIA_DIR': '/tmp/mediatest', 'PUBLIC_URL': f'http://127.0.0.1:{TEST_PORT}', 'SITE_URL': 'https://gothamconsult.com', 'SITE_DIR': DIST})
 os.makedirs('/tmp/mediatest', exist_ok=True)
 srv = subprocess.Popen(['node', 'server.js'], env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
 import atexit; atexit.register(lambda: srv.poll() is None and srv.terminate())
-B = 'http://127.0.0.1:4199'
+B = f'http://127.0.0.1:{TEST_PORT}'
 UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
 def call(path, data=None, cookie=None, headers=None, text=False, raw=None):
     req = urllib.request.Request(B + path, data=raw if raw is not None else (json.dumps(data).encode() if data is not None else None), method='POST' if (data is not None or raw is not None) else 'GET')

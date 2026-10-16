@@ -2,10 +2,11 @@
 # Visitors who use the server's own address are moved to gothamconsult.com; bridge requests and framed pages are not.
 import subprocess, time, os, urllib.request, urllib.error, sys
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 os.chdir(ROOT+'/apps/crm')
 env=dict(os.environ); env.update({
- 'DATABASE_URL':DB,'SESSION_SECRET':'t','PORT':'4199','ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123','ADMIN_NAME':'Admin',
+ 'DATABASE_URL':DB,'SESSION_SECRET':'t','PORT':str(TEST_PORT),'ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123','ADMIN_NAME':'Admin',
  'MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'https://gothamconsult.com','SITE_URL':'https://gothamconsult.com',
  'MEDIA_URL':'https://server.example','REDIRECT_HOSTS':'127.0.0.1','PROXY_KEY':'bridge-key-123','SITE_DIR':ROOT+'/apps/site/dist'})
 os.makedirs('/tmp/mediatest',exist_ok=True)
@@ -14,7 +15,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self,*a,**k): return None
 op=urllib.request.build_opener(NoRedirect)
 def get(path,**hdr):
-    req=urllib.request.Request('http://127.0.0.1:4199'+path,headers=hdr)
+    req=urllib.request.Request(f'http://127.0.0.1:{TEST_PORT}'+path,headers=hdr)
     try: r=op.open(req,timeout=20); return r.status,r.headers
     except urllib.error.HTTPError as e: return e.code,e.headers
 for _ in range(60):

@@ -2,6 +2,7 @@
 import os, subprocess, json, urllib.request, time
 from pathlib import Path
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'../..'))
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 landing=Path(ROOT,'apps/site/pages/index.html').read_text()
 invest=Path(ROOT,'apps/site/pages/invest.html').read_text()
 market=Path(ROOT,'apps/site/public/assets/v2/ghana-market.js').read_text()
@@ -64,12 +65,12 @@ assert.match(websiteKnowledge('BOPP stock return',dir),/BOPP price history/);fs.
 console.log('  ok retrieval from public website material');
 '''
 subprocess.run(['node','--input-type=module','-e',code],cwd=ROOT,check=True)
-env=dict(os.environ,PORT='4199',DATABASE_URL=os.environ['TEST_DATABASE_URL'],SESSION_SECRET='test',ADMIN_EMAIL='admin',ADMIN_PASSWORD='ownerpass123',ADMIN_NAME='Admin',MEDIA_DIR='/tmp/mediatest',OPENAI_API_KEY='')
+env=dict(os.environ,PORT=str(TEST_PORT),DATABASE_URL=os.environ['TEST_DATABASE_URL'],SESSION_SECRET='test',ADMIN_EMAIL='admin',ADMIN_PASSWORD='ownerpass123',ADMIN_NAME='Admin',MEDIA_DIR='/tmp/mediatest',OPENAI_API_KEY='')
 p=subprocess.Popen(['node','server.js'],cwd=ROOT+'/apps/crm',env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
 try:
  for _ in range(80):
   try:
-   data=json.load(urllib.request.urlopen('http://127.0.0.1:4199/api/ghana-data',timeout=3));break
+   data=json.load(urllib.request.urlopen(f'http://127.0.0.1:{TEST_PORT}/api/ghana-data',timeout=3));break
   except Exception:time.sleep(.15)
  else:raise AssertionError('server not ready')
  assert set(data['sources'])=={'bog','gss','gse'}

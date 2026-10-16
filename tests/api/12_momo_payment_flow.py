@@ -2,11 +2,12 @@ import subprocess, time, json, os, urllib.request, urllib.error, signal, sys, at
 from concurrent.futures import ThreadPoolExecutor
 
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 os.chdir(ROOT+'/apps/crm')
-env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'test-secret','ALLOW_ORIGINS':'*','PORT':'4199',
+env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'test-secret','ALLOW_ORIGINS':'*','PORT':str(TEST_PORT),
  'ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123','ADMIN_NAME':'Admin','MEDIA_DIR':'/tmp/mediatest',
- 'PUBLIC_URL':'http://127.0.0.1:4199','SITE_URL':'http://127.0.0.1:4199'})
+ 'PUBLIC_URL':f'http://127.0.0.1:{TEST_PORT}','SITE_URL':f'http://127.0.0.1:{TEST_PORT}'})
 os.makedirs('/tmp/mediatest',exist_ok=True)
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
 def _cleanup_server():
@@ -15,7 +16,7 @@ def _cleanup_server():
         try: srv.wait(timeout=3)
         except subprocess.TimeoutExpired: srv.kill()
 atexit.register(_cleanup_server)
-B='http://127.0.0.1:4199'
+B=f'http://127.0.0.1:{TEST_PORT}'
 def call(path,data=None,method=None,cookie=None,client_ip=None):
     req=urllib.request.Request(B+path,data=json.dumps(data).encode() if data is not None else None,
         method=method or ('POST' if data is not None else 'GET'))

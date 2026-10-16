@@ -3,10 +3,11 @@ import atexit
 import subprocess, time, json, os, urllib.request, urllib.error, signal, sys, itertools
 import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
+TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
 os.chdir(ROOT+'/apps/crm')
-env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'t','PORT':'4199',
- 'ADMIN_EMAIL':'Admin','ADMIN_PASSWORD':'Admin2025','ADMIN_NAME':'Admin','MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':'http://127.0.0.1:4199'})
+env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'t','PORT':str(TEST_PORT),
+ 'ADMIN_EMAIL':'Admin','ADMIN_PASSWORD':'Admin2025','ADMIN_NAME':'Admin','MEDIA_DIR':'/tmp/mediatest','PUBLIC_URL':f'http://127.0.0.1:{TEST_PORT}'})
 for key in ('SMTP_HOST','SMTP_PASS','RESEND_API_KEY'): env.pop(key, None)
 srv=subprocess.Popen(['node','server.js'],env=env,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
 def _cleanup_server():
@@ -15,7 +16,7 @@ def _cleanup_server():
         try: srv.wait(timeout=3)
         except subprocess.TimeoutExpired: srv.kill()
 atexit.register(_cleanup_server)
-B='http://127.0.0.1:4199'; _ip=itertools.count(10)
+B=f'http://127.0.0.1:{TEST_PORT}'; _ip=itertools.count(10)
 def call(path,data=None,method=None,cookie=None):
     req=urllib.request.Request(B+path,data=json.dumps(data).encode() if data is not None else None,method=method or ('POST' if data is not None else 'GET'))
     req.add_header('content-type','application/json'); req.add_header('x-real-ip','10.6.%d.%d'%divmod(next(_ip),250))
