@@ -2218,6 +2218,9 @@ const server = http.createServer(async (req, res) => {
       const today = new Date().toISOString().slice(0, 10);
       if (askDay.day !== today) { askDay.day = today; askDay.n = 0; }
       const b = await body(req);
+      // Warm the selected speech worker as soon as the visitor opens the chat or asks a
+      // voice-enabled question. This overlaps model startup with answer preparation.
+      if (b.speech === true) ASK_VOICE.warm(b.language);
       const question = clean(b.q, 600);
       const unavailable=reason=>{const answer=unavailableAnswer(b.language);return json(res,200,{fallback:true,...(reason?{reason}:{}),answer,actions:[],...(b.speech===true?{speech:ASK_VOICE.issue(answer,ip,b.language)}:{})},cors);};
       if (b.intro === true) {
