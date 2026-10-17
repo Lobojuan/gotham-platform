@@ -268,13 +268,16 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .forum-feature { padding-block: 22px 12px; }
 .forum.forum-promo { min-height: 0; display: grid; grid-template-columns: minmax(200px, .72fr) minmax(0, 1.28fr); align-items: stretch; padding: 0; background: var(--night); }
 .forum-promo::before { display: none; }
-.forum-promo > img { position: relative; inset: auto; z-index: auto; display: block; width: 100%; height: 100%; min-height: 265px; object-fit: cover; }
+.forum-promo > a { position: relative; display: block; min-height: 265px; overflow: hidden; background: #fff; }
+.forum-promo > a:focus-visible { outline: 3px solid var(--gold-2); outline-offset: -4px; }
+.forum-promo > a > img { position: relative; inset: auto; z-index: auto; display: block; width: 100%; height: 100%; min-height: 265px; object-fit: contain; transition: transform .35s ease; }
 .forum-promo .forum-card { max-width: none; align-self: center; padding: clamp(20px, 3vw, 36px); }
 .forum-promo .forum-card h2 { font-size: clamp(25px, 3.4vw, 38px); }
 .forum-promo .forum-card p { margin-bottom: 16px; }
 @media (max-width: 680px) {
   .forum.forum-promo { grid-template-columns: 1fr; }
-  .forum-promo > img { height: clamp(150px, 46vw, 230px); min-height: 0; }
+  .forum-promo > a { height: clamp(150px, 46vw, 230px); min-height: 0; }
+  .forum-promo > a > img { height: 100%; min-height: 0; }
   .forum-promo .forum-card { padding: 20px; }
   .forum-promo .forum-meta span { font-size: 12px; }
 }
