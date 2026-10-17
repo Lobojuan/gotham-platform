@@ -3148,7 +3148,7 @@ async function reportCard(){
  const box=$('#report-card');if(!box)return;
  const r=await api('/api/report').catch(()=>null);if(!r){box.innerHTML='';return}
  const day=t=>t?new Date(t).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'not yet';
- const pend=r.updates.filter(u=>u.status==='pending'),pub=r.updates.filter(u=>u.status==='published').slice(0,8);
+ const pend=r.updates.filter(u=>u.status==='pending'),pub=r.updates.filter(u=>u.status==='published').slice(0,8),archived=r.updates.filter(u=>u.status==='archived');
  const todo=r.facts.filter(f=>f.status==='review'||f.status==='changed');
  const urow=u=>`<li class="li" data-uid="${esc(u.id)}"><div class="grow"><div><span class="chip">${esc(u.kind==='source'?'Source changed':u.kind==='news'?'Company news':'Note')}</span> <b>${esc(u.title)}</b>${u.chapter?' · '+esc(u.chapter):''}</div>
    ${u.text?`<div class="note">${esc(u.text)}</div>`:''}<div class="note">${u.url?`<a href="${esc(u.url)}" target="_blank" rel="noopener">${esc(u.url)}</a> · `:''}${day(u.at)}${u.by?' · '+esc(u.by):''}</div></div>
@@ -3161,17 +3161,19 @@ async function reportCard(){
   ${pend.length?`<p class="note"><b>Pending updates</b></p><ul class="list">${pend.map(urow).join('')}</ul>`:''}
   ${todo.length?`<p class="note"><b>Figures to re-check</b></p><ul class="list">${todo.map(frow).join('')}</ul>`:''}
   ${pub.length?`<details><summary class="note">Published updates (${pub.length})</summary><ul class="list">${pub.map(u=>`<li class="li"><div class="grow"><b>${esc(u.title)}</b> <span class="note">${day(u.published_at)}</span></div><button class="btn btn-line" data-un="${esc(u.id)}">Remove</button></li>`).join('')}</ul></details>`:''}
+  ${archived.length?`<details><summary class="note">Archived headlines (${archived.length}) · retained in CRM</summary><ul class="list">${archived.slice(0,100).map(u=>`<li class="li"><div class="grow"><b>${esc(u.title)}</b><div class="note">${day(u.published_at||u.at)}${u.url?' · <a href="'+esc(u.url)+'" target="_blank" rel="noopener">Original source</a>':''}</div></div></li>`).join('')}</ul>${archived.length>100?`<p class="note">Showing the 100 newest archived headlines.</p>`:''}</details>`:''}
   <div class="acts"><button class="btn btn-dark" id="rp-run">Check all sources now</button><button class="btn btn-line" id="rp-add">Add an update</button></div>`;
  const decide=async(body,msg)=>{try{await api('/api/report/decide',{method:'POST',body:JSON.stringify(body)});toast(msg);reportCard()}catch{toast('Could not save')}};
  box.querySelectorAll('[data-pub]').forEach(b=>b.onclick=()=>{const u=r.updates.find(x=>x.id===b.dataset.pub);
   const title=prompt('Headline shown on the report page:',u.title);if(!title)return;const text=prompt('One or two sentences for investors (what changed and why it matters):',u.text||'');if(text===null)return;
-  decide({id:u.id,action:'publish',title,text,url:u.url},'Published on the report page')});
+  const source_date=u.kind==='news'?prompt('Original source publication date (YYYY-MM-DD; must be within the last 14 days):',u.source_date||''):undefined;if(u.kind==='news'&&!source_date)return;
+  decide({id:u.id,action:'publish',title,text,url:u.url,source_date},'Published on the report page')});
  box.querySelectorAll('[data-dis]').forEach(b=>b.onclick=()=>decide({id:b.dataset.dis,action:'dismiss'},'Dismissed'));
  box.querySelectorAll('[data-un]').forEach(b=>b.onclick=()=>decide({id:b.dataset.un,action:'unpublish'},'Removed from the page'));
  box.querySelectorAll('[data-rok]').forEach(b=>b.onclick=async()=>{const note=prompt('Optional note (what you checked):','')??null;if(note===null)return;
   try{await api('/api/report/review',{method:'POST',body:JSON.stringify({id:b.dataset.rok,note})});toast('Marked as checked today');reportCard()}catch{toast('Could not save')}});
- $('#rp-add').onclick=()=>{const title=prompt('Headline for the update:');if(!title)return;const text=prompt('One or two sentences for investors:','')??'';const url=prompt('Link to the official source (optional):','')??'';
-  decide({action:'publish',title,text,url},'Published on the report page')};
+ $('#rp-add').onclick=()=>{const title=prompt('Verified news headline:');if(!title)return;const text=prompt('What happened and why it matters (one or two sentences):','')??'';const url=prompt('Original HTTPS source URL:','');if(!url||!/^https:\/\//i.test(url)){toast('Add a source link beginning with https://');return}const source_date=prompt('Source publication date (YYYY-MM-DD; only news from the last 14 days):','');if(!source_date||!/^(\d{4})-(\d{2})-(\d{2})$/.test(source_date)){toast('Enter the source date as YYYY-MM-DD');return}
+  decide({action:'publish',kind:'news',chapter:'Ghana',title,text,url,source_date},'Published on the report page and homepage news ticker')};
  $('#rp-run').onclick=async e=>{e.target.disabled=true;e.target.textContent='Checking… (a few minutes)';
   try{await api('/api/report/check',{method:'POST',body:JSON.stringify({wait:true})});toast('Sources checked')}catch{toast('Check started; refresh in a few minutes')}reportCard()};
 }

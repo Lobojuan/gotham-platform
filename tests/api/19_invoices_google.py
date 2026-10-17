@@ -1,7 +1,7 @@
 # Quotes and invoices (GHS, and EUR/USD for non-residents), Ghana VAT 15% + NHIL 2.5% + GETFund 2.5%,
 # numbering, lock after issue, payments with withholding tax, void, quote to invoice, VAT CSV,
 # the client's page, Paystack (stand-in API + signed webhook) and Sign in with Google (stand-in token endpoint).
-import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit, threading, hmac, hashlib, base64, http.client
+import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit, threading, hmac, hashlib, base64, http.client, datetime
 from urllib.parse import urlparse, parse_qs
 from http.server import BaseHTTPRequestHandler, HTTPServer
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
@@ -11,6 +11,7 @@ os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 PSK = 'sk_test_mock'
 TX = {}          # reference -> transaction the stand-in Paystack knows
 GOOGLE = {'claims': None, 'seen': None}
+FX_DATE = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 class Mock(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def out(self, code, o):
@@ -21,7 +22,7 @@ class Mock(BaseHTTPRequestHandler):
             assert self.headers['authorization'] == 'Bearer ' + PSK
             t = TX.get(ref); return self.out(200 if t else 404, {'status': bool(t), 'data': t or {}})
         if self.path.startswith('/fx/'):
-            return self.out(200, {'rates': {'GHS': 15.5, 'EUR': 0.9, 'GBP': 0.78}, 'time_last_update_utc': 'Tue, 29 Sep 2026 00:02:31 +0000'})
+            return self.out(200, {'rates': {'GHS': 15.5, 'EUR': 0.9, 'GBP': 0.78}, 'time_last_update_utc': FX_DATE.strftime('%a, %d %b %Y %H:%M:%S +0000')})
         self.out(404, {})
     def do_POST(self):
         raw = self.rfile.read(int(self.headers['content-length'] or 0))
@@ -117,8 +118,8 @@ inv_eur = d['id']
 st, d = call('/api/invoices', {'bill_to': {'name': 'John Carter', 'residency': 'expatriate', 'email': 'john@carter.test'}, 'currency': 'USD', 'fx_rate': 15, 'lines': [{'description': 'Advisory', 'qty': 1, 'unit': 1000}]}, cookie=ck)
 assert st == 200 and d['totals']['total'] == 1200 and d['totals']['total_ghs'] == 18000 and d['totals']['tax_ghs'] == 3000, d
 inv_usd = d['id']
-st, fx = call('/api/fx?c=EUR', cookie=ck); assert st == 200 and fx['rate'] == 17.2222 and 'Bank of Ghana' in fx['source'] and fx['date'] == '2026-09-29', fx
-st, R = call('/api/rates'); assert st == 200 and R['rates'] == {'USD': 15.5, 'EUR': 17.2222, 'GBP': 19.8718} and R['updated'].startswith('2026-09-29'), R
+st, fx = call('/api/fx?c=EUR', cookie=ck); assert st == 200 and fx['rate'] == 17.2222 and 'market mid-rate' in fx['source'] and 'Bank of Ghana' in fx['source'] and fx['date'] == FX_DATE.strftime('%Y-%m-%d'), fx
+st, R = call('/api/rates'); assert st == 200 and R['rates'] == {'USD': 15.5, 'EUR': 17.2222, 'GBP': 19.8718} and R['updated'].startswith(FX_DATE.strftime('%Y-%m-%d')), R
 st, e = call('/api/fx?c=JPY', cookie=ck); assert st == 400, e
 ok('EUR/USD only for non-residents or expatriates and only with an exchange rate; cedi value and cedi tax recorded; rate suggestion works')
 

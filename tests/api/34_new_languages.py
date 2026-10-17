@@ -12,7 +12,7 @@ for(const [l,p,t,r,native] of [
  ['zh','如何付款？','迪拜现在几点？','美元塞地汇率今天',/[\u4e00-\u9fff]/]]) {
  const pay=paymentAnswer(p,l);assert.ok(pay?.includes('+233 55 041 6627'));assert.ok(native.test(pay));assert.ok(!pay.includes('WhatsApp'));
  const clock=timeAnswer(t,l,now);assert.ok(clock.includes('19:30')&&clock.includes('Asia/Dubai'));assert.ok(native.test(clock));
- const rates=ratesAnswer(r,l,fx,now);assert.ok(rates.includes('10')&&rates.includes('USD')&&rates.includes('https://open.er-api.com'));assert.ok(native.test(rates));
+ const rates=ratesAnswer(r,l,fx,now);assert.ok(rates.includes('10')&&rates.includes('USD')&&rates.includes('https://www.exchangerate-api.com'));assert.ok(native.test(rates));
  const stale=ratesAnswer(r,l,fx,now+4*864e5);assert.notEqual(stale,rates);
  const unavailable=ratesAnswer(r,l,{},now);assert.ok(unavailable.includes('bog.gov.gh'));assert.ok(native.test(unavailable));
  assert.ok(native.test(welcomeAnswer(l)));assert.ok(native.test(unavailableAnswer(l)));

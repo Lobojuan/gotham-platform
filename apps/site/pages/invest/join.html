@@ -139,6 +139,12 @@ fieldset.ij-f{border:0;padding:0;margin:0 0 16px}
   const f = document.getElementById('ij'), st = document.getElementById('ij-status'), go = document.getElementById('ij-go');
   const box = id => document.getElementById(id).closest('.ij-f');
   const mark = (el, bad) => bad ? el.setAttribute('data-bad', '') : el.removeAttribute('data-bad');
+  if (new URLSearchParams(location.search).get('interest') === 'cocoa-processing') {
+    const sector = f.querySelector('input[name="sectors"][value="Agriculture and agro-processing"]');
+    if (sector) sector.checked = true;
+    const message = document.getElementById('ij-msg');
+    if (message && !message.value) message.value = 'I am interested in the Ghana cocoa processing project.';
+  }
   f.addEventListener('change', e => { const x = e.target.closest('.ij-f'); if (x) mark(x, false); });
   f.addEventListener('submit', async e => {
     e.preventDefault();

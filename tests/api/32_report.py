@@ -33,10 +33,16 @@ const it=r.updates[0];assert.equal(await W.decide('nope','publish','admin',{titl
 await W.decide(it.id,'publish','admin',{title:'Bank of Ghana cuts the policy rate to 13.5%',text:'First cut this year.'});
 await W.submit({kind:'news',chapter:'macro',title:'News from Acme',text:'We opened a plant https://acme.test/x',url:'https://acme.test/x'});
 pub=await W.publicReport();assert.equal(pub.updates.length,1);assert.equal(pub.updates[0].title,'Bank of Ghana cuts the policy rate to 13.5%');
+assert.equal(pub.headlines.length,0,'undated submissions are never shown as verified headlines');
+const stale=await W.submit({kind:'news',chapter:'macro',title:'Old item',url:'https://news.test/old'});
+assert.equal(await W.decide(stale.id,'publish','admin',{source_date:'2026-09-01'}),null,'news older than fourteen days cannot publish');
+assert.equal(await W.decide(stale.id,'publish','admin',{url:'http://news.test/old',source_date:'2026-10-08'}),null,'news requires an HTTPS source');
+for(let n=10;n>=0;n--){const day=new Date(Date.parse('2026-10-08T00:00:00Z')-n*86400000).toISOString().slice(0,10),item=await W.submit({kind:'news',chapter:'macro',title:`Headline ${n}`,url:'https://news.test/'+n,source_date:day});assert.ok(await W.decide(item.id,'publish','admin',{title:`Headline ${n}`,url:'https://news.test/'+n,source_date:day}));}
+pub=await W.publicReport();assert.equal(pub.headlines.length,10,'only ten source-dated headlines are public');assert.equal(pub.headlines[0].title,'Headline 0','headlines follow source publication date');assert.ok((await W.report()).updates.some(i=>i.title==='Headline 10'&&i.status==='archived'),'older headlines stay archived in CRM');
 await W.review('macro-gdp','admin','checked');pub=await W.publicReport();assert.equal(pub.figures[0].status,'ok');
-const again=makeReportWatch({report:R,get,now:()=>clock,load:async()=>st,loadLog:async()=>lg});assert.equal((await again.publicReport()).updates.length,1);
+const again=makeReportWatch({report:R,get,now:()=>clock,load:async()=>st,loadLog:async()=>lg});assert.equal((await again.publicReport()).headlines.length,10);
 assert.ok(!JSON.stringify(pub).includes('problems'));
-console.log('  ok a person publishes or dismisses; company news waits; "Still correct" clears a figure; state persists');
+console.log('  ok human approval, HTTPS/source dates, 10-headline cap, CRM archive, and report state persistence');
 '''
 subprocess.run(['node', '--input-type=module', '-e', code], cwd=ROOT, check=True)
 
@@ -101,10 +107,13 @@ st, r, _ = call('/api/report', cookie=ck); pend = [u for u in r['updates'] if u[
 assert len(pend) == 1 and pend[0]['kind'] == 'news' and pend[0]['url'] == 'https://sun.test/pr', pend
 ok('a partner enquiry becomes a tagged contact, a sponsorship deal and an email to Uffe; company news waits for review')
 assert call('/api/report/public')[1]['updates'] == []
-st, r, _ = call('/api/report/decide', {'id': pend[0]['id'], 'action': 'publish', 'title': 'Sun Ltd commissions 50 MW of solar', 'text': 'Grid-connected, Bono Region.'}, cookie=ck); assert st == 200
-st, r, _ = call('/api/report/decide', {'action': 'publish', 'title': '2027 Budget date set', 'text': 'Presented on 5 November.', 'url': 'https://mofep.gov.gh/'}, cookie=ck); assert st == 200
+st, r, _ = call('/api/report/decide', {'id': pend[0]['id'], 'action': 'publish', 'title': 'Sun Ltd commissions 50 MW of solar', 'text': 'Grid-connected, Bono Region.', 'source_date': datetime.date.today().isoformat()}, cookie=ck); assert st == 200
+assert call('/api/report/decide', {'action': 'publish', 'title': 'Missing publication date', 'url': 'https://mofep.gov.gh/'}, cookie=ck)[0] == 400, 'headline date is required'
+assert call('/api/report/decide', {'action': 'publish', 'title': 'No secure source', 'url': 'http://mofep.gov.gh/', 'source_date': datetime.date.today().isoformat()}, cookie=ck)[0] == 400, 'HTTPS source is required'
+st, r, _ = call('/api/report/decide', {'action': 'publish', 'title': '2027 Budget date set', 'text': 'Presented on 5 November.', 'url': 'https://mofep.gov.gh/', 'source_date': datetime.date.today().isoformat()}, cookie=ck); assert st == 200
 st, p, _ = call('/api/report/public'); titles = [u['title'] for u in p['updates']]
 assert set(titles) == {'Sun Ltd commissions 50 MW of solar', '2027 Budget date set'} and 'email' not in json.dumps(p), p
+assert len(p['headlines']) == 2 and p['headlines'][0]['url'].startswith('https://'), p['headlines']
 log = _sp.run(['psql', DB, '-tAc', "select count(*) from jobs_log where job='report_update'"], capture_output=True, text=True).stdout.strip(); assert log == '2'
 ok('an admin publishes the news or adds an update; the public log shows it without any personal data')
 st, r, _ = call('/api/report/review', {'id': 'macro-cpi', 'note': 'GSS page re-read'}, cookie=ck); assert st == 200

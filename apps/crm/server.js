@@ -1665,10 +1665,11 @@ const ASK_DAILY_CAP = +(process.env.ASK_DAILY_CAP || 400);
 const askDay = { day: '', n: 0 };
 const rcptDay = { day: '', n: 0 };
 let askKnow = { at: 0, text: '' };
-/* Live exchange rates for the website and the invoice "Suggest rate" button. One source (open.er-api.com, updated
-   daily from central-bank and market feeds), fetched at most once an hour and kept in settings, so a restart or an
-   outage still shows the last good rates with their date. The page says it is a market rate, not the BoG rate. */
+/* Live exchange rates for the website and invoice helper. The source is fetched hourly and retained across restarts.
+   A publication older than 48 hours is marked stale and is never shown as today's price or suggested for an invoice. */
 let fxMem = null;
+const FX_STALE_MS = 48 * 3600e3;
+const fxIsStale = fx => !fx || !Number.isFinite(Date.parse(fx.updated)) || Date.now() - Date.parse(fx.updated) > FX_STALE_MS;
 const FX_MORE = ['DKK', 'SEK', 'NOK', 'CHF', 'CAD', 'AED', 'SAR', 'CNY', 'HKD', 'JPY', 'SGD', 'INR', 'ZAR', 'NGN', 'XOF', 'KES', 'EGP', 'MAD', 'RWF', 'BRL', 'AUD', 'TRY'];
 async function liveRates(force = false) {
   if (!fxMem) { try { fxMem = JSON.parse((await q("select value from settings where key='fx_cache'")).rows[0]?.value || 'null'); } catch { fxMem = null; } }
@@ -1676,12 +1677,15 @@ async function liveRates(force = false) {
   try {
     const r = await fetch(`${process.env.FX_API || 'https://open.er-api.com/v6/latest'}/USD`, { signal: AbortSignal.timeout(8000) }); const j = await r.json();
     const g = +(j && j.rates && j.rates.GHS); if (!(g > 1) || !(+j.rates.EUR > 0) || !(+j.rates.GBP > 0)) throw new Error('bad rates');
+    const published = Date.parse(j.time_last_update_utc || '');
+    if (!Number.isFinite(published) || published > Date.now() + 3600e3 || Date.now() - published > FX_STALE_MS) throw new Error('rate publication is missing or stale');
+    if (fxMem && Date.parse(fxMem.updated) > published) throw new Error('rate publication regressed');
     const r4 = n => Math.round(n * 10000) / 10000;
     /* the cities on the home-page globe: what one unit of their money is worth in cedis */
     const more = {};
     for (const c of FX_MORE) { const v = +j.rates[c]; if (v > 0) more[c] = r4(g / v); }
     fxMem = { base: 'GHS', rates: { USD: r4(g), EUR: r4(g / j.rates.EUR), GBP: r4(g / j.rates.GBP) }, more,
-      updated: j.time_last_update_utc ? new Date(j.time_last_update_utc).toISOString() : new Date().toISOString(), fetched: Date.now(),
+      updated: new Date(published).toISOString(), fetched: Date.now(),
       source: 'Market mid-rate (open.er-api.com). Official reference: Bank of Ghana.' };
     await q(`insert into settings(key,value) values ('fx_cache',$1) on conflict (key) do update set value=excluded.value`, [JSON.stringify(fxMem)]);
   } catch (e) { console.error('fx', e.message); if (fxMem) fxMem.fetched = Date.now() - 3000e3; }   // try again in ~10 minutes
@@ -1699,7 +1703,7 @@ async function askKnowledge() {
     `${r.approval ? ', by invitation (apply on the registration page)' : ''}` +
     `${r.seats_left === 0 ? ', fully booked' : ''}. Register: gothamconsult.com/register?e=${r.code}`).join('\n');
   const fx = await liveRates().catch(() => null);
-  const fxLine = fx ? `\n\n## Exchange rates (market mid-rate, updated ${String(fx.updated).slice(0, 10)}; the Bank of Ghana reference rate is the official one)\n` +
+  const fxLine = fx && !fxIsStale(fx) ? `\n\n## Exchange rates (market mid-rate, updated ${String(fx.updated).slice(0, 10)}; the Bank of Ghana reference rate is the official one)\n` +
     Object.entries({...fx.rates,...fx.more}).map(([c, v]) => `- 1 ${c} = GHS ${v}`).join('\n') : '';
   const econ=await GHANA.read();
   const econLine='\n\n## Ghana economic publications (actual periods; never call them real-time or forecast returns)\n'+
@@ -2086,8 +2090,13 @@ const server = http.createServer(async (req, res) => {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const b = await body(req);
       let id = clean(b.id, 40);
-      if (!id && b.action === 'publish') id = (await REPORT.submit({ kind: 'note', chapter: clean(b.chapter, 40), title: clean(b.title, 200), text: clean(b.text, 1200), url: clean(b.url, 500), by: u.email })).id;
-      const r = await REPORT.decide(id, clean(b.action, 20), u.email, { title: clean(b.title, 200), text: b.text === undefined ? undefined : clean(b.text, 1200), url: b.url === undefined ? undefined : clean(b.url, 500) });
+      if (b.action === 'publish' && !id && (clean(b.kind, 20) || 'news').toLowerCase() === 'news') {
+        const sourceDate = clean(b.source_date, 10), sourceTime = /^\d{4}-\d{2}-\d{2}$/.test(sourceDate) ? Date.parse(sourceDate) : NaN;
+        if (!/^https:\/\//i.test(clean(b.url, 500))) return json(res, 400, { error: 'https_source_required' });
+        if (!Number.isFinite(sourceTime) || sourceTime < Date.now() - 14 * 24 * 60 * 60 * 1000 || sourceTime > Date.now() + 24 * 60 * 60 * 1000) return json(res, 400, { error: 'recent_source_date_required' });
+      }
+      if (!id && b.action === 'publish') id = (await REPORT.submit({ kind: clean(b.kind, 20) || 'news', chapter: clean(b.chapter, 40), title: clean(b.title, 200), text: clean(b.text, 1200), url: clean(b.url, 500), source_date: clean(b.source_date, 10), by: u.email })).id;
+      const r = await REPORT.decide(id, clean(b.action, 20), u.email, { title: clean(b.title, 200), text: b.text === undefined ? undefined : clean(b.text, 1200), url: b.url === undefined ? undefined : clean(b.url, 500), source_date: b.source_date === undefined ? undefined : clean(b.source_date, 10) });
       if (!r) return json(res, 400, { error: 'not_done' });
       await q('insert into jobs_log(job,detail) values ($1,$2)', ['report_update', `${r.status}: ${r.title} (${u.email})`]);
       return json(res, 200, await REPORT.report());
@@ -2187,7 +2196,7 @@ const server = http.createServer(async (req, res) => {
       const fx = await liveRates();
       if (!fx) { res.setHeader('cache-control', 'public, max-age=300'); return json(res, 200, { rates: null, unavailable: true }, cors); }   // the page simply hides the rates
       res.setHeader('cache-control', 'public, max-age=900');
-      return json(res, 200, { base: fx.base, rates: fx.rates, more: fx.more || {}, updated: fx.updated, source: fx.source }, cors);
+      return json(res, 200, { base: fx.base, rates: fx.rates, more: fx.more || {}, updated: fx.updated, source: fx.source, stale: fxIsStale(fx) }, cors);
     }
     if (p === '/api/items' && req.method === 'GET') {
       await archiveExpiredEvents();
@@ -4545,7 +4554,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const c = String(url.searchParams.get('c') || '').toUpperCase(); if (!['EUR', 'USD', 'GBP'].includes(c)) return json(res, 400, { error: 'bad_currency' });
       const fx = await liveRates();
-      if (!fx || !fx.rates[c]) return json(res, 502, { error: 'fx_unavailable' });
+      if (!fx || fxIsStale(fx) || !fx.rates[c]) return json(res, 502, { error: 'fx_unavailable' });
       return json(res, 200, { currency: c, rate: fx.rates[c], source: 'market mid-rate (check against the Bank of Ghana reference rate)', date: String(fx.updated).slice(0, 10) });
     }
     if (p === '/api/invoices' && req.method === 'GET') {

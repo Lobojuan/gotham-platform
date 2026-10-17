@@ -1,6 +1,6 @@
 """Members: a free account by emailed link, preferences, companies and their deadlines, paid plans through normal cedi
 invoices, bookings that become tasks, the Pro data pack, daily opt-in brief and the back-office dashboard."""
-import os, sys, json, re, subprocess, http.client, urllib.parse
+import os, sys, json, re, subprocess, http.client, urllib.parse, datetime
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ok = lambda m: print('  ok', m)
@@ -95,7 +95,7 @@ ok('Pro: staff can give a plan; Pro members download the Excel data pack, others
 st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm)
 assert st == 200 and r['digests'] == 0, 'no promotional digest without explicit email opt-in'
 call('/api/member/prefs', {'marketing': True}, cookie=ck)
-call('/api/report/decide', {'action': 'publish', 'title': 'Cocoa price set', 'text': 'New season price.', 'url': 'https://cocobod.gh/'}, cookie=adm)
+call('/api/report/decide', {'action': 'publish', 'title': 'Cocoa price set', 'text': 'New season price.', 'url': 'https://cocobod.gh/', 'source_date': datetime.date.today().isoformat()}, cookie=adm)
 _sp.run(['psql', DB, '-qc', "insert into items(code,kind,title,venue,starts_at,currency,price,published,sort) values ('TST1','event','Test future forum','Accra',now()+interval '10 days','GHS',0,true,99) on conflict (code) do update set starts_at=excluded.starts_at,published=true"], check=True)
 _sp.run(['psql', DB, '-qc', "update member_orders set ends=current_date + 5 where product='compliance_year'"], check=True)
 st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert st == 200 and r['digests'] == 1 and r['renewals'] == 1, r

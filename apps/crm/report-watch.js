@@ -42,11 +42,27 @@ export function makeReportWatch({ report = loadReport(), load = async () => null
   function add(item) {
     const it = { id: id(), at: new Date(now()).toISOString(), status: 'pending', kind: 'note', chapter: '', title: '', text: '', url: '', by: '', ...item };
     it.title = clip(it.title, 200); it.text = clip(it.text, 1200); it.url = /^https?:\/\//.test(it.url || '') ? clip(it.url, 500) : '';
-    log.items.unshift(it); log.items = log.items.slice(0, 300); return it;
+    it.source_date = /^\d{4}-\d{2}-\d{2}$/.test(item.source_date || '') ? item.source_date : '';
+    // Keep the complete review history. Published news that leaves the public
+    // ten-headline strip is archived below rather than discarded.
+    log.items.unshift(it); return it;
+  }
+
+  async function archiveOldHeadlines() {
+    const cutoff = now() - 14 * 24 * 60 * 60 * 1000;
+    const visible = log.items
+      .filter(i => i.kind === 'news' && i.status === 'published')
+      .sort((a, b) => Date.parse(b.source_date || '') - Date.parse(a.source_date || ''));
+    const keep = new Set(visible.filter(i => Date.parse(i.source_date || '') >= cutoff).slice(0, 10).map(i => i.id));
+    for (const item of visible.filter(i => !keep.has(i.id))) {
+      item.status = 'archived';
+      item.archived_at = new Date(now()).toISOString();
+    }
   }
 
   async function run(force = false) {
     const r = await W.run(force); await readLog();
+    await archiveOldHeadlines();
     const st = await W.read(), fresh = [];
     for (const w of watched) {   // a watched page that changed since we last looked: someone should read it
       const u = st.urls[w.url];
@@ -88,7 +104,13 @@ export function makeReportWatch({ report = loadReport(), load = async () => null
     const r = await current(), l = await readLog();
     return { checked: r.checked, next: r.next, updated: report.updated,
       figures: r.facts.map(f => ({ id: f.id, status: f.status === 'review' ? 'review' : 'ok' })),
-      updates: l.items.filter(i => i.status === 'published').slice(0, 30).map(i => ({ at: i.published_at || i.at, chapter: i.chapter, title: i.title, text: i.text, url: i.url })),
+      updates: l.items.filter(i => i.status === 'published')
+        .sort((a, b) => Date.parse(b.published_at || b.at) - Date.parse(a.published_at || a.at))
+        .slice(0, 30).map(i => ({ at: i.published_at || i.at, chapter: i.chapter, title: i.title, text: i.text, url: i.url, kind: i.kind })),
+      headlines: l.items.filter(i => i.kind === 'news' && i.status === 'published')
+        .filter(i => Date.parse(i.source_date || '') >= now() - 14 * 24 * 60 * 60 * 1000 && /^https:\/\//i.test(i.url || ''))
+        .sort((a, b) => Date.parse(b.source_date || '') - Date.parse(a.source_date || ''))
+        .slice(0, 10).map(i => ({ at: i.source_date, chapter: i.chapter, title: i.title, text: i.text, url: i.url })),
       partners: l.items.filter(i => i.status === 'published' && i.kind === 'partner').map(i => ({ chapter: i.chapter, name: i.title, url: i.url })) };
   }
 
@@ -101,11 +123,14 @@ export function makeReportWatch({ report = loadReport(), load = async () => null
       if (edit.title) it.title = clip(edit.title, 200);
       if (edit.text !== undefined) it.text = clip(edit.text, 1200);
       if (edit.url !== undefined) it.url = /^https?:\/\//.test(edit.url) ? clip(edit.url, 500) : '';
+      if (edit.source_date !== undefined) it.source_date = /^\d{4}-\d{2}-\d{2}$/.test(edit.source_date) ? edit.source_date : '';
+      if (it.kind === 'news' && (!/^https:\/\//i.test(it.url) || !it.source_date || Date.parse(it.source_date) < now() - 14 * 24 * 60 * 60 * 1000 || Date.parse(it.source_date) > now() + 24 * 60 * 60 * 1000)) return null;
       if (!it.title) return null;
       it.status = 'published'; it.published_at = new Date(now()).toISOString();
     } else if (action === 'dismiss') it.status = 'dismissed';
     else if (action === 'unpublish') it.status = 'dismissed';
     else return null;
+    if (action === 'publish') await archiveOldHeadlines();
     it.decided_by = clip(by, 120); await saveLog(log).catch(() => {}); return it;
   }
 

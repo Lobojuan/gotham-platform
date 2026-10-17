@@ -6,10 +6,11 @@ DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_
 TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
+FX_DATE = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
 class Mock(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_GET(self):
-        b = json.dumps({'rates': {'GHS': 15.5, 'EUR': 0.9, 'GBP': 0.78}, 'time_last_update_utc': 'Tue, 29 Sep 2026 00:02:31 +0000'}).encode()
+        b = json.dumps({'rates': {'GHS': 15.5, 'EUR': 0.9, 'GBP': 0.78}, 'time_last_update_utc': FX_DATE.strftime('%a, %d %b %Y %H:%M:%S +0000')}).encode()
         self.send_response(200); self.send_header('content-type', 'application/json'); self.end_headers(); self.wfile.write(b)
 api = HTTPServer(('127.0.0.1', 4294), Mock); threading.Thread(target=api.serve_forever, daemon=True).start()
 env = dict(os.environ); env.update({'DATABASE_URL': DB, 'SESSION_SECRET': 't', 'PORT': str(TEST_PORT), 'ADMIN_EMAIL': 'owner@gotham.test', 'ADMIN_PASSWORD': 'ownerpass123', 'ADMIN_NAME': 'Owner',
@@ -46,10 +47,10 @@ def login(email, pw, code=None):
 st, _, ck = login('owner@gotham.test', 'ownerpass123'); assert st == 200 and ck, st
 
 # ---------- live exchange rates ----------
-st, R, h = call('/api/rates'); assert st == 200 and R['rates'] == {'USD': 15.5, 'EUR': 17.2222, 'GBP': 19.8718} and R['updated'].startswith('2026-09-29') and 'Bank of Ghana' in R['source'], R
+st, R, h = call('/api/rates'); assert st == 200 and R['rates'] == {'USD': 15.5, 'EUR': 17.2222, 'GBP': 19.8718} and R['updated'].startswith(FX_DATE.strftime('%Y-%m-%d')) and 'market mid-rate' in R['source'].lower() and 'Bank of Ghana' in R['source'], R
 assert 'max-age' in (h.get('cache-control') or '')
 assert json.loads(psql("select value from settings where key='fx_cache'"))['rates']['USD'] == 15.5
-ok('the site gets live cedi rates for USD, EUR and GBP (cached hourly, kept through restarts, labelled as market rate vs Bank of Ghana)')
+ok('the site gets live cedi rates for USD, EUR and GBP (cached hourly, kept through restarts, labelled as market mid-rate vs Bank of Ghana reference)')
 
 # ---------- safety net ----------
 st, S, _ = call('/api/safety', cookie=ck); assert st == 200 and any(k == 'backup' for k, _ in S['problems']), S

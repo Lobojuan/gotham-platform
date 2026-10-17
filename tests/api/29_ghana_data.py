@@ -12,6 +12,7 @@ assert 'data-ghana-sector-period' in invest and 'loading official data' in inves
 assert all(value not in invest for value in ['6.0%</b>','5.0%</b>','$13.80bn</b>','$11.07bn</b>','2026-06</span>'])
 assert 'Q2 2026' not in landing and "zone:'Accra time'" in market and 't.zone' in market and 'Reporting periods are shown with each figure.' in market
 assert all(s in market for s in ['Official sources last checked','Retained official figures','No current figures are displayed',"zh:checked?", "ar:checked?"])
+assert 'Rate publication is over 48 hours old' in market and 'rates.stale' in market and 'FX_STALE_MS' in Path(ROOT,'apps/crm/server.js').read_text()
 print('  ok landing and investor figures wait for official data; reporting and check timestamps stay source-derived')
 code=r'''
 import assert from 'node:assert/strict';import fs from 'node:fs';
@@ -47,8 +48,8 @@ assert.equal(r.items.a.status,'review');assert.equal(r.items.a.verified,verified
 assert.throws(()=>researchHash(Buffer.from('<html>not a pdf</html>'),'report.pdf'));
 console.log('  ok six-hour research checks flag changes/outages and preserve last verification');
 const fx={rates:{USD:11.6173,EUR:13.0695},more:{AED:3.1633},updated:'2026-10-05T00:02:31Z'};
-for(const [l,q]of [['en','cedi to USD today'],['fr','taux dollar cedi aujourd’hui'],['es','cambio cedi dolar hoy']]){const a=ratesAnswer(q,l,fx,Date.parse('2026-10-05'));assert.match(a,/1 USD = GHS/);assert.match(a,/1 GHS = USD/);assert.match(a,/open.er-api/);}
-assert.match(ratesAnswer('cedi to AED','en',fx,clock),/1 AED/);assert.match(ratesAnswer('cedi USD','en',fx,clock+7*864e5),/older than three days/);
+for(const [l,q]of [['en','cedi to USD today'],['fr','taux dollar cedi aujourd’hui'],['es','cambio cedi dolar hoy']]){const a=ratesAnswer(q,l,fx,Date.parse('2026-10-05'));assert.match(a,/1 USD = GHS/);assert.match(a,/1 GHS = USD/);assert.match(a,/exchangerate-api\.com/);}
+assert.match(ratesAnswer('cedi to AED','en',fx,clock),/1 AED/);assert.match(ratesAnswer('cedi USD','en',fx,clock+49*3600e3),/older than 48 hours/);
 assert.match(ratesAnswer('cedi USD','en',null),/cannot verify/);assert.equal(ratesAnswer('register for a forum','en',fx),null);
 assert.match(timeAnswer('what time is it in Dubai?','en',Date.parse('2026-10-05T12:30:00Z')),/16:30/);
 assert.match(timeAnswer('what time is it?','en',Date.parse('2026-10-05T12:30:00Z')),/Accra: 12:30\. 5 October 2026/);
