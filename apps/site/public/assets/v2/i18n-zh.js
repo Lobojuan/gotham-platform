@@ -3430,4 +3430,8 @@ window.GC_I18N.zh = {
   "Enter Ghana or expand abroad with local market insight and introductions, where suitable.": "进入加纳市场或拓展海外业务，获得本地市场洞察，并在适当情况下建立潜在合作联系。",
   "Gotham Consult is a business consultancy. We provide commercial and project-investment guidance and, where appropriate, introduce potential partners. Regulated investment advice or fund management is provided only through an appropriately licensed professional. Gotham does not hold client funds or guarantee an investment; any investment is assessed and agreed directly by the parties.": "Gotham Consult 是一家商业咨询机构。我们提供商业及项目投资方面的指导，并可在适当情况下介绍潜在合作伙伴。受监管的投资建议或基金管理服务仅由具备相应资质的持牌专业机构提供。Gotham 不持有客户资金，也不保证投资结果；任何投资均由相关各方直接评估并协商确定。",
   "Gotham Consult is an Accra-based business development and international projects consultancy, founded in 2018. We help businesses build partnerships across Ghana and other markets. Where appropriate, we can introduce a business to potential partners who may be interested in investing in it or its projects. We provide commercial and project-investment guidance. Regulated investment advice or fund management is provided only through an appropriately licensed professional. Gotham does not hold client funds or guarantee an investment; any investment is assessed and agreed directly by the parties.": "Gotham Consult 于 2018 年成立，是一家总部位于阿克拉的业务发展与国际项目咨询机构。我们帮助企业在加纳及其他市场建立合作关系；在适当情况下，也可为企业介绍可能有意投资该企业或其项目的潜在合作伙伴。我们提供商业及项目投资方面的指导。受监管的投资建议或基金管理服务仅由具备相应资质的持牌专业机构提供。Gotham 不持有客户资金，也不保证投资结果；任何投资均由相关各方直接评估并协商确定。"
+,
+  "for Gotham Consult, with technology by": "为 Gotham Consult 打造，技术开发由"
+,
+  "A working example of what we build: Joy Preston and Uffe Carlson co-built this platform.": "这正是我们工作的实际案例：Joy Preston 与 Uffe Carlson 共同打造了这一平台。"
 };

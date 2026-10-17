@@ -28,7 +28,7 @@
      Text nodes and a few attributes are swapped in place; the English original is kept so switching back is exact. */
   let dict = {}; const dictReady = {}; const dictionaries = {};
   const loadDict = l => dictReady[l] ||= new Promise(res => {
-    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=28';
+    const sc = document.createElement('script'); sc.src = ASSET + '/assets/v2/i18n-' + l + '.js?v=29';
     sc.onload = () => {
       const extra = document.createElement('script'); extra.src = ASSET + '/assets/v2/gipa-i18n.js?v=1';
       extra.onload = () => {
@@ -499,6 +499,10 @@
     const price = Number(nx.price) ? 'GHS ' + Number(nx.price).toLocaleString('en-GH') : 'Free';
     $$('[data-forum-price]').forEach(e => e.textContent = price + (nx.approval ? ' · by invitation' : '') + (nx.seats_left != null ? ` · ${nx.seats_left} seats left` : ''));
     const note = nx.summary || nx.subtitle; if (note) $$('[data-forum-note]').forEach(e => e.textContent = note);
+    const cover = nx.cover_image?.sizes?.lg?.webp || nx.cover_image?.sizes?.md?.webp;
+    if (cover) $('[data-forum-image]')?.setAttribute('src', cover);
+    const detailUrl = '/events/' + encodeURIComponent(nx.slug || nx.code);
+    $('[data-forum-details]')?.setAttribute('href', detailUrl);
     $$('[data-forum-link]').forEach(a => { a.href = '/register?e=' + encodeURIComponent(nx.code); a.firstChild.textContent = nx.approval ? 'Request your invitation ' : 'Reserve your seat '; });
   }).catch(() => {});
 

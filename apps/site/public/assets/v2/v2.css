@@ -154,6 +154,8 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .hero .eyebrow { color: var(--gold-2); }
 .hero .lead { color: rgba(255,255,255,.72); margin: 22px 0 28px; }
 .hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.hero-proof { max-width: 66ch; margin: 14px 0 0; padding: 11px 14px; border: 1px solid rgba(255,255,255,.14); border-left: 3px solid var(--gold-2); border-radius: 10px; background: rgba(255,255,255,.045); color: rgba(255,255,255,.76); font-size: 13px; line-height: 1.5; }
+.hero-proof a { color: var(--gold-2); font-weight: 700; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 .globe-wrap { position: relative; width: 100%; aspect-ratio: 1; max-width: 560px; margin: 8px auto 0; }
 #globe { width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
 #globe:active { cursor: grabbing; }
@@ -165,9 +167,9 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 /* phones: the words come first (headline, promise, buttons), then the globe, then the numbers */
 @media (max-width: 899px) {
   .hero-in > div:first-child { display: contents; }
-  .hero-in .eyebrow { order: 1; } .hero-in h1 { order: 2; } .hero-in .lead { order: 3; } .hero-in .hero-cta { order: 4; }
-  .globe-wrap { order: 5; max-width: min(62vw, 270px); margin: 18px auto 0; }
-  .hero-in .stats { order: 6; }
+  .hero-in .eyebrow { order: 1; } .hero-in h1 { order: 2; } .hero-in .lead { order: 3; } .hero-in .hero-cta { order: 4; } .hero-in .hero-proof { order: 5; }
+  .globe-wrap { order: 6; max-width: min(62vw, 270px); margin: 18px auto 0; }
+  .hero-in .stats { order: 7; } .hero-in [data-ghana-status] { order: 8; }
   .hero-in { padding-top: 28px; }
 }
 @media (min-width: 900px) {
@@ -263,6 +265,19 @@ dialog.sheet[open] { animation: sheet .22s ease-out; }
 .forum-meta span { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 7px 12px; border-radius: 999px;
   background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); }
 .forum-cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.forum-feature { padding-block: 22px 12px; }
+.forum.forum-promo { min-height: 0; display: grid; grid-template-columns: minmax(200px, .72fr) minmax(0, 1.28fr); align-items: stretch; padding: 0; background: var(--night); }
+.forum-promo::before { display: none; }
+.forum-promo > img { position: relative; inset: auto; z-index: auto; display: block; width: 100%; height: 100%; min-height: 265px; object-fit: cover; }
+.forum-promo .forum-card { max-width: none; align-self: center; padding: clamp(20px, 3vw, 36px); }
+.forum-promo .forum-card h2 { font-size: clamp(25px, 3.4vw, 38px); }
+.forum-promo .forum-card p { margin-bottom: 16px; }
+@media (max-width: 680px) {
+  .forum.forum-promo { grid-template-columns: 1fr; }
+  .forum-promo > img { height: clamp(150px, 46vw, 230px); min-height: 0; }
+  .forum-promo .forum-card { padding: 20px; }
+  .forum-promo .forum-meta span { font-size: 12px; }
+}
 
 /* numbers */
 .nums { background: var(--night); color: #fff; position: relative; overflow: hidden; isolation: isolate; }
