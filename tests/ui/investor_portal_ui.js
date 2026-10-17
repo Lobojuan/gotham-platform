@@ -11,7 +11,7 @@ const ok=(c,m)=>{if(!c)throw new Error(m);console.log('  ok',m);};
   const p=await ctx.newPage(),errors=[];p.on('pageerror',e=>errors.push(e.message));
   await p.route('**/api/ghana-data',r=>r.fulfill({json:seed}));
   await p.route('**/api/report/public',r=>r.fulfill({json:{updates:[{at:'2026-10-10T10:30:00Z',chapter:'Macro',title:'Verified market update: policy decision',text:'A sourced update approved by Gotham.',url:'https://www.bog.gov.gh/mpc_press_release/mpc-press-release-september-2026/'}]}}));
-  await p.route('**/api/rates',r=>r.fulfill({json:{rates:{USD:11.6173,EUR:13.0695,GBP:15.3724},more:{AED:3.1633,CHF:14.0236,CAD:8.1535,CNY:1.7313,XOF:.0199},updated:'2026-10-05T00:02:31Z'}}));
+  await p.route('**/api/rates',r=>r.fulfill({json:{rates:{USD:11.6173,EUR:13.0695,GBP:15.3724},more:{AED:3.1633,CHF:14.0236,CAD:8.1535,CNY:1.7313,XOF:.0199},updated:new Date().toISOString()}}));
   await p.goto(base+(lang==='fr'?'/fr/invest':'/invest')+extension);await p.waitForSelector('#company-chart');await p.waitForFunction(()=>document.querySelector('.currency-grid')?.textContent.includes('AED'));
   const statusText={en:['sources last checked','Retained official figures'],fr:['Sources officielles vérifiées','Données officielles conservées'],es:['Fuentes oficiales comprobadas','Se conservan los datos oficiales']}[lang];
   await p.waitForFunction(parts=>parts.some(x=>document.querySelector('[data-ghana-status]')?.textContent.includes(x)),statusText);
