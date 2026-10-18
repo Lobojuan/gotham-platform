@@ -500,9 +500,10 @@
     $$('[data-forum-price]').forEach(e => e.textContent = price + (nx.approval ? ' · by invitation' : '') + (nx.seats_left != null ? ` · ${nx.seats_left} seats left` : ''));
     const note = nx.summary || nx.subtitle; if (note) $$('[data-forum-note]').forEach(e => e.textContent = note);
     const cover = nx.cover_image?.sizes?.lg?.webp || nx.cover_image?.sizes?.md?.webp;
-    const flyer = cover || (nx.code === 'F1' ? ASSET + '/img/smes-at-the-centre-flyer.png' : ASSET + '/img/forum.webp');
+    const flyer = cover || (nx.code === 'F1' ? ASSET + '/img/smes-at-the-centre-flyer-preview.webp' : ASSET + '/img/forum.webp');
+    const fullFlyer = cover || (nx.code === 'F1' ? ASSET + '/img/smes-at-the-centre-flyer.png' : ASSET + '/img/forum.webp');
     $('[data-forum-image]')?.setAttribute('src', flyer);
-    $('[data-forum-image-link]')?.setAttribute('href', flyer);
+    $('[data-forum-image-link]')?.setAttribute('href', fullFlyer);
     const detailUrl = '/events/' + encodeURIComponent(nx.slug || nx.code);
     $('[data-forum-details]')?.setAttribute('href', detailUrl);
     $$('[data-forum-link]').forEach(a => { a.href = '/register?e=' + encodeURIComponent(nx.code); a.firstChild.textContent = nx.approval ? 'Request your invitation ' : 'Reserve your seat '; });
