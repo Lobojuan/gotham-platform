@@ -1,4 +1,25 @@
 <!--#top-->
+<style>
+  .dr-wrap{width:min(100% - 32px,1080px);margin:auto}
+  .dr-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:24px;align-items:start}
+  .dr-card{background:#fff;border:1px solid #E2E4E7;border-radius:22px;padding:clamp(20px,4vw,32px);box-shadow:0 18px 55px rgba(15,27,45,.06)}
+  .dr-card h3{font-size:clamp(22px,3vw,30px);margin:0 0 10px}
+  .dr-card p{color:#5A6472}
+  .dr-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .dr-field{display:grid;gap:7px;min-width:0}
+  .dr-field.full,.dr-consent,.dr-actions,.dr-status{grid-column:1/-1}
+  .dr-field label{font-weight:650;font-size:15px}
+  .dr-field input,.dr-field select,.dr-field textarea{width:100%;border:1px solid #D9DDE2;border-radius:12px;padding:12px 14px;background:#fff;color:#0F1B2D;font:inherit;font-size:16px;min-width:0}
+  .dr-field textarea{min-height:88px;resize:vertical}
+  .dr-consent{display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;border-radius:13px;background:#F5F5F1;padding:13px;color:#46505D;font-size:14px;line-height:1.5}
+  .dr-consent input{width:22px;height:22px;margin:1px 0 0}
+  .dr-consent a{color:#0F1B2D;text-underline-offset:2px}
+  .dr-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .dr-actions .btn{min-height:48px}
+  .dr-status{min-height:24px;color:#5A6472;font-size:14px;margin:0}
+  .dr-status.error{color:#A1322B;font-weight:600}
+  @media(max-width:720px){.dr-grid,.dr-fields{grid-template-columns:1fr}.dr-actions>*{width:100%}}
+</style>
 <main id="main">
   <section class="phero" aria-labelledby="h1"><img class="bgimg" src="/img/real-airportcity.webp" alt="" fetchpriority="high">
     <div class="wrap">
@@ -6,7 +27,7 @@
       <p class="eyebrow">What we do</p>
       <h1 id="h1">Business consulting in Ghana: <span class="serif">ten practices, one partner.</span></h1>
       <p class="lead">From your first registration to a mining lease, with partner lawyers, geologists and engineers where the job needs them. Fixed prices in Ghana cedis, paid by mobile money.</p>
-      <nav class="jump" aria-label="On this page"><a href="#practices">Practices</a><a href="#packages">Packages &amp; prices</a><a href="#membership">Membership</a></nav>
+      <nav class="jump" aria-label="On this page"><a href="#practices">Practices</a><a href="#packages">Packages &amp; prices</a><a href="#design-review">Design review</a><a href="#membership">Membership</a></nav>
     </div>
   </section>
 
@@ -162,6 +183,40 @@
     </div>
   </section>
 
+  <section class="sec" id="design-review" aria-labelledby="dr-h">
+    <div class="dr-wrap">
+      <div class="sec-head split">
+        <div><p class="eyebrow">Design &amp; digital review</p><h2 id="dr-h">A fresh pair of eyes, <span class="serif">before you invest.</span></h2></div>
+        <p class="lead">For websites, product and service journeys, brochures, and other company material. Available to members and non-members.</p>
+      </div>
+      <div class="dr-grid">
+        <div class="dr-card">
+          <h3>Start with a free preview</h3>
+          <p>Share one public website URL or one public document link. Our designer/developer will send up to three priority observations and suggest the right next step.</p>
+          <p><b>Full review from <span id="dr-price" data-price="design_review">GHS 400</span></b> before VAT and levies. Includes a prioritized written report with annotated examples and a 60-minute Q&amp;A. Broader scopes are quoted separately.</p>
+          <p>We confirm the scope, final price and invoice payment options before paid work starts. This is a human design, usability and content review—not a security or penetration test. Please do not share passwords or confidential material.</p>
+        </div>
+        <div class="dr-card">
+          <h3>Request your limited preview</h3>
+          <form id="design-review-form">
+            <div class="dr-fields">
+              <div class="dr-field"><label for="dr-name">Your name</label><input id="dr-name" name="name" autocomplete="name" maxlength="120" required></div>
+              <div class="dr-field"><label for="dr-email">Email</label><input id="dr-email" name="email" type="email" autocomplete="email" maxlength="160" required></div>
+              <div class="dr-field"><label for="dr-company">Business or organisation (optional)</label><input id="dr-company" name="company" autocomplete="organization" maxlength="160"></div>
+              <div class="dr-field"><label for="dr-kind">What should we review?</label><select id="dr-kind" name="asset_kind" required><option value="">Choose one</option><option value="website">Website</option><option value="product">Product or service</option><option value="brochure">Brochure</option><option value="document">Other business document</option><option value="other">Other public material</option></select></div>
+              <div class="dr-field full"><label for="dr-url">One public URL or share link</label><input id="dr-url" name="asset_url" type="url" inputmode="url" placeholder="https://" maxlength="600" required></div>
+              <div class="dr-field full"><label for="dr-message">What would you most like to improve? (optional)</label><textarea id="dr-message" name="message" maxlength="1000"></textarea></div>
+              <label class="dr-consent"><input id="dr-authorized" type="checkbox" required><span>I own this material or have permission to request its review.</span></label>
+              <label class="dr-consent"><input id="dr-consent" type="checkbox" required><span>I agree that Gotham Consult may use these details to respond to this request, as described in the <a href="/privacy">privacy notice</a>. This does not sign me up for marketing.</span></label>
+              <div class="dr-actions"><button class="btn btn-dark" type="submit">Request my free preview</button></div>
+            </div>
+          </form>
+          <p class="dr-status" id="dr-status" role="status" aria-live="polite"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="sec" id="membership" style="padding-top:0" aria-labelledby="mb-h">
     <div class="wrap">
       <div class="sec-head split">
@@ -181,4 +236,51 @@
     </div></div>
   </section>
 </main>
+<script>
+(() => {
+  const price = document.getElementById('dr-price');
+  fetch('/api/member/prices')
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      const value = Number(data && data.prices && data.prices.design_review);
+      if (value > 0) price.textContent = 'GHS ' + value.toLocaleString(document.documentElement.lang || 'en', { maximumFractionDigits: 2 });
+    })
+    .catch(() => {});
+
+  const form = document.getElementById('design-review-form');
+  const status = document.getElementById('dr-status');
+  const button = form.querySelector('button[type="submit"]');
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    status.classList.remove('error');
+    status.textContent = 'Sending your request…';
+    button.disabled = true;
+    const data = new FormData(form);
+    try {
+      const response = await fetch('/api/site-enquiry', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          type: 'review', name: data.get('name'), email: data.get('email'), company: data.get('company'),
+          asset_kind: data.get('asset_kind'), asset_url: data.get('asset_url'), message: data.get('message'),
+          consent: document.getElementById('dr-consent').checked, authorized: document.getElementById('dr-authorized').checked
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (result.error === 'too_many') throw new Error('Please wait a few minutes before trying again.');
+        if (result.fields) throw new Error('Please check your name, email, review type and public link.');
+        throw new Error('We could not submit that request. Please try again or contact Gotham.');
+      }
+      form.hidden = true;
+      status.textContent = `Request received${result.reference ? ' · ' + result.reference : ''}. We will email the preview observations and any full-review scope, price and payment options. No paid work starts without your approval.`;
+    } catch (error) {
+      status.classList.add('error');
+      status.textContent = error.message || 'We could not submit that request. Please try again or contact Gotham.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
 <!--#bottom-->

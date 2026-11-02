@@ -88,6 +88,24 @@ assert psql("select count(*) from notes where author='website' and body like '%2
 assert psql("select count(*) from outbox where kind='staff_alert' and to_email in ('joy@gothamconsult.com','uffe.carlson@gothamconsult.com') and subject like 'New enquiry · Call request'")=='2'
 ok('call requests are saved as CRM contacts/deals with preferred time and email confirmations to the visitor and both staff')
 
+review_payload={'type':'review','name':'Ama Designer','email':'ama.design@example.test','company':'Studio Ghana',
+ 'asset_kind':'website','asset_url':'https://studio.example.test','message':'Improve the product signup flow',
+ 'authorized':True,'consent':True}
+st,bad_review,_=call('/api/site-enquiry',{**review_payload,'email':'bad.link@example.test','asset_url':'http://127.0.0.1/admin'},ip='127.0.0.40')
+assert st==400 and bad_review['fields']==['asset_url'],bad_review
+st,bad_permission,_=call('/api/site-enquiry',{**review_payload,'email':'no.permission@example.test','authorized':False},ip='127.0.0.41')
+assert st==400 and bad_permission['fields']==['authorized'],bad_permission
+st,preview,_=call('/api/site-enquiry',review_payload,ip='127.0.0.42')
+assert st==200 and preview['ok'] and preview['reference'].startswith('GC-DR-'),preview
+deal=psql(f"select title||'|'||source||'|'||value::text||'|'||next_step from deals where id={preview['deal_id']}")
+assert 'design review preview' in deal and 'Website design review request' in deal and '|400.00|' in deal and 'Prepare limited design-review preview' in deal,deal
+assert psql(f"select count(*) from tasks where deal_id={preview['deal_id']} and title like 'Prepare limited design-review preview%'")=='1'
+assert psql("select count(*) from notes n join deals d on d.id=n.deal_id where d.id="+str(preview['deal_id'])+" and n.body like '%https://studio.example.test%' and n.body like '%Improve the product signup flow%'")=='1'
+assert psql("select count(*) from contacts where lower(email)='ama.design@example.test' and consent_email='unknown'")=='1'
+assert psql("select count(*) from outbox where to_email='ama.design@example.test' and kind='website_ack' and body like '%GC-DR-%'")=='1'
+assert psql("select count(*) from outbox where kind='staff_alert' and subject='New enquiry · Design review preview'")=='2'
+ok('design-review preview validates public links and sharing authority, creates a valued CRM deal/task, and sends response-only acknowledgement')
+
 st,err,_=call('/api/site-enquiry',{'type':'contact','name':'No consent','email':'no.consent@example.test','consent':False},ip='127.0.0.38')
 assert st==400 and err['error']=='consent_required',err
 ok('website contact information is stored only after explicit privacy consent')

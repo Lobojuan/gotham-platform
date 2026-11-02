@@ -2487,28 +2487,45 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       const b = await body(req);
       const name = clean(b.name, 120), email = clean(b.email, 160).toLowerCase();
       const company = clean(b.company, 160), phone = phoneGH(clean(b.phone, 40));
-      const type = ['contact', 'call', 'event'].includes(b.type) ? b.type : 'contact';
-      const topic = clean(b.topic, type === 'event' ? 500 : 160), message = clean(b.message, 2000);
+      const type = ['contact', 'call', 'event', 'review'].includes(b.type) ? b.type : 'contact';
+      const topic = clean(b.topic, type === 'event' ? 500 : type === 'review' ? 300 : 160), message = clean(b.message, 2000);
+      const assetKind = ['website', 'product', 'brochure', 'document', 'other'].includes(b.asset_kind) ? b.asset_kind : '';
+      const assetUrl = clean(b.asset_url, 600);
       const language = ['en','fr','es','de','ar','zh'].includes(clean(b.language, 5)) ? clean(b.language, 5) : 'en';
       const preferredDay = clean(b.preferred_day, 10), preferredTime = clean(b.preferred_time, 5);
       const fields = [];
       if (!name) fields.push('name');
       if (!/^\S+@\S+\.\S+$/.test(email)) fields.push('email');
       if (type === 'call' && (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDay) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(preferredTime))) fields.push('preferred_time');
+      if (type === 'review') {
+        let publicLink = false;
+        try {
+          const link = new URL(assetUrl);
+          publicLink = ['http:', 'https:'].includes(link.protocol) && link.hostname.includes('.')
+            && !/(?:^|\.)localhost$|(?:^|\.)local$/.test(link.hostname)
+            && !/^\d{1,3}(?:\.\d{1,3}){3}$/.test(link.hostname) && !link.username && !link.password;
+        } catch {}
+        if (!assetKind) fields.push('asset_kind');
+        if (!publicLink) fields.push('asset_url');
+        if (b.authorized !== true) fields.push('authorized');
+      }
       if (fields.length) return json(res, 400, { error: 'missing_fields', fields }, cors);
       if (b.consent !== true) return json(res, 400, { error: 'consent_required' }, cors);
-      const source = type === 'call' ? 'Website call request'
+      const source = type === 'review' ? 'Website design review request'
+        : type === 'call' ? 'Website call request'
         : type === 'event' ? 'SMEs at the Centre (F1) · post-registration business support follow-up'
         : 'Website contact form';
       const when = type === 'call' ? `Preferred time: ${preferredDay} at ${preferredTime} Accra time (GMT).` : '';
-      const need = [topic ? `Topic: ${topic}` : '', message, when, type === 'event' ? `Preferred language: ${language}` : ''].filter(Boolean).join('\n');
-      const followTask = `Reply to ${firstName(name)} · ${type === 'event' ? 'SMEs at the Centre business-support follow-up' : type === 'call' ? 'call request' : 'website enquiry'}${topic ? ': ' + topic : ''}`;
+      const need = [type === 'review' ? `Material: ${assetKind}\nPublic link: ${assetUrl}` : '', topic ? `Topic: ${topic}` : '', message, when, type === 'event' ? `Preferred language: ${language}` : ''].filter(Boolean).join('\n');
+      const followTask = type === 'review' ? `Prepare limited design-review preview · ${firstName(name)}`
+        : `Reply to ${firstName(name)} · ${type === 'event' ? 'SMEs at the Centre business-support follow-up' : type === 'call' ? 'call request' : 'website enquiry'}${topic ? ': ' + topic : ''}`;
+      const reviewPrice = type === 'review' ? (await MEMBERS.prices()).design_review.price : 0;
       const dealId = await inboundDeal({ company: company || null, full_name: name, email, phone: phone || null,
-        kind: type === 'event' ? 'event' : 'consulting',
+        kind: type === 'event' ? 'event' : 'consulting', value: reviewPrice, separate: type === 'review',
         title: type === 'event' ? `SMEs at the Centre · ${company || name} · support enquiry`
-          : `${company || name} · ${type === 'call' ? 'website call request' : 'website enquiry'}`,
+          : `${company || name} · ${type === 'review' ? 'design review preview' : type === 'call' ? 'website call request' : 'website enquiry'}`,
         source, task: type === 'event' ? null : followTask });
-      const reference = `GC-EF-${String(dealId || 'RECORDED').padStart(5, '0')}`;
+      const reference = `${type === 'review' ? 'GC-DR' : 'GC-EF'}-${String(dealId || 'RECORDED').padStart(5, '0')}`;
       if (dealId) {
         const deal = (await q('select contact_id from deals where id=$1', [dealId])).rows[0];
         const c = deal && deal.contact_id ? { contact_id: deal.contact_id } : null;
@@ -2523,14 +2540,17 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
           }
         }
       }
-      const acknowledgement = type === 'call'
+      const acknowledgement = type === 'review'
+        ? `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have received your request for a limited preview of one public ${esc(assetKind)} link. We will email a few priority observations and the proposed scope, price and payment options for any full review. We will not begin paid work without your approval.</p><p style="color:#5A6472;font-size:14px">Your reference: <b>${esc(reference)}</b></p>`
+        : type === 'call'
         ? `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have received your request for <b>${esc(preferredDay)} at ${esc(preferredTime)} Accra time (GMT)</b>. This is a request, not a confirmed appointment. Joy or Uffe will reply by email to confirm a time.</p>`
         : type === 'event'
           ? `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have recorded your business-support follow-up for SMEs at the Centre${topic ? ` about <b>${esc(topic)}</b>` : ''}. Your event registration is unchanged. Joy or Uffe will review your needs and reply by email within one working day.</p><p style="color:#5A6472;font-size:14px">Your reference: <b>${esc(reference)}</b></p>`
           : `<p style="color:#5A6472;font-size:15px">Thank you, ${esc(firstName(name))}. We have received your enquiry${topic ? ` about <b>${esc(topic)}</b>` : ''}. Joy or Uffe will reply by email within one working day.</p>`;
       let emailQueued = true;
       try {
-        await queueMail(email, name, type === 'call' ? 'We received your call request · Gotham Consult'
+        await queueMail(email, name, type === 'review' ? 'Your design review preview request · Gotham Consult'
+          : type === 'call' ? 'We received your call request · Gotham Consult'
           : type === 'event' ? 'Your business-support follow-up is recorded · Gotham Consult' : 'We received your enquiry · Gotham Consult',
           wrapMail('Your request is recorded', `${acknowledgement}<p style="color:#5A6472;font-size:13px">If you did not send this request, you can ignore this email.</p>`), 'website_ack', null);
       } catch (e) {
@@ -2545,7 +2565,7 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       let teamAlertsQueued = 0;
       for (const [to, toName] of [['joy@gothamconsult.com', 'Joy Preston'], ['uffe.carlson@gothamconsult.com', 'Uffe Carlson']]) {
         try {
-          await queueMail(to, toName, `New enquiry · ${clean(type === 'call' ? 'Call request' : type === 'event' ? 'SMEs at the Centre support follow-up' : topic || 'Website', 100)}`,
+          await queueMail(to, toName, `New enquiry · ${clean(type === 'review' ? 'Design review preview' : type === 'call' ? 'Call request' : type === 'event' ? 'SMEs at the Centre support follow-up' : topic || 'Website', 100)}`,
             wrapMail('A new website request was recorded', teamBody), 'staff_alert', null);
           teamAlertsQueued++;
         } catch (e) {
@@ -2553,7 +2573,7 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
           console.error('event enquiry team alert queue:', String(e.message || e).slice(0, 200));
         }
       }
-      webEnquiry(req, ip, type === 'call' ? 'call' : type === 'event' ? 'enquiry' : 'contact').catch(() => {});
+      webEnquiry(req, ip, type === 'call' ? 'call' : type === 'event' || type === 'review' ? 'enquiry' : 'contact').catch(() => {});
       flushMail().catch(() => {});
       return json(res, 200, { ok: true, email_queued: emailQueued, team_alerts_queued: teamAlertsQueued, deal_id: dealId, reference }, cors);
     }
@@ -5250,17 +5270,17 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
 
 /* An inbound lead (sponsor enquiry, Family Desk family) becomes a contact, an open deal and a
    follow-up task for tomorrow, so nothing sits unanswered in a list. Returns the deal id. */
-async function inboundDeal({ company, full_name, email, phone, kind, title, source, sponsor_lead_id = null, owner = null, task }) {
+async function inboundDeal({ company, full_name, email, phone, kind, title, source, sponsor_lead_id = null, owner = null, task, value = 0, separate = false }) {
   const em = (email || '').toLowerCase() || null;
   let c = em ? (await q('select id,status from contacts where lower(email)=$1', [em])).rows[0] : null;
   if (!c) c = (await q(`insert into contacts(company,full_name,email,phone,source,status) values ($1,$2,$3,$4,$5,'new') returning id,status`,
     [company || null, full_name || null, em, phone || null, source])).rows[0];
   if (c.status === 'do_not_contact') return null;
-  const open = (await q(`select id from deals where contact_id=$1 and kind=$2 and stage not in ('won','lost')`, [c.id, kind])).rows[0];
+  const open = separate ? null : (await q(`select id from deals where contact_id=$1 and kind=$2 and stage not in ('won','lost')`, [c.id, kind])).rows[0];
   if (open) return open.id;
-  const d = (await q(`insert into deals(title,contact_id,company,kind,stage,owner,source,sponsor_lead_id,created_by,next_step,next_date)
-      values ($1,$2,$3,$4,'lead',$5,$6,$7,'website',$8,(now() + interval '1 day')::date) returning id`,
-    [title, c.id, company || full_name, kind, owner, source, sponsor_lead_id, task])).rows[0];
+  const d = (await q(`insert into deals(title,contact_id,company,kind,stage,value,owner,source,sponsor_lead_id,created_by,next_step,next_date)
+      values ($1,$2,$3,$4,'lead',$5,$6,$7,$8,'website',$9,(now() + interval '1 day')::date) returning id`,
+    [title, c.id, company || full_name, kind, Math.max(0, +value || 0), owner, source, sponsor_lead_id, task])).rows[0];
   await q(`insert into deal_events(deal_id,to_stage,detail,by_user) values ($1,'lead','created','website')`, [d.id]);
   if (task) await q(`insert into tasks(title,due_at,assignee,contact_id,deal_id,created_by,priority)
       values ($1, date_trunc('day', now()) + interval '1 day 10 hours', $2, $3, $4, 'website', 'high')`, [task, owner, c.id, d.id]);

@@ -1,8 +1,8 @@
-/* Gotham members: free accounts, paid plans and the compliance calendar.
+/* Gotham members: free accounts, paid plans and one-off services.
 
    Free account   sign-in by an emailed link (no password), sectors and language chosen by the member, a daily digest
                   of the report updates a person approved, the next compliance deadlines as a preview.
-   Paid           Pro membership, compliance calendar per company, expert calls and counterparty checks. Every purchase
+   Paid           Pro membership, compliance calendar per company, expert calls, design reviews and counterparty checks. Every purchase
                   is a normal cedi invoice (VAT and levies added by the invoice rules), paid on the /i/ page by Paystack
                   (card, mobile money) or bank transfer; the plan starts when the invoice is paid. Renewal invoices go out
                   7 days before a plan ends. Staff can grant a plan (e.g. compliance free for year 1 with a registration).

@@ -115,7 +115,7 @@ _sp.run(['psql', DB, '-qc', "delete from member_digest_days where member_id=(sel
 st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert r['digests'] == 0, 'unsubscribed member receives no further digest'
 ok('daily digest in the member’s language includes only an approved report update, a published event invitation with direct registration, and a one-click stop; unsubscribe suppresses future days')
 st, p, _ = call('/api/member/prices')
-assert p['prices']['pro_year'] == 12000 and p['permits']
+assert p['prices']['pro_year'] == 12000 and p['prices']['design_review'] == 400 and p['permits']
 assert set(p['catalog']['pro']) == {'en', 'fr', 'es', 'de', 'ar', 'zh'} and len(p['catalog']['compliance']['en']) == 4
 edited = json.loads(json.dumps(p['catalog']))
 for lang in ('en', 'fr', 'es', 'de', 'ar', 'zh'):
@@ -127,13 +127,18 @@ assert call('/api/members/catalog', bad_catalog, cookie=adm)[0] == 400, 'all loc
 assert call('/api/member/prices')[1]['catalog']['pro']['fr'][0] == 'Updated member benefit fr', 'invalid edit must not change catalog'
 assert call('/api/members/prices', {'pro_year': 5200}, cookie=adm)[0] == 200
 assert call('/api/members/prices', {'pro_month': 999}, cookie=adm)[0] == 200
+assert call('/api/members/prices', {'design_review': 525}, cookie=adm)[0] == 200
 public_catalog = call('/api/member/prices')[1]
-assert public_catalog['prices']['pro_year'] == 5200 and public_catalog['prices']['pro_month'] == 999, 'partial price edits preserve other prices'
+assert public_catalog['prices']['pro_year'] == 5200 and public_catalog['prices']['pro_month'] == 999 and public_catalog['prices']['design_review'] == 525, 'partial price edits preserve other prices and update the review price'
 st, new_plan, _ = call('/api/member/buy', {'product': 'pro_month'}, cookie=ck)
 assert st == 200
 new_invoice = json.loads(psql(f"select row_to_json(i) from invoices i join member_orders o on o.invoice_id=i.id where o.id={new_plan['order']}"))
 assert float(new_invoice['taxable']) == 999, 'new invoices use the centrally managed price'
-ok('member plan prices and six-language benefits share one CRM catalog; public pages and new invoices use saved values; retired codes stay closed')
+st, review_order, _ = call('/api/member/buy', {'product': 'design_review', 'details': 'Review one public website landing page.'}, cookie=ck)
+assert st == 200 and '/i/' in review_order['pay_url']
+review_invoice = json.loads(psql(f"select row_to_json(i) from invoices i join member_orders o on o.invoice_id=i.id where o.id={review_order['order']}"))
+assert float(review_invoice['taxable']) == 525, 'review checkout uses its centrally managed starting price'
+ok('member plan and service prices share one CRM catalog; six-language benefits persist; new invoices use saved values; retired codes stay closed')
 # an order whose payment landed but whose plan never started is picked up by the daily sweep
 st, b3, _ = call('/api/member/buy', {'product': 'pro_month'}, cookie=ck); assert st == 200
 _sp.run(['psql', DB, '-qc', f"update invoices set status='paid' where id=(select invoice_id from member_orders where id={b3['order']})"], check=True)

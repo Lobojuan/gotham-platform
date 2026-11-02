@@ -32,6 +32,11 @@
    "price": 3500,
    "booking": "call"
   },
+  "design_review": {
+   "name": "Website, product or document review",
+   "price": 400,
+   "booking": "review"
+  },
   "check": {
    "name": "Counterparty check (company records, owners, court cases)",
    "price": 7500,

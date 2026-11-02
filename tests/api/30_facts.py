@@ -57,6 +57,22 @@ from datetime import date
 probs = facts_page.check(date(2026, 10, 6))
 assert not probs, probs
 ok('every claim in the register is written on the pages it names (and none is overdue on 6 Oct 2026)')
+import insights_fr as site_i18n
+services_page = open(os.path.join(ROOT, 'apps', 'site', 'pages', 'services.html'), encoding='utf-8').read()
+review_section = services_page[services_page.index('<section class="sec" id="design-review"'):services_page.index('<section class="sec" id="membership"')]
+dynamic_review_copy = [
+    'Sending your request…', 'Please wait a few minutes before trying again.',
+    'Please check your name, email, review type and public link.',
+    'We could not submit that request. Please try again or contact Gotham.',
+    'Request received',
+    'We will email the preview observations and any full-review scope, price and payment options. No paid work starts without your approval.'
+]
+for lang in ('fr', 'es', 'de', 'ar', 'zh'):
+    _, untranslated = site_i18n.translate_html('<body>' + review_section + '</body>', site_i18n.load_dict(lang))
+    assert not untranslated, f'{lang} design-review copy is untranslated: {untranslated}'
+    dictionary = site_i18n.load_dict(lang)
+    assert all(text in dictionary for text in dynamic_review_copy), f'{lang} design-review status copy is untranslated'
+ok('the design-review page and its asynchronous form messages are translated in all five non-English locales')
 facts = facts_page.load(); ids = [f['id'] for f in facts]
 assert len(ids) == len(set(ids)), 'duplicate fact ids'
 assert all(f['sources'] or f.get('owner') for f in facts), 'a fact needs sources or an owner'

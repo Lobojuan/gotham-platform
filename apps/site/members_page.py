@@ -105,6 +105,7 @@ def services(L, pre):
         return f'<div class="box mb-svc"><span class="mb-tag">{esc(t(who))}</span><h3>{esc(t(title))}</h3><div class="amt">{price}</div><p>{esc(t(text))}</p><p><a href="{pre}/account?buy={k}#signup">{esc(t("Book now"))} <span class="arrow">→</span></a></p></div>'
     return ('<div class="mb-svcs">'
         + s('call', 'For international investors', 'Expert call, 30 minutes', 'Talk to Uffe Carlson or Joy Preston about entering Ghana, a sector, a deal or a problem. You choose the times; we confirm within one working day.')
+        + s('design_review', 'For businesses and founders', 'Website, product or document review', 'A prioritized written report with annotated examples, followed by a 60-minute Q&A. One public URL or one document; broader scopes are quoted separately. Design, usability and content review only; no security testing.', True)
         + s('check', 'For investors and diaspora', 'Counterparty check', 'Before you send money or sign: we check the seller, company or land in the official registers with our partner lawyers and tell you who owns it and whether it is in court.')
         + s('check_plus', 'For international investors', 'Enhanced counterparty check', 'Everything in the counterparty check, plus a visit to the site or office, three reference interviews and a written risk rating. Report in 10 working days; travel outside Greater Accra at cost.')
         + s('filing', 'For Ghana businesses', 'We file it for you', 'One return or payment prepared and filed for your company: PAYE, SSNIT, VAT or the annual return, by qualified professionals we work with.')
@@ -163,7 +164,7 @@ UI = ['Your Gotham account', 'Create your free account', 'Already a member? We e
       'Start renewal', 'Become a Pro member', 'Messages from our team about your cases appear here.', 'Edit', 'Delete row', 'per month', 'per year', 'Plans and prices', 'Choose', 'Updates on your cases', 'Edit company', 'Cancel']
 PRODUCT_NAMES = [p['name'] for p in PRODUCTS.values()]
 EXTRA = ['Gotham Consult membership: sector alerts, compliance calendar, expert calls | Gotham Consult',
-         'A free account for Ghana sector alerts, and paid services when you need them: the compliance calendar for your company, expert calls, counterparty checks and filings. Prices in cedis.',
+         'A free account for Ghana sector alerts, and paid services when you need them: the compliance calendar for your company, expert calls, design reviews, counterparty checks and filings. Prices in cedis.',
          'Your account | Gotham Consult', 'Your sign-in link for Gotham Consult', 'Sign in to your Gotham account',
          'Click the button to sign in. The link works once, for 45 minutes. If you did not ask for it, you can ignore this email.', 'Sign in', 'Your plan is active', 'Thank you, your plan is active',
          'Open your account', 'New in the Ghana Investment Report', 'Your next deadlines', 'source', 'You get this because you chose sector alerts in your Gotham account.', 'Stop these emails',
@@ -261,7 +262,7 @@ function coForm(root,co){var c=card(root,co?T("Edit company"):T("Add a company")
  f.onsubmit=function(e){e.preventDefault();if(!f.name.value.trim()){f.name.focus();return}var b={id:co.id||null,name:f.name.value,tin:f.tin.value,reg_no:f.reg_no.value,incorporated_on:f.incorporated_on.value,year_end_month:+f.year_end_month.value,
   vat_registered:f.vat_registered.checked,has_employees:f.has_employees.checked,foreign_staff:f.foreign_staff.checked,permits:[].slice.call(rows.children).map(function(r){var i=r.querySelectorAll("input");return{name:i[0].value,expires:i[1].value,lead_days:+i[2].value}}).filter(function(p){return p.name})};
   api("company",b).then(function(x){if(x.ok){S=x.j;tab="companies";render()}else msg.textContent=T("Something went wrong. Please try again.")})};c.appendChild(f)}
-function svc(root){[["pro_year",0],["pro_month",0],["compliance_year",1],["compliance_month",1],["call",2],["check",2],["check_plus",2],["filing",3]].forEach(function(x){var k=x[0],p=I._products[k],c=card(root,p.name);
+function svc(root){[["pro_year",0],["pro_month",0],["compliance_year",1],["compliance_month",1],["call",2],["design_review",2],["check",2],["check_plus",2],["filing",3]].forEach(function(x){var k=x[0],p=I._products[k],c=card(root,p.name);
   c.appendChild(E("p",{"class":"amt",style:"font:700 22px var(--font);margin:0 0 10px",text:money(S.prices[k])}));var b=E("button",{type:"button","class":"btn btn-gold",text:T("Order")});b.onclick=function(){order(k)};c.appendChild(b)})}
 function order(k,coId,brief){var p=I._products[k],root=$("#ac-in");tab="services";render();var c=card(root,T("Order")+": "+p.name);root.insertBefore(c,root.children[1]);
  var f=E("form",{"class":"ac-form"}),msg=E("p",{"class":"ac-msg",role:"status"});
