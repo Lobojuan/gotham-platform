@@ -39,6 +39,8 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | DATA-1 | CRM members, contacts, event registrations, events, reports, consent/preferences, email outbox and send history are stored in the same PostgreSQL database, in linked tables with stable IDs. No separate mailing-list database is introduced. | schema and API integration |
 | DATA-2 | A daily Ghana business brief is queued once per Accra calendar day for verified members who have both daily alerts enabled and explicitly opted into email updates. It contains only human-approved report updates, applicable member deadlines, and upcoming published events with a direct registration link. | api/36_members.py |
 | DATA-3 | The daily brief respects a member's language preference, records its daily send claim in the CRM database, and includes a one-click unsubscribe that turns off future member briefs. Members without marketing consent, who unsubscribe, or who close their account receive none. | api/36_members.py |
+| DATA-4 | Member plan prices have one CRM source of truth used by the member checkout and public membership page. A changed price applies to future orders; issued invoices remain unchanged. Public Pro and Compliance benefit descriptions are editable by admins in all six site languages and update on the membership page without changing access entitlements. | api/36_members.py; membership page |
+| DATA-5 | Legacy membership items M1–M3 are not offered or accepted for new registrations. Their item and registration history is retained; old registration links lead to the current membership page. | api/36_members.py; registration flow |
 
 ## 2. Prices and money
 

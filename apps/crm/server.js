@@ -535,6 +535,7 @@ async function init() {
     await q(`insert into items(code,kind,title,subtitle,venue,starts_at,ends_at,currency,price,per,capacity,published,sort)
              values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) on conflict (code) do nothing`, s);
   }
+  await q("update items set published=false where code=any($1) and published", [['M1', 'M2', 'M3']]);
   await q(`update items set approval=true, audiences=$1 where code='F1' and audiences is null`,
     ['SME / business owner,Investor,Government / institution,Partner or sponsor,Media,Other']);
   for (const [k, v] of [['momo_number', '+233550416627'], ['momo_name', 'Gotham Consult'], ['whatsapp', '233550416627'], ['pay_link', '']])
@@ -1638,7 +1639,9 @@ const ITEM_COLS = `i.code,i.kind,i.title,i.subtitle,i.venue,i.starts_at,i.ends_a
     i.approval,i.phase,i.audiences,i.slug,i.summary,i.description,i.recap,i.cover,i.gallery,i.docs,i.agenda,i.speakers,i.updates,i.flyer,
     case when i.capacity is null then null else greatest(i.capacity - coalesce((
       select sum(r.seats) from registrations r where r.item_code=i.code and r.status<>'cancelled'),0),0) end as seats_left`;
-const itemsPublic = () => q(`select ${ITEM_COLS} from items i where i.published order by i.sort, i.starts_at`);
+const RETIRED_MEMBERSHIP_CODES = ['M1', 'M2', 'M3'];
+const isRetiredMembership = code => RETIRED_MEMBERSHIP_CODES.includes(String(code || '').toUpperCase());
+const itemsPublic = () => q(`select ${ITEM_COLS} from items i where i.published and i.code <> all($1) order by i.sort, i.starts_at`, [RETIRED_MEMBERSHIP_CODES]);
 
 /* Completed forums remain stored for the back office and event archive, but close automatically. */
 async function archiveExpiredEvents() {
@@ -2745,6 +2748,7 @@ Current server time in UTC: ${new Date().toISOString()}. Accra uses UTC year rou
       if (fields.length) return json(res, 400, { error: 'missing_fields', fields }, cors);
       if (b.consent !== true) return json(res, 400, { error: 'consent_required' }, cors);
       let it, category, seats, amount, method, status, reg;
+      if (isRetiredMembership(b.item_code)) return json(res, 400, { error: 'unknown_item' }, cors);
       const client = await pool.connect();
       try {
       await client.query('begin');
@@ -4047,6 +4051,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     if (mItemDel && req.method === 'DELETE') {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const code = mItemDel[1].toUpperCase();
+      if (isRetiredMembership(code)) return json(res, 409, { error: 'retired_membership' });
       const used = await q('select count(*)::int as n from registrations where item_code=$1', [code]);
       if (used.rows[0].n > 0) return json(res, 409, { error: 'has_registrations', n: used.rows[0].n });
       await q('delete from items where code=$1', [code]);
@@ -4194,6 +4199,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const b = await body(req);
       const code = clean(b.code, 12).toUpperCase();
       if (!code || !clean(b.title, 200)) return json(res, 400, { error: 'code_and_title_required' });
+      if (isRetiredMembership(code)) return json(res, 409, { error: 'retired_membership' });
       /* a room only holds so many people: the venue limit in Settings is the ceiling */
       const capRow = (await q("select value from settings where key='max_seats'")).rows[0];
       const maxSeats = parseInt(capRow && capRow.value) || 0;
@@ -4807,7 +4813,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
         if (m) await MEMBERS.sendLink(m, L(b.lang || m.lang), clean(b.next, 40));
         return json(res, 200, { ok: true });
       }
-      if (p === '/api/member/prices' && req.method === 'GET') { const P = await MEMBERS.prices(); res.setHeader('cache-control', 'public, max-age=300'); return json(res, 200, { prices: Object.fromEntries(Object.entries(P).map(([k, x]) => [k, x.price])), permits: MEMBER_PERMITS }); }
+      if (p === '/api/member/prices' && req.method === 'GET') { const P = await MEMBERS.prices(); res.setHeader('cache-control', 'public, max-age=60'); return json(res, 200, { prices: Object.fromEntries(Object.entries(P).map(([k, x]) => [k, x.price])), permits: MEMBER_PERMITS, catalog: await MEMBERS.catalog() }); }
       const mem = await MEMBERS.fromCookie(req.headers.cookie);
       if (!mem && p === '/api/member/me' && req.method === 'GET') return json(res, 200, { member: null });   // signed out is a normal state, not an error
       if (!mem) return json(res, 401, { error: 'no_session' });
@@ -4852,11 +4858,24 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       return json(res, 200, { ...d, digests: w });
     }
     if (p === '/api/members/prices' && req.method === 'POST') {
-      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req), out = {};
-      for (const k of Object.keys(MEMBER_PRODUCTS)) if (+b[k] > 0) out[k] = Math.round(+b[k] * 100) / 100;
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req);
+      const current = await MEMBERS.prices(), out = Object.fromEntries(Object.entries(current).map(([k, v]) => [k, v.price]));
+      const changes = Object.keys(b || {});
+      if (!changes.length) return json(res, 400, { error: 'prices_required' });
+      for (const k of changes) {
+        if (!Object.hasOwn(MEMBER_PRODUCTS, k) || !Number.isFinite(+b[k]) || +b[k] <= 0 || +b[k] > 10000000) return json(res, 400, { error: 'invalid_price', product: k });
+        out[k] = Math.round(+b[k] * 100) / 100;
+      }
       await q("insert into settings(key,value) values ('member_prices',$1) on conflict (key) do update set value=excluded.value", [JSON.stringify(out)]);
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'member_prices', JSON.stringify(out)]);
       return json(res, 200, { prices: await MEMBERS.prices() });
+    }
+    if (p === '/api/members/catalog' && req.method === 'POST') {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const r = await MEMBERS.saveCatalog(await body(req));
+      if (r.error) return json(res, 400, r);
+      await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'member_catalog', JSON.stringify(r.catalog)]);
+      return json(res, 200, r, { 'cache-control': 'no-store' });
     }
     const mPub = p.match(/^\/i\/([A-Za-z0-9_-]{20,40})(?:\/(pay|accept))?$/);
     if (mPub) {

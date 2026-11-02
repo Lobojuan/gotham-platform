@@ -1403,6 +1403,7 @@ async function events(){
   <div class="evc-img">${i.cover_image?`<img src="${i.cover_image.sizes.thumb.webp}" alt="">`:'<span>No image yet</span>'}</div>
   <div class="evc-b">
    <div class="evc-t"><b>${esc(i.title||i.code)}</b>
+    ${['M1','M2','M3'].includes(i.code)?'<span class="tag t-canc">retired membership</span>':''}
     ${i.published?'':'<span class="tag t-canc">draft</span>'}
     <span class="tag ${i.phase==='past'?'t-canc':i.phase==='teaser'?'t-hold':'t-paid'}">${esc(i.phase||'open')}</span></div>
    <div class="note">${esc(i.code)} · ${i.kind} · ${i.starts_at?day(i.starts_at):'no date'} ${i.venue?'· '+esc(i.venue):''}</div>
@@ -1449,7 +1450,7 @@ const dur=s=>s?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):'';
 const UPERR={file_too_large:'That file is too large.',video_tools_missing:'Video conversion is not installed on the server yet.',not_a_video:'That video could not be read.',not_a_pdf:'That is not a PDF file.',not_an_image:'That image could not be read.',process_failed:'Could not process that file.'};
 
 function evEditor(){
- const i=EV, local=d=>{if(!d)return '';const t=new Date(d);return new Date(t.getTime()-t.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+ const i=EV, retiredMembership=['M1','M2','M3'].includes(i.code), local=d=>{if(!d)return '';const t=new Date(d);return new Date(t.getTime()-t.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
  const flyer=i.flyer||{};
  const flyerImages=[...(i.cover_image?[{id:'cover',name:'Event cover',url:i.cover_image.sizes.card.webp}]:[]),...(i.images||[]).filter(m=>m.kind==='image'&&m.sizes?.card).map(m=>({id:m.id,name:m.name||m.original_name||'Event photo',url:m.sizes.card.webp}))];
  const docRow=(d,n)=>`<div class="row2"><input class="t" data-doclabel="${n}" value="${esc(d.label||d.name||'')}" placeholder="Label shown on the site, e.g. Sponsorship pack">
@@ -1466,7 +1467,8 @@ function evEditor(){
    <div><h3>${i.__new?'New item':esc(i.title||i.code)}</h3><div class="note">${i.__new?'Give it a short code such as F5.':'Code '+esc(i.code)}</div></div>
    <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="btn btn-line" id="ev-back">← All items</button>${i.__new?'':'<button class="btn btn-line" id="ev-chat">Team chat</button>'}
-    <button class="btn btn-dark" id="ev-save">Save</button></div></div>
+    <button class="btn btn-dark" id="ev-save" ${retiredMembership?'disabled':''}>Save</button></div></div>
+  ${retiredMembership?'<p class="warn">This legacy membership is retired. Its history remains available, but it cannot be edited or sold again. Manage current plan prices in Members.</p>':''}
 
   <h4 class="sec">The basics</h4>
   <div class="f2"><div><label class="l">Code</label><input class="t" id="i-code" value="${esc(i.code)}" placeholder="F5" ${i.__new?'':'readonly'}></div>
@@ -3018,19 +3020,30 @@ function invShow(inv){
 let WEBD=30;
 /* ---------- Members: free accounts, paid plans, compliance calendar (members.js) ---------- */
 const MPROD={pro_month:'Pro, 1 month',pro_year:'Pro, 12 months',compliance_month:'Compliance, 1 month',compliance_year:'Compliance, 12 months',call:'Expert call',check:'Counterparty check',check_plus:'Enhanced counterparty check',filing:'We file it for you'};
+const MLANGS=[['en','English'],['fr','French'],['es','Spanish'],['de','German'],['ar','Arabic'],['zh','Chinese']];
 async function membersView(){
  setTitle('Members','Free accounts, paid plans and what needs doing');
  $('#view').innerHTML='<div class="empty">Loading…</div>';
  const r=await api('/api/members').catch(()=>null);if(!r||V!=='members')return;const k=r.kpi;
  const kp=(l,v,sub)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+ const copyLocale=l=>`<div data-member-copy-locale="${l}"${l==='en'?'':' hidden'}><div class="f2">
+ <div><label class="l">Pro membership · ${MLANGS.find(x=>x[0]===l)[1]}</label><textarea class="t" data-member-copy="pro" data-locale="${l}" rows="5">${esc((r.catalog?.pro?.[l]||[]).join('\n'))}</textarea></div>
+ <div><label class="l">Compliance calendar · ${MLANGS.find(x=>x[0]===l)[1]}</label><textarea class="t" data-member-copy="compliance" data-locale="${l}" rows="5">${esc((r.catalog?.compliance?.[l]||[]).join('\n'))}</textarea></div>
+ </div></div>`;
  $('#view').innerHTML=`<div class="kpis">${kp('Members',k.members,`${k.new_7d} new this week, ${k.new_30d} in 30 days`)}${kp('Paying',k.paying,`${k.conversion}% of members`)}${kp('Monthly recurring income',ghs(k.mrr),'active plans, before VAT')}${kp('Paid in 30 days',ghs(k.paid_30d),'incl. VAT')}${kp('To do',k.open_bookings,`${k.unpaid} orders waiting for payment`)}</div>
  <div class="card"><h3 style="margin-bottom:10px">To do: calls, checks and filings that are paid</h3><div class="wrapx" style="max-height:none"><table><thead><tr><th>Order</th><th>Member</th><th>What they need</th><th>Status</th><th></th></tr></thead><tbody>${r.open.map(o=>`<tr><td><b>${esc(MPROD[o.product]||o.product)}</b><div class="note">${dshort(o.created_at)}${o.number?' · '+esc(o.number):''}</div></td><td>${esc(o.name||o.email)}<div class="note">${esc(o.company||'')} ${esc(o.email)}</div></td><td class="note" style="max-width:420px">${esc((o.details||{}).brief||'')}${(o.details||{}).slots?'<div>Times: '+esc(o.details.slots)+'</div>':''}</td><td><span class="chip ${o.status==='open'?'gold':''}">${o.status==='open'?'Paid, to do':'Waiting for payment'}</span></td><td>${o.status==='open'?`<button class="btn btn-line" data-done="${o.id}">Mark done</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5"><div class="empty">Nothing waiting.</div></td></tr>'}</tbody></table></div></div>
  <div class="card" style="padding:0"><div class="wrapx" style="max-height:none"><table><thead><tr><th>Member</th><th>Company · country</th><th>Plans</th><th>Sectors</th><th>Language</th><th>Joined</th></tr></thead><tbody>${r.members.map(m=>`<tr class="r" data-mem="${m.id}"><td><b>${esc(m.name||m.email)}</b><div class="note">${esc(m.email)}${m.verified_at?'':' · not confirmed yet'}</div></td><td class="note">${esc(m.company||'—')}<div>${esc(m.country||'')}</div></td><td>${m.plans?`<span class="chip green">${esc(m.plans)}</span>`:'<span class="note">Free</span>'}${m.unpaid?` <span class="chip">${m.unpaid} unpaid</span>`:''}${m.companies?`<div class="note">${m.companies} compan${m.companies>1?'ies':'y'}</div>`:''}</td><td class="note">${esc((m.sectors||[]).join(', '))}</td><td class="note">${esc((m.lang||'en').toUpperCase())}</td><td class="note">${dshort(m.created_at)}</td></tr>`).join('')||'<tr><td colspan="6"><div class="empty">No members yet. Every PDF download page invites readers to make a free account.</div></td></tr>'}</tbody></table></div></div>
- <div class="card"><h3>Prices (GHS, before VAT)</h3><div class="f2" id="mp">${Object.entries(r.prices).map(([k2,p])=>`<div><label class="l">${esc(MPROD[k2]||k2)}</label><input class="t" data-pk="${k2}" type="number" min="1" value="${p.price}"></div>`).join('')}</div><button class="btn btn-line" id="mp-save" style="margin-top:10px">Save prices</button> <span class="note">Rule: at least cost × 1.7. The membership page updates within minutes.</span></div>
+ <div class="card"><h3>Prices (GHS, before VAT)</h3><div class="f2" id="mp">${Object.entries(r.prices).map(([k2,p])=>`<div><label class="l">${esc(MPROD[k2]||k2)}</label><input class="t" data-pk="${k2}" type="number" min="1" max="10000000" step="0.01" value="${p.price}"></div>`).join('')}</div><button class="btn btn-line" id="mp-save" style="margin-top:10px">Save prices</button> <span class="note">Rule: at least cost × 1.7. Public membership prices refresh within one minute.</span><p class="note" id="mp-status" role="status"></p></div>
+ <div class="card"><h3>Public plan benefits</h3><p class="note">Edit one benefit per line in each language. Keep the same number of benefits in all languages (1–8). These are public descriptions only; edits do not change plan access or service delivery.</p>
+ <div style="max-width:320px"><label class="l" for="mc-lang">Language</label><select class="t" id="mc-lang">${MLANGS.map(([l,n])=>`<option value="${l}">${n}</option>`).join('')}</select></div>
+ ${MLANGS.map(([l])=>copyLocale(l)).join('')}<button class="btn btn-line" id="mc-save" style="margin-top:10px">Save benefit descriptions</button><p class="note" id="mc-status" role="status" aria-live="polite"></p></div>
  <div class="card"><h3>Write a Pro briefing</h3><div class="f2"><div><label class="l">Title</label><input class="t" id="pb-t"></div><div><label class="l">Sector</label><select class="t" id="pb-s"><option value="">All sectors</option><option value="macro">Economy</option><option value="mining">Mining</option><option value="energy">Energy</option><option value="agri">Agribusiness</option><option value="industry">ICT, industry</option></select></div></div><label class="l">Text</label><textarea class="t" id="pb-b" rows="6"></textarea><button class="btn btn-dark" id="pb-go" style="margin-top:10px">Publish to Pro members</button></div>`;
  document.querySelectorAll('[data-mem]').forEach(t=>t.onclick=()=>go('mem',t.dataset.mem));
  document.querySelectorAll('[data-done]').forEach(b=>b.onclick=async()=>{await api('/api/members/orders/'+b.dataset.done+'/done',{method:'POST',body:'{}'});toast('Done');membersView()});
- $('#mp-save').onclick=async()=>{const b={};document.querySelectorAll('[data-pk]').forEach(i=>b[i.dataset.pk]=+i.value);await api('/api/members/prices',{method:'POST',body:JSON.stringify(b)});toast('Prices saved')};
+ $('#mp-save').onclick=async()=>{const b={};document.querySelectorAll('[data-pk]').forEach(i=>b[i.dataset.pk]=+i.value);$('#mp-status').textContent='';try{await api('/api/members/prices',{method:'POST',body:JSON.stringify(b)});$('#mp-status').textContent='Prices saved.'}catch(e){$('#mp-status').textContent=e.error==='invalid_price'?'Prices were not saved. Enter a price above GHS 0 and no more than GHS 10,000,000.':'Prices were not saved: '+e.message}};
+ $('#mc-lang').onchange=()=>document.querySelectorAll('[data-member-copy-locale]').forEach(x=>x.hidden=x.dataset.memberCopyLocale!==$('#mc-lang').value);
+ $('#mc-save').onclick=async()=>{const catalog={};document.querySelectorAll('[data-member-copy]').forEach(x=>{catalog[x.dataset.memberCopy]??={};catalog[x.dataset.memberCopy][x.dataset.locale]=x.value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)});$('#mc-status').textContent='';
+  try{await api('/api/members/catalog',{method:'POST',body:JSON.stringify(catalog)});$('#mc-status').textContent='Benefit descriptions saved. Public membership pages refresh within one minute.'}catch(e){$('#mc-status').textContent=e.error==='invalid_catalog'?'Nothing was saved. Add 1–8 benefit lines for each plan in all six languages, with the same number of lines per plan.':'Benefits were not saved: '+e.message}};
  $('#pb-go').onclick=async()=>{const t=$('#pb-t').value.trim();if(!t)return toast('Add a title');await api('/api/members/posts',{method:'POST',body:JSON.stringify({title:t,sector:$('#pb-s').value,body:$('#pb-b').value,publish:true})});toast('Published');$('#pb-t').value='';$('#pb-b').value=''};
 }
 async function memberView(id){

@@ -48,5 +48,19 @@
    "booking": "filing",
    "company": true
   }
+ },
+ "plan_benefits": {
+  "pro": [
+   "Everything in the free account",
+   "A monthly briefing per sector from our team",
+   "The Excel data pack: every figure with its source, our forecasts and 10 years of history",
+   "One question to our team every month"
+  ],
+  "compliance": [
+   "Every filing and payment date for your company: PAYE, SSNIT, VAT, income tax, the Registrar and permits",
+   "Reminders 7 days and 1 day before each deadline",
+   "“We file it for you” in one click",
+   "Your own page with case updates, documents and invoices"
+  ]
  }
 }

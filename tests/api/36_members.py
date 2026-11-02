@@ -70,6 +70,12 @@ assert inv['currency'] == 'GHS' and inv['number'].startswith('INV-') and float(i
 assert psql("select kind from deals where title like 'Compliance calendar%'") == 'consulting'
 _sp.run(['psql', DB, '-qc', 'update users set must_change=false'], check=True)
 st, d, h = call('/api/login', {'email': 'admin', 'password': 'ownerpass123'}); adm = h['set-cookie'].split(';')[0]
+assert call('/api/members/catalog', {}, cookie=None)[0] == 401, 'only admins can edit membership benefits'
+st, offers, _ = call('/api/items')
+assert st == 200 and not any(i['code'] in ('M1', 'M2', 'M3') for i in offers['items']), 'legacy membership offers are not public'
+st, retired, _ = call('/api/register', {'item_code': 'M2', 'full_name': 'Ama Owusu', 'email': 'ama@co.test',
+    'phone': '0240000000', 'consent': True})
+assert st == 400 and retired['error'] == 'unknown_item', 'legacy membership codes cannot be newly registered'
 st, r, _ = call(f"/api/invoices/{inv['id']}/payment", {'amount': 14400, 'method': 'momo', 'reference': 'MM123'}, cookie=adm); assert st == 200 and r['status'] == 'paid', r
 import time; time.sleep(0.5)
 st, me, _ = call('/api/member/me', cookie=ck)
@@ -108,9 +114,26 @@ tok = re.search(r'/m/stop\?u=([0-9a-f]+)', dg).group(1); st, h, _ = raw('/m/stop
 _sp.run(['psql', DB, '-qc', "delete from member_digest_days where member_id=(select id from members where email='ama@co.test')"], check=True)
 st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert r['digests'] == 0, 'unsubscribed member receives no further digest'
 ok('daily digest in the member’s language includes only an approved report update, a published event invitation with direct registration, and a one-click stop; unsubscribe suppresses future days')
-st, p, _ = call('/api/member/prices'); assert p['prices']['pro_year'] == 12000 and p['permits']
-call('/api/members/prices', {'pro_year': 5200}, cookie=adm); assert call('/api/member/prices')[1]['prices']['pro_year'] == 5200
-ok('prices are public for the membership page and the back office can change them')
+st, p, _ = call('/api/member/prices')
+assert p['prices']['pro_year'] == 12000 and p['permits']
+assert set(p['catalog']['pro']) == {'en', 'fr', 'es', 'de', 'ar', 'zh'} and len(p['catalog']['compliance']['en']) == 4
+edited = json.loads(json.dumps(p['catalog']))
+for lang in ('en', 'fr', 'es', 'de', 'ar', 'zh'):
+    edited['pro'][lang][0] = 'Updated member benefit ' + lang
+st, saved, _ = call('/api/members/catalog', edited, cookie=adm)
+assert st == 200 and saved['catalog']['pro']['zh'][0] == 'Updated member benefit zh'
+bad_catalog = json.loads(json.dumps(edited)); bad_catalog['pro']['fr'].pop()
+assert call('/api/members/catalog', bad_catalog, cookie=adm)[0] == 400, 'all locales keep the same benefit count'
+assert call('/api/member/prices')[1]['catalog']['pro']['fr'][0] == 'Updated member benefit fr', 'invalid edit must not change catalog'
+assert call('/api/members/prices', {'pro_year': 5200}, cookie=adm)[0] == 200
+assert call('/api/members/prices', {'pro_month': 999}, cookie=adm)[0] == 200
+public_catalog = call('/api/member/prices')[1]
+assert public_catalog['prices']['pro_year'] == 5200 and public_catalog['prices']['pro_month'] == 999, 'partial price edits preserve other prices'
+st, new_plan, _ = call('/api/member/buy', {'product': 'pro_month'}, cookie=ck)
+assert st == 200
+new_invoice = json.loads(psql(f"select row_to_json(i) from invoices i join member_orders o on o.invoice_id=i.id where o.id={new_plan['order']}"))
+assert float(new_invoice['taxable']) == 999, 'new invoices use the centrally managed price'
+ok('member plan prices and six-language benefits share one CRM catalog; public pages and new invoices use saved values; retired codes stay closed')
 # an order whose payment landed but whose plan never started is picked up by the daily sweep
 st, b3, _ = call('/api/member/buy', {'product': 'pro_month'}, cookie=ck); assert st == 200
 _sp.run(['psql', DB, '-qc', f"update invoices set status='paid' where id=(select invoice_id from member_orders where id={b3['order']})"], check=True)

@@ -18,7 +18,9 @@ const HERE = path.dirname(new URL(import.meta.url).pathname);
 export const LANGS = ['en', 'fr', 'es', 'de', 'ar', 'zh'];
 export const SECTORS = ['macro', 'mining', 'energy', 'agri', 'industry'];
 /* prices in cedis, before VAT and levies (member-products.json); the back office can change them (setting member_prices) */
-export const PRODUCTS = JSON.parse(fs.readFileSync(path.join(HERE, 'member-products.json'), 'utf8')).products;
+const PRODUCT_CONFIG = JSON.parse(fs.readFileSync(path.join(HERE, 'member-products.json'), 'utf8'));
+export const PRODUCTS = PRODUCT_CONFIG.products;
+export const PLAN_BENEFITS = PRODUCT_CONFIG.plan_benefits;
 const RULES = JSON.parse(fs.readFileSync(path.join(HERE, 'compliance-rules.json'), 'utf8'));
 const TR = Object.fromEntries(LANGS.slice(1).map(l => {
   try { return [l, JSON.parse(fs.readFileSync(path.join(HERE, 'site-i18n', l + '.json'), 'utf8')).strings || {}]; } catch { return [l, {}]; }
@@ -95,6 +97,47 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
   async function prices() {
     let over = {}; try { over = JSON.parse((await q("select value from settings where key='member_prices'")).rows[0]?.value || '{}'); } catch {}
     return Object.fromEntries(Object.entries(PRODUCTS).map(([k, p]) => [k, { ...p, price: +over[k] > 0 ? +over[k] : p.price }]));
+  }
+  async function catalog() {
+    let saved = {};
+    const raw = (await q("select value from settings where key='member_catalog'")).rows[0]?.value;
+    if (raw) {
+      try { saved = JSON.parse(raw); }
+      catch (e) { console.error('Invalid member catalog setting:', e.message); }
+    }
+    return Object.fromEntries(Object.entries(PLAN_BENEFITS).map(([plan, defaults]) => [plan,
+      Object.fromEntries(LANGS.map(lang => {
+        const values = saved?.[plan]?.[lang];
+        if (Array.isArray(values) && values.length >= 1 && values.length <= 8
+          && values.every(x => typeof x === 'string' && x.trim().length > 0 && x.trim().length <= 240)) {
+          return [lang, values.map(x => clip(x, 240))];
+        }
+        if (values !== undefined) console.error(`Invalid member catalog entries for ${plan}/${lang}; using defaults`);
+        return [lang, defaults.map(x => T(lang, x))];
+      }))
+    ]));
+  }
+  async function saveCatalog(input) {
+    if (!input || typeof input !== 'object' || Array.isArray(input)) return { error: 'invalid_catalog' };
+    if (Object.keys(input).some(plan => !Object.hasOwn(PLAN_BENEFITS, plan))) return { error: 'invalid_catalog' };
+    const out = {};
+    for (const plan of Object.keys(PLAN_BENEFITS)) {
+      const translations = input[plan];
+      if (!translations || typeof translations !== 'object' || Array.isArray(translations)) return { error: 'invalid_catalog' };
+      if (Object.keys(translations).some(lang => !LANGS.includes(lang))) return { error: 'invalid_catalog' };
+      let count = null;
+      out[plan] = {};
+      for (const lang of LANGS) {
+        const values = translations[lang];
+        if (!Array.isArray(values) || values.length < 1 || values.length > 8) return { error: 'invalid_catalog' };
+        const cleaned = values.map(x => typeof x === 'string' ? x.trim() : '');
+        if (cleaned.some(x => !x || x.length > 240) || (count !== null && cleaned.length !== count)) return { error: 'invalid_catalog' };
+        count = cleaned.length;
+        out[plan][lang] = cleaned;
+      }
+    }
+    await q("insert into settings(key,value) values ('member_catalog',$1) on conflict (key) do update set value=excluded.value", [JSON.stringify(out)]);
+    return { catalog: await catalog() };
   }
 
   /* ---------- accounts ---------- */
@@ -377,7 +420,7 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
         from members m where m.closed_at is null order by m.id desc limit 500`)).rows;
     const open = (await q(`select o.id, o.product, o.status, o.details, o.created_at, o.paid_at, m.email, m.name, m.company, i.number, i.status as invoice_status
         from member_orders o join members m on m.id=o.member_id left join invoices i on i.id=o.invoice_id where o.status in ('pending','open') order by o.id desc limit 100`)).rows;
-    return { kpi: { ...k, conversion: k.members ? Math.round(1000 * k.paying / k.members) / 10 : 0, mrr: Math.round(mrr), paid_30d: Math.round(paid30) }, active: act, members: list, open, prices: P };
+    return { kpi: { ...k, conversion: k.members ? Math.round(1000 * k.paying / k.members) / 10 : 0, mrr: Math.round(mrr), paid_30d: Math.round(paid30) }, active: act, members: list, open, prices: P, catalog: await catalog() };
   }
   async function memberDetail(id) {
     const m = (await q('select * from members where id=$1', [id])).rows[0]; if (!m) return null;
@@ -401,5 +444,5 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
     return r;
   }
 
-  return { signup, sendLink, login, fromCookie, prefs, buy, invoicePaid, activate, grant, saveCompany, calendar, me, weekly, dailyBrief, daily, stop, dashboard, memberDetail, addUpdate, closeOrder, post, prices, active, deadlines };
+  return { signup, sendLink, login, fromCookie, prefs, buy, invoicePaid, activate, grant, saveCompany, calendar, me, weekly, dailyBrief, daily, stop, dashboard, memberDetail, addUpdate, closeOrder, post, prices, catalog, saveCatalog, active, deadlines };
 }

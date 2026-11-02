@@ -7,7 +7,9 @@ import report_page as RP
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CRM = os.path.join(HERE, '..', 'crm')
-PRODUCTS = json.load(open(os.path.join(CRM, 'member-products.json'), encoding='utf-8'))['products']
+PRODUCT_CONFIG = json.load(open(os.path.join(CRM, 'member-products.json'), encoding='utf-8'))
+PRODUCTS = PRODUCT_CONFIG['products']
+PLAN_BENEFITS = PRODUCT_CONFIG['plan_benefits']
 PERMITS = json.load(open(os.path.join(CRM, 'compliance-rules.json'), encoding='utf-8')).get('permit_suggestions', [])
 RULES = json.load(open(os.path.join(CRM, 'compliance-rules.json'), encoding='utf-8'))['rules']
 esc = RP.esc
@@ -76,19 +78,18 @@ html[dir="rtl"] .ac-form input[type=email]{direction:ltr;text-align:right}
 
 def plans(L, pre):
     t = L.t; P = PRODUCTS
-    def card(cls, tag, title, price, alt, items, href, cta):
+    def card(cls, tag, title, price, alt, items, href, cta, benefit_key=None):
+        ul = f'<ul{f" data-plan-benefits={benefit_key}" if benefit_key else ""}>' + ''.join(f'<li>{esc(t(i))}</li>' for i in items) + '</ul>'
         return (f'<div class="box mb-plan{cls}">{f"<span class=mb-tag>{esc(t(tag))}</span>" if tag else ""}<h3>{esc(t(title))}</h3><div class="amt">{price}</div>'
-                + (f'<p class="alt">{alt}</p>' if alt else '') + '<ul>' + ''.join(f'<li>{esc(t(i))}</li>' for i in items) + f'</ul><a class="btn {"btn-gold" if cls else "btn-line"}" href="{pre}/account{href}">{esc(t(cta))} <span class="arrow">→</span></a></div>')
+                + (f'<p class="alt">{alt}</p>' if alt else '') + ul + f'<a class="btn {"btn-gold" if cls else "btn-line"}" href="{pre}/account{href}">{esc(t(cta))} <span class="arrow">→</span></a></div>')
     per = lambda k, unit: f'<span data-price="{k}">{esc(ghs(L, P[k]["price"]))}</span> <small>{esc(t(unit))}</small>'
     return ('<div class="mb-plans">'
         + card('', 'Start here', 'Free account', f'{esc(ghs(L, 0))}', '', ['Opt in to the daily sector brief and event invitations', 'The Ghana Investment Report and its PDF in six languages',
                'A preview of your company’s next filing deadlines', 'Event invitations and recordings'], '#signup', 'Create a free account')
         + card(' hot', 'For international investors', 'Pro membership', per('pro_month', 'per month'), t('or {price} per year').format(price=f'<span data-price="pro_year">{esc(ghs(L, P["pro_year"]["price"]))}</span>'),
-               ['Everything in the free account', 'A monthly briefing per sector from our team', 'The Excel data pack: every figure with its source, our forecasts and 10 years of history', 'One question to our team every month'],
-               '?buy=pro_year#signup', 'Become a Pro member')
+               PLAN_BENEFITS['pro'], '?buy=pro_year#signup', 'Become a Pro member', 'pro')
         + card(' hot', 'For Ghana businesses', 'Compliance calendar', per('compliance_month', 'per company, per month'), t('or {price} per year').format(price=f'<span data-price="compliance_year">{esc(ghs(L, P["compliance_year"]["price"]))}</span>'),
-               ['Every filing and payment date for your company: PAYE, SSNIT, VAT, income tax, the Registrar and permits', 'Reminders 7 days and 1 day before each deadline',
-                '“We file it for you” in one click', 'Your own page with case updates, documents and invoices'], '?buy=compliance_year#signup', 'Protect my company')
+               PLAN_BENEFITS['compliance'], '?buy=compliance_year#signup', 'Protect my company', 'compliance')
         + '</div>')
 
 
@@ -137,9 +138,13 @@ def render_membership(lang='en', L=None):
         '</main>\n<!--#bottom-->\n' + PRICE_JS)
 
 
-PRICE_JS = '''<script>(function(){fetch("/api/member/prices").then(function(r){return r.ok?r.json():null}).then(function(j){if(!j||!j.prices)return;
-document.querySelectorAll("[data-price]").forEach(function(el){var v=j.prices[el.getAttribute("data-price")];if(!(v>0))return;var t=el.textContent,n=Math.round(v);
-el.textContent=t.replace(/[\\d][\\d.,\\u202f\\u00a0]*/,function(m){var sep=/\\d\\.\\d{3}\\b/.test(m)?".":/\\u202f/.test(m)?"\\u202f":/,\\d{3}/.test(m)?",":"";return sep?n.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g,sep):String(n)})})}).catch(function(){})})();</script>
+PRICE_JS = '''<script>(function(){fetch("/api/member/prices").then(function(r){return r.ok?r.json():null}).then(function(j){if(!j)return;
+if(j.prices)document.querySelectorAll("[data-price]").forEach(function(el){var v=j.prices[el.getAttribute("data-price")];if(!(v>0))return;var t=el.textContent,n=Math.round(v);
+el.textContent=t.replace(/[\\d][\\d.,\\u202f\\u00a0]*/,function(m){var sep=/\\d\\.\\d{3}\\b/.test(m)?".":/\\u202f/.test(m)?"\\u202f":/,\\d{3}/.test(m)?",":"";return sep?n.toString().replace(/\\B(?=(\\d{3})+(?!\\d))/g,sep):String(n)})});
+var lang=(document.documentElement.lang||"en").slice(0,2);
+if(j.catalog)Object.keys(j.catalog).forEach(function(plan){var list=document.querySelector('[data-plan-benefits="'+plan+'"]'),items=j.catalog[plan]&&j.catalog[plan][lang];
+if(!list||!Array.isArray(items))return;list.textContent="";items.forEach(function(text){var li=document.createElement("li");li.textContent=text;list.appendChild(li)})});
+}).catch(function(){})})();</script>
 '''
 
 

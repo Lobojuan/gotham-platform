@@ -250,13 +250,11 @@ let MOMO_NAME='Gotham Consult';
 /* ======================================== */
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const QS=new URLSearchParams(location.search);
+if(['M1','M2','M3'].includes((QS.get('e')||location.hash.slice(1)).toUpperCase())){const lang=(document.documentElement.lang||'en').slice(0,2);location.replace((lang==='en'?'':'/'+lang)+'/membership')}
 const UTM={utm_source:QS.get('utm_source')||'',utm_campaign:QS.get('utm_campaign')||''};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const money=(n,c)=>Number(n)===0?'Free':c+' '+Number(n).toLocaleString('en-GB');
 let ITEMS=[
- {id:'M1',g:'For Ghana businesses',t:'Member',s:'20% off forums, monthly business clinic, priority grant alerts',p:250,c:'GHS',per:'/ month'},
- {id:'M2',g:'For Ghana businesses',t:'Business Pro',s:'Bookkeeping, E-VAT filing, compliance calendar, forum seats',p:1500,c:'GHS',per:'/ month'},
- {id:'M3',g:'For international investors',t:'Investor Desk',s:'Local representation, site visits, monthly written report, 3-month minimum',p:30000,c:'GHS',per:'/ month'},
  {id:'B1',g:'For international investors',t:'Ghana investor briefing',s:'60-minute call on your sector, credited to follow-on work',p:6500,c:'GHS'},
  {id:'B2',g:'For international investors',t:'Mining regime briefing',s:'Royalties, reform status, licences and risks for your mineral',p:15000,c:'GHS'}];
 const PAYS=[
