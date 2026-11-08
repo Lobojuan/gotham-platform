@@ -47,6 +47,13 @@ assert.equal(await W.review('nope','x',''),null);
 const pub=await W.publicReport();assert.ok(pub.facts.every(f=>['ok','review','unverified'].includes(f.status)&&f.checked));assert.ok(!JSON.stringify(pub).includes('problems'));
 const again=makeFactWatch({facts:F,get,now:()=>clock,load:async()=>saved});assert.equal((await again.report()).facts.find(f=>f.id==='old').checked,'2026-10-22');
 console.log('  ok a page edit is a soft note; "Still correct" clears it and restarts the clock; dead article links after three failures; state persists');
+const net=await import('node:net');const {fetchSource}=await import('./apps/crm/fact-watch.js');
+const body='<html><body><p>Employer 13% and employee 5.5%. '+'Official text. '.repeat(30)+'</p></body></html>';
+const srv=net.createServer(c=>{c.once('data',()=>{c.end('HTTP/1.1 200 OK\r\nContent-Type: text/html\r\nContent-Security-Policy: default-src *;\n  img-src *;\r\nContent-Length: '+Buffer.byteLength(body)+'\r\nConnection: close\r\n\r\n'+body)})});
+await new Promise(r=>srv.listen(0,'127.0.0.1',r));
+const got=await fetchSource('http://127.0.0.1:'+srv.address().port+'/employer');srv.close();
+assert.equal(got.status,200);assert.ok(pageText(got.buf).includes('13%'));
+console.log('  ok a source that sends a header split over lines (as SSNIT does) is still read, not called unreachable');
 '''
 subprocess.run(['node', '--input-type=module', '-e', code], cwd=ROOT, check=True)
 

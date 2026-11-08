@@ -8,6 +8,8 @@
    or changes the site and facts.json. */
 import fs from 'node:fs';
 import crypto from 'node:crypto';
+import https from 'node:https';
+import http from 'node:http';
 
 const UA = 'Mozilla/5.0 (compatible; GothamFactCheck/1.0; +https://gothamconsult.com/sources)';
 const DAY = 864e5;
@@ -32,8 +34,36 @@ export function pageText(buf, url = '', type = '') {
   return t;
 }
 
+/* some official sites send headers Node's strict parser refuses (SSNIT sends a Content-Security-Policy split over
+   several lines); browsers and curl read them fine, so we read those the same lenient way instead of calling the source down */
+export const malformedResponse = e => /does not match the HTTP|Invalid header|HPE_|Parse Error/i.test(String(e?.cause?.message || e?.cause?.code || e?.message || ''));
+
+export function lenientGet(url, limit = 8e6, hops = 5) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('http:') ? http : https;
+    const req = lib.get(url, { insecureHTTPParser: true, timeout: 25000, headers: { 'user-agent': UA, accept: 'text/html,application/pdf,*/*' } }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && hops > 0) {
+        res.resume();
+        return resolve(lenientGet(new URL(res.headers.location, url).href, limit, hops - 1));
+      }
+      const chunks = []; let size = 0;
+      res.on('data', c => { size += c.length; if (size > limit) { res.destroy(); return; } chunks.push(c); });
+      const done = () => resolve({ status: res.statusCode, type: res.headers['content-type'] || '', buf: Buffer.concat(chunks) });
+      res.on('end', done); res.on('close', done); res.on('error', reject);
+    });
+    req.on('timeout', () => req.destroy(new Error('timeout')));
+    req.on('error', reject);
+  });
+}
+
 export async function fetchSource(url, limit = 8e6) {
-  const r = await fetch(url, { signal: AbortSignal.timeout(25000), redirect: 'follow', headers: { 'user-agent': UA, accept: 'text/html,application/pdf,*/*' } });
+  let r;
+  try {
+    r = await fetch(url, { signal: AbortSignal.timeout(25000), redirect: 'follow', headers: { 'user-agent': UA, accept: 'text/html,application/pdf,*/*' } });
+  } catch (e) {
+    if (malformedResponse(e)) return lenientGet(url, limit);
+    throw e;
+  }
   const chunks = []; let size = 0;
   if (r.body) for await (const c of r.body) { size += c.length; if (size > limit) break; chunks.push(c); }
   return { status: r.status, type: r.headers.get('content-type') || '', buf: Buffer.concat(chunks) };

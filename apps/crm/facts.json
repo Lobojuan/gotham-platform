@@ -37,7 +37,7 @@
      "claim": "SSNIT pension contributions are 13% from the employer and 5.5% from the employee: 18.5% of basic salary.",
      "where": ["content/insights/hiring-staff-ghana-2026.json", "content/insights/register-company-ghana-foreigner.json"], "says": ["13% from the employer"],
      "sources": [{"label": "SSNIT: Become an employer", "url": "https://www.ssnit.org.gh/become-an-employer/", "official": true, "expect": ["13%"]}],
-     "checked": "2026-10-01", "review_days": 180},
+     "checked": "2026-11-08", "review_days": 180},
     {"id": "orc-company-fee", "topic": "Company registration", "kind": "fee",
      "claim": "Registering a company limited by shares costs GHS 585 (with constitution, Form 3 and beneficial ownership profile) plus 1% capital duty on stated capital.",
      "where": ["content/insights/register-company-ghana-foreigner.json", "pages/classic.html"], "says": ["GHS 585"],
