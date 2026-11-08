@@ -78,6 +78,7 @@ pipeline, task, contact record and report coverage. Current execution status is 
 | ID | Requirement | Test |
 |---|---|---|
 | FIN-1 | Admins can securely add, edit, remove and select a default receiving bank account per currency in Company & invoicing settings. Account data is returned only to admins and appears on client invoice links, never in public content feeds. Existing single-account settings remain compatible. | api/19_invoices_google.py; admin UI smoke |
+| FIN-2 | An issued invoice, quotation or credit note can produce a branded fillable PDF using its locked CRM values, current configured payment instructions and separate client acknowledgement name/date/checkbox fields. Phone is plain text and separate from date fields. Each PDF snapshot and each client-returned PDF are versioned with a SHA-256 hash in the invoice record; admins can download them, and clients can download/return copies from the existing private invoice link. Drafts cannot be downloaded as issued documents; returned PDFs are size/type checked, rate limited and stored privately. | api/19_invoices_google.py; PDF render/form inspection |
 
 ## 4. Back office content
 

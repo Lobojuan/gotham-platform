@@ -2,6 +2,8 @@
 # numbering, lock after issue, payments with withholding tax, void, quote to invoice, VAT CSV,
 # the client's page, Paystack (stand-in API + signed webhook) and Sign in with Google (stand-in token endpoint).
 import subprocess, time, json, os, urllib.request, urllib.error, sys, atexit, threading, hmac, hashlib, base64, http.client, datetime
+import io
+from pypdf import PdfReader, PdfWriter
 from urllib.parse import urlparse, parse_qs
 from http.server import BaseHTTPRequestHandler, HTTPServer
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
@@ -98,7 +100,7 @@ ok('company & invoicing settings: rates 15/2.5/2.5 by default, bad values refuse
 # ---------- totals ----------
 cid = int(psql("insert into contacts(full_name, email, company) values ('Ama Mensah','ama@mensah.test','Mensah Foods') returning id"))
 st, e = call('/api/invoices', {'lines': LINES}, cookie=ck); assert st == 400 and e['error'] == 'bill_to_required', e
-st, d = call('/api/invoices', {'contact_id': cid, 'bill_to': {'name': 'Ama Mensah', 'company': 'Mensah Foods', 'email': 'AMA@mensah.test', 'tax_id': 'P0001'}, 'lines': LINES, 'wht_rate': 7.5}, cookie=ck)
+st, d = call('/api/invoices', {'contact_id': cid, 'bill_to': {'name': 'Ama Mensah', 'company': 'Mensah Foods', 'email': 'AMA@mensah.test', 'phone': '+233 24 123 4567', 'tax_id': 'P0001'}, 'lines': LINES, 'wht_rate': 7.5}, cookie=ck)
 t = d['totals']; assert st == 200, d
 assert (t['subtotal'], t['discount'], t['taxable'], t['vat'], t['nhil'], t['getfund'], t['total'], t['tax_ghs']) == (4000, 100, 3900, 585, 97.5, 97.5, 4680, 780), t
 inv1 = d['id']
@@ -142,8 +144,25 @@ ok('issuing gives INV-YYYY-0001, 0002…, due date from the terms; an issued inv
 st, d = call('/api/invoices/%d/send' % inv1, {}, cookie=ck); assert st == 200, d
 assert psql("select count(*) from outbox where to_email='ama@mensah.test' and subject like 'Invoice INV-%s-0001 from Gotham Consult Ltd'" % Y) == '1', psql("select to_email, subject from outbox")
 link = d['link']; tok = link.rsplit('/', 1)[1]
+_c = http.client.HTTPConnection('127.0.0.1', TEST_PORT, timeout=30); _c.request('GET', '/i/' + tok + '/pdf'); _r = _c.getresponse()
+st, pdf, _disp = _r.status, _r.read(), _r.getheader('content-disposition') or ''
+assert st == 200 and pdf.startswith(b'%PDF-') and _disp.startswith('attachment;') and '.pdf' in _disp, (st, pdf[:30], _disp)
+fields = PdfReader(io.BytesIO(pdf)).get_fields()
+assert {'client.typed_name', 'client.acknowledgement_date', 'client.received'} <= set(fields), fields
+assert 'GHS 4,680.00' in '\n'.join((p.extract_text() or '') for p in PdfReader(io.BytesIO(pdf)).pages)
+assert psql("select count(*) from invoice_documents where invoice_id=%d and document_type='issued_pdf'" % inv1) == '1'
+writer = PdfWriter(); writer.clone_document_from_reader(PdfReader(io.BytesIO(pdf)))
+writer.update_page_form_field_values(writer.pages[-1], {'client.typed_name': 'Ama Mensah', 'client.acknowledgement_date': '14/10/2026', 'client.received': '/Yes'}, auto_regenerate=False)
+out = io.BytesIO(); writer.write(out)
+upload = json.dumps({'file_name': 'ama-signed.pdf', 'pdf_base64': base64.b64encode(out.getvalue()).decode()}).encode()
+st, _, _, _, _ = raw_req('POST', '/i/' + tok + '/return', upload, {'content-type': 'application/json', 'accept': 'application/json'})
+assert st == 201 and psql("select count(*) from invoice_documents where invoice_id=%d and document_type='client_signed_pdf'" % inv1) == '1'
+st, _, _, _, _ = raw_req('GET', '/api/invoices/%d/document?kind=client_signed_pdf' % inv1, headers={'cookie': ck})
+assert st == 200
+st, _, _, _, badpdf = raw_req('POST', '/i/' + tok + '/return', json.dumps({'file_name': 'not.pdf', 'pdf_base64': base64.b64encode(b'no pdf').decode()}).encode(), {'content-type': 'application/json', 'accept': 'application/json'})
+assert st == 400 and b'invalid_pdf' in badpdf
 st, html = call('/i/' + tok, text=True)
-for want in ['TAX INVOICE', 'INV-%s-0001' % Y, 'C0012345678', 'VAT', 'NHIL', 'GETFund', 'GHS 4,680.00', '+233550416627', 'GCB Bank', '7.5% withholding tax', 'EVAT-778899', '/i/%s/pay' % tok]:
+for want in ['TAX INVOICE', 'INV-%s-0001' % Y, 'C0012345678', 'VAT', 'NHIL', 'GETFund', 'GHS 4,680.00', '+233550416627', 'GCB Bank', '7.5% withholding tax', 'EVAT-778899', '/i/%s/pay' % tok, 'Phone: +233 24 123 4567', 'Download fillable PDF', 'return-pdf']:
     assert want in html, want
 st, x = call('/i/' + 'A' * 24, text=True); assert st == 404
 draft_tok = psql("select token from invoices where id=%d" % inv_usd); st, x = call('/i/' + draft_tok, text=True); assert st == 404, 'drafts are not public'

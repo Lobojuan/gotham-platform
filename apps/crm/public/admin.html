@@ -2870,10 +2870,10 @@ async function invoicesView(){
 }
 async function invNew(kind,pre={}){
  await (INVSET||invSettingsLoad());
- const inv={id:null,kind,contact_id:pre.contact_id||null,deal_id:pre.deal_id||null,bill_to:{name:'',company:'',email:'',address:'',country:'Ghana',tax_id:'',residency:'resident'},currency:'GHS',fx_rate:'',fx_date:'',
+ const inv={id:null,kind,contact_id:pre.contact_id||null,deal_id:pre.deal_id||null,bill_to:{name:'',company:'',email:'',phone:'',address:'',country:'Ghana',tax_id:'',residency:'resident'},currency:'GHS',fx_rate:'',fx_date:'',
   tax_mode:INVSET.inv_vat_registered==='yes'?'standard':'none',tax_note:'',lines:[{description:pre.title||'',qty:1,unit:pre.value||'',discount:0}],issue_date:'',due_date:'',valid_until:'',notes:'',wht_rate:0,evat_ref:''};
  if(pre.contact_id){const r=await api('/api/contacts/'+pre.contact_id+'/record').catch(()=>null);if(r){const c=r.contact;
-  Object.assign(inv.bill_to,{name:c.full_name||'',company:c.company||'',email:c.email||'',country:c.country||'Ghana',address:c.city||''});
+  Object.assign(inv.bill_to,{name:c.full_name||'',company:c.company||'',email:c.email||'',phone:c.phone||'',country:c.country||'Ghana',address:c.city||''});
   if(c.country&&!/^gh|ghana/i.test(c.country))inv.bill_to.residency='non_resident'}}
  invEdit(inv);
 }
@@ -2885,7 +2885,8 @@ function invEdit(inv){
  $('#drb').innerHTML=`<p class="note" style="margin:0">${inv.id?'Draft · not yet issued':'New'} ${isQ?'quotation':'invoice'}</p><h2 style="margin:2px 0 10px">${isQ?'Quotation':'Invoice'}</h2>
   <label class="l" for="iv-c">Client</label><input class="t" id="iv-c" placeholder="Find a company or person in the CRM" autocomplete="off" value="${esc(b.company||b.name)}"><div class="sres" id="iv-r" style="position:relative;top:4px"></div>
   <div class="f2"><div><label class="l" for="iv-co">Company</label><input class="t" id="iv-co" value="${esc(b.company)}"></div><div><label class="l" for="iv-nm">Contact name</label><input class="t" id="iv-nm" value="${esc(b.name)}"></div>
-  <div><label class="l" for="iv-em">Email (for sending)</label><input class="t" id="iv-em" type="email" value="${esc(b.email)}"></div><div><label class="l" for="iv-tid">Client TIN / VAT no. <span class="note">(optional)</span></label><input class="t" id="iv-tid" value="${esc(b.tax_id)}"></div>
+  <div><label class="l" for="iv-em">Email (for sending)</label><input class="t" id="iv-em" type="email" value="${esc(b.email)}"></div><div><label class="l" for="iv-ph">Client phone</label><input class="t" id="iv-ph" type="tel" autocomplete="tel" value="${esc(b.phone||'')}" placeholder="+233 …"></div>
+  <div><label class="l" for="iv-tid">Client TIN / VAT no. <span class="note">(optional)</span></label><input class="t" id="iv-tid" value="${esc(b.tax_id)}"></div>
   <div><label class="l" for="iv-cty">Country</label><input class="t" id="iv-cty" value="${esc(b.country)}"></div><div><label class="l" for="iv-res">Client is</label><select class="t" id="iv-res">${Object.entries(RESID).map(([k,l])=>`<option value="${k}" ${k===b.residency?'selected':''}>${l}</option>`).join('')}</select></div></div>
   <label class="l" for="iv-ad">Address <span class="note">(optional)</span></label><textarea class="t" id="iv-ad" rows="2">${esc(b.address)}</textarea>
   <h4 class="sec">Money and tax</h4>
@@ -2915,7 +2916,7 @@ function invEdit(inv){
    <span class="num inv-amt"></span><button class="iconbtn" type="button" data-rm="${i}" aria-label="Remove line" title="Remove line">×</button></div>`).join('');
   $('#iv-ls').querySelectorAll('[data-f]').forEach(x=>x.oninput=()=>{lines[+x.closest('[data-i]').dataset.i][x.dataset.f]=x.value;sums()});
   $('#iv-ls').querySelectorAll('[data-rm]').forEach(x=>x.onclick=()=>{lines.splice(+x.dataset.rm,1);if(!lines.length)lines.push({description:'',qty:1,unit:'',discount:0});drawLines()});sums()};
- const collect=()=>({kind:inv.kind,contact_id:cid,deal_id:inv.deal_id,bill_to:{name:$('#iv-nm').value,company:$('#iv-co').value,email:$('#iv-em').value,address:$('#iv-ad').value,country:$('#iv-cty').value,tax_id:$('#iv-tid').value,residency:$('#iv-res').value},
+ const collect=()=>({kind:inv.kind,contact_id:cid,deal_id:inv.deal_id,bill_to:{name:$('#iv-nm').value,company:$('#iv-co').value,email:$('#iv-em').value,phone:$('#iv-ph').value,address:$('#iv-ad').value,country:$('#iv-cty').value,tax_id:$('#iv-tid').value,residency:$('#iv-res').value},
   currency:cur(),fx_rate:$('#iv-fx').value,fx_date:$('#iv-fxd').value,tax_mode:$('#iv-tm').value,tax_note:$('#iv-tn').value,lines:lines.filter(l=>String(l.description).trim()||+l.unit).map(l=>({...l,qty:+l.qty||0,unit:+l.unit||0,discount:+l.discount||0})),
   issue_date:$('#iv-id').value,due_date:isQ?'':$('#iv-dd').value,valid_until:isQ?$('#iv-dd').value:'',notes:$('#iv-no').value,wht_rate:isQ?0:+$('#iv-wht').value,evat_ref:isQ?'':$('#iv-ev').value});
  const sums=()=>{const c=collect(),t=invTotals(c,rates),C=c.currency;
@@ -2938,7 +2939,7 @@ function invEdit(inv){
  let sT3=0;$('#iv-c').oninput=()=>{clearTimeout(sT3);const s=$('#iv-c').value.trim();if(s.length<2){$('#iv-r').classList.remove('on');return}
   sT3=setTimeout(async()=>{const r=await api('/api/search?q='+encodeURIComponent(s));if(!$('#iv-r'))return;$('#iv-r').innerHTML=r.contacts.map(c=>`<a data-c="${c.id}"><b>${esc(c.company||c.full_name)}</b><small>${esc([c.full_name,c.email].filter(Boolean).join(' · '))}</small></a>`).join('')||'<div class="none">Not in the CRM. Fill in the fields below.</div>';
    $('#iv-r').classList.add('on');$('#iv-r').querySelectorAll('a').forEach(a=>a.onclick=async()=>{cid=+a.dataset.c;$('#iv-r').classList.remove('on');const rr=await api('/api/contacts/'+cid+'/record');const c=rr.contact;
-    $('#iv-c').value=c.company||c.full_name;$('#iv-co').value=c.company||'';$('#iv-nm').value=c.full_name||'';$('#iv-em').value=c.email||'';$('#iv-cty').value=c.country||'Ghana';
+    $('#iv-c').value=c.company||c.full_name;$('#iv-co').value=c.company||'';$('#iv-nm').value=c.full_name||'';$('#iv-em').value=c.email||'';$('#iv-ph').value=c.phone||'';$('#iv-cty').value=c.country||'Ghana';
     if(c.country&&!/^gh|ghana/i.test(c.country)){$('#iv-res').value='non_resident';resid()}})},180)};
  const save=async()=>{$('#iv-e').textContent='';try{const d=await api(inv.id?'/api/invoices/'+inv.id:'/api/invoices',{method:'POST',body:JSON.stringify(collect())});inv.id=d.id;return d.id}catch(e){$('#iv-e').textContent=invErr(e);return null}};
  $('#iv-save').onclick=async()=>{if(await save()){toast('Draft saved');refreshInv();invOpen(inv.id)}};
@@ -2962,6 +2963,7 @@ function invShow(inv){
    ${isC?`<span>Reason</span><div>${esc(inv.notes||'')}</div>`:isQ?`<span>Valid until</span><div>${inv.valid_until?dshort(inv.valid_until):'—'}</div>`:`<span>Due</span><div>${inv.due_date?dshort(inv.due_date):'—'}</div><span>Paid</span><div>${imoney(paid,C)}${credited?` · credited ${imoney(credited,C)}`:''} · <b>balance ${imoney(Math.max(0,bal),C)}</b></div>`}
    ${inv.void_reason?`<span>Voided</span><div>${esc(inv.void_reason)}</div>`:''}</div>
   <div class="acts"><a class="btn btn-line" href="${esc(inv.link)}" target="_blank" rel="noopener">Open the client’s page</a><button class="btn btn-line" id="is-cp">Copy link</button>
+   ${!isC?`<a class="btn btn-line" href="/api/invoices/${inv.id}/document" target="_blank" rel="noopener">Download fillable PDF</a><button class="btn btn-line" id="is-pdf-refresh">Create new PDF version</button>`:''}
    ${open||isC?`<button class="btn btn-dark" id="is-send">${inv.sent_at&&!isC?'Email again':'Email to client'}</button>`:''}${open&&!isQ&&!isC&&bal>0?'<button class="btn btn-line" id="is-rem">Send a reminder</button>':''}
    ${isQ&&open?'<button class="btn btn-dark" id="is-conv">Turn into invoice</button>':''}</div>
   ${!isQ&&!isC&&open&&bal>0?`<h4 class="sec">Record a payment</h4>
@@ -2976,6 +2978,7 @@ function invShow(inv){
   ${inv.payments.length?`<h4 class="sec">Payments</h4><ul class="list">${inv.payments.map(p=>`<li class="li"><div class="grow"><b>${imoney(p.amount,C)}</b>${+p.wht?` + WHT ${imoney(p.wht,C)}${p.wht_cert?' (certificate in)':' <span class="chip gold">certificate missing</span>'}`:''}
    <div class="note">${dshort(p.paid_on)} · ${esc({momo:'Mobile Money',bank:'Bank',card:'Card',cash:'Cash',cheque:'Cheque',paystack:'Paystack (online)',other:'Other'}[p.method]||p.method)}${p.reference?' · '+esc(p.reference):''}${p.receipt_no?` · receipt <a href="${esc(inv.link)}/receipt/${p.id}" target="_blank" rel="noopener">${esc(p.receipt_no)}</a>${p.receipt_sent_at?' (emailed)':''}`:''}</div></div>
    <div class="pact"><button class="btn btn-line" data-er="${p.id}">Email receipt</button>${open?`<button class="btn btn-line" data-rp="${p.id}">Remove</button>`:''}</div></li>`).join('')}</ul>`:''}
+  ${(inv.documents||[]).length?`<h4 class="sec">Invoice documents</h4><ul class="list">${inv.documents.map(d=>`<li class="li"><div class="grow"><b>${d.document_type==='client_signed_pdf'?'Completed copy returned by client':'Fillable invoice PDF'}</b><div class="note">${dshort(d.created_at)} · ${esc(d.file_name)} · SHA-256 ${esc(d.sha256||'')}</div></div><a class="btn btn-line" href="/api/invoices/${inv.id}/document?document_id=${d.id}&kind=${d.document_type}" target="_blank" rel="noopener">Download</a></li>`).join('')}</ul>`:''}
   ${(inv.credits||[]).length?`<h4 class="sec">Credit notes</h4><ul class="list">${inv.credits.map(c=>`<li class="li" style="cursor:pointer" data-inv-open="${c.id}"><div class="grow"><b>${esc(c.number)}</b><div class="note">${dshort(c.issue_date)} · ${esc(c.notes||'')}</div></div><b class="num">− ${imoney(c.total,C)}</b></li>`).join('')}</ul>`:''}
   ${!isQ&&!isC&&inv.number&&open&&bal>0?`<h4 class="sec">Correct or cancel with a credit note</h4>
    <p class="note" style="margin-top:0">Under VAT rules an issued invoice is not changed or deleted: a credit note reduces it, with its own number, and the tax goes down with it.</p>
@@ -2997,6 +3000,7 @@ function invShow(inv){
   <div class="acts"><button class="btn btn-line" id="is-save">Save</button>${open&&!isC?`<button class="btn btn-line danger" id="is-void">${isQ?'Withdraw…':'Void (never sent)…'}</button>`:''}</div>
   <p class="note">Amounts are locked once issued, as the tax rules require.${isQ||isC?'':' To correct an invoice the client has seen, use a credit note; void only one that never went out. Numbers stay in the list, so there are no gaps.'}</p>`;
  const act=async(a,body={})=>api('/api/invoices/'+inv.id+'/'+a,{method:'POST',body:JSON.stringify(body)});
+ if($('#is-pdf-refresh'))$('#is-pdf-refresh').onclick=async()=>{try{const d=await api('/api/invoices/'+inv.id+'/document',{method:'POST',body:'{}'});toast('PDF version '+d.id+' saved');invOpen(inv.id)}catch(e){toast(invErr(e))}};
  $('#is-cp').onclick=()=>{navigator.clipboard?.writeText(inv.link);toast('Link copied')};
  if($('#is-send'))$('#is-send').onclick=async()=>{const to=b.email||prompt('Send to which email address?');if(!to)return;try{await act('send',{to});toast('Emailed to '+to);invOpen(inv.id)}catch(e){toast(invErr(e))}};
  if($('#is-rem'))$('#is-rem').onclick=async()=>{const to=b.email||prompt('Send the reminder to which email address?');if(!to)return;try{await act('remind',{to});toast('Reminder sent')}catch(e){toast(invErr(e))}};

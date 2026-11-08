@@ -487,6 +487,20 @@ create table if not exists invoice_schedules (
   created_by text, created_at timestamptz default now(), updated_at timestamptz default now()
 );
 
+-- Issued fillable PDFs and client-returned completed copies are private, immutable invoice records.
+create table if not exists invoice_documents (
+  id bigserial primary key,
+  invoice_id int not null references invoices(id) on delete cascade,
+  document_type text not null check (document_type in ('issued_pdf','client_signed_pdf')),
+  file_name text not null,
+  mime text not null default 'application/pdf' check (mime = 'application/pdf'),
+  content bytea not null,
+  sha256 char(64) not null,
+  created_by text,
+  created_at timestamptz not null default now()
+);
+create index if not exists invoice_documents_invoice_idx on invoice_documents(invoice_id, document_type, created_at desc);
+
 -- website visitors (no cookies; visitor = daily-salted hash, never an IP address)
 create table if not exists page_hits (
   id bigserial primary key,

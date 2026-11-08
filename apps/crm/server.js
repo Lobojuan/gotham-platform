@@ -10,6 +10,8 @@ import ExcelJS from 'exceljs';
 import nodemailer from 'nodemailer';
 import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser';
+import { PDFDocument } from 'pdf-lib';
+import { makeInvoicePdf } from './invoice-pdf.js';
 import * as MT from './media-tools.js';
 import * as EVP from './events-pages.js';
 import * as RCP from './receptionist.js';
@@ -4608,6 +4610,26 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const monthTax = out.filter(r => ['invoice', 'credit'].includes(r.kind) && r.number && r.status !== 'void' && r.issue_date && ymdOf(r.issue_date).startsWith(m)).reduce((s, r) => s + (r.kind === 'credit' ? -1 : 1) * (+r.tax_ghs), 0);
       return json(res, 200, { rows: out, summary: { owed, overdue: out.filter(r => r.overdue).length, tax_this_month_ghs: r2(monthTax) } });
     }
+    const mDoc = p.match(/^\/api\/invoices\/(\d+)\/document$/);
+    if (mDoc && (req.method === 'GET' || req.method === 'POST')) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const inv = (await q('select * from invoices where id=$1 and number is not null', [+mDoc[1]])).rows[0];
+      if (!inv) return json(res, 404, { error: 'not_found' });
+      if (req.method === 'POST') {
+        if (inv.status === 'void') return json(res, 400, { error: 'void' });
+        const doc = await saveIssuedPdf(inv, await invSettings(), u.email);
+        return json(res, 200, { ok: true, id: doc.id, file_name: doc.file_name, created_at: doc.created_at, sha256: doc.sha256 });
+      }
+      const wantedId = +url.searchParams.get('document_id') || null;
+      const kind = url.searchParams.get('kind') === 'client_signed_pdf' ? 'client_signed_pdf' : 'issued_pdf';
+      let doc = (await q(`select id, file_name, content from invoice_documents where invoice_id=$1 and document_type=$2 and ($3::bigint is null or id=$3) order by id desc limit 1`, [inv.id, kind, wantedId])).rows[0];
+      if (!doc && kind === 'issued_pdf' && !wantedId && inv.status !== 'void') {
+        await saveIssuedPdf(inv, await invSettings(), u.email);
+        doc = (await q("select id, file_name, content from invoice_documents where invoice_id=$1 and document_type='issued_pdf' order by id desc limit 1", [inv.id])).rows[0];
+      }
+      if (!doc) return json(res, 404, { error: 'document_not_found' });
+      return sendPdf(res, doc);
+    }
     const mInv = p.match(/^\/api\/invoices\/(\d+)(?:\/(issue|send|payment|void|convert|remind|credit|receipt))?(?:\/(\d+))?$/);
     if ((p === '/api/invoices' && req.method === 'POST') || (mInv && !mInv[2] && req.method === 'POST')) {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -4620,7 +4642,7 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const inv = {
         kind: cur ? cur.kind : (b.kind === 'quote' ? 'quote' : 'invoice'),
         contact_id: +b.contact_id || null, deal_id: +b.deal_id || null,
-        bill_to: { name: clean(bt.name, 160), company: clean(bt.company, 160), address: clean(bt.address, 400), country: clean(bt.country, 60) || 'Ghana',
+        bill_to: { name: clean(bt.name, 160), company: clean(bt.company, 160), address: clean(bt.address, 400), country: clean(bt.country, 60) || 'Ghana', phone: clean(bt.phone, 60),
           email: clean(bt.email, 160).toLowerCase(), tax_id: clean(bt.tax_id, 60), residency: ['resident', 'non_resident', 'expatriate'].includes(bt.residency) ? bt.residency : 'resident' },
         currency: CURRENCIES.includes(b.currency) ? b.currency : 'GHS', fx_rate: +b.fx_rate > 0 ? +b.fx_rate : null, fx_date: /^\d{4}-\d{2}-\d{2}$/.test(b.fx_date || '') ? b.fx_date : null,
         tax_mode: TAX_MODES.includes(b.tax_mode) ? b.tax_mode : (st.vat_registered ? 'standard' : 'none'), tax_note: clean(b.tax_note, 200),
@@ -4657,9 +4679,10 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
       const inv = (await q('select * from invoices where id=$1', [+mInv[1]])).rows[0]; if (!inv) return json(res, 404, { error: 'not_found' });
       const pays = (await q('select * from invoice_payments where invoice_id=$1 order by paid_on, id', [inv.id])).rows;
+      const documents = (await q('select id, document_type, file_name, sha256, created_by, created_at from invoice_documents where invoice_id=$1 order by id desc', [inv.id])).rows;
       const credits = (await q("select id, number, total, issue_date, notes, status from invoices where credit_for=$1 and kind='credit' order by id", [inv.id])).rows;
       const orig = inv.credit_for ? (await q('select id, number from invoices where id=$1', [inv.credit_for])).rows[0] : null;
-      return json(res, 200, { ...inv, payments: pays, credits, credit_for_number: orig ? orig.number : null, link: `${PUBLIC_URL}/i/${inv.token}` });
+      return json(res, 200, { ...inv, payments: pays, credits, documents, credit_for_number: orig ? orig.number : null, link: `${PUBLIC_URL}/i/${inv.token}` });
     }
     if (mInv && req.method === 'DELETE' && !mInv[2]) {
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
@@ -4910,11 +4933,33 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'member_catalog', JSON.stringify(r.catalog)]);
       return json(res, 200, r, { 'cache-control': 'no-store' });
     }
-    const mPub = p.match(/^\/i\/([A-Za-z0-9_-]{20,40})(?:\/(pay|accept))?$/);
+    const mPub = p.match(/^\/i\/([A-Za-z0-9_-]{20,40})(?:\/(pay|accept|pdf|return))?$/);
     if (mPub) {
       const inv = (await q('select * from invoices where token=$1 and number is not null', [mPub[1]])).rows[0];
       if (!inv) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
       const st = await invSettings();
+      if (mPub[2] === 'pdf' && req.method === 'GET') {
+        let doc = (await q("select id,file_name,content from invoice_documents where invoice_id=$1 and document_type='issued_pdf' order by id desc limit 1", [inv.id])).rows[0];
+        if (!doc) { await saveIssuedPdf(inv, st, 'client-link'); doc = (await q("select id,file_name,content from invoice_documents where invoice_id=$1 and document_type='issued_pdf' order by id desc limit 1", [inv.id])).rows[0]; }
+        return sendPdf(res, doc);
+      }
+      if (mPub[2] === 'return' && req.method === 'POST') {
+        if (inv.kind === 'credit' || rateLimited(ip, 4, 3600e3, `invoice-return-${inv.id}`)) return json(res, 429, { error: 'too_many' });
+        let upload;
+        try { upload = await bodyBig(req, 11e6); } catch (e) { return json(res, e.message === 'too_large' ? 413 : 400, { error: e.message === 'too_large' ? 'file_too_large' : 'bad_request' }); }
+        const encoded = String(upload.pdf_base64 || '');
+        if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) || encoded.length > 10.8e6) return json(res, 400, { error: 'invalid_pdf' });
+        const bytes = Buffer.from(encoded, 'base64');
+        if (bytes.length < 8 || bytes.length > 8e6 || bytes.subarray(0, 5).toString('ascii') !== '%PDF-') return json(res, 400, { error: 'invalid_pdf' });
+        try { await PDFDocument.load(bytes, { updateMetadata: false }); } catch { return json(res, 400, { error: 'invalid_pdf' }); }
+        const fileName = String(upload.file_name || `${inv.number}-client-signed.pdf`).replace(/[^A-Za-z0-9._-]+/g, '-').slice(0, 100);
+        const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+        const doc = (await q(`insert into invoice_documents(invoice_id,document_type,file_name,content,sha256,created_by)
+          values ($1,'client_signed_pdf',$2,$3,$4,'client-link') returning id,created_at`, [inv.id, fileName, bytes, sha256])).rows[0];
+        await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['client-link', 'invoice_signed_pdf_returned', `${inv.number} document ${doc.id} sha256 ${sha256}`]);
+        if (req.headers.accept?.includes('application/json')) return json(res, 201, { ok: true });
+        res.writeHead(303, { location: `/i/${inv.token}?returned=1`, 'cache-control': 'no-store' }); return res.end();
+      }
       if (mPub[2] === 'pay' && req.method === 'POST') {
         if (rateLimited(ip, 10, 600e3, 'pay')) { res.writeHead(429); return res.end('Too many tries'); }
         if (!paystackOn(inv.currency) || inv.kind !== 'invoice' || ['paid', 'void', 'credited'].includes(inv.status)) { res.writeHead(303, { location: `/i/${inv.token}` }); return res.end(); }
@@ -4944,11 +4989,13 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       if (ref && PAYSTACK_KEY) { const x = await paystackRecord(ref).catch(() => null); if (x) { fresh = x; msg = x.status === 'paid' ? 'Thank you. Your payment is received.' : 'Thank you. Your payment is received; a balance remains.'; } }
       if (url.searchParams.get('pay') === 'failed') msg = 'Online payment could not start. Please try again or use the bank details below.';
       if (url.searchParams.get('accepted')) msg = 'Thank you. The quotation is accepted; we will send the invoice.';
+      if (url.searchParams.get('returned')) msg = 'Thank you. Your completed PDF has been added to the invoice record.';
       const pays = (await q('select * from invoice_payments where invoice_id=$1', [inv.id])).rows;
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex', 'referrer-policy': 'no-referrer' });
       const credits = (await q("select number, total from invoices where credit_for=$1 and kind='credit' and status<>'void' order by id", [inv.id])).rows;
       const origNumber = inv.credit_for ? (await q('select number from invoices where id=$1', [inv.credit_for])).rows[0]?.number : null;
-      return res.end(invoicePage(fresh, pays, st, { msg, credits, origNumber, payUrl: paystackOn(fresh.currency) ? `/i/${fresh.token}/pay` : null }));
+      const documents = (await q("select id,file_name,created_at from invoice_documents where invoice_id=$1 and document_type='client_signed_pdf' order by id desc", [inv.id])).rows;
+      return res.end(invoicePage(fresh, pays, st, { msg, credits, origNumber, documents, payUrl: paystackOn(fresh.currency) ? `/i/${fresh.token}/pay` : null }));
     }
     if (p === '/api/hooks/paystack' && req.method === 'POST') {
       const raw = await rawBody(req, 1e6);
@@ -5653,6 +5700,21 @@ async function nextNumber(kind) {
   const n = (await q(`insert into invoice_seq(kind, year, n) values ($1,$2,1) on conflict (kind, year) do update set n = invoice_seq.n + 1 returning n`, [kind, y])).rows[0].n;
   return `${({ quote: 'QUO', credit: 'CRN', receipt: 'RCT' })[kind] || 'INV'}-${y}-${String(n).padStart(4, '0')}`;
 }
+async function saveIssuedPdf(inv, st, actor) {
+  const { bytes, filename } = await makeInvoicePdf(inv, st);
+  const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+  const row = (await q(`insert into invoice_documents(invoice_id,document_type,file_name,content,sha256,created_by)
+    values ($1,'issued_pdf',$2,$3,$4,$5) returning id,created_at`, [inv.id, filename, bytes, sha256, actor])).rows[0];
+  await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [actor, 'invoice_pdf_created', `${inv.number} document ${row.id} sha256 ${sha256}`]);
+  return { ...row, file_name: filename, sha256 };
+}
+async function sendPdf(res, doc, disposition = 'attachment') {
+  const filename = String(doc.file_name || 'invoice.pdf').replace(/[^A-Za-z0-9._-]/g, '-');
+  res.writeHead(200, { 'content-type': 'application/pdf', 'content-length': doc.content.length,
+    'content-disposition': `${disposition}; filename="${filename}"`, 'cache-control': 'private, no-store',
+    'x-content-type-options': 'nosniff', 'x-robots-tag': 'noindex, nofollow', 'referrer-policy': 'no-referrer' });
+  return res.end(doc.content);
+}
 async function invoicePaid(id) {
   const inv = (await q('select * from invoices where id=$1', [id])).rows[0]; if (!inv || inv.kind !== 'invoice' || inv.status === 'void') return inv;
   const p = (await q('select coalesce(sum(amount + wht),0) as got from invoice_payments where invoice_id=$1', [id])).rows[0].got;
@@ -5710,6 +5772,7 @@ table.items td{border-bottom:1px solid #E2E4E7;padding:9px 6px;vertical-align:to
 </style></head><body>
 ${opts.msg ? `<div class="msg">${esc(opts.msg)}</div>` : ''}
 <div class="bar"><button class="btn line" onclick="print()">Print or save as PDF</button>
+${!isC ? `<a class="btn line" href="/i/${inv.token}/pdf">Download fillable PDF</a>` : ''}
 ${!isQ && !isC && opts.payUrl && balance > 0 && !['void', 'credited'].includes(inv.status) ? `<form method="post" action="${opts.payUrl}" style="margin:0"><button class="btn gold">Pay ${esc(money2(balance, cur))} online</button></form>` : ''}
 ${isQ && inv.status === 'sent' ? `<form method="post" action="/i/${inv.token}/accept" style="margin:0"><button class="btn dark">Accept this quotation</button></form>` : ''}</div>
 <div class="sheet"><div class="kente"></div>${stamp ? `<div class="stamp ${stamp === 'VOID' ? 'void' : ''}">${stamp}</div>` : ''}
@@ -5721,7 +5784,7 @@ ${st.inv_tin ? `<div>TIN: ${esc(st.inv_tin)}</div>` : ''}${st.vat_registered && 
 ${isQ ? (inv.valid_until ? `<div>Valid until: ${d(inv.valid_until)}</div>` : '') : (inv.due_date ? `<div>Due: ${d(inv.due_date)}</div>` : '')}
 ${inv.evat_ref ? `<div>E-VAT ref: ${esc(inv.evat_ref)}</div>` : ''}</div></div>
 <div class="to"><div><div class="lab">${isQ ? 'Prepared for' : isC ? 'Credited to' : 'Bill to'}</div><b>${esc(b.company || b.name || '')}</b>${b.company && b.name ? `<div>${esc(b.name)}</div>` : ''}
-${b.address ? `<div style="white-space:pre-wrap">${esc(b.address)}</div>` : ''}${b.country ? `<div>${esc(b.country)}</div>` : ''}${b.tax_id ? `<div>Tax / VAT no.: ${esc(b.tax_id)}</div>` : ''}${b.email ? `<div>${esc(b.email)}</div>` : ''}</div>
+${b.address ? `<div style="white-space:pre-wrap">${esc(b.address)}</div>` : ''}${b.country ? `<div>${esc(b.country)}</div>` : ''}${b.tax_id ? `<div>Tax / VAT no.: ${esc(b.tax_id)}</div>` : ''}${b.email ? `<div>${esc(b.email)}</div>` : ''}${b.phone ? `<div>Phone: ${esc(b.phone)}</div>` : ''}</div>
 <div><div class="lab">Currency</div><b>${cur}</b>${cur !== 'GHS' ? `<div>Exchange rate: 1 ${cur} = GHS ${(+inv.fx_rate).toFixed(4)} (${d(inv.fx_date || inv.issue_date)})</div>` : ''}</div></div>
 <table class="items"><thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead><tbody>
 ${(inv.lines || []).map(l => { const g = r2(l.qty * l.unit), off = r2(g * (l.discount || 0) / 100);
@@ -5734,6 +5797,8 @@ ${!isQ && !isC ? credits.map(c => `<tr><td>Credit note ${esc(c.number)}</td><td>
 ${!isQ && !isC && (paid > 0 || credits.length) ? `${paid > 0 ? `<tr><td>Paid</td><td>${money2(paid, cur)}</td></tr>` : ''}<tr><td><b>Balance due</b></td><td><b>${money2(Math.max(0, balance), cur)}</b></td></tr>` : ''}</table>
 ${!isQ && !isC && !['void', 'paid', 'credited'].includes(inv.status) && balance > 0 ? payBlocks(inv, st, legacy, Math.max(0, balance)) : ''}
 ${inv.notes ? `<div class="box">${esc(inv.notes)}</div>` : ''}
+${!isC ? `<div class="box" style="white-space:normal"><b>Return a completed copy</b><p style="margin:6px 0 10px">Download the fillable PDF, type your name and date in the acknowledgement area, save it, then upload the completed PDF here. Your returned copy is stored with this invoice in Gotham’s back office.</p><form id="return-pdf" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input id="return-file" type="file" accept="application/pdf,.pdf" required style="max-width:100%"><button class="btn dark" type="submit">Send signed copy</button><span id="return-status" role="status" style="color:#5A6472"></span></form>${(opts.documents||[]).length?`<p style="margin:8px 0 0;color:#5A6472">${opts.documents.length} completed copy${opts.documents.length===1?'':'ies'} received.</p>`:''}</div>
+<script>(()=>{const f=document.getElementById('return-pdf');if(!f)return;f.addEventListener('submit',async e=>{e.preventDefault();const input=document.getElementById('return-file'),status=document.getElementById('return-status'),file=input.files[0];if(!file)return;if(file.size>8*1024*1024){status.textContent='PDF must be 8 MB or smaller.';return}status.textContent='Uploading…';try{const base64=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]||'');r.onerror=reject;r.readAsDataURL(file)});const response=await fetch('/i/${inv.token}/return',{method:'POST',headers:{'content-type':'application/json','accept':'application/json'},body:JSON.stringify({file_name:file.name,pdf_base64:base64})});if(!response.ok){const detail=await response.json().catch(()=>({}));throw new Error(detail.error==='too_many'?'Please wait before trying another upload.':'The PDF could not be accepted. Check that it opens and try again.')}location.href='/i/${inv.token}?returned=1'}catch(err){status.textContent=err.message||'Upload failed. Try again.'}})})();</script>` : ''}
 <div class="foot">${esc(st.inv_footer || `${st.co_name} · Accra, Ghana · gothamconsult.com`)}${cur !== 'GHS' ? ` · Foreign-currency invoices are issued only to non-residents or expatriates${st.bank && st.bank.fx[cur] ? ', payable into our foreign exchange account' : ''} (Bank of Ghana rules).` : ''}</div>
 </div></body></html>`;
 }
@@ -5844,10 +5909,14 @@ async function issueInvoice(inv, st, actor) {
     [inv.id, await nextNumber(inv.kind), issue, inv.kind === 'invoice' ? due : null, inv.kind === 'quote' ? valid : null])).rows[0];
   if (!row) return { inv: (await q('select * from invoices where id=$1', [inv.id])).rows[0] };
   await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [actor, 'invoice_issue', `${row.number} ${row.currency} ${row.total}`]);
+  try { await saveIssuedPdf(row, st, actor); }
+  catch (e) { console.error('issued invoice PDF', row.number, e.message); }
   return { inv: row };
 }
 async function mailInvoice(inv, to, act, st, actor) {
   const isQ = inv.kind === 'quote', isC = inv.kind === 'credit', link = `${PUBLIC_URL}/i/${inv.token}`, who = inv.bill_to.name || inv.bill_to.company || '';
+  if (!isC && !(await q("select id from invoice_documents where invoice_id=$1 and document_type='issued_pdf' limit 1", [inv.id])).rows.length)
+    await saveIssuedPdf(inv, st, actor);
   const paid = +(await q('select coalesce(sum(amount+wht),0) s from invoice_payments where invoice_id=$1', [inv.id])).rows[0].s
     + +(await q("select coalesce(sum(total),0) c from invoices where credit_for=$1 and kind='credit' and status<>'void'", [inv.id])).rows[0].c;
   const subject = act === 'remind' ? `Reminder: invoice ${inv.number} from ${st.co_name}` : `${isQ ? 'Quotation' : isC ? 'Credit note' : 'Invoice'} ${inv.number} from ${st.co_name}`;
@@ -5857,7 +5926,7 @@ async function mailInvoice(inv, to, act, st, actor) {
        : act === 'remind' ? `Invoice ${esc(inv.number)} has ${esc(money2(Math.max(0, +inv.total - paid), inv.currency))} outstanding${inv.due_date ? ', due ' + esc(ymdOf(inv.due_date)) : ''}.`
        : `Please find invoice ${esc(inv.number)} for ${esc(money2(inv.total, inv.currency))}${inv.due_date ? ', due ' + esc(ymdOf(inv.due_date)) : ''}.`}</p>
      <p style="margin:18px 0"><a href="${link}" style="background:#0F1B2D;color:#fff;text-decoration:none;border-radius:999px;padding:12px 22px;display:inline-block;font-weight:600">${isQ ? 'View the quotation' : isC ? 'View the credit note' : 'View and pay'}</a></p>
-     <p style="color:#5A6472;font-size:13px">You can print it or save it as a PDF from that page.</p>`), isQ ? 'quote' : 'invoice', null);
+     ${!isC ? `<p style="color:#5A6472;font-size:13px">Need a signed copy for your records? <a href="${link}/pdf" style="color:#0F1B2D;font-weight:600">Download the fillable PDF</a>, complete the acknowledgement fields and upload the saved copy on the same page.</p>` : ''}`), isQ ? 'quote' : 'invoice', null);
   await q('update invoices set sent_at=now() where id=$1', [inv.id]);
   await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [actor, 'invoice_' + act, `${inv.number} → ${to}`]);
   flushMail(3).catch(() => {});
