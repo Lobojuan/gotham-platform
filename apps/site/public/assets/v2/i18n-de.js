@@ -3459,5 +3459,8 @@ window.GC_I18N.de = {
   "What should we review?": "Was sollen wir prüfen?",
   "What would you most like to improve? (optional)": "Was möchten Sie vorrangig verbessern? (optional)",
   "before VAT and levies. Includes a prioritized written report with annotated examples and a 60-minute Q&A. Broader scopes are quoted separately.": "zzgl. Mehrwertsteuer und Abgaben. Enthalten sind ein priorisierter schriftlicher Bericht mit kommentierten Beispielen und eine 60-minütige Fragerunde. Größere Umfänge werden separat angeboten.",
-  "before you invest.": "bevor Sie investieren."
+  "before you invest.": "bevor Sie investieren.",
+  "Forums & events": "Foren und Veranstaltungen",
+  "Photos from our forums": "Fotos von unseren Foren",
+  "Next dates announced soon": "Nächste Termine folgen in Kürze"
 };

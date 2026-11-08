@@ -3459,5 +3459,8 @@ window.GC_I18N.ar = {
   "What should we review?": "ما الذي ترغب في مراجعته؟",
   "What would you most like to improve? (optional)": "ما أهم ما ترغب في تحسينه؟ (اختياري)",
   "before VAT and levies. Includes a prioritized written report with annotated examples and a 60-minute Q&A. Broader scopes are quoted separately.": "قبل ضريبة القيمة المضافة والرسوم. تشمل تقريراً مكتوباً حسب الأولوية مع أمثلة مشروحة وجلسة أسئلة وأجوبة لمدة 60 دقيقة. تُسعّر النطاقات الأوسع بشكل منفصل.",
-  "before you invest.": "قبل أن تستثمر."
+  "before you invest.": "قبل أن تستثمر.",
+  "Forums & events": "المنتديات والفعاليات",
+  "Photos from our forums": "صور من منتدياتنا",
+  "Next dates announced soon": "سيتم الإعلان عن المواعيد القادمة قريبًا"
 };

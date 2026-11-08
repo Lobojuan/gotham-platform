@@ -488,7 +488,9 @@
   items().then(d => {
     const ev = (d.items || []).filter(i => i.kind === 'event' && i.phase !== 'past' && i.starts_at && new Date(i.starts_at) > Date.now())
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
-    const nx = ev[0]; if (!nx) return;
+    const nx = ev[0]; if (!nx) return;   // nothing scheduled: the menu keeps its neutral 'Forums & events' card and the home page block stays hidden
+    $$('[data-forum-eyebrow]').forEach(e => e.textContent = 'Next forum');
+    $$('[data-forum-feat]').forEach(e => e.setAttribute('href', '/forums'));
     if (upcomingForum) upcomingForum.hidden = false;
     const when = new Date(nx.starts_at);
     const day = when.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Accra' });

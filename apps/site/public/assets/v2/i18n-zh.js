@@ -3460,5 +3460,8 @@ window.GC_I18N.zh = {
   "What should we review?": "您希望我们评审什么？",
   "What would you most like to improve? (optional)": "您最希望改进什么？（选填）",
   "before VAT and levies. Includes a prioritized written report with annotated examples and a 60-minute Q&A. Broader scopes are quoted separately.": "不含增值税及相关征费。服务包括一份按优先级排列的书面报告（附注释示例）和 60 分钟问答。更大范围的服务需另行报价。",
-  "before you invest.": "助您投资前做好准备。"
+  "before you invest.": "助您投资前做好准备。",
+  "Forums & events": "论坛与活动",
+  "Photos from our forums": "我们论坛的照片",
+  "Next dates announced soon": "下一期日期即将公布"
 };
