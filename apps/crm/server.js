@@ -1703,10 +1703,12 @@ async function askKnowledge() {
   const up = rows.filter(r => r.phase !== 'past' && (!r.starts_at || new Date(r.starts_at) > Date.now() - 864e5));
   const pastEv = rows.filter(r => r.kind === 'event' && !up.includes(r) && r.starts_at && new Date(r.starts_at) > Date.now() - 180 * 864e5)
     .map(r => `- ${r.title} (${r.code}): held ${when(r.starts_at)}${r.venue ? ', ' + r.venue : ''}. Photos and recap: ${EVP.eventUrl('gothamconsult.com', r)}`).join('\n');
-  const forums = up.map(r => `- ${r.title}${r.subtitle ? ' — ' + r.subtitle : ''} (${r.code}): ${when(r.starts_at)} Accra time` +
+  const fmt = r => `- ${r.title}${r.subtitle ? ' — ' + r.subtitle : ''} (${r.code}): ${r.kind === 'event' ? when(r.starts_at) + ' Accra time' : 'book any time'}` +
     `${r.venue ? ', ' + r.venue : ''}; ${+r.price > 0 ? 'GHS ' + (+r.price).toLocaleString('en-GH') : 'free'}` +
     `${r.approval ? ', by invitation (apply on the registration page)' : ''}` +
-    `${r.seats_left === 0 ? ', fully booked' : ''}. Register: gothamconsult.com/register?e=${r.code}`).join('\n');
+    `${r.seats_left === 0 ? ', fully booked' : ''}. Register: gothamconsult.com/register?e=${r.code}`;
+  const forums = up.filter(r => r.kind === 'event').map(fmt).join('\n');
+  const products = up.filter(r => r.kind !== 'event').map(fmt).join('\n');
   const fx = await liveRates().catch(() => null);
   const fxLine = fx && !fxIsStale(fx) ? `\n\n## Exchange rates (market mid-rate, updated ${String(fx.updated).slice(0, 10)}; the Bank of Ghana reference rate is the official one)\n` +
     Object.entries({...fx.rates,...fx.more}).map(([c, v]) => `- 1 ${c} = GHS ${v}`).join('\n') : '';
@@ -1717,7 +1719,7 @@ async function askKnowledge() {
     '\nDaily research-source checks (last run '+(econ.research?.checked || 'pending')+'):\n'+Object.values(econ.research?.items || {}).map(r=>`${r.label}: ${r.status}; last verified ${r.verified || 'unconfirmed'}; ${r.url}`).join('\n')+
     '\nIf a research source is marked review or unavailable, disclose that limitation. Historical figures keep their original reporting periods; daily source checking does not make an old forecast today’s forecast.'+
     '\nInvestors: /invest#research. Historical cedi share gains exclude dividends, fees, taxes and FX. Sector GDP growth is not investment ROI; do not invent projected returns or individual stock recommendations.';
-  askKnow = { at: Date.now(), text: `## Today\nToday is ${when(new Date()).replace(/ at .*/, '')} (Accra). Anything dated before today has already happened.\n\n` + base + fxLine + econLine + '\n\n## Upcoming forums and products (live from the back office)\n' + (forums || '- None published right now. Say the next dates will be announced soon, and offer the Ghana Business Brief or the events page to hear first.') + (pastEv ? '\n\n## Past forums (already held: never present these as upcoming)\n' + pastEv : '') };
+  askKnow = { at: Date.now(), text: `## Today\nToday is ${when(new Date()).replace(/ at .*/, '')} (Accra). Anything dated before today has already happened.\n\n` + base + fxLine + econLine + '\n\n## Upcoming forums (live from the back office)\n' + (forums || '- None scheduled right now. Say the next dates will be announced soon, and offer the Ghana Business Brief or gothamconsult.com/events to hear first. Never present a briefing, membership or the Brief as a forum.') + (products ? '\n\n## Briefings, memberships and the Brief (bookable any time; these are not forums or events)\n' + products : '') + (pastEv ? '\n\n## Past forums (already held: never present these as upcoming)\n' + pastEv : '') };
   return askKnow.text;
 }
 async function askModel(messages, opt = {}) {
