@@ -762,7 +762,7 @@ html[lang="ar"] .market-update-count { margin-inline-start:0; }
 .gcal { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: clamp(16px, 3vw, 28px); box-shadow: var(--shadow); }
 .gcal-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
 .gcal-top h3 { margin: 0; font-size: clamp(20px, 2.6vw, 28px); text-transform: capitalize; letter-spacing: -.01em; }
-.gcal-nb { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 24px; line-height: 1; cursor: pointer; color: var(--ink); transition: border-color .15s, transform .15s; }
+.gcal-nb { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 24px; line-height: 1; cursor: pointer; color: var(--ink); transition: border-color .15s, transform .15s; }
 .gcal-nb:hover:not(:disabled) { border-color: var(--ink); transform: scale(1.05); }
 .gcal-nb:disabled { opacity: .35; cursor: default; }
 .gcal-wd, .gcal-g { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
@@ -967,7 +967,7 @@ html[lang="ar"] .market-update-count { margin-inline-start:0; }
 .past-ev { margin-top: 28px; }
 .pe-h { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .pe-h h3 { font-size: 20px; margin: 0; }
-.pe-h a { color: var(--ink); font-weight: 600; font-size: 15px; text-decoration: none; }
+.pe-h a { display: inline-flex; align-items: center; min-height: 44px; padding: 8px 0; color: var(--ink); font-weight: 600; font-size: 15px; text-decoration: none; }
 .pe-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; }
 .pe { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 18px; overflow: hidden; background: var(--navy); color: #fff; text-decoration: none; }
 .pe img, .pe-ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform .5s ease; }

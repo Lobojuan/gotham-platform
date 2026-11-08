@@ -3,6 +3,9 @@ import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
 TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
+sys.path.insert(0, os.path.join(ROOT, 'tests'))
+from event_fixture import upcoming_event_dates
+F1_START, F1_END, F1_TASK_DATE = upcoming_event_dates()
 os.chdir(ROOT+'/apps/crm')
 env=dict(os.environ); env.update({
  'DATABASE_URL':DB,'SESSION_SECRET':'t','ALLOW_ORIGINS':'*','PORT':str(TEST_PORT),
@@ -47,7 +50,7 @@ def call(path,*a,**k):
     if path=='/api/login': _sp.run(['psql',DB,'-qc','update users set must_change=false'],check=True)
     return _orig_call(path,*a,**k)
 st,d,h=call('/api/login',{'email':'admin','password':'ownerpass123'}); ck=h['set-cookie'].split(';')[0]
-st,d,_=call('/api/items',{'code':'F1','kind':'event','title':'SMEs at the Centre','starts_at':'2026-10-24T14:00:00Z',
+st,d,_=call('/api/items',{'code':'F1','kind':'event','title':'SMEs at the Centre','starts_at':F1_START,'ends_at':F1_END,
   'price':0,'currency':'GHS','capacity':40,'published':True,'approval':False,'phase':'open'},cookie=ck)
 assert st==200,(st,d)
 
@@ -100,10 +103,10 @@ fam={'full_name':'Akua Mensah','email':'akua@example.co.uk','country':'United Ki
  'parent_region':'Greater Accra','parent_town':'Dansoman','languages':['Twi'],'needs':['Regular visits'],'heard':'Church','message':'','website':'','consent':True}
 st,d,_=call('/api/family-interest',fam); st,d,_=call('/api/family-interest',fam)
 st,d,_=call('/api/deals',cookie=ck); fd=[x for x in d['rows'] if x['kind']=='family_desk']; assert len(fd)==1 and fd[0]['open_tasks']==1; ok('a Family Desk family opens one deal + call task, not two on resubmit')
-st,d,_=call('/api/items',{'code':'F7','kind':'event','title':'Forum','starts_at':'2026-10-24T14:00:00Z','price':0,'capacity':40,'published':True,'phase':'open'},cookie=ck)
+st,d,_=call('/api/items',{'code':'F7','kind':'event','title':'Forum','starts_at':F1_START,'ends_at':F1_END,'price':0,'capacity':40,'published':True,'phase':'open'},cookie=ck)
 st,d,_=call('/api/register',{'item_code':'F7','full_name':'Kwesi','email':'kwesi@example.test','phone':'0244000111','consent':True,'follow_up':'yes','company_about':'Shop','company_size':'2–5'})
 st,d,_=call('/api/tasks?scope=unassigned',cookie=ck); ft=[x for x in d['rows'] if x['title'].startswith('Follow up: Kwesi')]
-assert ft and ft[0]['due_at'].startswith('2026-10-25'); ok('"Yes, follow up" at a forum creates a task for the day after the event')
+assert ft and ft[0]['due_at'].startswith(F1_TASK_DATE); ok('"Yes, follow up" at a forum creates a task for the day after the event')
 
 # ---- search, registration → record
 st,d,_=call('/api/search?q=cocoa',cookie=ck); assert d['contacts'] and d['deals']; ok('search finds companies and deals')

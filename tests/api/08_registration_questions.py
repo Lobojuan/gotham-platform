@@ -3,6 +3,9 @@ import os
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
 TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
+sys.path.insert(0, os.path.join(ROOT, 'tests'))
+from event_fixture import upcoming_event_dates
+F1_START, F1_END, _ = upcoming_event_dates()
 os.chdir(ROOT+'/apps/crm')
 env=dict(os.environ); env.update({
  'DATABASE_URL':DB,'SESSION_SECRET':'t','ALLOW_ORIGINS':'*','PORT':str(TEST_PORT),
@@ -47,7 +50,7 @@ def call(path,*a,**k):
     if path=='/api/login': _sp.run(['psql',DB,'-qc','update users set must_change=false'],check=True)
     return _orig_call(path,*a,**k)
 st,d,h=call('/api/login',{'email':'admin','password':'ownerpass123'}); ck=h['set-cookie'].split(';')[0]
-st,d,_=call('/api/items',{'code':'F1','kind':'event','title':'SMEs at the Centre','starts_at':'2026-10-24T14:00:00Z',
+st,d,_=call('/api/items',{'code':'F1','kind':'event','title':'SMEs at the Centre','starts_at':F1_START,'ends_at':F1_END,
   'price':0,'currency':'GHS','capacity':40,'published':True,'approval':False,'phase':'open'},cookie=ck)
 assert st==200,(st,d)
 

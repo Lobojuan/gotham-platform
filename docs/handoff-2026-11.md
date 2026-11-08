@@ -24,3 +24,11 @@
 ### Follow-up
 
 - Refresh the date-dependent forum fixtures and install `ffmpeg` in the test environment before treating the full API suite as a clean release gate.
+
+### 2026-11-08 — Release-gate cleanup and mobile tap targets
+
+- Pulled `origin/main` before making changes. Kept the historical production F1 event expired so the normal archive path remains truthful; API and browser tests now create a run-relative future F1 fixture instead of depending on that old seed row.
+- Added `tests/requirements.txt` for the media/report regression dependencies (`Pillow` and `openpyxl`) and a shared `tests/event_fixture.py` helper for future event windows.
+- Fixed the public forum mobile controls: “All events and photos” now has a 44px tap target, and the calendar navigation buttons no longer shrink below 44px on narrow Spanish layouts.
+- Verification: full API gate passed 40/40 suites; site build completed for all six languages; browser release gate passed 17,721 checks, including six-language voice flows, CRM role/mobile flows, report downloads, event follow-up, and touch-target checks; `node --check`, Python compilation, and `git diff --check` passed.
+- Open item: this session prepared and verified the source release but did not run a production deploy. Deploy only after the release decision and host checks are explicitly confirmed.

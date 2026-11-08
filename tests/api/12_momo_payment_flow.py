@@ -4,6 +4,9 @@ from concurrent.futures import ThreadPoolExecutor
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
 TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
+sys.path.insert(0, os.path.join(ROOT, 'tests'))
+from event_fixture import upcoming_event_dates
+F1_START, F1_END, _ = upcoming_event_dates()
 os.chdir(ROOT+'/apps/crm')
 env=dict(os.environ); env.update({'DATABASE_URL':DB,'SESSION_SECRET':'test-secret','ALLOW_ORIGINS':'*','PORT':str(TEST_PORT),
  'ADMIN_EMAIL':'admin','ADMIN_PASSWORD':'ownerpass123','ADMIN_NAME':'Admin','MEDIA_DIR':'/tmp/mediatest',
@@ -53,6 +56,8 @@ ok('settings reject unknown keys and invalid MoMo destinations')
 item={'code':'PAY1','kind':'event','title':'Payment test event','starts_at':'2026-12-01T10:00:00Z','currency':'GHS',
  'price':25,'capacity':20,'published':True,'approval':False,'phase':'open'}
 st,d,_=call('/api/items',item,cookie=ck); assert st==200,d
+st,d,_=call('/api/items',{'code':'F1','kind':'event','title':'SMEs at the Centre','starts_at':F1_START,'ends_at':F1_END,
+ 'price':0,'currency':'GHS','capacity':40,'published':True,'approval':True,'phase':'open'},cookie=ck); assert st==200,d
 def register(name,phone):
     address=name.lower().replace(' ','-')+'@example.test'
     return call('/api/register',{'item_code':'PAY1','full_name':name,'email':address,'phone':phone,'consent':True,'payment_method':'momo'})

@@ -6,6 +6,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
 TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(ROOT, 'tests'))
+from event_fixture import upcoming_event_dates
+F1_START, F1_END, _ = upcoming_event_dates()
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 mock = subprocess.Popen(['node', os.path.join(ROOT, 'tests', 'e2e', 'mock_ai.js')], env={**os.environ, 'MOCK_PORT': '4293'}, stdout=subprocess.DEVNULL)
 atexit.register(lambda: mock.poll() is None and mock.terminate())
@@ -49,6 +52,9 @@ psql('update users set must_change=false')
 def login(u, p):
     st, d, h = call('/api/login', {'email': u, 'password': p}); assert st == 200, d; return h['set-cookie'].split(';')[0]
 own = login('owner', 'ownerpass123')
+st, fixture, _ = call('/api/items', {'code':'F1','kind':'event','title':'SMEs at the Centre','starts_at':F1_START,
+    'ends_at':F1_END,'price':0,'currency':'GHS','capacity':40,'published':True,'approval':True,'phase':'open'}, cookie=own)
+assert st == 200, fixture
 pw = {}
 for e, n, r in [('joy@gothamconsult.com', 'Joy Preston', 'admin'), ('door', 'Ama Door', 'staff')]:
     st, d, _ = call('/api/users', {'email': e, 'name': n, 'role': r}, cookie=own); assert st == 200, d; pw[e] = d['password']

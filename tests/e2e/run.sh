@@ -21,6 +21,10 @@ rm -rf /tmp/e2e-media; mkdir -p /tmp/e2e-media
   exec node server.js >/tmp/e2e-server.log 2>&1 ) & SRV=$!
 for i in $(seq 60); do curl -s -o /dev/null -w '%{http_code}' 127.0.0.1:$PORT/api/health | grep -q 200 && break; sleep .4; done
 psql "$DB" -q -c "update users set must_change=false where email='admin'" || exit 2
+# The production F1 event is historical and should stay archived after it ends.
+# Re-open only this disposable test fixture so browser flows exercise registration,
+# calendar and chat actions without coupling the release gate to an old date.
+psql "$DB" -q -c "update items set starts_at=date_trunc('day', now()) + interval '30 days' + interval '14 hours', ends_at=date_trunc('day', now()) + interval '30 days' + interval '16 hours', phase='open', published=true, approval=true where code='F1'" || exit 2
 BASE=http://127.0.0.1:$PORT ADMIN_PW=e2e-owner-pass PLAYWRIGHT=${PLAYWRIGHT:-playwright} CHROMIUM=${CHROMIUM:-} node "$ROOT/tests/ui/crm_flows.js"; rc=$?
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT node "$ROOT/tests/e2e/site_e2e.js"; rc=$?; fi
 if [ "$rc" -eq 0 ]; then BASE=http://127.0.0.1:$PORT PLAYWRIGHT=${PLAYWRIGHT:-playwright} CHROMIUM=${CHROMIUM:-} node "$ROOT/tests/ui/event_help_ui.js"; rc=$?; fi

@@ -3,6 +3,9 @@ import subprocess, time, json, os, urllib.request, urllib.error, atexit, sys
 
 DB=os.environ.get('TEST_DATABASE_URL','postgres://test@127.0.0.1:5439/gotham_test')
 ROOT=os.path.abspath(os.path.join(os.path.dirname(__file__),'..','..'))
+sys.path.insert(0, os.path.join(ROOT, 'tests'))
+from event_fixture import upcoming_event_dates
+F1_START, F1_END, _ = upcoming_event_dates()
 os.chdir(os.path.join(ROOT,'apps','crm'))
 BASE='http://127.0.0.1:4220'
 env={**os.environ,'DATABASE_URL':DB,'SESSION_SECRET':'test-secret','PORT':'4220','NODE_ENV':'test',
@@ -25,6 +28,19 @@ for _ in range(80):
  except Exception:pass
  time.sleep(.25)
 else:print('NO START',srv.stdout.read()[:3000]);sys.exit(1)
+
+# The production F1 event is historical; reopen only this disposable test row so
+# the follow-up endpoint is tested without making an expired event public.
+psql("update users set must_change=false")
+st,_,h=call('/api/login',{'email':'owner','password':'ownerpass123'})
+assert st==200,h
+cookie=h['set-cookie'].split(';')[0]
+st,fixture,_=call('/api/items',{
+    'code':'F1','kind':'event','title':'SMEs at the Centre',
+    'starts_at':F1_START,'ends_at':F1_END,'price':0,'currency':'GHS',
+    'capacity':40,'published':True,'approval':True,'phase':'open'
+},cookie=cookie)
+assert st==200,fixture
 
 payload={'type':'event','item_code':'F1','name':'Akosua Visitor','email':'akosua.event@example.test',
  'company':'Accra Maker Studio','topic':'Company setup and market entry, AI, IT and business software',

@@ -6,6 +6,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 DB = os.environ.get('TEST_DATABASE_URL', 'postgres://test@127.0.0.1:5439/gotham_test')
 TEST_PORT = int(os.environ.get('TEST_PORT', '4199'))
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(ROOT, 'tests'))
+from event_fixture import upcoming_event_dates
+F1_START, F1_END, _ = upcoming_event_dates()
 os.chdir(os.path.join(ROOT, 'apps', 'crm'))
 mock = subprocess.Popen(['node', os.path.join(ROOT, 'tests', 'e2e', 'mock_ai.js')], env={**os.environ, 'MOCK_PORT': '4297'}, stdout=subprocess.DEVNULL)
 atexit.register(lambda: mock.poll() is None and mock.terminate())
@@ -47,6 +50,9 @@ psql('update users set must_change=false')
 st, _ = call('/api/login', {'email': 'admin', 'password': 'ownerpass123'})
 req = urllib.request.Request(B + '/api/login', data=json.dumps({'email': 'admin', 'password': 'ownerpass123'}).encode(), method='POST'); req.add_header('content-type', 'application/json')
 ck = urllib.request.urlopen(req).headers['set-cookie'].split(';')[0]
+st, fixture = call('/api/items', {'code':'F1','kind':'event','title':'SMEs at the Centre','starts_at':F1_START,
+    'ends_at':F1_END,'price':0,'currency':'GHS','capacity':40,'published':True,'approval':True,'phase':'open'}, cookie=ck)
+assert st == 200, fixture
 IP = iter(range(10, 250))
 def visitor(): return {'x-real-ip': '10.55.%d.1' % next(IP)}
 
