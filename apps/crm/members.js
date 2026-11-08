@@ -350,6 +350,45 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
         throw e;
       }
     }
+    n += await contactBrief(today, pub, events);
+    return n;
+  }
+  /* The same brief for people who are not members but asked for Gotham email: confirmed Ghana Business Brief signups
+     and event registrants who ticked "send me updates" (consent_email='yes' on their contact). Members are left to the
+     member loop above, so a member's own preferences always win. Only sent on a day with something new to read, so a
+     quiet day costs nobody an empty email. Stop link: /brief/stop/<token> (one click, also mail apps' one-click POST). */
+  async function contactBrief(today, pub, events) {
+    if (!pub.length) return 0;
+    const LS = ['en', 'fr', 'es', 'de', 'ar', 'zh'];
+    const list = (await q(`select c.* from contacts c
+      where c.email is not null and c.email <> '' and c.consent_email = 'yes' and c.unsubscribed_at is null
+        and not coalesce(c.bounced, false) and c.status <> 'do_not_contact'
+        and not exists (select 1 from members m where lower(m.email) = lower(c.email))`)).rows;
+    let n = 0;
+    for (const c of list) {
+      const claim = await q('insert into contact_brief_days(contact_id,day) values ($1,$2) on conflict do nothing returning contact_id', [c.id, today]);
+      if (!claim.rows.length) continue;
+      let tok = c.brief_token;
+      if (!tok) { tok = crypto.randomBytes(16).toString('hex'); await q('update contacts set brief_token=$1 where id=$2 and brief_token is null', [tok, c.id]); tok = (await q('select brief_token from contacts where id=$1', [c.id])).rows[0].brief_token; }
+      const L = LS.includes(c.language) ? c.language : 'en', li = x => `<li style="margin:0 0 8px">${x}</li>`, stop = `${base}/brief/stop/${tok}`;
+      const dateTime = x => new Date(x).toLocaleString(({ en: 'en-GB', fr: 'fr-FR', es: 'es-ES', de: 'de-DE', ar: 'ar', zh: 'zh-CN' })[L] || 'en-GB',
+        { dateStyle: 'full', timeStyle: 'short', timeZone: 'Africa/Accra' });
+      const body = `<p style="color:#5A6472;font-size:13px">${esc(dateTime(today + 'T12:00:00Z').split(',')[0])}</p>`
+        + `<h3 style="font-size:16px;margin:18px 0 8px;color:#0F1B2D">${esc(T(L, 'New in the Ghana Investment Report'))}</h3><ul style="padding-inline-start:18px;color:#0F1B2D;font-size:14.5px;line-height:1.55">`
+        + pub.slice(0, 8).map(u => li(`<b>${esc(u.title)}</b>${u.text ? ' ' + esc(u.text) : ''}${u.url ? ` <a href="${esc(u.url)}">${esc(T(L, 'source'))}</a>` : ''}`)).join('') + '</ul>'
+        + (events.length ? `<h3 style="font-size:16px;margin:18px 0 8px;color:#0F1B2D">${esc(T(L, 'Upcoming Gotham events'))}</h3><ul style="padding-inline-start:18px;color:#0F1B2D;font-size:14.5px;line-height:1.55">`
+          + events.map(e => li(`<b>${esc(e.title)}</b><br>${esc(dateTime(e.starts_at))}${e.venue ? ' · ' + esc(e.venue) : ''}`)).join('') + '</ul>' : '')
+        + `<p style="margin:22px 0"><a href="${page(L, '/ghana-investment-report')}" style="background:#0F1B2D;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;display:inline-block">${esc(T(L, 'Read the latest report'))}</a></p>`
+        + `<p style="color:#5A6472;font-size:13.5px">${esc(T(L, 'Want your sectors only, plus deadlines for your company?'))} <a href="${page(L, '/account')}#signup">${esc(T(L, 'Create a free account'))}</a></p>`
+        + `<p style="color:#8A93A0;font-size:12px">${esc(T(L, 'You receive this because you asked for the Ghana Business Brief or for Gotham updates when you registered.'))} <a href="${stop}" style="color:#8A93A0">${esc(T(L, 'Stop these emails'))}</a></p>`;
+      try {
+        await queueMail(c.email, c.full_name || '', T(L, 'Ghana today: your Gotham brief'), wrapMail(esc(T(L, 'Ghana today')), `<div dir="${L === 'ar' ? 'rtl' : 'ltr'}">${body}</div>`), 'contact_brief', null, stop);
+        n++;
+      } catch (e) {
+        await q('delete from contact_brief_days where contact_id=$1 and day=$2', [c.id, today]);
+        throw e;
+      }
+    }
     return n;
   }
   const weekly = dailyBrief; // keep the old back-office endpoint compatible during the transition

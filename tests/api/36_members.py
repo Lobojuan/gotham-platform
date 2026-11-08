@@ -110,6 +110,19 @@ DE = json.load(open(os.path.join(ROOT, 'apps/crm/site-i18n/de.json')))['strings'
 assert dg.startswith(DE['Ghana today: your Gotham brief']) and 'Cocoa price set' in dg and 'Test future forum' in dg and '/register?e=TST1' in dg and '/m/stop?u=' in dg, dg[:300]
 assert psql("select count(*) from member_orders where renewal_of is not null and status='pending'") == '1'
 st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert r['digests'] == 0 and r['renewals'] == 0, 'not twice in a day'
+# the same brief for non-members who gave email consent (Brief signups, event registrants who opted in); never without consent
+_sp.run(['psql', DB, '-qc', "insert into contacts(full_name,email,consent_email,language,source) values ('Kofi Test','kofi@co.test','yes','fr','test'),('Esi Test','esi@co.test','unknown','en','test')"], check=True)
+st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert st == 200 and r['digests'] == 1, r
+FR = json.load(open(os.path.join(ROOT, 'apps/crm/site-i18n/fr.json')))['strings']
+kb = psql("select subject||'#'||body||'#'||coalesce(unsub_url,'') from outbox where to_email='kofi@co.test' and kind='contact_brief'")
+assert kb.startswith(FR['Ghana today: your Gotham brief']) and 'Cocoa price set' in kb and '/brief/stop/' in kb, kb[:300]
+assert psql("select count(*) from outbox where to_email='esi@co.test'") == '0', 'no consent, no brief'
+assert psql("select count(*) from outbox where to_email='ama@co.test' and kind='contact_brief'") == '0', 'members get only the member brief'
+assert call('/api/members/run-jobs', {'daily': True}, cookie=adm)[1]['digests'] == 0, 'once a day'
+tok = psql("select brief_token from contacts where email='kofi@co.test'")
+assert raw(f'/brief/stop/{tok}', method='POST', body={})[0] == 200 and psql("select consent_email||'|'||(unsubscribed_at is not null) from contacts where email='kofi@co.test'") == 'no|true'
+st, _, page = raw(f'/brief/stop/{tok}'); assert st == 200 and b'no more briefs' in page
+ok('daily brief also reaches non-member contacts with email consent (in their language, once a day, one-click stop); never without consent')
 tok = re.search(r'/m/stop\?u=([0-9a-f]+)', dg).group(1); st, h, _ = raw('/m/stop?u=' + tok, method='POST', body={}); assert st == 200 and psql("select alerts from members where email='ama@co.test'") == 'f'
 _sp.run(['psql', DB, '-qc', "delete from member_digest_days where member_id=(select id from members where email='ama@co.test')"], check=True)
 st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert r['digests'] == 0, 'unsubscribed member receives no further digest'

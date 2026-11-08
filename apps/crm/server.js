@@ -3257,6 +3257,15 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       return res.end();
     }
 
+    /* stop the daily Ghana brief (contacts who are not members); GET from the email link, POST from mail apps' one-click button */
+    const mBrief = p.match(/^\/brief\/stop\/([a-f0-9]{32})$/);
+    if (mBrief && (req.method === 'GET' || req.method === 'POST')) {
+      const rows = (await q(`update contacts set unsubscribed_at=coalesce(unsubscribed_at,now()), consent_email='no' where brief_token=$1 returning id`, [mBrief[1]])).rows;
+      if (rows[0]) await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['recipient', 'unsubscribe_brief', String(rows[0].id)]);
+      if (req.method === 'POST') return json(res, 200, { ok: true });
+      return sendHtml(pageShell('Removed', rows[0] ? '<h1>Done, no more briefs from us</h1><p>You will not receive the daily Ghana brief again. Registrations and tickets you already hold are unaffected.</p>'
+        : '<h1>This link is not valid any more</h1><p>If you still receive emails from us, reply to one of them and we will remove you.</p>'));
+    }
     /* one click and we never write to them again on that channel (email also answers mail clients' one-click POST) */
     const mUnsub2 = p.match(/^\/u\/([A-Za-z0-9_-]{10,})$/);
     if (mUnsub2 && (req.method === 'GET' || req.method === 'POST')) {
