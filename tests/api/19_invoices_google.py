@@ -213,7 +213,9 @@ st, e = call('/api/invoices/%d/void' % inv_usd, {}, cookie=ck); assert e['error'
 st, d = call('/api/invoices/%d/void' % inv_usd, {'reason': 'Wrong client'}, cookie=ck); assert st == 200
 st, e = call('/api/invoices/%d/payment' % inv_usd, {'amount': 5}, cookie=ck); assert e['error'] == 'void'
 st, html = call('/i/' + psql("select token from invoices where id=%d" % inv_usd), text=True); assert 'VOID' in html
-ok('void needs a reason, keeps the number (no gaps), blocks payments and shows VOID')
+_vt = psql("select token from invoices where id=%d" % inv_usd)
+assert raw_req('GET', '/i/' + _vt + '/pdf')[0] == 410 and raw_req('POST', '/i/' + _vt + '/return', b'{}', {'content-type': 'application/json'})[0] == 410, 'a void invoice gets no PDF and takes no signed copy'
+ok('void needs a reason, keeps the number (no gaps), blocks payments, shows VOID, and has no PDF or upload')
 
 # ---------- VAT CSV ----------
 req = urllib.request.Request(B + '/api/invoices/vat.csv?month=' + time.strftime('%Y-%m')); req.add_header('cookie', ck)

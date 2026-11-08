@@ -4939,11 +4939,13 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
       if (!inv) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('Not found'); }
       const st = await invSettings();
       if (mPub[2] === 'pdf' && req.method === 'GET') {
+        if (inv.status === 'void') { res.writeHead(410, { 'content-type': 'text/plain' }); return res.end('This document was cancelled.'); }   // a void invoice gets no new PDF
         let doc = (await q("select id,file_name,content from invoice_documents where invoice_id=$1 and document_type='issued_pdf' order by id desc limit 1", [inv.id])).rows[0];
         if (!doc) { await saveIssuedPdf(inv, st, 'client-link'); doc = (await q("select id,file_name,content from invoice_documents where invoice_id=$1 and document_type='issued_pdf' order by id desc limit 1", [inv.id])).rows[0]; }
         return sendPdf(res, doc);
       }
       if (mPub[2] === 'return' && req.method === 'POST') {
+        if (inv.status === 'void') return json(res, 410, { error: 'void' });
         if (inv.kind === 'credit' || rateLimited(ip, 4, 3600e3, `invoice-return-${inv.id}`)) return json(res, 429, { error: 'too_many' });
         let upload;
         try { upload = await bodyBig(req, 11e6); } catch (e) { return json(res, e.message === 'too_large' ? 413 : 400, { error: e.message === 'too_large' ? 'file_too_large' : 'bad_request' }); }
