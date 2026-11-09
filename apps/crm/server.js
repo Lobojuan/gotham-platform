@@ -2992,13 +2992,19 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
     /* ---- Sign in with Google ---- */
     if (p === '/api/auth/options') return json(res, 200, { google: googleOn(), password_reset_email: !!mailVia() });
     if (p === '/auth/google' && req.method === 'GET') {
-      if (!googleOn()) { res.writeHead(302, { location: '/admin?google=off' }); return res.end(); }
-      if (rateLimited(ip, 20, 300e3, 'google')) { res.writeHead(302, { location: '/admin?google=busy' }); return res.end(); }
+      /* ?for=member: a website visitor signs in to (or creates) their free member account; otherwise the back office (team only) */
+      const forMember = url.searchParams.get('for') === 'member';
+      const mLang = ['fr', 'es', 'de', 'ar', 'zh'].includes(url.searchParams.get('lang')) ? url.searchParams.get('lang') : 'en';
+      const mBuy = /^[a-z_]{1,40}$/.test(url.searchParams.get('buy') || '') ? url.searchParams.get('buy') : '';
+      const offTo = forMember ? (mLang === 'en' ? '' : '/' + mLang) + '/account?google=' : '/admin?google=';
+      if (!googleOn()) { res.writeHead(302, { location: offTo + 'off' }); return res.end(); }
+      if (rateLimited(ip, 20, 300e3, 'google')) { res.writeHead(302, { location: offTo + 'busy' }); return res.end(); }
       const state = b64u(crypto.randomBytes(18)), verifier = b64u(crypto.randomBytes(32));
       const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
-      const v = b64u(JSON.stringify({ state, verifier, exp: Date.now() + 10 * 60e3 }));
+      const who = forMember ? { for: 'member', lang: mLang, buy: mBuy } : {};
+      const v = b64u(JSON.stringify({ state, verifier, ...who, exp: Date.now() + 10 * 60e3 }));
       for (const [k, x] of GSTATE) if (x.exp < Date.now() || GSTATE.size > 2000) GSTATE.delete(k);
-      GSTATE.set(state, { state, verifier, exp: Date.now() + 10 * 60e3 });
+      GSTATE.set(state, { state, verifier, ...who, exp: Date.now() + 10 * 60e3 });
       const u = new URL(G_AUTH);
       Object.entries({ client_id: G_ID, redirect_uri: PUBLIC_URL + '/auth/google/callback', response_type: 'code', scope: 'openid email profile',
         state, code_challenge: challenge, code_challenge_method: 'S256', prompt: 'select_account' }).forEach(([k, x]) => u.searchParams.set(k, x));
@@ -3007,10 +3013,11 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       return res.end();
     }
     if (p === '/auth/google/callback' && req.method === 'GET') {
-      const back = why => { res.writeHead(302, { location: '/admin?google=' + why, 'cache-control': 'no-store', 'set-cookie': 'gc_g=; Path=/auth/google; Max-Age=0' }); return res.end(); };
-      if (!googleOn()) return back('off');
-      if (url.searchParams.get('error')) { gState(req, url.searchParams.get('state')); return back('cancelled'); }
       const st = gState(req, url.searchParams.get('state')), code = url.searchParams.get('code');
+      const acctOf = l => (l && l !== 'en' ? '/' + l : '') + '/account';
+      const back = why => { res.writeHead(302, { location: (st && st.for === 'member' ? acctOf(st.lang) : '/admin') + '?google=' + why, 'cache-control': 'no-store', 'set-cookie': 'gc_g=; Path=/auth/google; Max-Age=0' }); return res.end(); };
+      if (!googleOn()) return back('off');
+      if (url.searchParams.get('error')) return back('cancelled');
       if (!st || !code) return back('expired');
       let claims;
       try {
@@ -3023,6 +3030,13 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       const auds = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
       if (!auds.includes(G_ID) || !['accounts.google.com', 'https://accounts.google.com'].includes(claims.iss) || !(claims.exp * 1000 > Date.now())
         || !(claims.email_verified === true || claims.email_verified === 'true') || !claims.email) return back('failed');
+      if (st.for === 'member') {   // anyone with a verified Google address: their free member account, created on first sign-in
+        const r = await MEMBERS.googleLogin({ email: claims.email, name: claims.name, lang: st.lang });
+        if (!r) return back('failed');
+        res.writeHead(302, { location: acctOf(r.lang) + (st.buy ? '?buy=' + st.buy + '#signup' : ''), 'cache-control': 'no-store', 'set-cookie': [
+          `gc_member=${r.cookie}; HttpOnly; Path=/; Max-Age=2592000; SameSite=Lax; Secure`, 'gc_g=; Path=/auth/google; Max-Age=0'] });
+        return res.end();
+      }
       const u = (await q('select * from users where lower(email)=lower($1) and coalesce(active,true)', [claims.email])).rows[0];
       if (!u) { await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [String(claims.email).slice(0, 120), 'google_refused', 'not in the team list']); return back('not_in_team'); }
       await q('update users set last_login=now() where id=$1', [u.id]);

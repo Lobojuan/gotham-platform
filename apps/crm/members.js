@@ -176,6 +176,22 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
       where id=$1 and coalesce(consent_email,'unknown')='unknown' and unsubscribed_at is null`, [m.contact_id]);
     return { member: m, cookie: token({ mid: m.id, sv: m.sv || 0 }, 30 * 864e5), lang: LANGS.includes(o.l) ? o.l : m.lang, next: o.next || '' };
   }
+  /* Sign in with Google (Google has verified the address): the member account for that address, created on the first
+     sign-in. Clicking "Continue with Google" under the Act 843 notice is the account consent; marketing stays off until
+     the member switches it on. */
+  async function googleLogin({ email, name, lang }) {
+    email = clip(email, 160).toLowerCase(); if (!/^\S+@\S+\.\S+$/.test(email)) return null;
+    lang = LANGS.includes(lang) ? lang : 'en';
+    let m = (await q('select * from members where email=$1', [email])).rows[0];
+    if (m && m.closed_at) return null;
+    if (!m) {
+      m = (await q(`insert into members(email,name,lang,sectors,alerts,consent_at,marketing,unsub_token,source)
+        values ($1,$2,$3,$4,true,now(),false,$5,'google') returning *`, [email, clip(name, 120) || null, lang, SECTORS, crypto.randomBytes(16).toString('hex')])).rows[0];
+      await linkContact(m, ['member'], false);
+    }
+    m = (await q('update members set last_login=now(), verified_at=coalesce(verified_at, now()), name=coalesce(name,$2) where id=$1 returning *', [m.id, clip(name, 120) || null])).rows[0];
+    return { member: m, cookie: token({ mid: m.id, sv: m.sv || 0 }, 30 * 864e5), lang: m.lang || lang };
+  }
   async function fromCookie(cookieHeader) {
     const c = /(?:^|;\s*)gc_member=([^;]+)/.exec(String(cookieHeader || '')); if (!c) return null;
     const o = readToken(decodeURIComponent(c[1])); if (!o || !o.mid) return null;
@@ -483,5 +499,5 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
     return r;
   }
 
-  return { signup, sendLink, login, fromCookie, prefs, buy, invoicePaid, activate, grant, saveCompany, calendar, me, weekly, dailyBrief, daily, stop, dashboard, memberDetail, addUpdate, closeOrder, post, prices, catalog, saveCatalog, active, deadlines };
+  return { signup, sendLink, login, googleLogin, fromCookie, prefs, buy, invoicePaid, activate, grant, saveCompany, calendar, me, weekly, dailyBrief, daily, stop, dashboard, memberDetail, addUpdate, closeOrder, post, prices, catalog, saveCatalog, active, deadlines };
 }

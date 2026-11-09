@@ -362,4 +362,30 @@ s_, loc, *_ = raw_req('GET', '/auth/google/callback?code=abc&state=' + st2); ass
 s_, loc, *_ = raw_req('GET', '/auth/google/callback?code=abc&state=madeup'); assert loc == '/admin?google=expired', loc
 ok('Sign in with Google (also through the WordPress bridge, state single-use): PKCE + signed state, checks audience, issuer, expiry and verified email; only existing active team members get in; nobody is auto-created')
 
+# ---------- Website members: anyone with a Google account gets a free member account ----------
+s_, loc, _, cks, _ = raw_req('GET', '/auth/google?for=member&lang=fr&buy=pro')
+u = urlparse(loc); qs = parse_qs(u.query); assert s_ == 302 and u.netloc == 'accounts.google.com', loc
+assert qs['redirect_uri'] == [f'http://127.0.0.1:{TEST_PORT}/auth/google/callback'], 'same redirect URI as the back office'
+mgc = [c for c in cks if c.startswith('gc_g=')][0].split(';')[0]; mstate = qs['state'][0]
+s_, loc, *_ = raw_req('GET', '/auth/google/callback?error=access_denied&state=' + mstate, headers={'cookie': mgc}); assert loc == '/fr/account?google=cancelled', loc
+GOOGLE['claims'] = {**good, 'email_verified': False}; s_, loc, *_ = cb(mstate, mgc); assert loc == '/fr/account?google=failed', loc
+GOOGLE['claims'] = {**good, 'email': 'New.Person@Gmail.com', 'name': 'New Person'}
+s_, loc, _, mcks, _ = cb(mstate, mgc)
+assert s_ == 302 and loc == '/fr/account?buy=pro#signup', loc
+mck = [c for c in mcks if c.startswith('gc_member=')][0]; assert 'HttpOnly' in mck and 'Secure' in mck
+assert not [c for c in mcks if c.startswith('gc_session=')], 'a member never gets a back-office session'
+st, me = call('/api/member/me', cookie=mck.split(';')[0]); assert st == 200 and me['member']['email'] == 'new.person@gmail.com', me
+assert psql("select source||'|'||lang||'|'||(verified_at is not null)||'|'||marketing from members where email='new.person@gmail.com'") == 'google|fr|true|false'
+assert psql("select count(*) from users where email='new.person@gmail.com'") == '0', 'no team account is created'
+st, x = call('/api/me', cookie=mck.split(';')[0]); assert st == 401, 'member cookie does not open the back office'
+# the same person again (state from the server copy, as through the WordPress bridge): signed in, no duplicate
+s_, loc, *_ = raw_req('GET', '/auth/google?for=member'); st3 = parse_qs(urlparse(loc).query)['state'][0]
+s_, loc, *_ = raw_req('GET', '/auth/google/callback?code=abc&state=' + st3); assert loc == '/fr/account', loc
+assert psql("select count(*) from members where email='new.person@gmail.com'") == '1'
+# a closed member account stays closed
+psql("update members set closed_at=now() where email='new.person@gmail.com'")
+s_, loc, *_ = raw_req('GET', '/auth/google?for=member'); st4 = parse_qs(urlparse(loc).query)['state'][0]
+s_, loc, *_ = raw_req('GET', '/auth/google/callback?code=abc&state=' + st4); assert loc == '/account?google=failed', loc
+ok('Website members: any Google account signs in or gets a free member account (language and plan kept), never a team account; closed accounts stay closed')
+
 print('PASSED')

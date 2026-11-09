@@ -50,6 +50,7 @@ CSS = '''<style>
 .mb-note{color:var(--mute);font-size:14px;margin-top:14px}
 .ac-wrap{max-width:980px}
 .ac-card{padding:22px;margin-bottom:16px}
+.ac-gbtn{display:inline-flex;align-items:center;gap:10px;min-height:48px}.ac-gbtn svg{flex:none}
 .ac-card h2{font-size:22px;margin:0 0 12px}.ac-card h3{font-size:17px;margin:18px 0 8px}
 .ac-form{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
 @media(min-width:760px){.ac-form .two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}}
@@ -183,6 +184,14 @@ def render_account(lang='en', L=None):
         f'<p class="eyebrow">{esc(t("Membership"))}</p><h1 id="h1">{esc(t("Your Gotham account"))}</h1>'
         f'<p class="ac-msg" id="ac-top" role="status" aria-live="polite"></p>'
         '<div id="ac-out" hidden>'
+        f'<div class="box ac-card ac-google" id="ac-google" hidden><h2>{esc(t("Continue with Google"))}</h2>'
+        f'<p class="mb-note" style="margin-top:0">{esc(t("Fastest: sign in or create your free account with your Google account."))}</p>'
+        f'<p class="ac-msg" id="ac-g-fail" hidden role="status">{esc(t("Google sign-in did not work. Please try again or use the email link."))}</p>'
+        f'<a class="btn btn-line ac-gbtn" id="ac-gbtn" href="/auth/google?for=member&amp;lang={L.lang}"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4 7.1-10 7.1-17.5z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.3.8-4.7l-7.8-6C1 16.6 0 20.2 0 24s1 7.4 2.7 10.7l7.8-6z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.8 6C6.6 42.6 14.6 48 24 48z"/></svg> {esc(t("Continue with Google"))}</a>'
+        f'<p class="mb-note">{esc(t("By continuing you agree that Gotham Consult keeps your details to run your account, under Ghana’s Data Protection Act, 2012 (Act 843). We only send newsletters if you switch them on."))}</p></div>'
+        '<script>(function(){var b=document.getElementById("ac-gbtn"),q=new URLSearchParams(location.search),k=q.get("buy");'
+        'if(k&&/^[a-z_]{1,40}$/.test(k))b.href+="&buy="+k;if(q.get("google")==="failed"||q.get("google")==="expired")document.getElementById("ac-g-fail").hidden=false;'
+        'fetch("/api/auth/options",{credentials:"same-origin"}).then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.google)document.getElementById("ac-google").hidden=false}).catch(function(){})})()</script>'
         f'<div class="box ac-card" id="signup"><h2>{esc(t("Create your free account"))}</h2><form class="ac-form" id="ac-signup" novalidate>'
         f'<div class="two"><label>{esc(t("Email"))}<input name="email" type="email" autocomplete="email" inputmode="email" required maxlength="160"></label>'
         f'<label>{esc(t("Your name"))}<input name="name" autocomplete="name" maxlength="120"></label></div>'
