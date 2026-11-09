@@ -29,7 +29,9 @@ const DEVICES = [
   ['ipad', devices['iPad (gen 7)']],
   ['desktop', { viewport: { width: 1440, height: 900 } }],
 ];
-const SKIP = /^(mailto:|tel:|https?:|javascript:|data:)|^\/(admin|api|media)\b/;
+// OAuth start routes intentionally return a 302 to the identity provider; they are
+// navigation endpoints, not HTML pages that the crawler should require to be 200.
+const SKIP = /^(mailto:|tel:|https?:|javascript:|data:)|^\/(admin|api|media|auth\/google)\b/;
 
 async function crawl(req) {
   const seen = new Map(), queue = ['/', '/classic', '/teaser', '/fr'], anchors = [];
@@ -64,8 +66,9 @@ async function crawl(req) {
     check(`${page}: exactly one h1`, (h.match(/<h1[\s>]/g) || []).length === 1, String((h.match(/<h1[\s>]/g) || []).length));
     check(`${page}: viewport meta`, /name="viewport" content="width=device-width/.test(h));
   }
-  // Carlson Capital Ltd is only the renewable energy and AI/software partner: never in the content of other services
-  for (const page of ['/mining', '/invest', '/family', '/register', '/forums', '/teaser', '/services', '/services/market-entry', '/services/compliance-esg',
+  // Carlson Capital Ltd is named on the umbrella services page as the AI/software partner;
+  // specialised service pages must not imply that Carlson delivers unrelated practices.
+  for (const page of ['/mining', '/invest', '/family', '/register', '/forums', '/teaser', '/services/market-entry', '/services/compliance-esg',
     '/services/investment-readiness', '/services/family-support', '/services/education', '/services/media-forums']) {
     const h = seen.get(page)?.html || '', main = h.replace(/<header class="gh[\s\S]*?<\/header>|<dialog class="sheet[\s\S]*?<\/dialog>|<footer class="gf[\s\S]*?<\/footer>|<script[\s\S]*?<\/script>/g, '');
     check(`${page}: no Carlson Capital or its number in the page content`, main && !/Carlson|233552395548|55 239 5548/.test(main), (main.match(/.{40}(Carlson|233552395548|55 239 5548).{40}/) || [''])[0]);
