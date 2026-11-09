@@ -28,7 +28,8 @@ const ok = m => console.log('  ok', m);
   if (!(await p.textContent('#drb')).includes('GRA audit')) throw new Error('note missing'); ok('meeting note added to the deal');
   await p.keyboard.press('Escape');
   // pipeline shows it in the Meeting column
-  await p.evaluate(() => location.hash = 'pipe'); await p.waitForSelector('.col[data-stage="meeting"] .dcard');
+  await p.evaluate(() => location.hash = 'pipe');
+  await p.waitForFunction(title => [...document.querySelectorAll('.col[data-stage="meeting"] .dcard b')].some(el => el.textContent.includes(title)), 'Fleet compliance review');
   const inMeeting = await p.$$eval('.col[data-stage="meeting"] .dcard b', els => els.map(e => e.textContent));
   if (!inMeeting.includes('Fleet compliance review')) throw new Error('not on the board: ' + inMeeting); ok('board shows it under Meeting');
   if (!d.m) { // drag and drop on a laptop
@@ -48,8 +49,10 @@ const ok = m => console.log('  ok', m);
   await tap('.rec [data-tdone]'); await p.waitForTimeout(1200); ok('task ticked off from the record');
   // tasks view: quick add
   await p.evaluate(() => location.hash = 'tasks'); await p.waitForSelector('#qa-t');
-  await p.fill('#qa-t', 'Book the Tang Palace AV team ' + d.n); await tap('#qa-p [data-d="1"]'); await tap('#qa-go'); await p.waitForTimeout(900);
-  if (!(await p.textContent('#tlist')).includes('Book the Tang Palace AV team ' + d.n)) throw new Error('quick add'); ok('task quick-added for tomorrow');
+  const quickTitle = 'Book the Tang Palace AV team ' + d.n;
+  await p.fill('#qa-t', quickTitle); await tap('#qa-p [data-d="1"]'); await tap('#qa-go');
+  await p.waitForFunction(title => document.querySelector('#tlist')?.textContent.includes(title), quickTitle);
+  ok('task quick-added for tomorrow');
   // reports render and export
   await p.evaluate(() => location.hash = 'reports'); await p.waitForSelector('.bars');
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-csv="recv"]')]); if (!(await dl.suggestedFilename()).endsWith('.csv')) throw new Error('csv'); ok('reports render, CSV downloads');
