@@ -23,18 +23,18 @@ Carlson Capital prices for AI, websites and software (Ghana cedis, excluding VAT
 - Back office and CRM from GHS 55,000; mobile app from GHS 65,000; care plan from GHS 800/month.
 - AI training and consulting GHS 8,000 per session or per day; turnkey market entry for large companies from GHS 300,000, scoped per project.
 
-## Services
-- Investment readiness & GIPA: GIPA Act 1173 registration, business plans and 3-statement models, credit profile and pitch decks.
-- Market entry & international projects: Ghana, Nigeria, UK, US, EU, Francophone West Africa; feasibility and due diligence.
-- AI in your business: AI readiness audit, finance and reporting automation, staff training workshops.
-- Digital & managed hosting: websites and online shops with mobile money and card payments; hosting, email, daily backups.
-- AI creative studio: jingles and radio spots, posters and video adverts, voice-overs in Twi and English.
-- Energy, mining & infrastructure: solar IPPs, PPAs and EPC; geology-led due diligence; packaging for DFIs and banks.
-- Compliance & ESG: AML/KYC and data protection, ESG to IFC Performance Standards, CSR programme design.
-- Education & schools: school registration and licensing, teacher training, study-abroad guidance, digital skills.
-- Senior citizens & family support (Family Desk, gothamconsult.com/family): pension, NHIS and document renewals,
-  check-in visits, property oversight for absent families, wills and estate paperwork with partner lawyers.
-- Media, forums & inclusive enterprise: features, investor roundtables, trade missions, training for persons with disabilities.
+## Services (nine pillars)
+1. SME Growth & Investment Readiness: GIPA Act 1173 registration, business plans and 3-statement models, credit profile and pitch decks, grant and programme applications (GEA, AfDB, EU, banks).
+2. Business Development & Market Entry: turnkey market entry (company, licences, bank, office and team in about six months); Ghana and West Africa, the UK, US, EU and the Emirates; feasibility, partner checks and due diligence; trade missions, buyer introductions, AfCFTA export.
+3. Tech, AI & Digital Enablement (with Carlson Capital): AI readiness audits and AI assistants, custom software, web and mobile apps, websites and online shops with mobile money and card payments, credit-risk and banking software for lenders, hosting, email, daily backups.
+4. Media, Branding & Global Visibility: brand strategy, name, logo and identity; features, interviews and investor roundtables; social media and digital campaigns; showcases and trade fairs abroad.
+5. Inclusive Enterprise, Impact & CSR Advisory: CSR programme design and reporting, ESG to IFC Performance Standards, training and jobs for persons with disabilities, women and youth, AML/KYC and data protection.
+6. Silver Economy & Elderly Care (Silver Care; Family Desk, gothamconsult.com/family): check-in visits and care coordination, pension, NHIS and document renewals, property oversight for absent families, advice for care homes and senior-living projects, wills and estate paperwork with partner lawyers.
+7. Sustainability & Green Growth: solar IPPs, PPAs and EPC, packaging for DFIs and banks, green-finance and climate-programme applications, energy savings and solar for SMEs.
+8. Mining & Natural Resources: the formal routes only: licence types, timelines and regulators, geology-led concession screening, licensing roadmap with certified geologists and mining lawyers, site set-up, monitoring and provenance records.
+9. Creative Arts, Music & Entertainment (Artist Support): artist branding, press kits and release plans, bookings, sponsorship and brand partnerships, copyright registration and royalty collection with partners, AI creative studio (jingles, posters, video adverts, voice-overs in Twi and English).
+Also: Education & schools (school registration and licensing, teacher training, study-abroad guidance, digital skills); forums and training.
+Contacts: Joy Preston, Development Partner (SMEs, forums, training, partnerships), Joy@gothamconsult.com, +233 550 416 627. Uffe Carlson, Partner, Gotham Consult and Carlson Capital Ltd (market entry, AI and software, mining set-up), uffe.carlson@gothamconsult.com, +233 55 239 5548. Based in Accra, serving Africa, the UK, US, EU and the Emirates.
 
 ## Packages and prices (all in Ghana cedis, excluding VAT: Gotham is VAT registered, so 20% is added on invoices (15% VAT, 2.5% NHIL, 2.5% GETFund); government/regulator fees are paid at cost)
 Not included in any price: courier, travel, accommodation, notary and translation costs. They are billed at cost, after the client approves them.

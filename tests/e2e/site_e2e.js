@@ -151,8 +151,8 @@ async function journeys(browser) {
     check('typed AI panel question is answered with the service as context', await waitAnswer(p, 4) && (LIVE ? isAnswer(await lastBot(p)) : /train my staff.*about AI in your business/.test(await lastBot(p))), await lastBot(p));
     // services page → detail
     await p.goto(B + '/services', NAV); await settle(p);
-    check('services page links all ten practices', await p.locator('.prac a.more').count() === 10);
-    await p.locator('.prac a.more').nth(4).click(); await p.waitForURL(/\/services\/creative-studio$/);
+    check('services page links all nine pillars', await p.locator('.prac a.more').count() === 9);
+    await p.locator('.prac a.more').nth(8).click(); await p.waitForURL(/\/services\/creative-studio$/);
     check('"More about this" opens the practice page', /creative-studio/.test(p.url()));
     await p.locator('.others a', { hasText: 'Education' }).click(); await p.waitForURL(/\/services\/education$/);
     check('"Other practices" links work', /education/.test(p.url()));

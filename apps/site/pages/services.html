@@ -19,35 +19,66 @@
   .dr-status{min-height:24px;color:#5A6472;font-size:14px;margin:0}
   .dr-status.error{color:#A1322B;font-weight:600}
   @media(max-width:720px){.dr-grid,.dr-fields{grid-template-columns:1fr}.dr-actions>*{width:100%}}
+  .ch-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .ch-group{background:#fff;border:1px solid #E2E4E7;border-radius:20px;padding:clamp(18px,3vw,26px)}
+  .ch-group h3{font-size:19px;margin:0 0 10px}
+  .ch-item{display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;padding:9px 0;min-height:44px;cursor:pointer;font-size:16px;line-height:1.45;color:#2A3442}
+  .ch-item input{width:22px;height:22px;margin:1px 0 0;accent-color:#C9A227}
+  .ch-go{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:22px}
+  .ch-go strong{font-size:clamp(19px,2.4vw,24px)}
+  .ch-go .btn{min-height:48px}
+  .prac .pn{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.08em;color:#9A7B12;margin-bottom:4px}
+  .prac-also{margin-top:18px;display:flex;gap:8px 18px;flex-wrap:wrap;align-items:center;color:#5A6472}
+  .prac-also a{min-height:44px;display:inline-flex;align-items:center;font-weight:600;color:#0F1B2D}
+  .bt-where{margin:6px 0 4px;font-weight:600}
+  .bt-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:22px 0 6px;text-align:left}
+  .bt-card{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);border-radius:18px;padding:20px}
+  .bt-card h3{margin:0;font-size:22px;color:#fff}
+  .bt-card .role{margin:4px 0 2px;color:var(--gold-2);font-weight:600}
+  .bt-card .what{margin:0 0 10px;opacity:.85}
+  .bt-card a{display:flex;flex-direction:column;min-height:44px;justify-content:center;color:#fff;text-decoration:none;overflow-wrap:anywhere}
+  .bt-card a small{opacity:.7;font-size:13px}
+  @media(max-width:720px){.ch-grid,.bt-grid{grid-template-columns:1fr}.ch-go>.btn{width:100%}}
 </style>
 <main id="main">
   <section class="phero" aria-labelledby="h1"><img class="bgimg" src="/img/real-airportcity.webp" alt="" fetchpriority="high">
     <div class="wrap">
       <nav class="crumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span>Services</span></nav>
-      <p class="eyebrow">What we do</p>
-      <h1 id="h1">Business consulting in Ghana: <span class="serif">ten practices, one partner.</span></h1>
+      <p class="eyebrow">Where local potential meets global capital</p>
+      <h1 id="h1">Business consulting in Ghana: <span class="serif">nine pillars, one partner.</span></h1>
       <p class="lead">From your first registration to a mining lease, with partner lawyers, geologists and engineers where the job needs them. Fixed prices in Ghana cedis, paid by mobile money.</p>
-      <nav class="jump" aria-label="On this page"><a href="#practices">Practices</a><a href="#packages">Packages &amp; prices</a><a href="#design-review">Design review</a><a href="#membership">Membership</a></nav>
+      <nav class="jump" aria-label="On this page"><a href="#challenges">Your challenges</a><a href="#practices">9 pillars</a><a href="#packages">Packages &amp; prices</a><a href="#design-review">Design review</a><a href="#membership">Membership</a><a href="#contact">Contact</a></nav>
+    </div>
+  </section>
+
+  <section class="sec" id="challenges" aria-labelledby="ch-h">
+    <div class="wrap">
+      <div class="sec-head split">
+        <div><p class="eyebrow">Quick check</p><h2 id="ch-h">What are your biggest <span class="serif">challenges?</span></h2></div>
+        <p class="lead">Tick what applies to you. If you tick even one, let’s talk.</p>
+      </div>
+      <form id="ch-form" class="ch-grid" onsubmit="return false"><fieldset class="ch-group rv" style="margin:0"><legend class="sr-only">Digital &amp; growth</legend><h3 aria-hidden="true">Digital &amp; growth</h3><label class="ch-item"><input type="checkbox" name="ch"><span>No website, or one that brings no customers</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>Customers cannot pay online or by mobile money</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>We want to use AI but do not know where to start</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>Our brand is not known beyond our town</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>We are not yet ready for investors or grant programmes</span></label></fieldset><fieldset class="ch-group rv" style="margin:0"><legend class="sr-only">Market entry</legend><h3 aria-hidden="true">Market entry</h3><label class="ch-item"><input type="checkbox" name="ch"><span>We want to enter Ghana or West Africa</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>We want to sell to the UK, US, EU or the Emirates</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>We need a company, licences, a bank account and an office</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>We need to check a partner before we sign</span></label></fieldset><fieldset class="ch-group rv" style="margin:0"><legend class="sr-only">Training &amp; events</legend><h3 aria-hidden="true">Training &amp; events</h3><label class="ch-item"><input type="checkbox" name="ch"><span>Our team needs training, including in AI</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>We want to meet investors and buyers</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>We want to host or sponsor a forum or showcase</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>We want to train persons with disabilities, women or youth</span></label></fieldset><fieldset class="ch-group rv" style="margin:0"><legend class="sr-only">Specialised support</legend><h3 aria-hidden="true">Specialised support</h3><label class="ch-item"><input type="checkbox" name="ch"><span>Care for elderly parents in Ghana while we live abroad</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>A solar, green or sustainability project</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>A mining concession or licence, done the formal way</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>Support for an artist, musician or creative business</span></label><label class="ch-item"><input type="checkbox" name="ch"><span>CSR, ESG or impact reporting for partners</span></label></fieldset></form>
+      <div class="ch-go"><strong>If you ticked even one, let’s talk.</strong><a class="btn btn-wa" id="ch-send" href="https://wa.me/233550416627?text=Hello%20Gotham%20Consult%2C%20I%20would%20like%20a%20free%2030-minute%20call." target="_blank" rel="noopener"><svg class="icon"><use href="#i-wa"/></svg>Send my answers on WhatsApp</a><span>The first 30-minute call is free.</span><span id="ch-hello" hidden>Hello Gotham Consult, we would like to talk about:</span></div>
     </div>
   </section>
 
   <section class="sec" id="practices" aria-labelledby="pr-h">
     <div class="wrap">
       <div class="sec-head split">
-        <div><p class="eyebrow">Practices</p><h2 id="pr-h">Everything a business needs <span class="serif">in Ghana.</span></h2></div>
-        <p class="lead">Pick a practice, or tell us your goal on WhatsApp and we put the right team on it.</p>
+        <div><p class="eyebrow">Our services</p><h2 id="pr-h">Nine pillars, <span class="serif">one team.</span></h2></div>
+        <p class="lead">Pick a pillar, or tell us your goal on WhatsApp and we put the right people on it.</p>
       </div>
       <div class="prac"><div class="box rv" id="pr-0"><span class="ic"><svg class="icon"><use href="#i-rocket"/></svg></span>
-        <div><h3>Investment readiness &amp; GIPA</h3><p>Get registered, compliant and ready for investors.</p><ul class="ticks"><li>GIPA Act 1173 registration</li><li>Business plans &amp; 3-statement models</li><li>Credit profile &amp; pitch decks</li></ul><a class="more" href="/services/investment-readiness">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-1"><span class="ic"><svg class="icon"><use href="#i-plane"/></svg></span>
-        <div><h3>Market entry &amp; international projects</h3><p>Enter Ghana or expand abroad with local market insight and introductions, where suitable.</p><ul class="ticks"><li>Ghana, Nigeria, UK, US, EU</li><li>Francophone West Africa</li><li>Feasibility &amp; due diligence</li></ul><a class="more" href="/services/market-entry">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-2"><span class="ic"><svg class="icon"><use href="#i-chip"/></svg></span>
-        <div><h3>AI in your business<span class="pill teal new">New</span></h3><p>Put AI to work in finance, research and daily operations.</p><ul class="ticks"><li>AI readiness audit</li><li>Finance &amp; reporting automation</li><li>Staff training workshops</li><li>Credit-risk tools for banks and credit-service companies</li></ul><a class="more" href="/services/ai">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-3"><span class="ic"><svg class="icon"><use href="#i-chip"/></svg></span>
-        <div><h3>Digital &amp; managed hosting<span class="pill teal new">New</span></h3><p>Websites and apps that take mobile-money payments, run for you.</p><ul class="ticks"><li>Websites &amp; online shops</li><li>MoMo &amp; card payments</li><li>Hosting, email, daily backups</li></ul><a class="more" href="/services/digital">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-4"><span class="ic"><svg class="icon"><use href="#i-bolt"/></svg></span>
-        <div><h3>AI creative studio<span class="pill teal new">New</span></h3><p>Marketing made in minutes, in local languages.</p><ul class="ticks"><li>Jingles &amp; radio spots</li><li>Posters &amp; video adverts</li><li>Voice-overs in Twi &amp; English</li></ul><a class="more" href="/services/creative-studio">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-5"><span class="ic"><svg class="icon"><use href="#i-pick"/></svg></span>
-        <div><h3>Energy, mining &amp; infrastructure</h3><p>Bankable projects for developers, investors and lenders.</p><ul class="ticks"><li>Solar IPPs, PPAs &amp; EPC</li><li>Geology-led due diligence</li><li>Packaging for DFIs &amp; banks</li></ul><a class="more" href="/services/energy-mining">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-6"><span class="ic"><svg class="icon"><use href="#i-shield"/></svg></span>
-        <div><h3>Compliance &amp; ESG</h3><p>Meet the standards international partners expect.</p><ul class="ticks"><li>AML/KYC &amp; data protection</li><li>ESG to IFC Performance Standards</li><li>CSR program design</li></ul><a class="more" href="/services/compliance-esg">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-7"><span class="ic"><svg class="icon"><use href="#i-users"/></svg></span>
-        <div><h3>Education &amp; schools</h3><p>Start, licence and strengthen a school or training business.</p><ul class="ticks"><li>School registration and regulator licensing</li><li>Teacher training and curriculum partners</li><li>Study-abroad and scholarship guidance</li><li>Digital learning and AI skills for staff</li></ul><a class="more" href="/services/education">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-8"><span class="ic"><svg class="icon"><use href="#i-home"/></svg></span>
-        <div><h3>Senior citizens &amp; family support</h3><p>Practical help for older people in Ghana and families abroad.</p><ul class="ticks"><li>Pension, NHIS and document renewals</li><li>Check-in visits and care coordination</li><li>Property and land oversight for absent families</li><li>Wills and estate paperwork with partner lawyers</li></ul><a class="more" href="/services/family-support">More about this <span class="arrow" aria-hidden="true">→</span></a><a class="go" href="/family" style="font-weight:600;text-decoration:none;display:inline-flex;min-height:44px;align-items:center">See Family Desk <span class="arrow">→</span></a></div></div><div class="box rv" id="pr-9"><span class="ic"><svg class="icon"><use href="#i-cal"/></svg></span>
-        <div><h3>Media, forums &amp; inclusive enterprise</h3><p>Visibility for your business, and growth that includes everyone.</p><ul class="ticks"><li>Features &amp; investor roundtables</li><li>Trade missions &amp; showcases</li><li>Training for persons with disabilities</li></ul><a class="more" href="/services/media-forums">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div></div>
+        <div><span class="pn">01</span><h3>SME Growth &amp; Investment Readiness</h3><p>Get registered, compliant and ready for investors, lenders and grant programmes.</p><ul class="ticks"><li>GIPA Act 1173 registration</li><li>Business plans &amp; 3-statement models</li><li>Credit profile &amp; pitch decks</li><li>Grant and programme applications: GEA, AfDB, EU and banks</li></ul><a class="more" href="/services/investment-readiness">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-1"><span class="ic"><svg class="icon"><use href="#i-plane"/></svg></span>
+        <div><span class="pn">02</span><h3>Business Development &amp; Market Entry</h3><p>Turnkey market entry: you bring the capital, we hand you back a working company.</p><ul class="ticks"><li>Company, licences, bank, office and team in about six months</li><li>Ghana and West Africa, the UK, US, EU and the Emirates</li><li>Feasibility, partner checks and due diligence</li><li>Trade missions, buyer introductions and AfCFTA export</li></ul><a class="more" href="/services/market-entry">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-2"><span class="ic"><svg class="icon"><use href="#i-chip"/></svg></span>
+        <div><span class="pn">03</span><h3>Tech, AI &amp; Digital Enablement<span class="pill teal new">New</span></h3><p>Software, apps and AI built for you and run for you, with Carlson Capital.</p><ul class="ticks"><li>AI readiness audits and AI assistants that work every day</li><li>Custom software, web apps and mobile apps</li><li>Websites and online shops with MoMo and card payments</li><li>Credit-risk and banking software for lenders</li><li>Hosting, email and daily backups</li></ul><a class="more" href="/services/ai">More about this <span class="arrow" aria-hidden="true">→</span></a><a class="go" href="/services/digital" style="font-weight:600;text-decoration:none;display:inline-flex;min-height:44px;align-items:center;margin-left:14px">Websites &amp; hosting <span class="arrow">→</span></a></div></div><div class="box rv" id="pr-3"><span class="ic"><svg class="icon"><use href="#i-globe"/></svg></span>
+        <div><span class="pn">04</span><h3>Media, Branding &amp; Global Visibility</h3><p>Be known where your customers and investors are.</p><ul class="ticks"><li>Brand strategy, name, logo and identity</li><li>Features, interviews and investor roundtables</li><li>Social media and digital campaigns</li><li>Showcases and trade fairs abroad</li></ul><a class="more" href="/services/media-forums">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-4"><span class="ic"><svg class="icon"><use href="#i-users"/></svg></span>
+        <div><span class="pn">05</span><h3>Inclusive Enterprise, Impact &amp; CSR Advisory</h3><p>Growth that includes everyone and meets the standards partners expect.</p><ul class="ticks"><li>CSR programme design and reporting</li><li>ESG to IFC Performance Standards</li><li>Training and jobs for persons with disabilities, women and youth</li><li>AML/KYC &amp; data protection</li></ul><a class="more" href="/services/compliance-esg">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-5"><span class="ic"><svg class="icon"><use href="#i-home"/></svg></span>
+        <div><span class="pn">06</span><h3>Silver Economy &amp; Elderly Care (Silver Care)</h3><p>Practical care for older people in Ghana, and peace of mind for families abroad.</p><ul class="ticks"><li>Check-in visits and care coordination</li><li>Pension, NHIS and document renewals</li><li>Property and land oversight for absent families</li><li>Advice for care homes and senior-living projects</li></ul><a class="more" href="/services/family-support">More about this <span class="arrow" aria-hidden="true">→</span></a><a class="go" href="/family" style="font-weight:600;text-decoration:none;display:inline-flex;min-height:44px;align-items:center;margin-left:14px">See Family Desk <span class="arrow">→</span></a></div></div><div class="box rv" id="pr-6"><span class="ic"><svg class="icon"><use href="#i-bolt"/></svg></span>
+        <div><span class="pn">07</span><h3>Sustainability &amp; Green Growth</h3><p>Bankable clean-energy and green projects, from idea to build-ready.</p><ul class="ticks"><li>Solar IPPs, PPAs &amp; EPC</li><li>Packaging for DFIs &amp; banks</li><li>Green-finance and climate-programme applications</li><li>Energy savings and solar for SMEs</li></ul><a class="more" href="/services/energy-mining">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-7"><span class="ic"><svg class="icon"><use href="#i-pick"/></svg></span>
+        <div><span class="pn">08</span><h3>Mining &amp; Natural Resources</h3><p>We know the formal routes, and we follow them.</p><ul class="ticks"><li>Licence types, timelines and the regulators involved</li><li>Geology-led concession screening</li><li>Licensing roadmap with certified geologists and mining lawyers</li><li>Site set-up, monitoring and provenance records</li></ul><a class="more" href="/mining">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div><div class="box rv" id="pr-8"><span class="ic"><svg class="icon"><use href="#i-spark"/></svg></span>
+        <div><span class="pn">09</span><h3>Creative Arts, Music &amp; Entertainment (Artist Support)</h3><p>Turn talent into a business that earns at home and abroad.</p><ul class="ticks"><li>Artist branding, press kits and release plans</li><li>Bookings, sponsorship and brand partnerships</li><li>Copyright registration and royalty collection, with partners</li><li>AI creative studio: jingles, posters and video adverts</li></ul><a class="more" href="/services/creative-studio">More about this <span class="arrow" aria-hidden="true">→</span></a></div></div></div>
+      <p class="prac-also"><span>Also available:</span><a href="/services/education">Education &amp; schools <span class="arrow" aria-hidden="true">→</span></a><a href="/forums">Forums &amp; training <span class="arrow" aria-hidden="true">→</span></a></p>
     </div>
   </section>
 
@@ -230,12 +261,34 @@
     </div>
   </section>
 
-  <section class="sec cta" aria-label="Contact">
+  <section class="sec cta" id="contact" aria-labelledby="bt-h">
     <div class="wrap"><div class="cta-box rv">
-      <h2>Not sure where to start? <span class="serif" style="color:var(--gold-2)">Ask us.</span></h2><p class="lead">A 30-minute call on WhatsApp is free. We tell you what you need, what it costs and how long it takes.</p><div class="cta-row"><a class="btn btn-wa" href="https://wa.me/233550416627?text=Hello%20Gotham%20Consult%2C%20I%20would%20like%20a%20free%2030-minute%20call." target="_blank" rel="noopener"><svg class="icon"><use href="#i-wa"/></svg>Book a free call</a><a class="btn btn-ghost" href="/about#contact">Send a message</a></div>
+      <h2 id="bt-h">Let's build <span class="serif" style="color:var(--gold-2)">together.</span></h2>
+      <p class="bt-where">Accra, Ghana · Serving Africa, the UK, US, EU and the Emirates</p>
+      <div class="bt-grid">
+        <div class="bt-card"><h3>Joy Preston</h3><p class="role">Development Partner</p><p class="what">SMEs, forums, training and partnerships</p>
+          <a href="mailto:Joy@gothamconsult.com"><small>Email</small><span data-no-tr>Joy@gothamconsult.com</span></a>
+          <a href="https://wa.me/233550416627" target="_blank" rel="noopener"><small>Phone or WhatsApp</small><span data-no-tr>+233 550 416 627</span></a></div>
+        <div class="bt-card"><h3>Uffe Carlson</h3><p class="role">Partner, Gotham Consult · Carlson Capital Ltd</p><p class="what">Market entry, AI and software, mining set-up</p><p class="what" style="font-size:14px">Thirty years of turning capital into working businesses across Europe, Africa, the Americas and the Emirates.</p>
+          <a href="mailto:uffe.carlson@gothamconsult.com"><small>Email</small><span data-no-tr>uffe.carlson@gothamconsult.com</span></a>
+          <a href="https://wa.me/233552395548" target="_blank" rel="noopener"><small>Phone or WhatsApp</small><span data-no-tr>+233 55 239 5548</span></a></div>
+      </div>
+      <div class="cta-row"><a class="btn btn-wa" href="https://wa.me/233550416627?text=Hello%20Gotham%20Consult%2C%20I%20would%20like%20a%20free%2030-minute%20call." target="_blank" rel="noopener"><svg class="icon"><use href="#i-wa"/></svg>Book a free call</a><a class="btn btn-ghost" href="/about#contact">Send a message</a></div>
     </div></div>
   </section>
 </main>
+<script>
+(() => {
+  const form = document.getElementById('ch-form'), send = document.getElementById('ch-send');
+  if (!form || !send) return;
+  const base = send.href;
+  const update = () => {
+    const picked = [...form.querySelectorAll('input:checked')].map(i => '- ' + i.closest('label').textContent.trim());
+    send.href = picked.length ? 'https://wa.me/233550416627?text=' + encodeURIComponent(document.getElementById('ch-hello').textContent.trim() + '\n' + picked.join('\n')) : base;
+  };
+  form.addEventListener('change', update);
+})();
+</script>
 <script>
 (() => {
   const price = document.getElementById('dr-price');
