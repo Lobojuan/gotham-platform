@@ -91,11 +91,50 @@
     const k1 = Math.sin((1 - t) * d) / s, k2 = Math.sin(t * d) / s;
     return [a[0] * k1 + b[0] * k2, a[1] * k1 + b[1] * k2, a[2] * k1 + b[2] * k2, d];
   }
-  const arcs = CITIES.map(([name, lat, lon, tz, cur], i) => {
+  const mkArc = ([name, lat, lon, tz, cur], i) => {
     const a = vec(...ACCRA), b = vec(lat, lon), d = slerp(a, b, 0)[3], steps = 56, path = [];
     for (let s = 0; s <= steps; s++) { const t = s / steps, p = slerp(a, b, t), h = 1 + Math.sin(Math.PI * t) * (0.04 + d * 0.075); path.push([p[0] * h, p[1] * h, p[2] * h]); }
     return { name, lat, lon, tz, cur, path, phase: i * 0.37, dist: Math.round(km(ACCRA, [lat, lon]) / 10) * 10 };
-  });
+  };
+  const arcs = CITIES.map(mkArc);
+
+  /* ---- the visitor's own route, on pages that ask for it (<canvas data-personal>) ----
+     The browser's time zone says roughly where the visitor sits. It is read here and used here; nothing is sent anywhere.
+     A zone we know draws a route to Accra; a zone we do not know still gets the time difference. */
+  const PLACES = { 'Europe/Oslo': ['Oslo', 59.91, 10.75], 'Europe/Helsinki': ['Helsinki', 60.17, 24.94], 'Europe/Dublin': ['Dublin', 53.35, -6.26], 'Europe/Lisbon': ['Lisbon', 38.72, -9.14],
+    'Europe/Brussels': ['Brussels', 50.85, 4.35], 'Europe/Vienna': ['Vienna', 48.21, 16.37], 'Europe/Rome': ['Rome', 41.9, 12.5], 'Europe/Warsaw': ['Warsaw', 52.23, 21.01],
+    'Europe/Prague': ['Prague', 50.08, 14.44], 'Europe/Athens': ['Athens', 37.98, 23.73], 'Europe/Budapest': ['Budapest', 47.5, 19.04], 'Europe/Bucharest': ['Bucharest', 44.43, 26.1],
+    'Europe/Luxembourg': ['Luxembourg', 49.61, 6.13], 'Europe/Moscow': ['Moscow', 55.76, 37.62], 'Europe/Kyiv': ['Kyiv', 50.45, 30.52],
+    'America/Chicago': ['Chicago', 41.88, -87.63], 'America/Denver': ['Denver', 39.74, -104.99], 'America/Los_Angeles': ['Los Angeles', 34.05, -118.24], 'America/Vancouver': ['Vancouver', 49.28, -123.12],
+    'America/Mexico_City': ['Mexico City', 19.43, -99.13], 'America/Bogota': ['Bogotá', 4.71, -74.07], 'America/Lima': ['Lima', -12.05, -77.04], 'America/Santiago': ['Santiago', -33.45, -70.67],
+    'America/Argentina/Buenos_Aires': ['Buenos Aires', -34.6, -58.38], 'America/Panama': ['Panama City', 8.98, -79.52],
+    'Asia/Qatar': ['Doha', 25.29, 51.53], 'Asia/Kuwait': ['Kuwait City', 29.38, 47.99], 'Asia/Bahrain': ['Manama', 26.23, 50.59], 'Asia/Jerusalem': ['Tel Aviv', 32.09, 34.78],
+    'Asia/Karachi': ['Karachi', 24.86, 67.0], 'Asia/Calcutta': ['Mumbai', 19.08, 72.88], 'Asia/Dhaka': ['Dhaka', 23.81, 90.41], 'Asia/Bangkok': ['Bangkok', 13.76, 100.5],
+    'Asia/Jakarta': ['Jakarta', -6.21, 106.85], 'Asia/Kuala_Lumpur': ['Kuala Lumpur', 3.14, 101.69], 'Asia/Manila': ['Manila', 14.6, 120.98], 'Asia/Seoul': ['Seoul', 37.57, 126.98],
+    'Asia/Ho_Chi_Minh': ['Ho Chi Minh City', 10.82, 106.63], 'Asia/Taipei': ['Taipei', 25.03, 121.57], 'Australia/Melbourne': ['Melbourne', -37.81, 144.96], 'Pacific/Auckland': ['Auckland', -36.85, 174.76],
+    'Africa/Kinshasa': ['Kinshasa', -4.44, 15.27], 'Africa/Douala': ['Douala', 4.05, 9.77], 'Africa/Dar_es_Salaam': ['Dar es Salaam', -6.79, 39.21], 'Africa/Addis_Ababa': ['Addis Ababa', 9.03, 38.74],
+    'Africa/Kampala': ['Kampala', 0.35, 32.58], 'Africa/Luanda': ['Luanda', -8.84, 13.23], 'Africa/Algiers': ['Algiers', 36.75, 3.06], 'Africa/Tunis': ['Tunis', 36.81, 10.18],
+    'Africa/Lusaka': ['Lusaka', -15.39, 28.32], 'Africa/Harare': ['Harare', -17.83, 31.05], 'Africa/Maputo': ['Maputo', -25.97, 32.57], 'Africa/Monrovia': ['Monrovia', 6.3, -10.8],
+    'Africa/Freetown': ['Freetown', 8.47, -13.23], 'Africa/Ouagadougou': ['Ouagadougou', 12.37, -1.52], 'Africa/Bamako': ['Bamako', 12.64, -8.0], 'Africa/Lome': ['Lomé', 6.13, 1.22],
+    'Africa/Porto-Novo': ['Cotonou', 6.37, 2.39], 'Africa/Conakry': ['Conakry', 9.64, -13.58], 'Africa/Niamey': ['Niamey', 13.51, 2.11], 'Africa/Windhoek': ['Windhoek', -22.56, 17.08] };
+  let YOU = null;
+  if (canvas.hasAttribute('data-personal')) { try {
+    const tz = (window.__GC_TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+    if (tz === 'Africa/Accra') YOU = { tz, home: true };
+    else if (tz.includes('/')) {
+      const known = arcs.find(a => a.tz === tz), place = PLACES[tz];
+      YOU = known ? { tz, arc: known } : place ? { tz, arc: Object.assign(mkArc([place[0], place[1], place[2], tz, ''], arcs.length), { extra: true }) }
+        : { tz, name: tz.split('/').pop().replace(/_/g, ' ') };
+    }
+  } catch {} }
+  const TY = {
+    en: { k: 'Your route', home: 'You are in Ghana', homeB: 'Same time as our desk in Accra.', slots: (a, b) => `Call slots 09:00–16:00 in Accra are <b>${a}–${b}</b> your time.`, slotsHome: 'Call slots 09:00–16:00, Monday to Friday.', book: 'Book a free call' },
+    fr: { k: 'Votre route', home: 'Vous êtes au Ghana', homeB: 'Même heure que notre bureau d’Accra.', slots: (a, b) => `Les créneaux d’appel 09:00–16:00 à Accra correspondent à <b>${a}–${b}</b> chez vous.`, slotsHome: 'Créneaux d’appel 09:00–16:00, du lundi au vendredi.', book: 'Réserver un appel gratuit' },
+    es: { k: 'Su ruta', home: 'Usted está en Ghana', homeB: 'Misma hora que nuestra oficina en Accra.', slots: (a, b) => `Las llamadas de 09:00 a 16:00 en Accra son de <b>${a} a ${b}</b> en su hora.`, slotsHome: 'Llamadas de 09:00 a 16:00, de lunes a viernes.', book: 'Reservar una llamada gratis' },
+    de: { k: 'Ihre Route', home: 'Sie sind in Ghana', homeB: 'Gleiche Zeit wie unser Büro in Accra.', slots: (a, b) => `Gesprächstermine 09:00–16:00 in Accra sind <b>${a}–${b}</b> Ihrer Zeit.`, slotsHome: 'Gesprächstermine 09:00–16:00, Montag bis Freitag.', book: 'Kostenloses Gespräch buchen' },
+    ar: { k: 'مساركم', home: 'أنتم في غانا', homeB: 'نفس توقيت مكتبنا في أكرا.', slots: (a, b) => `مواعيد الاتصال 09:00–16:00 بتوقيت أكرا تقابل <b><bdi dir="ltr">${a}–${b}</bdi></b> بتوقيتكم.`, slotsHome: 'مواعيد الاتصال 09:00–16:00 من الاثنين إلى الجمعة.', book: 'احجزوا مكالمة مجانية' },
+    zh: { k: '您的连线', home: '您在加纳', homeB: '与我们阿克拉办公室同一时间。', slots: (a, b) => `阿克拉 09:00–16:00 的通话时段相当于您当地时间 <b>${a}–${b}</b>。`, slotsHome: '通话时段 09:00–16:00，周一至周五。', book: '预约免费通话' } };
+  const LY = () => TY[lang()] || TY.en;
 
   const GRID = [];
   for (let la = -60; la <= 60; la += 30) { const pts = []; for (let lo = -180; lo <= 180; lo += 6) pts.push(vec(la, lo)); GRID.push({ pts, key: la === 0 }); }
@@ -223,7 +262,7 @@
     }
     ctx.setLineDash([]);
     // routes
-    const list = small() ? arcs.filter(a => MOBILE_CITIES.includes(a.name) || a === focus) : arcs;
+    const list = (small() ? arcs.filter(a => MOBILE_CITIES.includes(a.name) || a === focus) : arcs).concat(YOU && YOU.arc && YOU.arc.extra ? [YOU.arc] : []);
     ctx.lineCap = 'round';
     for (const arc of list) {
       const P = arc.path.map(view), n = P.length - 1, on = arc === focus;
@@ -324,6 +363,7 @@
       return { t: `${w.sunAt} · ${deg(sl, 'N', 'S')}, ${deg(so, 'E', 'W')}`, b: w.sunB, live: true }; })(),
     { t: w.cities(arcs.length), b: `${Math.round(total / 1000).toLocaleString(LOC())} 000 km ${w.routes}: ${w.regions || 'Europe, the Gulf, Asia, the Americas and Africa'}.` }]; };
   const order = []; { const f = [0, 1, 5, 4, 2, 3], c = arcs.map((_, i) => i); let a = 0, b = 0; while (a < f.length || b < c.length) { if (b < c.length) order.push(['c', c[b++]]); if (b < c.length) order.push(['c', c[b++]]); if (a < f.length) order.push(['f', f[a++]]); } }
+  if (YOU) { order.splice(Math.floor(order.length / 2), 0, ['y', 0]); order.unshift(['y', 0]); }
   let at = -1, cardTimer = 0;
   function card(step) {
     at = (at + step + order.length) % order.length;
@@ -338,6 +378,16 @@
         <p class="gc-b"><b>${a.dist.toLocaleString(LOC())}</b> ${w.km}</p>
         <p class="gc-b">${w.local} <b>${clock(a.tz)}</b>${diff ? ' · ' + diff : ''}</p>
         <p class="gc-b"><span class="gc-sun ${up ? 'd' : 'n'}" aria-hidden="true"></span>${up ? w.day : w.night}${fx ? ` · ${w.fx(a.cur)} <b><bdi dir="ltr">GHS ${fx.toLocaleString(LOC(), { maximumFractionDigits: fx < 1 ? 4 : 2 })}</bdi></b>` : ''}</p>`;
+    } else if (kind === 'y') {
+      const y = LY(), a = YOU.arc || null; focus = a;
+      const d = YOU.home ? 0 : tzDiff(YOU.tz), diff = d === null ? '' : d === 0 ? w.same : d > 0 ? w.ahead(String(d)) : w.behind(String(-d));
+      const hm = h => { const t = ((Math.round((h + (d || 0)) * 60) % 1440) + 1440) % 1440; return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
+      const go = `<a class="gc-go" href="#book">${y.book} →</a>`;
+      if (a) target = rad((a.lon + ACCRA[1]) / 2);
+      html = YOU.home ? `<p class="gc-k">${y.k}</p><p class="gc-t">${y.home}</p><p class="gc-b">${y.homeB} ${y.slotsHome}</p>${go}`
+        : `<p class="gc-k">${y.k}</p><p class="gc-t">${a ? cityName(a.name) : YOU.name} → ${cityName('Accra')}</p>
+        <p class="gc-b">${a ? `<b>${a.dist.toLocaleString(LOC())}</b> ${w.km} · ` : ''}${diff}</p>
+        <p class="gc-b">${d ? y.slots(hm(9), hm(16)) : y.slotsHome}</p>${go}`;
     } else {
       focus = null; const f = facts()[i];
       html = `<p class="gc-k">${f.live ? `<span class="gc-live"></span>${w.live}` : cityName('Accra')}</p><p class="gc-t">${f.t}</p><p class="gc-b">${f.b}</p>`;

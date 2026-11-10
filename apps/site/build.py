@@ -39,7 +39,7 @@ META = {
 
 V2_EXTRA = ('<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Newsreader:ital,opsz,wght@1,6..72,400&family=Noto+Sans+Arabic:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700;800&family=Noto+Serif+SC:wght@400;700&display=swap" media="print" onload="this.media=\'all\'">\n'
-  '<link rel="stylesheet" href="/assets/v2/v2.css?v=39">\n'
+  '<link rel="stylesheet" href="/assets/v2/v2.css?v=40">\n'
   '<meta name="theme-color" content="#070D18">')
 # The new design (live since 28 September 2026). Shared header/footer come from pages/_partials/_top.html and _bottom.html.
 # Titles lead with what people search for on Google ("business consulting Ghana", "invest in Ghana", "Ghana market entry"),
@@ -54,6 +54,9 @@ V2 = {
 }
 for _n, (_t, _d, _o) in V2.items():
     META[_n] = dict(title=_t, desc=_d, og=_o, extra=V2_EXTRA)
+# the next landing page, for the owners to look at before it replaces index.html: not in the sitemap, not translated, hidden from search engines
+META['home-preview.html'] = dict(title='Landing page preview | Gotham Consult', desc='Preview of the next Gotham Consult landing page: two doors for local businesses and for investors, your own route to Accra and a challenges checklist.',
+   og='img/og/boot2.jpg', extra=V2_EXTRA + '\n<meta name="robots" content="noindex, nofollow">')
 META['event-help.html'] = dict(
    title='Business Support Follow-up | Gotham Consult',
    desc='Already registered for SMEs at the Centre? Tell Gotham Consult which areas of your business need support. Your response is recorded in the CRM and confirmed by email.',
