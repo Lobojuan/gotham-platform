@@ -136,7 +136,7 @@ assert 'footer.v2c.gf { font: inherit;' in chrome_css
 assert 'family=Noto+Sans+Arabic' in build and 'family=Noto+Sans+SC' in build and 'family=Noto+Serif+SC' in build
 assert "document.documentElement.lang" in globe and "localStorage.getItem('gc-language')" in globe
 assert '"Noto Sans Arabic"' in globe and '"Noto Sans SC"' in globe
-assert 'globe.js?v=8' in (ROOT/'apps/site/pages/index.html').read_text()
+assert 'globe.js?v=10' in (ROOT/'apps/site/pages/index.html').read_text()
 print('  ok Arabic/Chinese native-script fonts cover page bodies and shared chrome')
 print('  ok globe card and canvas labels follow page locale with native-script fonts')
 print('PASSED')

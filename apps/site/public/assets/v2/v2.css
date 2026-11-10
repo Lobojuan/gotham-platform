@@ -607,7 +607,7 @@ html[lang="ar"] .market-update-count { margin-inline-start:0; }
 .form .msg { font-size: 14.5px; min-height: 1.4em; margin: 0; }
 .form .ok { padding: 16px; border-radius: 14px; background: #DDF6EF; color: #0f5c49; }
 /* a consent line inside a form: a tick box of normal size next to its sentence (it used to inherit the 100% width and 48px height of text fields) */
-.form label.fine { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; line-height: 1.5; }
+.form label.fine { display: flex; gap: 10px; align-items: flex-start; font-weight: 500; line-height: 1.5; min-height: 44px; }
 .form label.fine input[type="checkbox"] { width: 22px; height: 22px; min-height: 0; padding: 0; margin: 1px 0 0; flex: none; accent-color: var(--gold); }
 .fine { font-size: 13px; color: var(--soft); margin: 0; }
 .dark .fine { color: rgba(255,255,255,.55); }

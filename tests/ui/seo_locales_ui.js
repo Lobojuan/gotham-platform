@@ -7,7 +7,7 @@ const ok=(c,m)=>{if(!c)throw Error(m);checks++;console.log('  ok',m);};
  const browser=await chromium.launch({executablePath:process.env.CHROMIUM});
  try {
   const offline=await browser.newContext({javaScriptEnabled:false});
-  for (const [lang,h1] of [['fr',/Un accompagnement concret/],['es',/Apoyo práctico/],['de',/Praktische Unterstützung/],['ar',/دعم عملي/],['zh',/为加纳企业/]]) {
+  for (const [lang,h1] of [['fr',/Là où le potentiel local/],['es',/Donde el potencial local/],['de',/Wo lokales Potenzial/],['ar',/حيث تلتقي الإمكانات المحلية/],['zh',/让本地潜力对接/]]) {
    const p=await offline.newPage();await p.goto(base+'/'+lang);
    ok((await p.locator('html').getAttribute('lang'))===lang,'Without JS: language '+lang);
    ok(h1.test(await p.locator('h1').textContent()),'Without JS: translated headline '+lang);
@@ -35,7 +35,7 @@ const ok=(c,m)=>{if(!c)throw Error(m);checks++;console.log('  ok',m);};
    ok((await p.locator('link[rel=canonical]').getAttribute('href')).endsWith((lang==='en'?'':'/'+lang)+'/invest'),'Localized canonical after language switch: '+lang);
   }
   await ctx.close();
-  const stale=await browser.newContext({viewport:{width:1440,height:900}});
+  const stale=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'UTC'});   // UTC: no personal route card, the partner routes come first
   await stale.addInitScript(()=>localStorage.setItem('gc-language','zh'));
   const arabic=await stale.newPage();await arabic.goto(base+'/ar');
   await arabic.waitForSelector('.globe-card .gc-t');
@@ -43,8 +43,16 @@ const ok=(c,m)=>{if(!c)throw Error(m);checks++;console.log('  ok',m);};
   ok(/مسار الشراكة/.test(await arabic.locator('.globe-card').innerText()),'Globe card follows Arabic page language despite saved Chinese preference');
   ok(/لندن|دبي|أكرا/.test(await arabic.locator('.globe-card .gc-t').innerText()),'Globe city name follows Arabic page language');
   await stale.close();
+  {const visitor=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'Europe/London'}),page=await visitor.newPage();await page.goto(base+'/ar');await page.waitForSelector('.globe-card .gc-t');
+   ok(/مساركم/.test(await page.locator('.globe-card').innerText())&&/لندن/.test(await page.locator('.globe-card .gc-t').innerText()),'A visitor in London sees their own route to Accra first, in Arabic');
+   await visitor.close();
+   const abroad=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'Europe/London'}),en=await abroad.newPage();await en.goto(base+'/');await en.waitForSelector('.globe-card .gc-t');
+   ok(/your route/i.test(await en.locator('.globe-card').innerText())&&await en.locator('#door-entry').getAttribute('aria-selected')==='true','A visitor outside Ghana gets the entering-or-investing door and their route');
+   const home=await browser.newContext({viewport:{width:1440,height:900},timezoneId:'Africa/Accra'}),gh=await home.newPage();await gh.goto(base+'/');await gh.waitForSelector('.globe-card .gc-t');
+   ok(/You are in Ghana/.test(await gh.locator('.globe-card').innerText())&&await gh.locator('#door-local').getAttribute('aria-selected')==='true','A visitor in Ghana gets the local-business door');
+   await abroad.close();await home.close();}
   for(const [lang,route,city] of [['de',/Partnerverbindung/,/London/],['ar',/مسار الشراكة/,/لندن/],['zh',/合作伙伴连线/,/伦敦/]]){
-   const phone=await browser.newContext({viewport:{width:390,height:844}}), page=await phone.newPage();
+   const phone=await browser.newContext({viewport:{width:390,height:844},timezoneId:'UTC'}), page=await phone.newPage();
    await page.goto(base+'/'+lang);
    await page.waitForSelector('.globe-card .gc-t');
    ok(route.test(await page.textContent('.globe-card')),'Native globe route text: '+lang);

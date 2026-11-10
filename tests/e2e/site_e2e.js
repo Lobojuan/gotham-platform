@@ -159,22 +159,17 @@ async function journeys(browser) {
     check('"More about this" opens the practice page', /creative-studio/.test(p.url()));
     await p.locator('.others a', { hasText: 'Education' }).click(); await p.waitForURL(/\/services\/education$/);
     check('"Other practices" links work', /education/.test(p.url()));
-    // home carousel
+    // home: the two doors in the hero and the challenges with their match
     await p.goto(B + '/', NAV); await settle(p);
-    const t0 = await p.textContent('[data-car-title]'); await p.click('[data-car-next]'); await p.waitForTimeout(500);
-    check('carousel next moves to another practice', (await p.textContent('[data-car-title]')) !== t0);
-    {  // mouse: pointing at a side card (no click) turns it to the front
-      const sb = await p.locator('.car-stage').boundingBox(), before = await p.textContent('[data-car-title]');
-      await p.mouse.move(sb.x + sb.width * .5, sb.y + sb.height * .5);
-      const side = await p.locator('.car-card.side').last().boundingBox();
-      await p.mouse.move(side.x + side.width / 2, side.y + side.height / 2, { steps: 8 });
-      await p.waitForTimeout(1300);
-      check('carousel turns when the mouse moves across it (no click)', (await p.textContent('[data-car-title]')) !== before);
-      check('carousel settles with one card in front', await p.$$eval('.car-card.front', a => a.length) === 1);
-      await p.mouse.move(5, 5); await p.waitForTimeout(400);
-    }
-    const hrefs = await p.$$eval('.car-card', a => a.map(x => x.getAttribute('href')));
-    check('carousel cards open the practice pages', hrefs.length === 10 && hrefs.every(h => /^\/services\/[a-z-]+$/.test(h)), hrefs.join(','));
+    await p.click('#door-entry');
+    check('hero door for investors shows its own text and books a call', await p.isVisible('#panel-entry') && await p.isHidden('#panel-local') && (await p.getAttribute('#panel-entry .btn-gold', 'href')) === '#book');
+    await p.click('#door-local');
+    check('hero door for local businesses leads to the challenges', await p.isVisible('#panel-local') && await p.isHidden('#panel-entry') && (await p.getAttribute('#panel-local .btn-gold', 'href')) === '#challenges');
+    await p.locator('#ch-form input').nth(4).check(); await p.locator('#ch-form input').nth(10).check();
+    check('ticked challenges show their pillar and price', await p.locator('#mt-list li').count() === 2 && /GHS 45,000/.test(await p.textContent('#mt-list')) && /GHS 15,000/.test(await p.textContent('#mt-list')), await p.textContent('#mt-list'));
+    check('ticked challenges go into the WhatsApp message', /Mining%20and%20natural%20resources/.test(await p.getAttribute('#ch-send', 'href')));
+    const hrefs = await p.$$eval('#ch-form input', a => a.map(x => x.dataset.href));
+    check('every challenge points to a page on the site', hrefs.length === 15 && hrefs.every(h => /^\/[a-z#/-]+$/.test(h)), hrefs.join(','));
     // home chat via chip
     await p.click('#chatO'); await p.locator('#chatChips button').first().click();
     check('home chat chip gets an answer', await waitAnswer(p, 2) && isAnswer(await lastBot(p)));

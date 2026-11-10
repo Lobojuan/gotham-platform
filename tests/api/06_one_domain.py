@@ -113,7 +113,7 @@ assert 'gc-backoffice' in site and 'Back office' in site
 ok('Login opens the back office in an in-page, same-origin dialog')
 
 # the new design is the home page; its sections are real pages; old /v2 addresses and WordPress paths redirect
-st,b,_=get('/'); assert st==200 and b'data-car' in b and b'globe.js' in b, b[:200]
+st,b,_=get('/'); assert st==200 and b'id="challenges"' in b and b'globe.js' in b, b[:200]
 for pth in ['/services','/invest','/mining','/forums','/about']:
     st,b,_=get(pth); assert st==200 and b'class="gh v2c"' in b, (pth, st)
 ok('new design at / with /services, /invest, /mining, /forums, /about')

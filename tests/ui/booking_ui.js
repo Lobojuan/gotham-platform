@@ -50,7 +50,7 @@ const srv = http.createServer((q, r) => {
 
   const d = await b.newPage({ viewport: { width: 1440, height: 900 } }); d.on('pageerror', e => errs.push(e.message));
   await d.goto(B + '/index.html'); await d.waitForTimeout(1200);
-  assert((await d.$eval('.hero-cta .btn-gold', e => e.getAttribute('href'))) === '#book', 'desktop: the hero button goes to the booking form');
+  assert((await d.$eval('#panel-entry .hero-cta .btn-gold', e => e.getAttribute('href'))) === '#book' && await d.$('#panel-local .hero-cta a[href="#book"]'), 'desktop: both hero doors lead to the booking form');
   assert(await d.evaluate(() => { const g = document.querySelector('.globe-wrap').getBoundingClientRect(), h = document.querySelector('h1').getBoundingClientRect(); return g.left > h.left + 200; }), 'desktop: the globe stays on the right');
   assert(errs.length === 0, 'no script errors' + (errs.length ? ': ' + errs.join(' | ') : ''));
   await b.close(); srv.close();

@@ -121,7 +121,7 @@
   if (canvas.hasAttribute('data-personal')) { try {
     const tz = (window.__GC_TZ || Intl.DateTimeFormat().resolvedOptions().timeZone || '');
     if (tz === 'Africa/Accra') YOU = { tz, home: true };
-    else if (tz.includes('/')) {
+    else if (/^(Africa|America|Antarctica|Asia|Atlantic|Australia|Europe|Indian|Pacific)\//.test(tz)) {   // a real place, not UTC or Etc/GMT
       const known = arcs.find(a => a.tz === tz), place = PLACES[tz];
       YOU = known ? { tz, arc: known } : place ? { tz, arc: Object.assign(mkArc([place[0], place[1], place[2], tz, ''], arcs.length), { extra: true }) }
         : { tz, name: tz.split('/').pop().replace(/_/g, ' ') };

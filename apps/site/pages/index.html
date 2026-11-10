@@ -1,16 +1,62 @@
 <!--#top-->
+<style>
+  /* landing page since November 2026: two doors in the hero, the visitor's own route on the globe, challenges with a live pillar and price match */
+  .hero h1{font-size:clamp(38px,5.2vw,70px)}
+  .doors{margin-top:22px}
+  .doors{display:inline-grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;margin-top:26px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);max-width:100%}
+  .doors button{font:inherit;font-size:15px;font-weight:650;color:rgba(255,255,255,.82);background:none;border:0;border-radius:999px;min-height:48px;padding:8px 18px;cursor:pointer;line-height:1.2}
+  .doors button[aria-selected="true"]{background:#F4C66A;color:#0F1B2D;box-shadow:0 6px 22px rgba(244,198,106,.28)}
+  .doors button:focus-visible{outline:3px solid rgba(240,190,90,.6);outline-offset:2px}
+  .door-panel .lead{margin:20px 0 14px}
+  .door-pts{list-style:none;padding:0;margin:0 0 24px;display:grid;gap:8px;color:rgba(255,255,255,.86);font-size:15.5px}
+  .door-pts li{padding-left:26px;position:relative}
+  .door-pts li::before{content:"";position:absolute;left:2px;top:.5em;width:12px;height:7px;border-left:2px solid var(--gold-2);border-bottom:2px solid var(--gold-2);transform:rotate(-45deg)}
+  .gc-go{display:inline-flex;align-items:center;min-height:44px;margin-top:2px;color:var(--gold-2);font-weight:700;font-size:13.5px;text-decoration:none}
+  .gc-go:hover{text-decoration:underline}
+  .ch2{display:grid;gap:22px;align-items:start}
+  .ch2-groups{display:grid;gap:14px;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ch-group{background:#fff;border:1px solid #E2E4E7;border-radius:20px;padding:clamp(16px,2.4vw,22px);margin:0;min-width:0}
+  .ch-group h3{font-size:17px;margin:0 0 6px}
+  .ch-item{display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;padding:8px 0;min-height:46px;cursor:pointer;font-size:15.5px;line-height:1.4;color:#2A3442}
+  #ch-form .ch-item{min-height:48px}   /* above the 44px the phone style sheet gives every tick-box label, so it stays finger-sized while its card is still sliding in at 98% */
+  .ch-item input{width:22px;height:22px;margin:0;accent-color:#C9A227}
+  .match{background:var(--navy,#0F1B2D);color:#fff;border-radius:22px;padding:clamp(20px,3vw,28px);position:sticky;top:88px}
+  .match h3{margin:0 0 4px;font-size:22px;color:#fff}
+  .match .hint{color:rgba(255,255,255,.7);margin:0 0 14px;font-size:15px}
+  .match ul{list-style:none;padding:0;margin:0 0 16px;display:grid;gap:10px}
+  .match li{border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);border-radius:14px;padding:12px 14px}
+  .match li .pn{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--gold-2)}
+  .match li b{display:block;font-size:16px;margin:2px 0}
+  .match li .pr{font-size:14.5px;color:rgba(255,255,255,.82)}
+  .match li a{color:var(--gold-2);font-weight:650;font-size:14px;display:inline-flex;min-height:32px;align-items:center}
+  .match .btn{width:100%;justify-content:center;min-height:50px}
+  .match .small{font-size:12.5px;color:rgba(255,255,255,.6);margin:12px 0 0}
+  @media(min-width:980px){.ch2{grid-template-columns:1.25fr .9fr}}
+  @media(max-width:640px){.ch2-groups{grid-template-columns:1fr}.match{position:static}
+    /* phones: both doors side by side and no bullet list, so the first button stays on the first screen above the dock */
+    .doors{display:grid;margin-top:16px;border-radius:20px}.doors button{border-radius:16px;font-size:13.5px;padding:6px 8px;min-height:50px}.door-pts{display:none}.door-panel .lead{margin:16px 0 18px}}
+  @media(max-width:899px){.hero-in .doors{order:3}.hero-in .door-panel{order:4}}
+</style>
 <main id="main">
   <section class="hero" aria-labelledby="h1">
     <div class="wrap hero-in">
       <div>
-        <p class="eyebrow long">Company set-up · Digital services · Business forums · Accra</p>
-        <h1 id="h1">Practical support for <span class="serif">Ghanaian businesses.</span></h1>
-        <p class="lead">We help Ghanaian businesses get set up, work smarter and reach new customers. Joy Preston leads our business forums and inclusive enterprise work; Uffe Carlson leads technology and financial software projects.</p>
-        <div class="hero-cta">
-          <a class="btn btn-gold" href="#book">Book a free call <span class="arrow">→</span></a>
-          <a class="btn btn-ghost" href="#services">Explore our practices</a>
+        <p class="eyebrow long">Gotham Consult · Accra, Ghana</p>
+        <h1 id="h1">Where local potential meets <span class="serif">global capital.</span></h1>
+        <div class="doors" role="tablist" aria-label="Choose what describes you">
+          <button type="button" role="tab" id="door-local" aria-controls="panel-local" aria-selected="true" data-door="local">I run a business in Ghana</button>
+          <button type="button" role="tab" id="door-entry" aria-controls="panel-entry" aria-selected="false" data-door="entry" tabindex="-1">I’m entering or investing in Ghana</button>
         </div>
-        <p class="hero-proof">A working example of what we build: Joy Preston and Uffe Carlson co-built this platform. <a href="/services/digital">Explore digital services</a> <span aria-hidden="true">→</span></p>
+        <div class="door-panel" id="panel-local" role="tabpanel" aria-labelledby="door-local">
+          <p class="lead">Get registered, get funded and reach new customers. Fixed prices in Ghana cedis, paid by mobile money, and the first call is free.</p>
+          <ul class="door-pts"><li>Company registration, tax and compliance</li><li>Websites, AI and mobile-money payments</li><li>Forums where owners meet investors and buyers</li></ul>
+          <div class="hero-cta"><a class="btn btn-gold" href="#challenges">Tick your challenges <span class="arrow">→</span></a><a class="btn btn-ghost" href="#book">Book a free call</a></div>
+        </div>
+        <div class="door-panel" id="panel-entry" role="tabpanel" aria-labelledby="door-entry" hidden>
+          <p class="lead">You bring the capital. We set up the company, licences, bank account, office and team, and hand you a working business in about six months.</p>
+          <ul class="door-pts"><li>Entry check, partner checks and due diligence</li><li>GIPA registration, licences and banking</li><li>A local desk in Accra that reports to you every month</li></ul>
+          <div class="hero-cta"><a class="btn btn-gold" href="#book">Book a free call <span class="arrow">→</span></a><a class="btn btn-ghost" href="/invest">See the investor guide</a></div>
+        </div>
         <div class="stats">
           <div class="stat" data-ghana-key="gdp" data-no-tr><b>—</b><span>GDP growth · loading official data</span></div>
           <div class="stat" data-ghana-key="inflation" data-no-tr><b>—</b><span>Inflation · loading official data</span></div>
@@ -20,7 +66,7 @@
         <p class="src" data-ghana-status data-no-tr aria-live="polite">Official figures load from the published sources. Each figure keeps its reporting period.</p>
       </div>
       <div class="globe-wrap">
-        <canvas id="globe" role="img" aria-label="The Earth turning a full circle, with day and night as they are now and routes from Accra to 30 business cities worldwide"></canvas>
+        <canvas id="globe" data-personal role="img" aria-label="The Earth turning a full circle, with day and night as they are now and routes from Accra to 30 business cities worldwide"></canvas>
         <p class="globe-tag">Accra, connected to the world</p>
       </div>
     </div>
@@ -58,18 +104,24 @@
     </div>
   </section>
 
-  <section class="sec" aria-labelledby="aud-h">
+  <section class="sec" id="challenges" aria-labelledby="ch-h">
     <div class="wrap">
       <div class="sec-head split">
-        <div><p class="eyebrow">Start here</p><h2 id="aud-h">Who are you, <span class="serif">and what do you need?</span></h2></div>
-        <p class="lead">Pick your path. Fixed prices in cedis, paid by mobile money, and the first step is always free.</p>
+        <div><p class="eyebrow">Start here</p><h2 id="ch-h">What are your biggest <span class="serif">challenges?</span></h2></div>
+        <p class="lead">Tick what applies to you. You see at once which of our nine pillars helps, and what it costs.</p>
       </div>
-      <div class="aud">
-        <a class="card rv" href="/services#packages"><span class="ic"><svg class="icon"><use href="#i-rocket"/></svg></span><span class="tag">Ghanaian business owners</span><h3>Set up and grow</h3><p>Company formation, compliance, digital tools and practical business support.</p><span class="go">Explore services <span class="arrow">→</span></span></a>
-        <a class="card rv" href="/forums"><span class="ic"><svg class="icon"><use href="#i-users"/></svg></span><span class="tag">Joy’s forums &amp; events</span><h3>Meet, learn and make connections</h3><p>Business forums, inclusive enterprise programmes and curated events in Accra.</p><span class="go">See upcoming events <span class="arrow">→</span></span></a>
-        <a class="card rv" href="/services#packages"><span class="ic"><svg class="icon"><use href="#i-chip"/></svg></span><span class="tag">Technology with Uffe</span><h3>Make your business work smarter</h3><p>Websites, AI integration and financial software through Carlson Capital Ltd.</p><span class="go">Explore digital services <span class="arrow">→</span></span></a>
-        <a class="card rv" href="/invest"><span class="ic"><svg class="icon"><use href="#i-chart"/></svg></span><span class="tag">Investors &amp; partners</span><h3>Explore opportunities in Ghana</h3><p>Market-entry support, company set-up, research and introductions to potential partners who may be interested in investing in a business or project.</p><span class="go">Investor information <span class="arrow">→</span></span></a>
+      <div class="ch2">
+        <form id="ch-form" class="ch2-groups" onsubmit="return false"><fieldset class="ch-group rv"><legend class="sr-only">Digital &amp; growth</legend><h3 aria-hidden="true">Digital &amp; growth</h3><label class="ch-item"><input type="checkbox" name="ch" data-p="3" data-pillar="Tech, AI &amp; Digital Enablement" data-price="Starter website: from GHS 6,000" data-href="/carlson-capital#prices"><span>Website upgrade or design</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="3" data-pillar="Tech, AI &amp; Digital Enablement" data-price="Starter website: from GHS 6,000" data-href="/carlson-capital#prices"><span>AI website design</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="3" data-pillar="Tech, AI &amp; Digital Enablement" data-price="Fixed quote after a free call" data-href="/services/ai"><span>Digital marketing</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="2" data-pillar="Business Development &amp; Market Entry" data-price="Fixed quote after a free call" data-href="/services/market-entry"><span>Business development</span></label></fieldset><fieldset class="ch-group rv"><legend class="sr-only">Market entry</legend><h3 aria-hidden="true">Market entry</h3><label class="ch-item"><input type="checkbox" name="ch" data-p="2" data-pillar="Business Development &amp; Market Entry" data-price="Market entry and company set-up: from GHS 45,000 plus government fees" data-href="/services#packages"><span>Market entry: Ghana, Nigeria and African markets</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="2" data-pillar="Business Development &amp; Market Entry" data-price="Fixed quote after a free call" data-href="/services/market-entry"><span>International market entry: UK, US, EU and the Emirates (UAE)</span></label></fieldset><fieldset class="ch-group rv"><legend class="sr-only">Training &amp; events</legend><h3 aria-hidden="true">Training &amp; events</h3><label class="ch-item"><input type="checkbox" name="ch" data-p="1" data-pillar="SME Growth &amp; Investment Readiness" data-price="Forums and training: from free" data-href="/forums"><span>Business start-up training</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="1" data-pillar="SME Growth &amp; Investment Readiness" data-price="Fixed quote after a free call" data-href="/services/investment-readiness"><span>Corporate training</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="3" data-pillar="Tech, AI &amp; Digital Enablement" data-price="AI training: GHS 8,000 per session or per day" data-href="/carlson-capital#prices"><span>AI and digital training</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="4" data-pillar="Media, Branding &amp; Global Visibility" data-price="Fixed quote after a free call" data-href="/services/media-forums"><span>Corporate event</span></label></fieldset><fieldset class="ch-group rv"><legend class="sr-only">Specialised support</legend><h3 aria-hidden="true">Specialised support</h3><label class="ch-item"><input type="checkbox" name="ch" data-p="8" data-pillar="Mining &amp; Natural Resources" data-price="Mining regime briefing: GHS 15,000" data-href="/services#packages"><span>Mining and natural resources</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="7" data-pillar="Sustainability &amp; Green Growth" data-price="Fixed quote after a free call" data-href="/services/energy-mining"><span>Sustainability and green growth</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="6" data-pillar="Silver Economy &amp; Elderly Care (Silver Care)" data-price="Family and senior care plan: from GHS 2,400 a month" data-href="/family"><span>Silver economy and elderly care</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="5" data-pillar="Inclusive Enterprise, Impact &amp; CSR Advisory" data-price="Fixed quote after a free call" data-href="/services/compliance-esg"><span>CSR advisory</span></label><label class="ch-item"><input type="checkbox" name="ch" data-p="9" data-pillar="Creative Arts, Music &amp; Entertainment (Artist Support)" data-price="Fixed quote after a free call" data-href="/services/creative-studio"><span>Are you an artist or in the music industry?</span></label></fieldset></form>
+        <aside class="match rv" aria-labelledby="mt-h" aria-live="polite">
+          <h3 id="mt-h">Your match</h3>
+          <p class="hint" id="mt-hint">Tick a challenge and the right pillar and its price appear here.</p>
+          <ul id="mt-list"></ul>
+          <a class="btn btn-wa" id="ch-send" href="https://wa.me/233550416627?text=Hello%20Gotham%20Consult%2C%20I%20would%20like%20a%20free%2030-minute%20call." target="_blank" rel="noopener"><svg class="icon"><use href="#i-wa"/></svg>Send my answers on WhatsApp</a>
+          <p class="small">The first 30-minute call is free. Prices are in Ghana cedis and exclude VAT.</p>
+          <span id="ch-hello" hidden>Hello Gotham Consult, we would like to talk about:</span><span id="mt-more" hidden>More about this</span>
+        </aside>
       </div>
+      <div class="wrap more-link" style="padding:0;margin-top:26px"><a class="btn btn-dark" href="/services">All nine pillars and prices <span class="arrow">→</span></a></div>
     </div>
   </section>
 
@@ -85,7 +137,8 @@
         <form class="form" id="bookF" novalidate>
           <label>Your name<input id="b-name" autocomplete="name" required></label>
           <label>Email for confirmation<input id="b-email" type="email" autocomplete="email" required></label>
-          <div class="row2"><label>Day<select id="b-day"></select></label><label>Time (Accra, GMT)<select id="b-time"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option></select></label></div>
+          <div class="row2"><label>Day<select id="b-day"></select></label><label>Time (Accra, GMT)<select id="b-time" aria-describedby="b-yours"><option>09:00</option><option>10:00</option><option>11:00</option><option>12:00</option><option>14:00</option><option>15:00</option><option>16:00</option></select></label></div>
+          <p class="fine" id="b-yours" data-no-tr hidden></p>
           <label>What is it about?<select id="b-topic"><option>General enquiry</option><option>Investment readiness &amp; GIPA</option><option>Market entry &amp; international projects</option><option>AI in your business</option><option>Energy, mining &amp; infrastructure</option><option>Forums &amp; sponsorship</option></select></label>
           <label class="fine"><input id="b-consent" type="checkbox" required><span>I agree that Gotham Consult may use my details to manage this request and email me about it under the <a href="/privacy">privacy notice</a>.</span></label>
           <div class="cta-row" style="justify-content:flex-start"><button class="btn btn-gold" type="submit">Request this time</button></div>
@@ -93,28 +146,6 @@
         </form>
       </div>
     </div>
-  </section>
-
-  <section class="sec car-sec" id="services" aria-labelledby="svc-h">
-    <div class="wrap">
-      <div class="sec-head split">
-        <div><p class="eyebrow" style="color:var(--gold-2)">What we do</p><h2 id="svc-h">Ten practices, <span class="serif" style="color:var(--gold-2)">one partner.</span></h2></div>
-        <p class="lead">Spin through what we do. From your first registration to a mining lease, with partner lawyers, geologists and engineers where the job needs them.</p>
-      </div>
-    </div>
-    <div class="car" data-car aria-roledescription="carousel" aria-label="Our ten practices">
-      <div class="car-stage"><div class="car-ring"><a class="car-card" href="/services/investment-readiness" style="--i:0"><img src="/img/real-airportcity.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-rocket"/></svg></i><span class="cc-n">01</span></span><b>Investment readiness &amp; GIPA</b><span class="cc-p">Get registered, compliant and ready for investors.</span><span class="cc-pts"><span>GIPA Act 1173 registration</span><span>Business plans &amp; 3-statement models</span><span>Credit profile &amp; pitch decks</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/market-entry" style="--i:1"><img src="/img/port.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-plane"/></svg></i><span class="cc-n">02</span></span><b>Market entry &amp; international projects</b><span class="cc-p">Enter Ghana or expand abroad with local market insight and introductions, where suitable.</span><span class="cc-pts"><span>Ghana, Nigeria, UK, US, EU</span><span>Francophone West Africa</span><span>Feasibility &amp; due diligence</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/ai" style="--i:2"><img src="/img/tech.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-chip"/></svg></i><span class="cc-n">03</span></span><b>AI in your business</b><span class="cc-p">Put AI to work in finance, research and daily operations.</span><span class="cc-pts"><span>AI readiness audit</span><span>Finance &amp; reporting automation</span><span>Staff training workshops</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/digital" style="--i:3"><img src="/img/real-tema.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-code"/></svg></i><span class="cc-n">04</span></span><b>Digital &amp; managed hosting</b><span class="cc-p">Websites and apps that take mobile-money payments, run for you.</span><span class="cc-pts"><span>Websites &amp; online shops</span><span>MoMo &amp; card payments</span><span>Hosting, email, daily backups</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/creative-studio" style="--i:4"><img src="/img/boot2.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-spark"/></svg></i><span class="cc-n">05</span></span><b>AI creative studio</b><span class="cc-p">Marketing made in minutes, in local languages.</span><span class="cc-pts"><span>Jingles &amp; radio spots</span><span>Posters &amp; video adverts</span><span>Voice-overs in Twi &amp; English</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/energy-mining" style="--i:5"><img src="/img/solar.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-bolt"/></svg></i><span class="cc-n">06</span></span><b>Energy, mining &amp; infrastructure</b><span class="cc-p">Bankable projects for developers, investors and lenders.</span><span class="cc-pts"><span>Solar IPPs, PPAs &amp; EPC</span><span>Geology-led due diligence</span><span>Packaging for DFIs &amp; banks</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/compliance-esg" style="--i:6"><img src="/img/real-bog.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-shield"/></svg></i><span class="cc-n">07</span></span><b>Compliance &amp; ESG</b><span class="cc-p">Meet the standards international partners expect.</span><span class="cc-pts"><span>AML/KYC &amp; data protection</span><span>ESG to IFC Performance Standards</span><span>CSR program design</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/education" style="--i:7"><img src="/img/boot3.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-book"/></svg></i><span class="cc-n">08</span></span><b>Education &amp; schools</b><span class="cc-p">Start, licence and strengthen a school or training business.</span><span class="cc-pts"><span>School registration and licensing</span><span>Teacher training and curricula</span><span>Digital learning and AI skills</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/family-support" style="--i:8"><img src="/img/accra.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-home"/></svg></i><span class="cc-n">09</span></span><b>Senior citizens &amp; family support</b><span class="cc-p">Practical help for older people in Ghana and families abroad.</span><span class="cc-pts"><span>Pension, NHIS and document renewals</span><span>Check-in visits and care</span><span>Property and estate paperwork</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a><a class="car-card" href="/services/media-forums" style="--i:9"><img src="/img/forum.webp" alt="" loading="lazy" decoding="async"><span class="cc-in"><span class="cc-top"><i><svg class="icon"><use href="#i-users"/></svg></i><span class="cc-n">10</span></span><b>Media, forums &amp; inclusive enterprise</b><span class="cc-p">Visibility for your business, and growth that includes everyone.</span><span class="cc-pts"><span>Features &amp; investor roundtables</span><span>Trade missions &amp; showcases</span><span>Training for persons with disabilities</span></span><span class="cc-go">Explore <span class="arrow">→</span></span></span></a></div></div>
-      <div class="car-ctl wrap">
-        <button class="car-b" type="button" data-car-prev aria-label="Previous practice"><svg class="icon"><use href="#i-back"/></svg></button>
-        <p class="car-now" aria-live="polite"><span data-car-num>01</span> / 10 · <b data-car-title>Investment readiness &amp; GIPA</b></p>
-        <button class="car-b" type="button" data-car-next aria-label="Next practice"><svg class="icon"><use href="#i-next"/></svg></button>
-      </div>
-      <div class="car-rail" role="group" aria-label="Choose a practice"><button type="button" data-go="0" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-rocket"/></svg><span>Invest-ready</span></button><button type="button" data-go="1" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-plane"/></svg><span>Market entry</span></button><button type="button" data-go="2" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-chip"/></svg><span>AI</span></button><button type="button" data-go="3" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-code"/></svg><span>Digital</span></button><button type="button" data-go="4" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-spark"/></svg><span>Creative</span></button><button type="button" data-go="5" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-bolt"/></svg><span>Energy</span></button><button type="button" data-go="6" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span>Compliance</span></button><button type="button" data-go="7" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-book"/></svg><span>Education</span></button><button type="button" data-go="8" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span>Family</span></button><button type="button" data-go="9" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-users"/></svg><span>Media &amp; forums</span></button></div>
-      <div class="car-foot"><p class="car-hint"><span class="mouse">Point at a card and it turns to you. Click the one in front to open it.</span><span class="touch">Swipe, or tap a practice above. Tap the front card to open it.</span></p>
-        <button class="car-toggle" type="button" data-car-toggle aria-pressed="false">Pause auto-rotation</button>
-        <button class="car-ask" type="button" data-car-ask><span class="ai-dot" aria-hidden="true"></span><span>Ask AI about <b data-car-askname>Invest-ready</b></span></button></div>
-    </div>
-    <div class="wrap more-link"><a class="btn btn-gold" href="/services">All practices and prices <span class="arrow">→</span></a></div>
   </section>
 
   <section class="sec nums" aria-labelledby="num-h">
@@ -144,7 +175,7 @@
         <div class="step rv"><h3>Check where you stand</h3><p>A business health check, a funding finder and a VAT check. Free, and your answers stay on your phone.</p><a href="/tools">Open the free tools <span class="arrow">→</span></a></div>
         <div class="step rv"><h3>Stay current</h3><p>The Ghana Business Brief: what changed, what money is open, which rooms matter. Free, weekly.</p><a href="/forums#brief">Get the brief <span class="arrow">→</span></a></div>
         <div class="step rv"><h3>Get in the room</h3><p>Forums and roundtables where SMEs, investors and institutions sit together.</p><a href="/forums">See the forums <span class="arrow">→</span></a></div>
-        <div class="step rv"><h3>Have it done</h3><p>Registration, due diligence, market entry, mining and compliance. Fixed scope, fixed fee.</p><a href="#services">See what we do <span class="arrow">→</span></a></div>
+        <div class="step rv"><h3>Have it done</h3><p>Registration, due diligence, market entry, mining and compliance. Fixed scope, fixed fee.</p><a href="/services">See what we do <span class="arrow">→</span></a></div>
       </div>
     </div>
   </section>
@@ -180,4 +211,42 @@
   </section>
 </main>
 <!--#bottom-->
-<script src="/assets/v2/globe.js?v=9" defer></script>
+<script>
+(() => {
+  /* the two doors: Ghana's time zone opens the local door, anywhere else the entry door; the visitor's own choice is remembered */
+  const tabs = [...document.querySelectorAll('.doors [data-door]')];
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  const pick = (name, focus) => tabs.forEach(t => { const on = t.dataset.door === name; t.setAttribute('aria-selected', on); t.tabIndex = on ? 0 : -1;
+    document.getElementById('panel-' + t.dataset.door).hidden = !on; if (on && focus) t.focus(); });
+  let saved = ''; try { saved = localStorage.getItem('gc-door') || ''; } catch {}
+  pick(saved === 'local' || saved === 'entry' ? saved : (tz && tz !== 'Africa/Accra' ? 'entry' : 'local'));
+  tabs.forEach((t, i) => { t.addEventListener('click', () => { pick(t.dataset.door); try { localStorage.setItem('gc-door', t.dataset.door); } catch {} });
+    t.addEventListener('keydown', e => { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); const n = tabs[(i + 1) % 2]; pick(n.dataset.door, true); try { localStorage.setItem('gc-door', n.dataset.door); } catch {} } }); });
+
+  /* challenges: each tick shows its pillar and price, and goes into the WhatsApp message */
+  const form = document.getElementById('ch-form'), send = document.getElementById('ch-send'), list = document.getElementById('mt-list'), hint = document.getElementById('mt-hint');
+  const base = send.href, text = el => el.textContent.trim(), esc = v => String(v).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const tr = s => { const d = (window.GC_I18N || {})[(document.documentElement.lang || 'en').slice(0, 2)]; return (d && d[s]) || s; };
+  const update = () => {
+    const on = [...form.querySelectorAll('input:checked')], seen = new Set(), rows = [];
+    for (const i of on) { const k = i.dataset.p + '|' + i.dataset.price; if (seen.has(k)) continue; seen.add(k);
+      rows.push(`<li><span class="pn">${String(i.dataset.p).padStart(2, '0')}</span><b>${esc(tr(i.dataset.pillar))}</b><span class="pr">${esc(tr(i.dataset.price))}</span><br><a href="${esc(i.dataset.href)}">${esc(text(document.getElementById('mt-more')))} →</a></li>`); }
+    list.innerHTML = rows.join(''); hint.hidden = on.length > 0;
+    send.href = on.length ? 'https://wa.me/233550416627?text=' + encodeURIComponent(text(document.getElementById('ch-hello')) + '\n' + on.map(i => '- ' + text(i.closest('label'))).join('\n')) : base;
+  };
+  form.addEventListener('change', update); update();
+
+  /* the booking form says the chosen Accra time in the visitor's own time */
+  const sel = document.getElementById('b-time'), out = document.getElementById('b-yours');
+  const off = () => { try { const p = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find(x => x.type === 'timeZoneName').value;
+      const m = p.match(/GMT([+-]\d+)(?::(\d+))?/); return m ? (+m[1]) * 60 + (m[2] ? Math.sign(+m[1]) * (+m[2]) : 0) : 0; } catch { return 0; } };
+  const fmt = (t, o) => tr(t).replace(/\{(\w)\}/g, (_, k) => o[k]);
+  const yours = () => { const o = off(); if (!tz || !o) { out.hidden = true; return; }
+    const [h, m] = sel.value.split(':').map(Number), raw = h * 60 + m + o, t = (raw % 1440 + 1440) % 1440, day = raw >= 1440 ? '(next day)' : raw < 0 ? '(the day before)' : '';
+    out.textContent = fmt('{a} in Accra is {b} your time.', { a: sel.value, b: String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0') }) + (day ? ' ' + tr(day) : ''); out.hidden = false; };
+  sel.addEventListener('change', yours); yours();
+  /* a translated page fetches its word list after the page itself: say the two computed lines again once it is there */
+  [400, 1200, 2500, 5000].forEach(ms => setTimeout(() => { yours(); update(); }, ms));
+})();
+</script>
+<script src="/assets/v2/globe.js?v=10" defer></script>
