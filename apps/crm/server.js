@@ -3286,6 +3286,17 @@ a.btn{display:inline-block;margin-top:16px;background:#0F1B2D;color:#fff;text-de
       return sendHtml(pageShell('Removed', rows[0] ? '<h1>Done, no more briefs from us</h1><p>You will not receive the daily Ghana brief again. Registrations and tickets you already hold are unaffected.</p>'
         : '<h1>This link is not valid any more</h1><p>If you still receive emails from us, reply to one of them and we will remove you.</p>'));
     }
+    /* the page behind the Brief invitation: the link only shows a button; consent is pressing it */
+    const mJoin = p.match(/^\/brief\/join\/([a-f0-9]{32})$/);
+    if (mJoin && (req.method === 'GET' || req.method === 'POST')) {
+      const r = await MEMBERS.briefJoin(mJoin[1], req.method === 'POST');
+      if (r.id) await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', ['recipient', 'brief_invite_yes', String(r.id)]);
+      const stop = `/brief/stop/${mJoin[1]}`;
+      return sendHtml(pageShell('Ghana Business Brief', r.state === 'ask'
+        ? `<h1>Send me the Ghana Business Brief</h1><p>A short email from Gotham Consult on the days our Ghana Investment Report has something new, and our upcoming forums. Free, and you can stop it with one click in any email.</p><form method="post" action="/brief/join/${mJoin[1]}"><button type="submit" style="background:#0F1B2D;color:#fff;border:0;font:inherit;font-weight:700;padding:14px 24px;border-radius:999px;cursor:pointer;min-height:48px">Yes, send me the Brief</button></form><p style="font-size:14px;margin-top:22px"><a href="${stop}" style="color:#5A6472">No thanks, do not email me again</a></p>`
+        : r.state === 'in' ? `<h1>Done, you will receive the Brief</h1><p>We only write on days with something new. Every email has a one-click stop link.</p><p><a href="/ghana-investment-report">Read the Ghana Investment Report</a></p>`
+        : '<h1>This link is not valid any more</h1><p>You can ask for the Ghana Business Brief on our website at any time.</p>'));
+    }
     /* one click and we never write to them again on that channel (email also answers mail clients' one-click POST) */
     const mUnsub2 = p.match(/^\/u\/([A-Za-z0-9_-]{10,})$/);
     if (mUnsub2 && (req.method === 'GET' || req.method === 'POST')) {
@@ -4921,6 +4932,13 @@ h1 em{font-family:Newsreader,Georgia,serif;font-style:italic;color:#1F6B4E}
     const mOrd = p.match(/^\/api\/members\/orders\/(\d+)\/done$/);
     if (mOrd && req.method === 'POST') { const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const r = await MEMBERS.closeOrder(+mOrd[1], u.email); return r ? json(res, 200, { ok: true }) : json(res, 400, { error: 'not_open' }); }
     if (p === '/api/members/posts' && req.method === 'POST') { const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req); if (!clean(b.title, 200)) return json(res, 400, { error: 'title' }); return json(res, 200, await MEMBERS.post(b, u.email)); }
+    /* the one-time Brief invitation: GET shows how many people and the exact email, POST sends it */
+    if (p === '/api/contacts/brief-invite' && (req.method === 'GET' || req.method === 'POST')) {
+      const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' });
+      const r = await MEMBERS.briefInvite({ send: req.method === 'POST' });
+      if (req.method === 'POST') await q('insert into audit_log(actor,action,detail) values ($1,$2,$3)', [u.email, 'brief_invite_sent', String(r.sent)]);
+      return json(res, 200, r);
+    }
     if (p === '/api/members/run-jobs' && req.method === 'POST') {   // staff: send today's reminders, renewals and daily brief now
       const u = need('admin'); if (!u) return json(res, 401, { error: 'not_allowed' }); const b = await body(req);
       const d = await MEMBERS.daily(), w = await MEMBERS.dailyBrief(b.daily === true || b.weekly === true);

@@ -2569,7 +2569,8 @@ async function subs(){
  const conf=R.filter(r=>r.confirmed_email&&r.marketing_opt_in).length, pend=R.filter(r=>!r.confirmed_email&&!r.unsubscribed_at).length, out=R.filter(r=>r.unsubscribed_at).length;
  const bySec={};R.filter(r=>r.confirmed_email&&r.marketing_opt_in).forEach(r=>{const k=r.sector||'Not stated';bySec[k]=(bySec[k]||0)+1});
  const secRows=Object.entries(bySec).sort((a,b)=>b[1]-a[1]);
- $('#view').innerHTML=`<div class="kpis">
+ const inv=await api('/api/contacts/brief-invite').catch(()=>null);
+ $('#view').innerHTML=`${inv&&inv.count?`<div class="card" id="binv"><h3>Invite your contacts to the Brief <span class="note">(one time)</span></h3><p><b>${inv.count}</b> ${inv.count===1?'person in Companies & people has':'people in Companies & people have'} never said yes or no to Gotham email. This sends each of them one email asking. Only those who press Yes get the Brief; nobody is asked twice.</p><div class="filters"><button class="btn" id="binv-prev">See the email</button><button class="btn btn-dark" id="binv-send">Send the invitation to ${inv.count}</button></div><iframe id="binv-frame" title="Invitation email" hidden style="width:100%;height:560px;border:1px solid var(--line,#E2E4E7);border-radius:12px;margin-top:12px;background:#fff"></iframe></div>`:''}<div class="kpis">
   <div class="kpi"><b>${conf}</b><span>Confirmed and opted in</span></div>
   <div class="kpi"><b>${pend}</b><span>Waiting to confirm their email</span></div>
   <div class="kpi"><b>${out}</b><span>Unsubscribed</span></div>
@@ -2596,6 +2597,8 @@ async function subs(){
    try{await navigator.clipboard.writeText(nums);toast(rows.length+' numbers copied')}catch{toast('Copy failed')}};
  };
  ['#sq','#ss','#sf'].forEach(x=>{$(x).oninput=draw;$(x).onchange=draw});draw();
+ if(inv&&inv.count){$('#binv-prev').onclick=()=>{const f=$('#binv-frame');f.hidden=!f.hidden;f.srcdoc=inv.html};
+  $('#binv-send').onclick=async()=>{if(!confirm('Send the invitation to '+inv.count+(inv.count===1?' person':' people')+' now?'))return;$('#binv-send').disabled=true;const r=await api('/api/contacts/brief-invite',{method:'POST'});toast('Invitation sent to '+r.sent);subs()}}
 }
 
 /* door check-in */

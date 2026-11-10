@@ -407,6 +407,52 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
     }
     return n;
   }
+  /* One invitation, once, to contacts who never said yes or no to Gotham email (event registrants who left the box
+     unticked, people who called or wrote). The email asks; nothing is sent to them again unless they press Yes on the
+     page behind the button. Opening the link is not consent: mail scanners open links. */
+  const INVITE_WHERE = `c.email is not null and c.email <> '' and coalesce(c.consent_email, 'unknown') not in ('yes', 'no')
+      and c.unsubscribed_at is null and c.brief_invited_at is null and not coalesce(c.bounced, false) and c.status <> 'do_not_contact'
+      and not exists (select 1 from members m where lower(m.email) = lower(c.email))`;
+  function inviteMail(c, tok) {
+    const LS = ['en', 'fr', 'es', 'de', 'ar', 'zh'], L = LS.includes(c.language) ? c.language : 'en';
+    const first = String(c.full_name || '').trim().split(/\s+/)[0] || '';
+    const join = `${base}/brief/join/${tok}`, stop = `${base}/brief/stop/${tok}`;
+    const body = `<p style="font-size:15px;color:#0F1B2D">${esc(first ? T(L, 'Hello') + ' ' + first + ',' : T(L, 'Hello,'))}</p>`
+      + `<p style="font-size:15px;line-height:1.6;color:#0F1B2D">${esc(T(L, 'You have been in touch with Gotham Consult through one of our forums or our website. We would like to ask you one thing.'))}</p>`
+      + `<p style="font-size:15px;line-height:1.6;color:#0F1B2D">${esc(T(L, 'We publish the Ghana Business Brief: a short email on the days our Ghana Investment Report has something new, with verified changes in rules, taxes and the economy, and our upcoming forums. It is free.'))}</p>`
+      + `<p style="margin:22px 0"><a href="${join}" style="background:#0F1B2D;color:#fff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;display:inline-block">${esc(T(L, 'Yes, send me the Brief'))}</a></p>`
+      + `<p style="font-size:14px;line-height:1.6;color:#5A6472">${esc(T(L, 'If you do nothing, we will not add you and we will not ask again.'))}</p>`
+      + `<p style="color:#8A93A0;font-size:12px">${esc(T(L, 'Gotham Consult keeps your details under Ghana’s Data Protection Act, 2012 (Act 843).'))} <a href="${stop}" style="color:#8A93A0">${esc(T(L, 'Do not email me again'))}</a></p>`;
+    return { subject: T(L, 'Would you like the Ghana Business Brief from Gotham Consult?'), html: wrapMail(esc(T(L, 'Ghana Business Brief')), `<div dir="${L === 'ar' ? 'rtl' : 'ltr'}">${body}</div>`), stop };
+  }
+  async function briefInvite({ send = false } = {}) {
+    const list = (await q(`select c.* from contacts c where ${INVITE_WHERE} order by c.id`)).rows;
+    if (!send) {
+      const sample = inviteMail({ full_name: 'Ama Mensah', language: 'en' }, '0'.repeat(32));
+      const langs = {}; for (const c of list) { const l = ['fr', 'es', 'de', 'ar', 'zh'].includes(c.language) ? c.language : 'en'; langs[l] = (langs[l] || 0) + 1; }
+      return { count: list.length, langs, subject: sample.subject, html: sample.html };
+    }
+    let sent = 0;
+    for (const c of list) {
+      const claim = await q('update contacts set brief_invited_at=now() where id=$1 and brief_invited_at is null returning id', [c.id]);
+      if (!claim.rows.length) continue;
+      let tok = c.brief_token;
+      if (!tok) { tok = crypto.randomBytes(16).toString('hex'); await q('update contacts set brief_token=$1 where id=$2 and brief_token is null', [tok, c.id]); tok = (await q('select brief_token from contacts where id=$1', [c.id])).rows[0].brief_token; }
+      const m = inviteMail(c, tok);
+      try { await queueMail(c.email, c.full_name || '', m.subject, m.html, 'brief_invite', null, m.stop); sent++; }
+      catch (e) { await q('update contacts set brief_invited_at=null where id=$1', [c.id]); throw e; }
+    }
+    return { sent };
+  }
+  /* the Yes button on the page behind the invitation */
+  async function briefJoin(tok, confirm) {
+    const c = (await q('select id, consent_email, unsubscribed_at from contacts where brief_token=$1', [tok])).rows[0];
+    if (!c || c.unsubscribed_at || c.consent_email === 'no') return { state: 'invalid' };
+    if (c.consent_email === 'yes') return { state: 'in' };
+    if (!confirm) return { state: 'ask' };
+    await q(`update contacts set consent_email='yes', consent_source='Ghana Business Brief invitation: pressed Yes', consent_at=now() where id=$1`, [c.id]);
+    return { state: 'in', id: c.id };
+  }
   const weekly = dailyBrief; // keep the old back-office endpoint compatible during the transition
   async function daily() {
     const today = ymd(new Date(now())), out = { reminders: 0, renewals: 0, expired: 0, nudges: 0, recovered: 0 };
@@ -499,5 +545,5 @@ export function makeMembers({ q, sign, base, now = Date.now, queueMail, wrapMail
     return r;
   }
 
-  return { signup, sendLink, login, googleLogin, fromCookie, prefs, buy, invoicePaid, activate, grant, saveCompany, calendar, me, weekly, dailyBrief, daily, stop, dashboard, memberDetail, addUpdate, closeOrder, post, prices, catalog, saveCatalog, active, deadlines };
+  return { signup, sendLink, login, googleLogin, fromCookie, prefs, buy, invoicePaid, activate, grant, saveCompany, calendar, me, weekly, dailyBrief, briefInvite, briefJoin, daily, stop, dashboard, memberDetail, addUpdate, closeOrder, post, prices, catalog, saveCatalog, active, deadlines };
 }

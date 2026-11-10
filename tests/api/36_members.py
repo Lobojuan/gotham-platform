@@ -123,6 +123,27 @@ tok = psql("select brief_token from contacts where email='kofi@co.test'")
 assert raw(f'/brief/stop/{tok}', method='POST', body={})[0] == 200 and psql("select consent_email||'|'||(unsubscribed_at is not null) from contacts where email='kofi@co.test'") == 'no|true'
 st, _, page = raw(f'/brief/stop/{tok}'); assert st == 200 and b'no more briefs' in page
 ok('daily brief also reaches non-member contacts with email consent (in their language, once a day, one-click stop); never without consent')
+# one invitation, once, to contacts who never said yes or no; only pressing Yes on the page is consent
+_sp.run(['psql', DB, '-qc', "insert into contacts(full_name,email,consent_email,language,source) values ('Yaw Test','yaw@co.test','unknown','fr','test'),('No Thanks','nt@co.test','unknown','en','test'); update contacts set status='do_not_contact' where email='nt@co.test'; update contacts set consent_email='unknown' where email='ama@co.test'"], check=True)
+assert call('/api/contacts/brief-invite', cookie=None)[0] == 401 and call('/api/contacts/brief-invite', {}, cookie=None)[0] == 401, 'team only'
+st, pv, _ = call('/api/contacts/brief-invite', cookie=adm)
+assert st == 200 and pv['count'] == 2 and pv['langs'] == {'en': 1, 'fr': 1} and 'Yes, send me the Brief' in pv['html'] and pv['subject'].startswith('Would you like'), pv.get('count')
+assert psql("select count(*) from outbox where kind='brief_invite'") == '0', 'looking sends nothing'
+st, r, _ = call('/api/contacts/brief-invite', {}, cookie=adm); assert st == 200 and r['sent'] == 2, r
+iv = psql("select subject||'#'||body||'#'||coalesce(unsub_url,'') from outbox where to_email='yaw@co.test' and kind='brief_invite'")
+assert iv.startswith(FR['Would you like the Ghana Business Brief from Gotham Consult?']) and 'Bonjour Yaw,' in iv and '/brief/join/' in iv and '/brief/stop/' in iv, iv[:300]
+assert psql("select count(*) from outbox where kind='brief_invite' and to_email in ('kofi@co.test','nt@co.test','ama@co.test')") == '0', 'not to people who said no, do-not-contact, or members'
+st, r, _ = call('/api/contacts/brief-invite', {}, cookie=adm); assert r['sent'] == 0 and call('/api/contacts/brief-invite', cookie=adm)[1]['count'] == 0, 'nobody is asked twice'
+jt = psql("select brief_token from contacts where email='yaw@co.test'")
+st, _, page = raw(f'/brief/join/{jt}'); assert st == 200 and b'<form method="post"' in page
+assert psql("select consent_email from contacts where email='yaw@co.test'") == 'unknown', 'opening the link is not consent (mail scanners open links)'
+st, _, page = raw(f'/brief/join/{jt}', method='POST', body={}); assert st == 200 and b'you will receive the Brief' in page
+assert psql("select consent_email||'|'||consent_source from contacts where email='yaw@co.test'") == 'yes|Ghana Business Brief invitation: pressed Yes'
+assert psql("select count(*) from audit_log where action in ('brief_invite_sent','brief_invite_yes')") == '3'
+st, _, page = raw(f'/brief/join/{tok}', method='POST', body={}); assert b'not valid any more' in page and psql("select consent_email from contacts where email='kofi@co.test'") == 'no', 'someone who stopped cannot be switched back on by an old link'
+st, _, page = raw('/brief/join/' + 'f' * 32); assert b'not valid any more' in page
+assert raw(f'/brief/stop/{jt}', method='POST', body={})[0] == 200 and psql("select consent_email from contacts where email='yaw@co.test'") == 'no', 'the stop link in the invitation works after joining too'
+ok('Brief invitation: team sees the count and the exact email, sends once, in each language; only pressing Yes gives consent; never to no/do-not-contact/members')
 tok = re.search(r'/m/stop\?u=([0-9a-f]+)', dg).group(1); st, h, _ = raw('/m/stop?u=' + tok, method='POST', body={}); assert st == 200 and psql("select alerts from members where email='ama@co.test'") == 'f'
 _sp.run(['psql', DB, '-qc', "delete from member_digest_days where member_id=(select id from members where email='ama@co.test')"], check=True)
 st, r, _ = call('/api/members/run-jobs', {'daily': True}, cookie=adm); assert r['digests'] == 0, 'unsubscribed member receives no further digest'

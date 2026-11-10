@@ -603,6 +603,8 @@ alter table contacts add column if not exists brief_token text;
 create unique index if not exists contacts_brief_token_uq on contacts (brief_token) where brief_token is not null;
 create table if not exists contact_brief_days (contact_id int not null references contacts(id) on delete cascade, day date not null,
   sent_at timestamptz not null default now(), primary key (contact_id, day));
+-- One invitation, once, to contacts who never said yes or no to Gotham email. Yes is a click on the page, not on the link (mail scanners open links).
+alter table contacts add column if not exists brief_invited_at timestamptz;
 create table if not exists member_posts (id serial primary key, title text not null, sector text, body text, published_at timestamptz, by_user text, created_at timestamptz default now());
 
 -- Admin-only incoming mailbox mirror. Bodies are stored as plain text; attachments and HTML are not retained.
